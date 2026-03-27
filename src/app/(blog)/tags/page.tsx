@@ -1,5 +1,7 @@
 import { prisma } from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+
 export default async function TagsPage() {
   const tags = await prisma.tag.findMany({
     include: { _count: { select: { posts: true } } },

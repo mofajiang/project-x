@@ -4,7 +4,7 @@ import { FeedTabs } from '@/components/blog/FeedTabs'
 import { QuickPost } from '@/components/blog/QuickPost'
 import { getSession } from '@/lib/auth'
 
-export const revalidate = 60
+export const dynamic = 'force-dynamic'
 
 export default async function HomePage({
   searchParams,

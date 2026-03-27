@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { AdminSysInfo } from '@/components/admin/AdminSysInfo'
 import { AdminRightPanel } from '@/components/admin/AdminRightPanel'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminDashboard() {
   const [postCount, commentCount, pendingComments, totalViews] = await Promise.all([
     prisma.post.count({ where: { published: true } }),

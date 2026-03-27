@@ -1,5 +1,7 @@
 import { getSiteConfig } from '@/lib/config'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AboutPage() {
   const config = await getSiteConfig()
   return (

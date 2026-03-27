@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { LoginForm } from '@/components/auth/LoginForm'
 
+export const dynamic = 'force-dynamic'
+
 export default async function DynamicLoginPage({ params }: { params: { loginPath: string } }) {
   // 从数据库读取合法登录路径
   let config = await prisma.siteConfig.findUnique({ where: { id: 'singleton' } })

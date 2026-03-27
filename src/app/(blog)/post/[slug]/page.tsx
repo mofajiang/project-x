@@ -8,7 +8,7 @@ import { MarkdownRenderer } from '@/components/blog/MarkdownRenderer'
 import { getSession } from '@/lib/auth'
 import Image from 'next/image'
 
-export const revalidate = 60
+export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   const post = await prisma.post.findUnique({

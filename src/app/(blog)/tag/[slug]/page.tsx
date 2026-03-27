@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { PostCard } from '@/components/blog/PostCard'
 
+export const dynamic = 'force-dynamic'
+
 export default async function TagPage({ params }: { params: { slug: string } }) {
   const tag = await prisma.tag.findUnique({
     where: { slug: params.slug },

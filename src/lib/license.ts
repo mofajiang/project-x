@@ -4,8 +4,8 @@
  * 验证结果缓存在内存中，避免每次请求都调用授权服务器
  */
 
-const LICENSE_SERVER = process.env.LICENSE_SERVER_URL || 'https://license.yourdomain.com'
-const LICENSE_SECRET = process.env.LICENSE_SECRET || ''
+const LICENSE_SERVER = process.env.LICENSE_SERVER_URL || 'https://project-x.haths.net'
+const LICENSE_SECRET = process.env.LICENSE_SECRET || 'Project-X-Blog'
 const CACHE_TTL = 60 * 60 * 1000 // 1小时缓存
 
 interface LicenseCache {
