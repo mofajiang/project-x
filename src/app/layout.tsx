@@ -22,6 +22,11 @@ export async function generateMetadata(): Promise<Metadata> {
       site: config.socialX ? `@${config.socialX}` : undefined,
     },
     robots: { index: true, follow: true },
+    alternates: {
+      types: {
+        'application/rss+xml': `${baseUrl}/feed.xml`,
+      },
+    },
   }
 }
 
@@ -33,6 +38,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="zh-CN">
       <head>
         <script dangerouslySetInnerHTML={{ __html: antiFlash }} />
+        <link rel="alternate" type="application/rss+xml" title={config.siteName || '我的博客'} href="/feed.xml" />
       </head>
       <body>
         {children}
