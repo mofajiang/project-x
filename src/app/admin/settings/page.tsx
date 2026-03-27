@@ -285,7 +285,7 @@ export default function SettingsPage() {
             <h2 className="font-bold text-lg mb-1" style={{ color: 'var(--text-primary)' }}>🌙 默认主题</h2>
             <p className="text-xs mb-4" style={{ color: 'var(--text-secondary)' }}>访客首次访问时使用的主题</p>
             <div className="flex gap-3">
-              {(['dark', 'light']).map((t) => (
+              {(['dark', 'light'] as const).map((t) => (
                 <button key={t} onClick={() => setDefaultTheme(t)} className="flex-1 flex items-center gap-3 px-4 py-3 rounded-2xl border-2 transition-colors" style={{ background: defaultTheme === t ? 'var(--bg-hover)' : 'transparent', borderColor: defaultTheme === t ? 'var(--accent)' : 'var(--border)' }}>
                   <span className="text-xl">{t === 'dark' ? '🌙' : '☀️'}</span>
                   <div className="text-left"><p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{t === 'dark' ? '深色' : '浅色'}</p><p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{t === 'dark' ? '黑色背景' : '白色背景'}</p></div>
