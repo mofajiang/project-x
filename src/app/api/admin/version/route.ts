@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/navigation'
+import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { execSync } from 'child_process'
 
