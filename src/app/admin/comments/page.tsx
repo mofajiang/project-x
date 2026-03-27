@@ -138,7 +138,7 @@ export default function AdminCommentsPage() {
         </div>
       )}
 
-      {/* 全�?*/}
+      {/* 全选 */}
       {comments.length > 0 && (
         <div className="flex items-center gap-2 mb-2 px-1">
           <input type="checkbox" checked={selected.size === comments.length} onChange={toggleAll} className="accent-blue-500" />

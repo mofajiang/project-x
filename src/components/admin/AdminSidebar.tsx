@@ -3,7 +3,177 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { ThemeToggle } from '@/components/ui/ThemeToggle'
+
+type ThemeMode = 'dark' | 'light' | 'sepia'
+const THEME_CYCLE: ThemeMode[] = ['dark', 'light', 'sepia']
+const THEME_LABELS: Record<ThemeMode, string> = { dark: '🌙 暗黑', light: '☀️ 浅色', sepia: '📜 复古' }
+
+function AdminThemeToggle() {
+  const [theme, setTheme] = useState<ThemeMode>('dark')
+
+  useEffect(() => {
+    const saved = (localStorage.getItem('adminThemeMode') || localStorage.getItem('theme') || 'dark') as ThemeMode
+    const valid = THEME_CYCLE.includes(saved) ? saved : 'dark'
+    setTheme(valid)
+    document.documentElement.classList.remove('dark', 'light', 'sepia')
+    document.documentElement.classList.add(valid)
+  }, [])
+
+  const toggle = () => {
+    const next = THEME_CYCLE[(THEME_CYCLE.indexOf(theme) + 1) % THEME_CYCLE.length]
+    setTheme(next)
+    localStorage.setItem('adminThemeMode', next)
+    localStorage.setItem('theme', next)
+    document.documentElement.classList.remove('dark', 'light', 'sepia')
+    document.documentElement.classList.add(next)
+  }
+
+  return (
+    <button
+      onClick={toggle}
+      title={`当前：${THEME_LABELS[theme]}，点击切换`}
+      className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-colors"
+      style={{ color: 'var(--text-secondary)' }}
+      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+    >
+      <span>{THEME_LABELS[theme].split(' ')[0]}</span>
+      <span className="flex-1 text-left text-xs">{THEME_LABELS[theme].split(' ')[1]}</span>
+      <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>切换</span>
+    </button>
+  )
+}
+
+type UpdateInfo = {
+  hasUpdate: boolean
+  localCommit: string
+  remoteCommit: string
+  branch: string
+  commits: { sha: string; message: string; date: string; author: string }[]
+  checkedAt: string
+  error?: string
+}
+
+function AdminUpdateChecker() {
+  const [info, setInfo] = useState<UpdateInfo | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [updating, setUpdating] = useState(false)
+  const [open, setOpen] = useState(false)
+
+  const check = async () => {
+    setLoading(true)
+    try {
+      const r = await fetch('/api/admin/update', { cache: 'no-store' })
+      const d = await r.json()
+      setInfo(d)
+    } catch {
+      setInfo({ hasUpdate: false, localCommit: '', remoteCommit: '', branch: '', commits: [], checkedAt: '', error: '网络错误' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    check()
+    const t = setInterval(check, 10 * 60 * 1000) // 每10分钟自动检查
+    return () => clearInterval(t)
+  }, [])
+
+  const doUpdate = async () => {
+    if (!confirm('确认执行 git pull 更新代码？更新后需手动重启服务。')) return
+    setUpdating(true)
+    try {
+      const r = await fetch('/api/admin/update', { method: 'POST' })
+      const d = await r.json()
+      if (d.success) {
+        toast.success('✅ 更新成功，请重启 dev/build 服务生效')
+        setOpen(false)
+        await check()
+      } else {
+        toast.error('❌ 更新失败：' + (d.error || d.message))
+      }
+    } catch {
+      toast.error('更新请求失败')
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => { setOpen(o => !o); if (!open && !info) check() }}
+        title={info?.hasUpdate ? `有新版本可用（${info.commits.length} 个更新）` : '检查更新'}
+        className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-colors relative"
+        style={{ color: 'var(--text-secondary)' }}
+        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+      >
+        <span className="relative inline-block">
+          🔄
+          {info?.hasUpdate && (
+            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full" style={{ background: '#F4212E' }} />
+          )}
+        </span>
+        <span className="flex-1 text-left text-xs">
+          {loading ? '检查中...' : info?.hasUpdate ? `有更新 (${info.commits.length})` : '已是最新'}
+        </span>
+        {info?.hasUpdate && (
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold" style={{ background: 'rgba(244,33,46,0.15)', color: '#F4212E' }}>NEW</span>
+        )}
+      </button>
+
+      {open && (
+        <div className="absolute bottom-full left-0 right-0 mb-2 rounded-2xl shadow-2xl z-50 overflow-hidden" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', minWidth: 260 }}>
+          <div className="p-4 flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>🔄 版本更新</span>
+              <button onClick={() => setOpen(false)} className="text-xs" style={{ color: 'var(--text-secondary)' }}>✕</button>
+            </div>
+
+            <div className="flex gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+              <span>本地：<code className="px-1 rounded" style={{ background: 'var(--bg-hover)' }}>{info?.localCommit || '—'}</code></span>
+              <span>远程：<code className="px-1 rounded" style={{ background: 'var(--bg-hover)' }}>{info?.remoteCommit || '—'}</code></span>
+            </div>
+
+            {info?.error && <p className="text-xs" style={{ color: '#F4212E' }}>⚠️ {info.error}</p>}
+
+            {info?.hasUpdate && info.commits.length > 0 && (
+              <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
+                <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>更新内容：</p>
+                {info.commits.map(c => (
+                  <div key={c.sha} className="flex flex-col gap-0.5 px-2 py-1.5 rounded-lg" style={{ background: 'var(--bg-hover)' }}>
+                    <p className="text-xs" style={{ color: 'var(--text-primary)' }}>{c.message}</p>
+                    <p className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>{c.sha} · {c.author} · {c.date ? new Date(c.date).toLocaleDateString('zh-CN') : ''}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!info?.hasUpdate && !info?.error && (
+              <p className="text-xs text-center py-2" style={{ color: 'var(--text-secondary)' }}>✅ 当前已是最新版本</p>
+            )}
+
+            <div className="flex gap-2">
+              <button onClick={check} disabled={loading} className="flex-1 px-3 py-1.5 rounded-xl text-xs disabled:opacity-50" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
+                {loading ? '检查中...' : '重新检查'}
+              </button>
+              {info?.hasUpdate && (
+                <button onClick={doUpdate} disabled={updating} className="flex-1 px-3 py-1.5 rounded-xl text-xs font-bold text-white disabled:opacity-50" style={{ background: 'var(--accent)' }}>
+                  {updating ? '更新中...' : '立即更新'}
+                </button>
+              )}
+            </div>
+
+            {info?.checkedAt && (
+              <p className="text-[10px] text-center" style={{ color: 'var(--text-secondary)' }}>上次检查：{new Date(info.checkedAt).toLocaleTimeString('zh-CN')}</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 const navItems = [
   { label: '仪表盘', href: '/admin', icon: '📊' },
@@ -21,9 +191,13 @@ export function AdminSidebar({ username }: { username: string }) {
   const [pendingCount, setPendingCount] = useState(0)
 
   useEffect(() => {
-    const fetch_ = () => fetch('/api/admin/comments/pending').then(r => r.json()).then(d => setPendingCount(d.count || 0)).catch(() => {})
-    fetch_()
-    const timer = setInterval(fetch_, 60_000)
+    const fetchPending = () => fetch('/api/admin/comments/pending')
+      .then(r => r.json())
+      .then(d => setPendingCount(d.count || 0))
+      .catch(() => {})
+    fetchPending()
+    const timer = setInterval(fetchPending, 60_000)
+
     return () => clearInterval(timer)
   }, [])
 
@@ -47,6 +221,7 @@ export function AdminSidebar({ username }: { username: string }) {
             <Link
               key={item.href}
               href={item.href}
+              prefetch={false}
               className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-colors"
               style={{
                 background: pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href)) ? 'var(--bg-hover)' : 'transparent',
@@ -65,7 +240,10 @@ export function AdminSidebar({ username }: { username: string }) {
           ))}
         </nav>
 
+
         <div className="px-3 mt-4 flex flex-col gap-2">
+          <AdminUpdateChecker />
+          <AdminThemeToggle />
           <a href="/" target="_blank" className="text-sm py-2 px-3 rounded-xl text-center transition-colors hover:bg-x-bg-hover" style={{ color: 'var(--text-secondary)' }}>查看博客 ↗</a>
           <button onClick={logout} className="text-sm py-2 px-3 rounded-xl text-center transition-colors w-full" style={{ color: 'var(--red)' }}>退出登录</button>
         </div>
@@ -76,7 +254,7 @@ export function AdminSidebar({ username }: { username: string }) {
         style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border)' }}>
         <p className="font-bold text-base" style={{ color: 'var(--text-primary)' }}>⚙ 后台管理</p>
         <div className="flex items-center gap-2">
-          <ThemeToggle className="w-8 h-8" />
+          <AdminThemeToggle />
           <a href="/" target="_blank" className="text-xs px-3 py-1 rounded-full" style={{ color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>前台 ↗</a>
           <button onClick={logout} className="text-xs px-3 py-1 rounded-full" style={{ color: 'var(--red)', border: '1px solid var(--border)' }}>退出</button>
         </div>

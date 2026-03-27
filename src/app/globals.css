@@ -28,6 +28,31 @@ html.light {
   --green: #00BA7C;
 }
 
+html.sepia {
+  --bg: #f4ead1;
+  --bg-secondary: #f6ede0;
+  --bg-hover: #e8dcc0;
+  --border: #d7c4aa;
+  --text-primary: #5a3728;
+  --text-secondary: #79644f;
+  --accent: #a65a27;
+  --accent-hover: #8f4f20;
+  --red: #c43d20;
+  --green: #5b7a3b;
+}
+
+body.admin-layout-1 .admin-content-grid {
+  grid-template-columns: 1fr !important;
+}
+
+body.admin-layout-2 .admin-content-grid {
+  grid-template-columns: 2fr minmax(300px, 1fr) !important;
+}
+
+body.admin-layout-3 .admin-content-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
 * {
   box-sizing: border-box;
 }

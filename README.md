@@ -1,5 +1,14 @@
 # X 风格个人博客
 
+[![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js&logoColor=white)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+[![Prisma](https://img.shields.io/badge/Prisma-SQLite-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io)
+[![License](https://img.shields.io/github/license/mofajiang/project-x)](https://github.com/mofajiang/project-x/blob/main/LICENSE)
+[![Stars](https://img.shields.io/github/stars/mofajiang/project-x?style=social)](https://github.com/mofajiang/project-x)
+[![Last Commit](https://img.shields.io/github/last-commit/mofajiang/project-x)](https://github.com/mofajiang/project-x/commits/main)
+[![Deploy](https://img.shields.io/badge/deploy-宝塔%20%2F%20PM2-green?logo=linux&logoColor=white)](#宝塔部署)
+
 基于 Next.js 14 + Tailwind CSS + SQLite（Prisma）构建的 X(Twitter) 风格个人博客。
 
 ## 功能特性
