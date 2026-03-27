@@ -8,7 +8,7 @@ export default async function TagsPage() {
 
   return (
     <div>
-      <div className="sticky top-0 z-10 px-4 py-4 backdrop-blur-md" style={{ background: 'rgba(0,0,0,0.8)', borderBottom: '1px solid var(--border)' }}>
+      <div className="sticky top-0 z-10 px-4 py-4 backdrop-blur-md" style={{ background: 'var(--bg-blur)', borderBottom: '1px solid var(--border)' }}>
         <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>标签</h1>
         <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>共 {tags.length} 个标签</p>
       </div>

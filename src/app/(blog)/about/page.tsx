@@ -4,7 +4,7 @@ export default async function AboutPage() {
   const config = await getSiteConfig()
   return (
     <div>
-      <div className="sticky top-0 z-10 px-4 py-4 backdrop-blur-md" style={{ background: 'rgba(0,0,0,0.8)', borderBottom: '1px solid var(--border)' }}>
+      <div className="sticky top-0 z-10 px-4 py-4 backdrop-blur-md" style={{ background: 'var(--bg-blur)', borderBottom: '1px solid var(--border)' }}>
         <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>关于</h1>
       </div>
       <div className="px-4 py-8">

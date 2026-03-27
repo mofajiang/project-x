@@ -6,6 +6,7 @@
   --bg: #000000;
   --bg-secondary: #16181C;
   --bg-hover: #1C1F23;
+  --bg-blur: rgba(0,0,0,0.85);
   --border: #2F3336;
   --text-primary: #E7E9EA;
   --text-secondary: #71767B;
@@ -19,6 +20,7 @@ html.light {
   --bg: #FFFFFF;
   --bg-secondary: #F7F9F9;
   --bg-hover: #EFF3F4;
+  --bg-blur: rgba(255,255,255,0.85);
   --border: #CFD9DE;
   --text-primary: #0F1419;
   --text-secondary: #536471;
@@ -32,6 +34,7 @@ html.sepia {
   --bg: #f4ead1;
   --bg-secondary: #f6ede0;
   --bg-hover: #e8dcc0;
+  --bg-blur: rgba(244,234,209,0.88);
   --border: #d7c4aa;
   --text-primary: #5a3728;
   --text-secondary: #79644f;

@@ -43,7 +43,7 @@ export default async function TagPage({ params }: { params: { slug: string } }) 
 
   return (
     <div>
-      <div className="sticky top-0 z-10 flex items-center gap-4 px-4 py-3 backdrop-blur-md" style={{ background: 'rgba(0,0,0,0.8)', borderBottom: '1px solid var(--border)' }}>
+      <div className="sticky top-0 z-10 flex items-center gap-4 px-4 py-3 backdrop-blur-md" style={{ background: 'var(--bg-blur)', borderBottom: '1px solid var(--border)' }}>
         <Link href="/" className="p-2 rounded-full hover:bg-x-bg-hover transition-colors" style={{ color: 'var(--text-primary)' }}>←</Link>
         <div>
           <p className="font-bold text-xl" style={{ color: 'var(--text-primary)' }}>#{tag.name}</p>

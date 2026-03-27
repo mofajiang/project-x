@@ -10,7 +10,7 @@ export function FeedTabs({ active }: { active: string }) {
   return (
     <div
       className="sticky top-0 z-10 flex backdrop-blur-md"
-      style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border)' }}
+      style={{ background: 'var(--bg-blur)', borderBottom: '1px solid var(--border)' }}
     >
       {tabs.map(tab => (
         <Link
