@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  username    String   @unique
+  displayName String?  @default("")
+  email       String   @unique
+  password    String
+  avatar      String?  @default("/default-avatar.png")
+  bio         String?  @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  posts     Post[]
+  comments  Comment[]
+}
+
+model Post {
+  id          String    @id @default(cuid())
+  title       String
+  slug        String    @unique
+  content     String
+  excerpt     String    @default("")
+  coverImage  String?
+  published   Boolean   @default(false)
+  publishedAt DateTime?
+  views       Int       @default(0)
+  likes       Int       @default(0)
+  authorId    String
+  author      User      @relation(fields: [authorId], references: [id])
+  tags        TagsOnPosts[]
+  comments    Comment[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([published, createdAt(sort: Desc)])
+  @@index([authorId])
+  @@index([slug])
+}
+
+model Tag {
+  id    String        @id @default(cuid())
+  name  String        @unique
+  slug  String        @unique
+  posts TagsOnPosts[]
+}
+
+model TagsOnPosts {
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId String
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId  String
+  @@id([postId, tagId])
+}
+
+model Comment {
+  id          String   @id @default(cuid())
+  content     String
+  approved    Boolean  @default(false)
+  authorId    String?
+  author      User?    @relation(fields: [authorId], references: [id])
+  guestName   String?  // 访客昵称（未登录时使用）
+  postId      String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  parentId  String?
+  parent    Comment? @relation("CommentReplies", fields: [parentId], references: [id])
+  replies   Comment[] @relation("CommentReplies")
+  createdAt DateTime @default(now())
+
+  @@index([postId, approved])
+  @@index([authorId])
+}
+
+model SiteConfig {
+  id          String @id @default("singleton")
+  siteName    String @default("我的博客")
+  siteDesc    String @default("")
+  loginPath   String @default("/admin-login")
+  loginMode   String @default("path")  // path | secret-click | both
+  secretClicks Int   @default(5)
+  commentApproval Boolean @default(true)
+  socialX      String @default("")
+  socialGithub String @default("")
+  socialEmail  String @default("")
+  navItems     String @default("[{\"label\":\"首页\",\"href\":\"/\",\"icon\":\"home\"},{\"label\":\"归档\",\"href\":\"/archive\",\"icon\":\"archive\"},{\"label\":\"标签\",\"href\":\"/tags\",\"icon\":\"tag\"},{\"label\":\"关于\",\"href\":\"/about\",\"icon\":\"user\"}]")
+  copyright    String @default("")
+}
