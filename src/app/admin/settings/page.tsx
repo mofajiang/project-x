@@ -232,7 +232,26 @@ export default function SettingsPage() {
           <div className="rounded-2xl p-6 flex flex-col gap-4" style={{ background: 'var(--bg-secondary)' }}>
             <h2 className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>© 版权信息</h2>
             <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>显示在右侧栏底部，支持 HTML</p>
-            <IMETextarea value={config.copyright} onValueChange={v => setConfig(c => ({ ...c, copyright: v }))} rows={3} placeholder="© 2024 我的博客" className="w-full px-3 py-2 rounded-2xl text-sm outline-none resize-none font-mono" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+            {/* 模板快捷按钮 */}
+            <div className="flex flex-wrap gap-2">
+              {[
+                { label: '简洁版', text: `© ${new Date().getFullYear()} ${config.siteName || '我的博客'}. All rights reserved.` },
+                { label: 'CC BY 4.0', text: `© ${new Date().getFullYear()} ${config.siteName || '我的博客'}\n本站内容采用 <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank">CC BY 4.0</a> 协议授权。` },
+                { label: 'CC BY-NC-SA', text: `© ${new Date().getFullYear()} ${config.siteName || '我的博客'}\n本站内容采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 协议授权，转载请注明出处。` },
+                { label: '保留所有权利', text: `© ${new Date().getFullYear()} ${config.siteName || '我的博客'}\n未经授权，禁止转载或商业使用。` },
+              ].map(tpl => (
+                <button
+                  key={tpl.label}
+                  type="button"
+                  onClick={() => setConfig(c => ({ ...c, copyright: tpl.text }))}
+                  className="text-xs px-2.5 py-1 rounded-lg transition-colors"
+                  style={{ background: 'var(--bg-hover)', color: 'var(--accent)', border: '1px solid var(--border)' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#fff')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg-hover)', e.currentTarget.style.color = 'var(--accent)')}
+                >{tpl.label}</button>
+              ))}
+            </div>
+            <IMETextarea value={config.copyright} onValueChange={v => setConfig(c => ({ ...c, copyright: v }))} rows={4} placeholder="© 2024 我的博客" className="w-full px-3 py-2 rounded-2xl text-sm outline-none resize-none font-mono" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
           </div>
 
         </div>

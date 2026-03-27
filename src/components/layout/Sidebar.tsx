@@ -91,12 +91,16 @@ export function Sidebar({ siteName, loginMode, secretClicks, loginPath = '/admin
     }
   }, [clicks, secretClicks, loginMode, loginPath])
 
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   const handleLogoClick = () => {
     if (loginMode === 'secret-click' || loginMode === 'both') {
       setClicks(c => c + 1)
-      setTimeout(() => setClicks(0), 3000)
+      if (timerRef.current) clearTimeout(timerRef.current)
+      timerRef.current = setTimeout(() => setClicks(0), 3000)
+    } else {
+      router.push('/')
     }
-    router.push('/')
   }
 
   return (

@@ -57,5 +57,13 @@ export async function POST(req: NextRequest) {
     maxAge: 60 * 60 * 24 * 30,
     path: '/',
   })
+  // 记录登录路径，供 middleware 识别动态登录页跳过 license 检查
+  res.cookies.set('_lpx', config.loginPath.replace(/^\//, ''), {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 24 * 365,
+    path: '/',
+  })
   return res
 }

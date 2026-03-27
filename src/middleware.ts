@@ -6,12 +6,17 @@ import { checkLicense } from './lib/license'
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // 授权验证（跳过 unlicensed 页自身、静态资源、API）
+  // 授权验证（跳过 unlicensed、静态资源、API、后台路由、登录相关路径）
+  // 登录路径为动态单段路由，无法预知具体值，但可通过 cookie 中缓存的路径跳过
+  const loginPathCookie = request.cookies.get('_lpx')?.value || 'admin-login'
+  const isLoginPage = pathname === `/${loginPathCookie}` || pathname === '/admin-login'
   if (
     !pathname.startsWith('/unlicensed') &&
     !pathname.startsWith('/_next') &&
     !pathname.startsWith('/api') &&
-    !pathname.startsWith('/favicon')
+    !pathname.startsWith('/favicon') &&
+    !pathname.startsWith('/admin') &&
+    !isLoginPage
   ) {
     const host = request.headers.get('host') || ''
     const domain = host.split(':')[0] // 去掉端口
@@ -21,12 +26,12 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // 保护后台路由（登录页本身放行）
+  // 保护后台路由（/admin 下的路由，动态登录路径不在此处理）
   if (pathname.startsWith('/admin')) {
-    if (pathname === '/admin/login') return NextResponse.next()
     const session = await getSessionFromRequest(request)
     if (!session) {
-      return NextResponse.redirect(new URL('/admin/login', request.url))
+      // 未登录重定向到首页（登录路径为动态值，middleware 无法读数据库）
+      return NextResponse.redirect(new URL('/', request.url))
     }
     return NextResponse.next()
   }
