@@ -14,18 +14,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // 动态登录路径检查：拦截 /login 防止直接访问
-  if (pathname === '/login') {
-    return NextResponse.redirect(new URL('/', request.url))
-  }
-
   return NextResponse.next()
 }
 
 export const config = {
   matcher: [
     '/admin/:path*',
-    '/login',
-    '/((?!_next/static|_next/image|favicon.ico|unlicensed).*)',
   ],
 }
