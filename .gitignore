@@ -35,3 +35,6 @@ npm-debug.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# 授权服务器（保密，不提交）
+license-server/
