@@ -4,16 +4,16 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 
-type ThemeMode = 'dark' | 'light' | 'sepia'
-const THEME_CYCLE: ThemeMode[] = ['dark', 'light', 'sepia']
-const THEME_LABELS: Record<ThemeMode, string> = { dark: '🌙 暗黑', light: '☀️ 浅色', sepia: '📜 复古' }
+type ThemeMode = 'dark' | 'light'
+const THEME_CYCLE: ThemeMode[] = ['dark', 'light']
+const THEME_LABELS: Record<ThemeMode, string> = { dark: '🌙 暗黑', light: '☀️ 浅色' }
 
 function AdminThemeToggle() {
   const [theme, setTheme] = useState<ThemeMode>('dark')
 
   useEffect(() => {
     const saved = (localStorage.getItem('adminThemeMode') || localStorage.getItem('theme') || 'dark') as ThemeMode
-    const valid = THEME_CYCLE.includes(saved) ? saved : 'dark'
+    const valid = (THEME_CYCLE as string[]).includes(saved) ? saved as ThemeMode : 'dark'
     setTheme(valid)
     document.documentElement.classList.remove('dark', 'light', 'sepia')
     document.documentElement.classList.add(valid)
@@ -26,6 +26,7 @@ function AdminThemeToggle() {
     localStorage.setItem('theme', next)
     document.documentElement.classList.remove('dark', 'light', 'sepia')
     document.documentElement.classList.add(next)
+    // sepia 已移除，如已保存 sepia 则重置为 dark
   }
 
   return (

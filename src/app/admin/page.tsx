@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
+import { AdminSysInfo } from '@/components/admin/AdminSysInfo'
+import { AdminRightPanel } from '@/components/admin/AdminRightPanel'
 
 export default async function AdminDashboard() {
   const [postCount, commentCount, pendingComments, totalViews] = await Promise.all([
@@ -23,7 +25,9 @@ export default async function AdminDashboard() {
   ]
 
   return (
-    <div>
+    <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-6">
+      {/* 左侧主内容 */}
+      <div>
       <h1 className="text-2xl font-bold mb-6" style={{ color: 'var(--text-primary)' }}>仪表盘</h1>
 
       {/* 统计卡片 */}
@@ -38,7 +42,7 @@ export default async function AdminDashboard() {
       </div>
 
       {/* 最近文章 */}
-      <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-secondary)' }}>
+      <div className="rounded-2xl overflow-hidden mb-8" style={{ background: 'var(--bg-secondary)' }}>
         <h2 className="font-bold text-lg mb-4" style={{ color: 'var(--text-primary)' }}>最近文章</h2>
         <table className="w-full text-sm">
           <thead>
@@ -64,6 +68,16 @@ export default async function AdminDashboard() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* 运行状态 */}
+      <h2 className="font-bold text-lg mt-2 mb-4" style={{ color: 'var(--text-primary)' }}>运行状态</h2>
+      <AdminSysInfo />
+      </div>
+
+      {/* 右侧栏 */}
+      <div className="hidden xl:block" style={{ borderLeft: '1px solid var(--border)', paddingLeft: '1.5rem' }}>
+        <AdminRightPanel />
       </div>
     </div>
   )

@@ -1,4 +1,4 @@
-# X 风格个人博客
+﻿# X 风格个人博客
 
 [![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js&logoColor=white)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
@@ -154,3 +154,4 @@ prisma/
 scripts/
 └── init-admin.ts        # 初始化管理员
 ```
+
