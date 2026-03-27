@@ -3,6 +3,8 @@ import './globals.css'
 import { ToasterProvider } from '@/components/ToasterProvider'
 import { getSiteConfig } from '@/lib/config'
 
+export const dynamic = 'force-dynamic'
+
 export async function generateMetadata(): Promise<Metadata> {
   const config = await getSiteConfig()
   const icon = (config as any).siteIcon || '/favicon.ico'
