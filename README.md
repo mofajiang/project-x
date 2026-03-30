@@ -113,10 +113,142 @@ SMTP_FROM=your@qq.com   # 可选
 
 ## 宝塔部署
 
+### 环境要求
+
+- Node.js 18+
+- PM2（`npm install -g pm2`）
+- Nginx（宝塔面板自带）
+
+### 1. 上传代码
+
+```bash
+cd /www/wwwroot/thisblog.me
+git clone https://github.com/mofajiang/project-x.git
+cd project-x
+```
+
+### 2. 配置环境变量
+
+```bash
+cp .env.example .env
+nano .env
+```
+
+`.env` 必填项：
+
+```env
+DATABASE_URL="file:./data/db.sqlite"
+JWT_SECRET="your-strong-secret-here"
+NEXT_PUBLIC_SITE_URL="https://yourdomain.com"
+```
+
+### 3. 安装依赖并构建
+
 ```bash
 npm install
 npm run build
-pm2 start npm --name "myblog" -- start
+```
+
+### 4. 初始化数据库和管理员
+
+```bash
+npm run db:push
+npx tsx scripts/init-admin.ts
+```
+
+### 5. PM2 启动
+
+```bash
+pm2 start npm --name x-blog -- start
+pm2 save
+pm2 startup   # 设置开机自启
+```
+
+查看运行状态：
+
+```bash
+pm2 list
+pm2 logs x-blog --lines 50
+```
+
+### 6. Nginx 反向代理配置
+
+在宝塔面板 → **网站** → 对应域名 → **设置** → **配置文件**，将内容替换为：
+
+```nginx
+server
+{
+    listen 80;
+    listen 443 ssl;
+    http2 on;
+    server_name yourdomain.com;
+    root /www/wwwroot/yourdomain.com;
+
+    # SSL 证书（宝塔自动填写）
+    #CERT-APPLY-CHECK--START
+    include /www/server/panel/vhost/nginx/well-known/yourdomain.com.conf;
+    #CERT-APPLY-CHECK--END
+    include /www/server/panel/vhost/nginx/extension/yourdomain.com/*.conf;
+
+    # HTTP 强制跳转 HTTPS
+    set $isRedcert 1;
+    if ($server_port != 443) { set $isRedcert 2; }
+    if ( $uri ~ /\.well-known/ ) { set $isRedcert 1; }
+    if ($isRedcert != 1) { rewrite ^(/.*)$ https://$host$1 permanent; }
+
+    ssl_certificate    /www/server/panel/vhost/cert/yourdomain.com/fullchain.pem;
+    ssl_certificate_key    /www/server/panel/vhost/cert/yourdomain.com/privkey.pem;
+    ssl_protocols TLSv1.1 TLSv1.2 TLSv1.3;
+    ssl_ciphers EECDH+CHACHA20:EECDH+CHACHA20-draft:EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5;
+    ssl_prefer_server_ciphers on;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    add_header Strict-Transport-Security "max-age=31536000";
+    error_page 497 https://$host$request_uri;
+
+    error_page 404 /404.html;
+
+    # 反向代理到 Next.js（必须包含 X-Forwarded-Proto，否则会出现重定向循环）
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_read_timeout 300;
+        proxy_connect_timeout 300;
+    }
+
+    # 禁止访问敏感目录
+    location ~* /(\.git|\.next|node_modules)/ { return 404; }
+
+    location ~ \.well-known { allow all; }
+
+    include /www/server/panel/vhost/rewrite/yourdomain.com.conf;
+
+    access_log  /www/wwwlogs/yourdomain.com.log;
+    error_log  /www/wwwlogs/yourdomain.com.error.log;
+}
+```
+
+> ⚠️ 注意：不要使用宝塔「反向代理」图形化功能生成 proxy conf 文件，直接在配置文件中写 `location /` 块，否则缺少 `X-Forwarded-Proto` 头会导致 HTTPS 重定向循环。
+
+保存后执行：
+
+```bash
+nginx -t && nginx -s reload
+```
+
+### 7. 更新部署
+
+```bash
+cd /www/wwwroot/yourdomain.com/project-x
+git pull origin main
+npm run build
+pm2 restart x-blog
 ```
 
 ## 目录结构
