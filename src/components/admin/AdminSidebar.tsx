@@ -59,6 +59,7 @@ function AdminUpdateChecker() {
   const [info, setInfo] = useState<UpdateInfo | null>(null)
   const [loading, setLoading] = useState(false)
   const [updating, setUpdating] = useState(false)
+  const [confirmUpdate, setConfirmUpdate] = useState(false)
   const [updateLogs, setUpdateLogs] = useState<{ msg: string; error?: boolean }[]>([])
   const [open, setOpen] = useState(false)
 
@@ -82,7 +83,13 @@ function AdminUpdateChecker() {
   }, [])
 
   const doUpdate = async () => {
-    if (!confirm('确认更新？将自动执行 git pull → npm run build → pm2 restart，期间服务会短暂中断。')) return
+    if (!confirmUpdate) {
+      setConfirmUpdate(true)
+      // 3秒后自动取消确认状态
+      setTimeout(() => setConfirmUpdate(false), 3000)
+      return
+    }
+    setConfirmUpdate(false)
     setUpdating(true)
     setUpdateLogs([])
     try {
@@ -189,8 +196,13 @@ function AdminUpdateChecker() {
                 {loading ? '检查中...' : '重新检查'}
               </button>
               {info?.hasUpdate && (
-                <button onClick={doUpdate} disabled={updating} className="flex-1 px-3 py-1.5 rounded-xl text-xs font-bold text-white disabled:opacity-50" style={{ background: 'var(--accent)' }}>
-                  {updating ? '更新中...' : '立即更新'}
+                <button
+                  onClick={doUpdate}
+                  disabled={updating}
+                  className="flex-1 px-3 py-1.5 rounded-xl text-xs font-bold text-white disabled:opacity-50 transition-all"
+                  style={{ background: confirmUpdate ? '#F4212E' : 'var(--accent)' }}
+                >
+                  {updating ? '更新中...' : confirmUpdate ? '⚠️ 再次点击确认' : '立即更新'}
                 </button>
               )}
             </div>
