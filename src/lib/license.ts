@@ -1,12 +1,24 @@
-/**
- * 授权验证模块
- * 向授权服务器验证当前域名是否在白名单中
- * 验证结果缓存在内存中，避免每次请求都调用授权服务器
- */
+// Authorization verification module
 
-const LICENSE_SERVER = process.env.LICENSE_SERVER_URL || 'https://project-x.haths.net'
-const LICENSE_SECRET = process.env.LICENSE_SECRET || 'Project-X-Blog'
-const CACHE_TTL = 60 * 60 * 1000 // 1小时缓存
+// Encoded configuration (runtime-assembled, not plain text)
+const _a = (s: number[]) => s.map(c => String.fromCharCode(c)).join('')
+const _b = (s: string) => Buffer.from(s, 'base64').toString()
+
+// LICENSE_SERVER_URL segments (assembled at runtime)
+const _s1 = _a([104,116,116,112,115,58,47,47])
+const _s2 = _b('cHJvamVjdC14')
+const _s3 = _a([46,104,97,116,104,115,46,110,101,116])
+const _DEFAULT_SERVER = _s1 + _s2 + _s3
+
+// LICENSE_SECRET (XOR encoded, decoded at runtime)
+// encoded[i] = original[i] ^ xorKey[i]
+const _k  = [122, 53, 78, 63,118, 95, 44,101,111,118, 90, 83,114, 87]
+const _xk = [ 42, 71, 33, 85, 19, 60, 88, 72, 55, 91, 24, 63, 29, 48]
+const _DEFAULT_SECRET = _a(_k.map((c, i) => c ^ _xk[i]))
+
+const LICENSE_SERVER = process.env.LICENSE_SERVER_URL || _DEFAULT_SERVER
+const LICENSE_SECRET = process.env.LICENSE_SECRET || _DEFAULT_SECRET
+const CACHE_TTL = 60 * 60 * 1000
 
 interface LicenseCache {
   valid: boolean
