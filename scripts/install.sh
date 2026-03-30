@@ -215,7 +215,8 @@ start_pm2() {
   # 停止旧进程（忽略报错）
   pm2 delete "$PM2_NAME" 2>/dev/null || true
 
-  pm2 start npm --name "$PM2_NAME" -- start
+  # 显式传入端口，避免 .env 中 PORT 未被读取
+  PORT=$APP_PORT pm2 start npm --name "$PM2_NAME" -- start
   pm2 save
 
   # 设置开机自启
