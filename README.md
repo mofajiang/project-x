@@ -111,7 +111,19 @@ SMTP_FROM=your@qq.com   # 可选
 ::quote-url[https://example.com]
 ```
 
-## 宝塔部署
+## 一键安装
+
+在服务器上执行以下命令，脚本会自动引导你完成所有配置：
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/mofajiang/project-x/main/scripts/install.sh)
+```
+
+脚本会依次引导你输入：域名、端口、管理员账号密码等，并自动完成依赖安装、构建、数据库初始化、PM2 启动和 Nginx 配置。
+
+---
+
+## 宝塔部署（手动）
 
 ### 环境要求
 
