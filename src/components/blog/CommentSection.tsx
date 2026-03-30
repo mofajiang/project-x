@@ -73,26 +73,27 @@ function CommentInput({
   }
 
   return (
-    <div className="flex gap-3">
+    <div className="flex gap-3 min-w-0 overflow-hidden">
       <Avatar name={session?.username || (guestName || '?')} url={null} size={36} />
-      <div className="flex-1">
+      <div className="flex-1 min-w-0 overflow-hidden">
         {!session && (
-          <div className="flex gap-2 mb-2 pb-2" style={{ borderBottom: '1px solid var(--border)' }}>
+          <div className="flex flex-col sm:flex-row gap-2 mb-2 pb-2" style={{ borderBottom: '1px solid var(--border)' }}>
             <input
               type="text"
               placeholder="昵称（必填）"
               value={guestName}
               onChange={e => setGuestName(e.target.value)}
               maxLength={20}
-              className="flex-1 bg-transparent outline-none text-sm"
+              className="w-full sm:flex-1 bg-transparent outline-none text-sm py-1"
               style={{ color: 'var(--text-primary)', minWidth: 0 }}
             />
+            <div className="hidden sm:block" style={{ width: '1px', background: 'var(--border)', flexShrink: 0 }} />
             <input
               type="email"
-              placeholder="邮箱（选填，用于回复提醒）"
+              placeholder="邮箱（选填，回复提醒）"
               value={guestEmail}
               onChange={e => setGuestEmail(e.target.value)}
-              className="flex-1 bg-transparent outline-none text-sm"
+              className="w-full sm:flex-1 bg-transparent outline-none text-sm py-1"
               style={{ color: 'var(--text-primary)', minWidth: 0 }}
             />
           </div>
@@ -180,7 +181,7 @@ function CommentItem({ comment, postId, session, depth = 0 }: {
 
         {/* 内联回复输入框 */}
         {replying && (
-          <div className="mt-3 p-3 rounded-2xl" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+          <div className="mt-3 p-2 sm:p-3 rounded-2xl overflow-hidden" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
             <CommentInput
               session={session}
               postId={postId}
