@@ -50,8 +50,8 @@ export default function SettingsPage() {
   const [savingProfile, setSavingProfile] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [uploadingIcon, setUploadingIcon] = useState(false)
-  const [licenseChecking, setLicenseChecking] = useState(false)
-  const [licenseResult, setLicenseResult] = useState<{ authorized: boolean; domains: string[] } | null>(null)
+  const [licenseChecking, setLicenseChecking] = useState(true)
+  const [licenseResult, setLicenseResult] = useState<{ authorized: boolean; domains: string[]; currentHost?: string } | null>(null)
 
 
 
@@ -90,6 +90,13 @@ export default function SettingsPage() {
         bio: data.bio || '',
       })
     })
+
+    // 自动检测授权状态
+    fetch('/api/admin/license-check')
+      .then(r => r.json())
+      .then(data => setLicenseResult(data))
+      .catch(() => setLicenseResult({ authorized: false, domains: [] }))
+      .finally(() => setLicenseChecking(false))
 
   }, [])
 
@@ -185,6 +192,39 @@ export default function SettingsPage() {
 
         {/* 左列 */}
         <div className="flex flex-col gap-6">
+
+          {/* 授权状态 */}
+          <div className="rounded-2xl p-5 flex items-center gap-4" style={{ background: licenseChecking ? 'var(--bg-secondary)' : licenseResult?.authorized ? 'rgba(0,186,124,0.08)' : 'rgba(244,33,46,0.08)', border: `1px solid ${licenseChecking ? 'var(--border)' : licenseResult?.authorized ? '#00ba7c' : '#F4212E'}` }}>
+            <div className="text-3xl flex-shrink-0">
+              {licenseChecking ? '⏳' : licenseResult?.authorized ? '✅' : '❌'}
+            </div>
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <p className="font-bold text-sm" style={{ color: licenseChecking ? 'var(--text-primary)' : licenseResult?.authorized ? '#00ba7c' : '#F4212E' }}>
+                {licenseChecking ? '正在验证授权...' : licenseResult?.authorized ? '授权有效' : '未授权'}
+              </p>
+              {!licenseChecking && licenseResult?.currentHost && (
+                <p className="text-xs font-mono truncate" style={{ color: 'var(--text-secondary)' }}>{licenseResult.currentHost}</p>
+              )}
+              {!licenseChecking && !licenseResult?.authorized && (
+                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>当前域名未在授权服务器登记，请联系主题作者。</p>
+              )}
+            </div>
+            <button
+              onClick={() => {
+                setLicenseChecking(true)
+                setLicenseResult(null)
+                fetch('/api/admin/license-check')
+                  .then(r => r.json())
+                  .then(data => setLicenseResult(data))
+                  .catch(() => setLicenseResult({ authorized: false, domains: [] }))
+                  .finally(() => setLicenseChecking(false))
+              }}
+              disabled={licenseChecking}
+              className="ml-auto flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full transition-colors disabled:opacity-40"
+              style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}
+              title="重新检测"
+            >↻</button>
+          </div>
 
           {/* 个人资料 */}
           <div className="rounded-2xl p-6 flex flex-col gap-4" style={{ background: 'var(--bg-secondary)' }}>
@@ -366,58 +406,6 @@ export default function SettingsPage() {
               ))}
             </div>
             <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>修改后点击底部「保存设置」生效</p>
-          </div>
-
-          {/* 安全管理 */}
-          <div className="rounded-2xl p-6 flex flex-col gap-4" style={{ background: 'var(--bg-secondary)' }}>
-            <h2 className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>🔒 安全管理</h2>
-            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>检查本站的授权状态，连接至授权服务器验证已授权域名。</p>
-            <button
-              onClick={async () => {
-                setLicenseChecking(true)
-                setLicenseResult(null)
-                try {
-                  const res = await fetch('/api/admin/license-check')
-                  const data = await res.json()
-                  setLicenseResult(data)
-                } catch {
-                  setLicenseResult({ authorized: false, domains: [] })
-                } finally {
-                  setLicenseChecking(false)
-                }
-              }}
-              disabled={licenseChecking}
-              className="self-start px-5 py-2 rounded-full text-sm font-bold text-white disabled:opacity-50"
-              style={{ background: 'var(--accent)' }}
-            >
-              {licenseChecking ? '检查中...' : '检查授权状态'}
-            </button>
-            {licenseResult && (
-              <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: 'var(--bg-hover)' }}>
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">{licenseResult.authorized ? '✅' : '❌'}</span>
-                  <span className="font-semibold text-sm" style={{ color: licenseResult.authorized ? '#00ba7c' : '#F4212E' }}>
-                    {licenseResult.authorized ? '授权有效' : '未授权'}
-                  </span>
-                </div>
-                {licenseResult.authorized && licenseResult.domains.length > 0 && (
-                  <div className="flex flex-col gap-1.5">
-                    <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>已授权域名：</p>
-                    {licenseResult.domains.map((d: string) => (
-                      <div key={d} className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: 'var(--bg-secondary)' }}>
-                        <span className="text-xs" style={{ color: '#00ba7c' }}>✓</span>
-                        <span className="text-sm font-mono" style={{ color: 'var(--text-primary)' }}>
-                          已授权给 <a href={`https://${d}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>https://{d}</a>
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {!licenseResult.authorized && (
-                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>当前域名未在授权服务器中登记，请联系管理员。</p>
-                )}
-              </div>
-            )}
           </div>
 
         </div>
