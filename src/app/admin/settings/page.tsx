@@ -212,7 +212,11 @@ export default function SettingsPage() {
                 <p className="text-xs font-mono truncate" style={{ color: 'var(--text-secondary)' }}>{licenseResult.currentHost}</p>
               )}
               {!licenseChecking && !licenseResult?.authorized && (
-                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>当前域名未在授权服务器登记，请联系主题作者。</p>
+                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                  {(licenseResult as any)?.error?.includes('NEXT_PUBLIC_SITE_URL')
+                    ? '请在服务器 .env 中配置 NEXT_PUBLIC_SITE_URL=https://你的域名'
+                    : '当前域名未在授权服务器登记，请联系主题作者。'}
+                </p>
               )}
             </div>
             <button
