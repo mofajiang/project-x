@@ -23,7 +23,7 @@ export function LoginForm({ loginPath }: { loginPath?: string }) {
     setLoading(false)
     if (res.ok) {
       toast.success('登录成功')
-      router.push('/admin')
+      window.location.href = '/admin'
     } else {
       toast.error(data.error || '登录失败')
     }
