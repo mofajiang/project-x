@@ -1,8 +1,9 @@
 ﻿'use client'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
 import { IMEInput, IMETextarea } from '@/components/ui/IMEInput'
+import ImageCropModal from '@/components/ui/ImageCropModal'
 
 type NavItem = { label: string; href: string; icon: string }
 type WidgetType = 'search' | 'about' | 'tags' | 'hotPosts' | 'custom' | 'links' | 'carousel'
@@ -65,6 +66,7 @@ export default function SettingsPage() {
   const [savingProfile, setSavingProfile] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [uploadingIcon, setUploadingIcon] = useState(false)
+  const [cropSrc, setCropSrc] = useState<string | null>(null)
   const [customDomain, setCustomDomain] = useState('')
   const [savingDomain, setSavingDomain] = useState(false)
   const [licenseChecking, setLicenseChecking] = useState(true)
@@ -177,25 +179,49 @@ export default function SettingsPage() {
     }
   }
 
-  const uploadAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const uploadAvatar = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    setUploadingAvatar(true)
-    const fd = new FormData()
-    fd.append('file', file)
-    const res = await fetch('/api/upload', { method: 'POST', body: fd })
-    const data = await res.json()
-    setUploadingAvatar(false)
-    if (data.url) {
-      setProfile(p => ({ ...p, avatar: data.url }))
-      toast.success('头像已上传，记得保存')
-    } else {
-      toast.error('上传失败')
-    }
+    // 重置 input，允许重复选同一文件
+    e.target.value = ''
+    const url = URL.createObjectURL(file)
+    setCropSrc(url)
   }
+
+  const handleCropConfirm = useCallback(async (blob: Blob) => {
+    setCropSrc(null)
+    setUploadingAvatar(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', new File([blob], 'avatar.jpg', { type: 'image/jpeg' }))
+      const res = await fetch('/api/upload', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (data.url) {
+        setProfile(p => ({ ...p, avatar: data.url }))
+        toast.success('头像已上传，记得保存')
+      } else {
+        toast.error(data.error || '上传失败')
+      }
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }, [])
+
+  const handleCropCancel = useCallback(() => {
+    setCropSrc(null)
+  }, [])
 
   return (
     <div>
+      {cropSrc && (
+        <ImageCropModal
+          src={cropSrc}
+          aspect={1}
+          outputSize={400}
+          onConfirm={handleCropConfirm}
+          onCancel={handleCropCancel}
+        />
+      )}
       <h1 className="text-2xl font-bold mb-6" style={{ color: 'var(--text-primary)' }}>⚙️ 站点设置</h1>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
