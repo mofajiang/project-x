@@ -67,17 +67,19 @@ export async function checkLicense(host: string): Promise<boolean> {
       signal: AbortSignal.timeout(5000),
     })
     if (!res.ok) {
-      // 严格模式：授权服务器返回非 2xx，拒绝访问，短暂缓存避免频繁请求
-      cache.set(host, { valid: false, token: '', exp: Date.now() + 2 * 60 * 1000 })
+      // 授权服务器返回非 2xx，拒绝访问，不缓存（白名单更新后立即生效）
       return false
     }
     const data = await res.json()
     const valid: boolean = data.valid === true
-    cache.set(host, { valid, token: data.token || '', exp: Date.now() + CACHE_TTL })
+    if (valid) {
+      // 仅缓存授权通过的结果，1 小时内无需重复请求
+      cache.set(host, { valid: true, token: data.token || '', exp: Date.now() + CACHE_TTL })
+    }
+    // 授权失败不缓存，下次请求立即重新验证
     return valid
   } catch {
-    // 严格模式：网络异常（授权服务器不可达），拒绝访问，短暂缓存 2 分钟
-    cache.set(host, { valid: false, token: '', exp: Date.now() + 2 * 60 * 1000 })
+    // 网络异常，拒绝访问，不缓存（服务器恢复后立即可用）
     return false
   }
 }
