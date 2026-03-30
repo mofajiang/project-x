@@ -7,6 +7,8 @@ import { useTheme } from '@/hooks/useTheme'
 
 const MDEditor = dynamic(() => import('@uiw/react-md-editor'), { ssr: false })
 
+const DRAFT_KEY = 'compose-draft'
+
 interface Props {
   avatar?: string | null
   username: string
@@ -16,23 +18,52 @@ export function ComposeModal({ avatar, username }: Props) {
   const router = useRouter()
   const theme = useTheme()
   const [open, setOpen] = useState(false)
+  const [visible, setVisible] = useState(false) // 控制滑入动画
   const [content, setContent] = useState('')
   const [title, setTitle] = useState('')
+  const [tags, setTags] = useState('')
   const [useMarkdown, setUseMarkdown] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const backdropRef = useRef<HTMLDivElement>(null)
+  const sheetRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // 恢复草稿
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY)
+      if (saved) {
+        const { title: t, content: c, tags: tg } = JSON.parse(saved)
+        if (t) setTitle(t)
+        if (c) setContent(c)
+        if (tg) setTags(tg)
+      }
+    } catch {}
+  }, [])
+
+  // 自动保存草稿
+  useEffect(() => {
+    if (!content && !title && !tags) return
+    const t = setTimeout(() => {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ title, content, tags }))
+    }, 1000)
+    return () => clearTimeout(t)
+  }, [title, content, tags])
 
   // 监听全局事件打开弹窗
   useEffect(() => {
-    const handler = () => setOpen(true)
+    const handler = () => {
+      setOpen(true)
+      setTimeout(() => setVisible(true), 10)
+    }
     window.addEventListener('open-compose', handler)
     return () => window.removeEventListener('open-compose', handler)
   }, [])
 
   // 打开后聚焦
   useEffect(() => {
-    if (open) setTimeout(() => textareaRef.current?.focus(), 80)
+    if (open) setTimeout(() => textareaRef.current?.focus(), 300)
   }, [open])
 
   // ESC 关闭
@@ -44,16 +75,42 @@ export function ComposeModal({ avatar, username }: Props) {
   }, [open])
 
   const handleClose = useCallback(() => {
-    setOpen(false)
-    setContent('')
-    setTitle('')
-    setUseMarkdown(false)
+    setVisible(false)
+    setTimeout(() => {
+      setOpen(false)
+    }, 280)
   }, [])
+
+  const clearDraft = () => localStorage.removeItem(DRAFT_KEY)
+
+  // 上传图片并插入链接
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/upload', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (data.url) {
+        const imgMd = `\n![图片](${data.url})\n`
+        setContent(prev => prev + imgMd)
+        toast.success('图片已插入')
+      }
+    } catch {
+      toast.error('图片上传失败')
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   const handleSubmit = async () => {
     const trimmed = content.trim()
     if (!trimmed) { toast.error('内容不能为空'); return }
     const postTitle = title.trim() || trimmed.slice(0, 40) + (trimmed.length > 40 ? '...' : '')
+    const tagsArr = tags.split(',').map(t => t.trim()).filter(Boolean)
     setSubmitting(true)
     try {
       const res = await fetch('/api/admin/posts', {
@@ -64,11 +121,15 @@ export function ComposeModal({ avatar, username }: Props) {
           content: trimmed,
           excerpt: trimmed.slice(0, 120),
           published: true,
-          tags: [],
+          tags: tagsArr,
         }),
       })
       if (!res.ok) throw new Error()
       toast.success('发布成功')
+      clearDraft()
+      setTitle('')
+      setContent('')
+      setTags('')
       handleClose()
       router.refresh()
     } catch {
@@ -82,25 +143,38 @@ export function ComposeModal({ avatar, username }: Props) {
 
   return (
     <div
-      ref={backdropRef}
-      className="fixed inset-0 z-50 flex items-start justify-center"
-      style={{ background: 'rgba(0,0,0,0.5)', paddingTop: 'max(5vh, 48px)' }}
-      onMouseDown={e => { if (e.target === backdropRef.current) handleClose() }}
+      className="fixed inset-0 z-50 flex flex-col justify-end md:items-center md:justify-center"
+      style={{ background: visible ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0)', transition: 'background 0.28s' }}
+      onMouseDown={e => { if (e.target === e.currentTarget) handleClose() }}
     >
+      {/* 隐藏文件输入 */}
+      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+
       <div
-        className="w-full mx-4 rounded-2xl flex flex-col overflow-hidden"
+        ref={sheetRef}
+        className="w-full flex flex-col overflow-hidden md:rounded-2xl md:mx-4"
         style={{
           maxWidth: 600,
           background: 'var(--bg)',
           border: '0.5px solid var(--border)',
-          boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
+          boxShadow: '0 -4px 40px rgba(0,0,0,0.4)',
+          borderRadius: '20px 20px 0 0',
+          transform: visible ? 'translateY(0)' : 'translateY(100%)',
+          transition: 'transform 0.28s cubic-bezier(0.32,0.72,0,1)',
+          maxHeight: '92dvh',
+          paddingBottom: 'env(safe-area-inset-bottom)',
         }}
       >
+        {/* 拖拽指示条 */}
+        <div className="flex justify-center pt-3 pb-1 md:hidden">
+          <div className="w-10 h-1 rounded-full" style={{ background: 'var(--border)' }} />
+        </div>
+
         {/* 顶部栏 */}
-        <div className="flex items-center justify-between px-4 pt-3 pb-2">
+        <div className="flex items-center justify-between px-4 py-2">
           <button
             onClick={handleClose}
-            className="w-9 h-9 flex items-center justify-center rounded-full transition-colors"
+            className="w-9 h-9 flex items-center justify-center rounded-full"
             style={{ color: 'var(--text-primary)' }}
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
@@ -110,7 +184,7 @@ export function ComposeModal({ avatar, username }: Props) {
             </svg>
           </button>
           <button
-            className="text-xs px-3 py-1 rounded-full font-semibold transition-colors"
+            className="text-xs px-3 py-1 rounded-full font-semibold"
             style={{ color: 'var(--accent)', border: '1px solid var(--border)' }}
             onClick={() => { handleClose(); router.push('/admin/posts/new') }}
           >
@@ -118,8 +192,8 @@ export function ComposeModal({ avatar, username }: Props) {
           </button>
         </div>
 
-        {/* 内容区 */}
-        <div className="flex gap-3 px-4 pb-3">
+        {/* 内容区（可滚动） */}
+        <div className="flex gap-3 px-4 pb-2 overflow-y-auto flex-1">
           {/* 头像 */}
           <div className="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center font-bold text-base mt-1"
             style={{ background: 'var(--accent)', color: '#fff' }}>
@@ -144,7 +218,7 @@ export function ComposeModal({ avatar, username }: Props) {
                 <MDEditor
                   value={content}
                   onChange={v => setContent(v || '')}
-                  height={260}
+                  height={220}
                   preview="edit"
                   style={{ background: 'transparent', borderRadius: 8 }}
                 />
@@ -155,55 +229,70 @@ export function ComposeModal({ avatar, username }: Props) {
                 value={content}
                 onChange={e => setContent(e.target.value)}
                 placeholder="有什么新鲜事？"
-                rows={6}
+                rows={5}
                 className="w-full resize-none outline-none bg-transparent text-[17px] leading-relaxed placeholder:text-[var(--text-secondary)]"
-                style={{ color: 'var(--text-primary)', caretColor: 'var(--accent)' }}
+                style={{ color: 'var(--text-primary)', caretColor: 'var(--accent)', minHeight: 100 }}
               />
             )}
 
-            {/* 分割线 */}
-            <div style={{ height: '0.5px', background: 'var(--border)' }} />
+            {/* 标签 */}
+            <input
+              value={tags}
+              onChange={e => setTags(e.target.value)}
+              placeholder="标签（逗号分隔，如：随笔, 生活）"
+              className="w-full px-0 py-1 text-xs outline-none bg-transparent border-b"
+              style={{ color: 'var(--text-secondary)', borderColor: 'var(--border)', caretColor: 'var(--accent)' }}
+            />
+          </div>
+        </div>
 
-            {/* 底部工具栏 */}
-            <div className="flex items-center justify-between pt-0.5">
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setUseMarkdown(v => !v)}
-                  title={useMarkdown ? '切换为纯文本' : '切换为 Markdown 编辑器'}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-colors"
-                  style={{
-                    color: useMarkdown ? 'var(--accent)' : 'var(--text-secondary)',
-                    background: useMarkdown ? 'rgba(29,155,240,0.1)' : 'transparent',
-                    border: `1px solid ${useMarkdown ? 'var(--accent)' : 'var(--border)'}`,
-                  }}
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-                    <polyline points="14 2 14 8 20 8"/>
-                    <line x1="16" y1="13" x2="8" y2="13"/>
-                    <line x1="16" y1="17" x2="8" y2="17"/>
-                    <polyline points="10 9 9 9 8 9"/>
-                  </svg>
-                  MD
-                </button>
-              </div>
+        {/* 底部工具栏（固定） */}
+        <div className="flex items-center justify-between px-4 py-2 border-t" style={{ borderColor: 'var(--border)' }}>
+          <div className="flex items-center gap-1">
+            {/* 图片上传 */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              title="插入图片"
+              className="w-9 h-9 flex items-center justify-center rounded-full disabled:opacity-40"
+              style={{ color: 'var(--accent)' }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              {uploading
+                ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="animate-spin"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg>
+                : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              }
+            </button>
+            {/* MD 切换 */}
+            <button
+              onClick={() => setUseMarkdown(v => !v)}
+              title={useMarkdown ? '切换为纯文本' : '切换为 Markdown'}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
+              style={{
+                color: useMarkdown ? 'var(--accent)' : 'var(--text-secondary)',
+                background: useMarkdown ? 'rgba(29,155,240,0.1)' : 'transparent',
+                border: `1px solid ${useMarkdown ? 'var(--accent)' : 'var(--border)'}`,
+              }}
+            >
+              MD
+            </button>
+          </div>
 
-              <div className="flex items-center gap-2">
-                {content.length > 0 && (
-                  <span className="text-xs tabular-nums" style={{ color: content.length > 500 ? '#F4212E' : 'var(--text-secondary)' }}>
-                    {content.length}
-                  </span>
-                )}
-                <button
-                  onClick={handleSubmit}
-                  disabled={submitting || !content.trim()}
-                  className="px-5 py-1.5 rounded-full text-sm font-bold text-white disabled:opacity-40 transition-opacity hover:opacity-90 active:scale-95"
-                  style={{ background: 'var(--accent)' }}
-                >
-                  {submitting ? '发布中...' : '发布'}
-                </button>
-              </div>
-            </div>
+          <div className="flex items-center gap-2">
+            {content.length > 0 && (
+              <span className="text-xs tabular-nums" style={{ color: content.length > 500 ? '#F4212E' : 'var(--text-secondary)' }}>
+                {content.length}
+              </span>
+            )}
+            <button
+              onClick={handleSubmit}
+              disabled={submitting || !content.trim()}
+              className="px-5 py-2 rounded-full text-sm font-bold text-white disabled:opacity-40 active:scale-95"
+              style={{ background: 'var(--accent)', transition: 'transform 0.1s' }}
+            >
+              {submitting ? '发布中...' : '发布'}
+            </button>
           </div>
         </div>
       </div>
