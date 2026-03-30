@@ -49,10 +49,15 @@ export async function POST(req: NextRequest) {
 
   const token = await signJWT({ userId: user.id, username: user.username })
 
+  // 根据实际协议决定 secure 标志：
+  // 直接 HTTP 访问时为 false，通过 HTTPS 反向代理时为 true
+  const proto = req.headers.get('x-forwarded-proto')
+  const isSecure = proto === 'https' || req.url.startsWith('https://')
+
   const res = NextResponse.json({ ok: true })
   res.cookies.set('auth-token', token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isSecure,
     sameSite: 'lax',
     maxAge: 60 * 60 * 24 * 30,
     path: '/',
@@ -60,7 +65,7 @@ export async function POST(req: NextRequest) {
   // 记录登录路径，供 middleware 识别动态登录页跳过 license 检查
   res.cookies.set('_lpx', config.loginPath.replace(/^\//, ''), {
     httpOnly: false,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isSecure,
     sameSite: 'lax',
     maxAge: 60 * 60 * 24 * 365,
     path: '/',
