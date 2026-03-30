@@ -42,9 +42,7 @@ export function verifyToken(token: string): { valid: boolean; domain?: string } 
 }
 
 export async function checkLicense(host: string): Promise<boolean> {
-  // 开发环境跳过验证
-  if (!LICENSE_SECRET || process.env.NODE_ENV === 'development') return true
-  // 本地/localhost 跳过
+  // 本地/localhost 跳过（纯本地开发，无域名无法授权）
   if (host.startsWith('localhost') || host.startsWith('127.') || host.startsWith('192.168.')) return true
 
   const cached = cache.get(host)
