@@ -344,6 +344,24 @@ export default function SettingsPage() {
                   </div>
                   <IMEInput value={w.title || ''} onValueChange={v => setWidgets(arr => arr.map((x,j) => j===i ? {...x, title: v} : x))} placeholder={'标题（留空用默认）'} className="w-full px-2 py-1.5 rounded-lg text-sm outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
                   {w.type === 'custom' && <IMETextarea value={w.content || ''} onValueChange={v => setWidgets(arr => arr.map((x,j) => j===i ? {...x, content: v} : x))} placeholder="自定义内容" rows={3} className="w-full px-2 py-1.5 rounded-lg text-sm outline-none resize-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />}
+                  {w.type === 'links' && (
+                    <div className="flex flex-col gap-2">
+                      {(w.links || []).map((lk, li) => (
+                        <div key={li} className="flex flex-col gap-1 p-2 rounded-lg" style={{ background: 'var(--bg-secondary)' }}>
+                          <div className="flex items-center gap-1">
+                            <IMEInput value={lk.label} onValueChange={v => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; const ls=[...(x.links||[])]; ls[li]={...ls[li],label:v}; return {...x,links:ls} }))} placeholder="名称" className="flex-1 px-2 py-1 rounded text-xs outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+                            <IMEInput value={lk.url} onValueChange={v => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; const ls=[...(x.links||[])]; ls[li]={...ls[li],url:v}; return {...x,links:ls} }))} placeholder="https://" className="flex-1 px-2 py-1 rounded text-xs outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+                            <button onClick={() => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; return {...x, links:(x.links||[]).filter((_,k)=>k!==li)} }))} className="w-5 h-5 flex items-center justify-center rounded-full text-xs flex-shrink-0" style={{ color: '#F4212E' }}>×</button>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <IMEInput value={lk.desc||''} onValueChange={v => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; const ls=[...(x.links||[])]; ls[li]={...ls[li],desc:v}; return {...x,links:ls} }))} placeholder="简介（可选）" className="flex-1 px-2 py-1 rounded text-xs outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+                            <IMEInput value={lk.avatar||''} onValueChange={v => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; const ls=[...(x.links||[])]; ls[li]={...ls[li],avatar:v}; return {...x,links:ls} }))} placeholder="头像URL（可选）" className="flex-1 px-2 py-1 rounded text-xs outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+                          </div>
+                        </div>
+                      ))}
+                      <button onClick={() => setWidgets(arr => arr.map((x,j) => j===i ? {...x, links:[...(x.links||[]),{label:'',url:''}]} : x))} className="text-xs px-3 py-1 rounded-full self-start" style={{ background: 'rgba(29,155,240,0.15)', color: 'var(--accent)' }}>+ 添加链接</button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

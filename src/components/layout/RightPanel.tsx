@@ -137,7 +137,7 @@ export async function RightPanel({ siteDesc, social, widgets = [], copyright = '
                     className="flex items-center gap-3 py-3 px-4 transition-colors hover:bg-white/5">
                     {/* 头像/首字母 */}
                     <div className="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center font-bold text-sm"
-                      style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
+                      style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
                       {link.avatar
                         ? <img src={link.avatar} alt={link.label} className="w-full h-full object-cover" />
                         : <span>{link.label[0]?.toUpperCase()}</span>}
