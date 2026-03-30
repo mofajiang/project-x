@@ -17,11 +17,14 @@ export async function middleware(request: NextRequest) {
     pathname === '/feed.xml'
 
   if (!skipLicense) {
-    const host = request.headers.get('host') || ''
-    const hostname = host.split(':')[0]
+    // 优先使用 x-forwarded-host（反向代理场景），其次 host 头
+    const forwarded = request.headers.get('x-forwarded-host') || request.headers.get('host') || ''
+    const hostname = forwarded.split(':')[0]
     const allowed = await checkLicense(hostname)
     if (!allowed) {
-      return NextResponse.redirect(new URL('/unlicensed', request.url))
+      const url = new URL('/unlicensed', request.url)
+      url.searchParams.set('host', hostname)
+      return NextResponse.redirect(url)
     }
   }
 
