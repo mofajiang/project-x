@@ -7,7 +7,9 @@ import { IMEInput, IMETextarea } from '@/components/ui/IMEInput'
 type NavItem = { label: string; href: string; icon: string }
 type WidgetType = 'search' | 'about' | 'tags' | 'hotPosts' | 'custom' | 'links' | 'carousel'
 type FriendLink = { label: string; url: string; desc?: string; avatar?: string }
-type CarouselSlide = { image: string; title?: string; desc?: string; link?: string }
+type CarouselSlideType = 'image' | 'text' | 'markdown'
+type CarouselSlide = { slideType?: CarouselSlideType; image?: string; title?: string; desc?: string; link?: string; markdown?: string }
+const SLIDE_TYPE_LABELS: Record<CarouselSlideType, string> = { image: '🖼 图片', text: '📝 文字/链接', markdown: '📄 Markdown' }
 type Widget = { type: WidgetType; enabled: boolean; title?: string; content?: string; links?: FriendLink[]; slides?: CarouselSlide[]; interval?: number }
 
 const WIDGET_LABELS: Record<WidgetType, string> = {
@@ -399,19 +401,37 @@ export default function SettingsPage() {
                           style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}
                         />
                       </div>
-                      {(w.slides || []).map((sl, si) => (
-                        <div key={si} className="flex flex-col gap-1 p-2 rounded-lg" style={{ background: 'var(--bg-secondary)' }}>
-                          <div className="flex items-center gap-1">
-                            <span className="text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>#{si+1}</span>
-                            <button onClick={() => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; return {...x, slides:(x.slides||[]).filter((_,k)=>k!==si)} }))} className="ml-auto w-5 h-5 flex items-center justify-center rounded-full text-xs" style={{ color: '#F4212E' }}>×</button>
+                      {(w.slides || []).map((sl, si) => {
+                        const stype = sl.slideType || 'image'
+                        return (
+                          <div key={si} className="flex flex-col gap-1 p-2 rounded-lg" style={{ background: 'var(--bg-secondary)' }}>
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>#{si+1}</span>
+                              <select value={stype} onChange={e => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; const ss=[...(x.slides||[])]; ss[si]={...ss[si], slideType: e.target.value as CarouselSlideType}; return {...x,slides:ss} }))}
+                                className="flex-1 px-2 py-1 rounded text-xs outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}>
+                                {(Object.keys(SLIDE_TYPE_LABELS) as CarouselSlideType[]).map(t => <option key={t} value={t}>{SLIDE_TYPE_LABELS[t]}</option>)}
+                              </select>
+                              <button onClick={() => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; return {...x, slides:(x.slides||[]).filter((_,k)=>k!==si)} }))} className="w-5 h-5 flex items-center justify-center rounded-full text-xs" style={{ color: '#F4212E' }}>×</button>
+                            </div>
+                            {stype === 'image' && (
+                              <IMEInput value={sl.image||''} onValueChange={v => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; const ss=[...(x.slides||[])]; ss[si]={...ss[si],image:v}; return {...x,slides:ss} }))} placeholder="图片 URL（必填）" className="w-full px-2 py-1 rounded text-xs outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+                            )}
+                            {(stype === 'image' || stype === 'text') && (
+                              <IMEInput value={sl.title||''} onValueChange={v => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; const ss=[...(x.slides||[])]; ss[si]={...ss[si],title:v}; return {...x,slides:ss} }))} placeholder="标题（可选）" className="w-full px-2 py-1 rounded text-xs outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+                            )}
+                            {stype === 'text' && (
+                              <IMETextarea value={sl.desc||''} onValueChange={v => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; const ss=[...(x.slides||[])]; ss[si]={...ss[si],desc:v}; return {...x,slides:ss} }))} placeholder="正文内容" rows={3} className="w-full px-2 py-1 rounded text-xs outline-none resize-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+                            )}
+                            {stype === 'markdown' && (
+                              <IMETextarea value={sl.markdown||''} onValueChange={v => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; const ss=[...(x.slides||[])]; ss[si]={...ss[si],markdown:v}; return {...x,slides:ss} }))} placeholder="# 标题&#10;正文内容，支持 Markdown 格式" rows={5} className="w-full px-2 py-1 rounded text-xs outline-none resize-none font-mono" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+                            )}
+                            {(stype === 'image' || stype === 'text') && (
+                              <IMEInput value={sl.link||''} onValueChange={v => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; const ss=[...(x.slides||[])]; ss[si]={...ss[si],link:v}; return {...x,slides:ss} }))} placeholder="跳转链接（可选）" className="w-full px-2 py-1 rounded text-xs outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+                            )}
                           </div>
-                          <IMEInput value={sl.image} onValueChange={v => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; const ss=[...(x.slides||[])]; ss[si]={...ss[si],image:v}; return {...x,slides:ss} }))} placeholder="图片 URL（必填）" className="w-full px-2 py-1 rounded text-xs outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
-                          <IMEInput value={sl.title||''} onValueChange={v => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; const ss=[...(x.slides||[])]; ss[si]={...ss[si],title:v}; return {...x,slides:ss} }))} placeholder="标题（可选）" className="w-full px-2 py-1 rounded text-xs outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
-                          <IMEInput value={sl.desc||''} onValueChange={v => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; const ss=[...(x.slides||[])]; ss[si]={...ss[si],desc:v}; return {...x,slides:ss} }))} placeholder="描述（可选）" className="w-full px-2 py-1 rounded text-xs outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
-                          <IMEInput value={sl.link||''} onValueChange={v => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; const ss=[...(x.slides||[])]; ss[si]={...ss[si],link:v}; return {...x,slides:ss} }))} placeholder="点击跳转链接（可选）" className="w-full px-2 py-1 rounded text-xs outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
-                        </div>
-                      ))}
-                      <button onClick={() => setWidgets(arr => arr.map((x,j) => j===i ? {...x, slides:[...(x.slides||[]),{image:'',title:'',desc:'',link:''}]} : x))} className="text-xs px-3 py-1 rounded-full self-start" style={{ background: 'rgba(29,155,240,0.15)', color: 'var(--accent)' }}>+ 添加图片</button>
+                        )
+                      })}
+                      <button onClick={() => setWidgets(arr => arr.map((x,j) => j===i ? {...x, slides:[...(x.slides||[]),{slideType:'image',image:'',title:'',desc:'',link:''}]} : x))} className="text-xs px-3 py-1 rounded-full self-start" style={{ background: 'rgba(29,155,240,0.15)', color: 'var(--accent)' }}>+ 添加幻灯片</button>
                     </div>
                   )}
                   {w.type === 'links' && (

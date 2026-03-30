@@ -17,11 +17,18 @@ export type FriendLink = {
   avatar?: string
 }
 
+export type CarouselSlideType = 'image' | 'text' | 'markdown'
+
 export type CarouselSlide = {
-  image: string     // 图片 URL
-  title?: string    // 可选标题
-  desc?: string     // 可选描述
-  link?: string     // 可选跳转链接
+  slideType?: CarouselSlideType // 默认 'image'
+  // image 类型
+  image?: string    // 图片 URL
+  // 通用
+  title?: string    // 标题
+  desc?: string     // 描述 / 纯文本内容（text 类型）
+  link?: string     // 跳转链接
+  // markdown 类型
+  markdown?: string // Markdown 内容
 }
 
 export type RightPanelWidget = {
