@@ -85,14 +85,10 @@ collect_config() {
   read INSTALL_DIR
   INSTALL_DIR=${INSTALL_DIR:-/www/wwwroot/x-blog}
 
-  # 域名
-  prompt "你的域名（如 example.com，本地测试可填 localhost）:"
+  # 域名（可选，仅用于显示）
+  prompt "你的域名（如 example.com，仅用于生成站点 URL，留空则用 localhost）:"
   read DOMAIN
-  while [ -z "$DOMAIN" ]; do
-    warn "域名不能为空"
-    prompt "你的域名:"
-    read DOMAIN
-  done
+  DOMAIN=${DOMAIN:-localhost}
 
   # 端口
   prompt "监听端口 [默认: 3000]:"
@@ -100,13 +96,17 @@ collect_config() {
   APP_PORT=${APP_PORT:-3000}
 
   # 是否 HTTPS
-  prompt "是否使用 HTTPS？(y/n) [默认: y]:"
-  read USE_HTTPS
-  USE_HTTPS=${USE_HTTPS:-y}
-  if [[ "$USE_HTTPS" =~ ^[Yy]$ ]]; then
-    SITE_URL="https://${DOMAIN}"
+  if [ "$DOMAIN" = "localhost" ]; then
+    SITE_URL="http://localhost:${APP_PORT}"
   else
-    SITE_URL="http://${DOMAIN}"
+    prompt "是否使用 HTTPS？(y/n) [默认: y]:"
+    read USE_HTTPS
+    USE_HTTPS=${USE_HTTPS:-y}
+    if [[ "$USE_HTTPS" =~ ^[Yy]$ ]]; then
+      SITE_URL="https://${DOMAIN}"
+    else
+      SITE_URL="http://${DOMAIN}"
+    fi
   fi
 
   # JWT Secret
@@ -281,18 +281,26 @@ print_done() {
   echo -e "${GREEN}║         🎉 安装完成！                    ║${NC}"
   echo -e "${GREEN}╚══════════════════════════════════════════╝${NC}"
   echo ''
-  echo -e "  站点地址：  ${CYAN}${SITE_URL}${NC}"
+  echo -e "  安装目录：  ${CYAN}${INSTALL_DIR}${NC}"
+  echo -e "  监听端口：  ${CYAN}${APP_PORT}${NC}"
+  echo -e "  站点 URL：  ${CYAN}${SITE_URL}${NC}"
   echo -e "  管理后台：  ${CYAN}${SITE_URL}/admin-login${NC}"
   echo -e "  管理员：    ${CYAN}${ADMIN_USER}${NC}"
-  echo -e "  安装目录：  ${CYAN}${INSTALL_DIR}${NC}"
   echo ''
   echo -e "${YELLOW}  ⚠ 首次登录后请立即修改登录路径和密码！${NC}"
+  echo ''
+  echo -e "${YELLOW}  📌 Nginx 反向代理需手动配置，请参考 README：${NC}"
+  echo -e "  ${BLUE}https://github.com/mofajiang/project-x#手动部署${NC}"
+  echo -e "  将以下内容加入 Nginx location 块："
+  echo -e "  ${BLUE}proxy_pass http://127.0.0.1:${APP_PORT};${NC}"
+  echo -e "  ${BLUE}proxy_set_header X-Forwarded-Proto \$scheme;${NC}"
   echo ''
   echo -e "  常用命令："
   echo -e "    查看状态：  ${BLUE}pm2 list${NC}"
   echo -e "    查看日志：  ${BLUE}pm2 logs ${PM2_NAME}${NC}"
   echo -e "    重启服务：  ${BLUE}pm2 restart ${PM2_NAME}${NC}"
   echo -e "    更新部署：  ${BLUE}cd ${INSTALL_DIR} && git pull && npm run build && pm2 restart ${PM2_NAME}${NC}"
+  echo -e "    一键卸载：  ${BLUE}bash <(curl -fsSL https://raw.githubusercontent.com/mofajiang/project-x/main/scripts/uninstall.sh)${NC}"
   echo ''
 }
 
@@ -306,7 +314,6 @@ main() {
   build_app
   init_db
   start_pm2
-  generate_nginx
   print_done
 }
 

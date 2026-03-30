@@ -28,16 +28,10 @@ prompt "项目安装目录 [默认: /www/wwwroot/x-blog]:"
 read INSTALL_DIR
 INSTALL_DIR=${INSTALL_DIR:-/www/wwwroot/x-blog}
 
-prompt "域名（用于删除 Nginx 配置，留空跳过）:"
-read DOMAIN
-
 echo ''
 warn "即将执行以下操作："
 echo "  1. 停止并删除 PM2 进程：${PM2_NAME}"
 echo "  2. 删除项目目录：${INSTALL_DIR}"
-if [ -n "$DOMAIN" ]; then
-echo "  3. 删除 Nginx 配置：/www/server/nginx/vhost/${DOMAIN}.conf"
-fi
 echo ''
 prompt "确认卸载？输入 YES 继续（其他任意键取消）:"
 read CONFIRM
@@ -79,25 +73,16 @@ else
   warn "目录不存在，跳过"
 fi
 
-# ── 删除 Nginx 配置 ───────────────────────────────────────
-if [ -n "$DOMAIN" ]; then
-  NGINX_CONF="/www/server/nginx/vhost/${DOMAIN}.conf"
-  info "删除 Nginx 配置：${NGINX_CONF}"
-  if [ -f "$NGINX_CONF" ]; then
-    rm -f "$NGINX_CONF"
-    echo "  已删除"
-    if command -v nginx &>/dev/null; then
-      nginx -t && nginx -s reload
-      echo "  Nginx 已重载"
-    fi
-  else
-    warn "配置文件不存在，跳过"
-  fi
-fi
 
 # ── 完成 ──────────────────────────────────────────────────
 echo ''
 echo -e "${GREEN}卸载完成${NC}"
+echo ''
+if [ -n "$BACKUP_PATH" ] && [ -f "$BACKUP_PATH" ]; then
+  echo -e "  数据库备份：${CYAN}${BACKUP_PATH}${NC}"
+fi
+echo -e "  如需重新安装："
+echo -e "  ${CYAN}bash <(curl -fsSL https://raw.githubusercontent.com/mofajiang/project-x/main/scripts/install.sh)${NC}"
 echo ''
 if [ -n "$BACKUP_PATH" ] && [ -f "$BACKUP_PATH" ]; then
   echo -e "  数据库备份：${CYAN}${BACKUP_PATH}${NC}"
