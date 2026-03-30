@@ -101,7 +101,18 @@ export async function POST(req: NextRequest) {
           return
         }
 
-        // Step 2: npm run build
+        // Step 2: npm install（确保新依赖已安装）
+        send('⏳ 正在安装依赖（npm install）...')
+        try {
+          execSync('npm install', { cwd, encoding: 'utf8', stdio: 'pipe', timeout: 120000 })
+          send('✅ 依赖安装完成')
+        } catch (e: any) {
+          sendError(`❌ npm install 失败：${e.stderr || e.message}`)
+          sendDone(false)
+          return
+        }
+
+        // Step 3: npm run build
         send('⏳ 正在构建（npm run build）...')
         try {
           execSync('npm run build', { cwd, encoding: 'utf8', stdio: 'pipe', timeout: 300000 })
@@ -112,7 +123,7 @@ export async function POST(req: NextRequest) {
           return
         }
 
-        // Step 3: pm2 restart
+        // Step 4: pm2 restart
         send('⏳ 正在重启服务（pm2 restart）...')
         try {
           const pm2Out = execSync('pm2 restart x-blog', { cwd, encoding: 'utf8', stdio: 'pipe', timeout: 30000 })
