@@ -59,6 +59,7 @@ function AdminUpdateChecker() {
   const [info, setInfo] = useState<UpdateInfo | null>(null)
   const [loading, setLoading] = useState(false)
   const [updating, setUpdating] = useState(false)
+  const [updateLogs, setUpdateLogs] = useState<{ msg: string; error?: boolean }[]>([])
   const [open, setOpen] = useState(false)
 
   const check = async () => {
@@ -81,17 +82,36 @@ function AdminUpdateChecker() {
   }, [])
 
   const doUpdate = async () => {
-    if (!confirm('确认执行 git pull 更新代码？更新后需手动重启服务。')) return
+    if (!confirm('确认更新？将自动执行 git pull → npm run build → pm2 restart，期间服务会短暂中断。')) return
     setUpdating(true)
+    setUpdateLogs([])
     try {
-      const r = await fetch('/api/admin/update', { method: 'POST' })
-      const d = await r.json()
-      if (d.success) {
-        toast.success('✅ 更新成功，请重启 dev/build 服务生效')
-        setOpen(false)
-        await check()
-      } else {
-        toast.error('❌ 更新失败：' + (d.error || d.message))
+      const res = await fetch('/api/admin/update', { method: 'POST' })
+      if (!res.body) throw new Error('no stream')
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buf = ''
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buf += decoder.decode(value, { stream: true })
+        const lines = buf.split('\n')
+        buf = lines.pop() || ''
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue
+          try {
+            const obj = JSON.parse(line.slice(6))
+            if (obj.msg) setUpdateLogs(prev => [...prev, { msg: obj.msg, error: obj.error }])
+            if (obj.done) {
+              if (obj.success) {
+                toast.success('✅ 更新完成，服务已重启')
+                await check()
+              } else {
+                toast.error('❌ 更新失败，请查看日志')
+              }
+            }
+          } catch {}
+        }
       }
     } catch {
       toast.error('更新请求失败')
@@ -155,8 +175,17 @@ function AdminUpdateChecker() {
               <p className="text-xs text-center py-2" style={{ color: 'var(--text-secondary)' }}>✅ 当前已是最新版本</p>
             )}
 
+            {updateLogs.length > 0 && (
+              <div className="flex flex-col gap-0.5 max-h-40 overflow-y-auto rounded-xl p-2" style={{ background: 'var(--bg)', fontFamily: 'monospace' }}>
+                {updateLogs.map((log, i) => (
+                  <p key={i} className="text-[11px] whitespace-pre-wrap" style={{ color: log.error ? '#F4212E' : 'var(--text-primary)' }}>{log.msg}</p>
+                ))}
+                {updating && <p className="text-[11px] animate-pulse" style={{ color: 'var(--accent)' }}>▋</p>}
+              </div>
+            )}
+
             <div className="flex gap-2">
-              <button onClick={check} disabled={loading} className="flex-1 px-3 py-1.5 rounded-xl text-xs disabled:opacity-50" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
+              <button onClick={check} disabled={loading || updating} className="flex-1 px-3 py-1.5 rounded-xl text-xs disabled:opacity-50" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
                 {loading ? '检查中...' : '重新检查'}
               </button>
               {info?.hasUpdate && (

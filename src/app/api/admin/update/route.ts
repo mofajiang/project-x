@@ -68,27 +68,71 @@ export async function POST(req: NextRequest) {
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  try {
-    // 执行 git pull
-    const output = execSync('git pull origin main', {
-      cwd: process.cwd(),
-      encoding: 'utf8',
-      stdio: 'pipe'
-    })
+  const encoder = new TextEncoder()
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (msg: string) => {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ msg })}\n\n`))
+      }
+      const sendError = (msg: string) => {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ msg, error: true })}\n\n`))
+      }
+      const sendDone = (success: boolean) => {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, success })}\n\n`))
+        controller.close()
+      }
 
-    // 重新验证页面缓存
-    revalidatePath('/', 'layout')
+      try {
+        const cwd = process.cwd()
 
-    return NextResponse.json({
-      success: true,
-      message: '更新成功',
-      output: output.trim()
-    })
-  } catch (error: any) {
-    return NextResponse.json({
-      success: false,
-      message: '更新失败',
-      error: error.message
-    }, { status: 500 })
-  }
+        // Step 1: git pull
+        send('⏳ 正在拉取最新代码...')
+        try {
+          const pullOut = execSync('git pull origin main', { cwd, encoding: 'utf8', stdio: 'pipe', timeout: 60000 })
+          send(`✅ git pull 完成\n${pullOut.trim()}`)
+        } catch (e: any) {
+          sendError(`❌ git pull 失败：${e.message}`)
+          sendDone(false)
+          return
+        }
+
+        // Step 2: npm run build
+        send('⏳ 正在构建（npm run build）...')
+        try {
+          execSync('npm run build', { cwd, encoding: 'utf8', stdio: 'pipe', timeout: 300000 })
+          send('✅ 构建完成')
+        } catch (e: any) {
+          sendError(`❌ 构建失败：${e.stderr || e.message}`)
+          sendDone(false)
+          return
+        }
+
+        // Step 3: pm2 restart
+        send('⏳ 正在重启服务（pm2 restart）...')
+        try {
+          const pm2Out = execSync('pm2 restart x-blog', { cwd, encoding: 'utf8', stdio: 'pipe', timeout: 30000 })
+          send(`✅ 服务已重启\n${pm2Out.trim()}`)
+        } catch {
+          // pm2 可能不存在（本地开发环境），忽略
+          send('⚠️ pm2 不可用，跳过重启（本地环境）')
+        }
+
+        // 重新验证页面缓存
+        revalidatePath('/', 'layout')
+        send('✅ 更新全部完成！页面将自动刷新。')
+        sendDone(true)
+      } catch (e: any) {
+        sendError(`❌ 未知错误：${e.message}`)
+        sendDone(false)
+      }
+    }
+  })
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    },
+  })
 }
