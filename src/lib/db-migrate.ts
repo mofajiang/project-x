@@ -52,6 +52,7 @@ export async function runMigrations() {
   await addColumn('User', 'displayName', `TEXT NOT NULL DEFAULT ''`, 'displayName')
   await addColumn('SiteConfig', 'copyright', `TEXT NOT NULL DEFAULT ''`, 'copyright')
   await addColumn('SiteConfig', 'defaultTheme', `TEXT NOT NULL DEFAULT 'dark'`, 'defaultTheme')
+  await addColumn('SiteConfig', 'customDomain', `TEXT NOT NULL DEFAULT ''`, 'customDomain')
   // authorId 改为可空（访客评论）— SQLite 不支持 ALTER COLUMN，新数据已可为 null
 
   // 登录限流持久化表

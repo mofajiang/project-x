@@ -65,8 +65,10 @@ export default function SettingsPage() {
   const [savingProfile, setSavingProfile] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [uploadingIcon, setUploadingIcon] = useState(false)
+  const [customDomain, setCustomDomain] = useState('')
+  const [savingDomain, setSavingDomain] = useState(false)
   const [licenseChecking, setLicenseChecking] = useState(true)
-  const [licenseResult, setLicenseResult] = useState<{ authorized: boolean; domains: string[]; currentHost?: string } | null>(null)
+  const [licenseResult, setLicenseResult] = useState<{ authorized: boolean; domains: string[]; currentHost?: string; source?: string } | null>(null)
 
 
 
@@ -91,6 +93,7 @@ export default function SettingsPage() {
         } catch {}
         setSiteIcon(data.siteIcon || '')
         setDefaultTheme(data.defaultTheme === 'light' ? 'light' : 'dark')
+        setCustomDomain(data.customDomain || '')
         try {
           const w = JSON.parse(data.rightPanelWidgets || '[]')
           if (Array.isArray(w) && w.length > 0) setWidgets(w)
@@ -120,7 +123,7 @@ export default function SettingsPage() {
     const res = await fetch('/api/admin/config', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...config, navItems, siteIcon, rightPanelWidgets: widgets, copyright: config.copyright, defaultTheme }),
+      body: JSON.stringify({ ...config, navItems, siteIcon, rightPanelWidgets: widgets, copyright: config.copyright, defaultTheme, customDomain }),
     })
     setSaving(false)
     if (res.ok) toast.success('站点设置已保存')
@@ -199,6 +202,61 @@ export default function SettingsPage() {
         {/* 左列 */}
         <div className="flex flex-col gap-6">
 
+          {/* 域名绑定 */}
+          <div className="rounded-2xl p-6 flex flex-col gap-4" style={{ background: 'var(--bg-secondary)' }}>
+            <div className="flex items-center justify-between">
+              <h2 className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>🌐 域名绑定</h2>
+              {licenseResult?.source && !licenseChecking && (
+                <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>
+                  {licenseResult.source === 'db' ? '使用绑定域名' : licenseResult.source === 'env' ? '使用环境变量' : '使用请求头'}
+                </span>
+              )}
+            </div>
+            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>填写您博客的访问域名，用于授权验证。优先级高于环境变量 <code className="px-1 py-0.5 rounded" style={{ background: 'var(--bg-hover)' }}>NEXT_PUBLIC_SITE_URL</code>。</p>
+            <div className="flex gap-2">
+              <IMEInput
+                type="text"
+                value={customDomain}
+                onValueChange={setCustomDomain}
+                placeholder="https://yourblog.com 或 yourblog.com"
+                className="flex-1 px-3 py-2 rounded-2xl text-sm outline-none font-mono"
+                style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}
+              />
+              <button
+                onClick={async () => {
+                  setSavingDomain(true)
+                  const res = await fetch('/api/admin/config', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ customDomain }),
+                  })
+                  setSavingDomain(false)
+                  if (res.ok) {
+                    toast.success('域名已保存')
+                    // 重新检测授权
+                    setLicenseChecking(true)
+                    setLicenseResult(null)
+                    fetch('/api/admin/license-check')
+                      .then(r => r.json())
+                      .then(data => setLicenseResult(data))
+                      .catch(() => setLicenseResult({ authorized: false, domains: [] }))
+                      .finally(() => setLicenseChecking(false))
+                  } else {
+                    toast.error('保存失败')
+                  }
+                }}
+                disabled={savingDomain}
+                className="px-4 py-2 rounded-2xl text-sm font-bold text-white disabled:opacity-50 flex-shrink-0"
+                style={{ background: 'var(--accent)' }}
+              >{savingDomain ? '保存中...' : '保存并验证'}</button>
+            </div>
+            {customDomain && (
+              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                当前绑定：<span className="font-mono" style={{ color: 'var(--accent)' }}>{customDomain.replace(/^https?:\/\//, '').split('/')[0]}</span>
+              </p>
+            )}
+          </div>
+
           {/* 授权状态 */}
           <div className="rounded-2xl p-5 flex items-center gap-4" style={{ background: licenseChecking ? 'var(--bg-secondary)' : licenseResult?.authorized ? 'rgba(0,186,124,0.08)' : 'rgba(244,33,46,0.08)', border: `1px solid ${licenseChecking ? 'var(--border)' : licenseResult?.authorized ? '#00ba7c' : '#F4212E'}` }}>
             <div className="text-3xl flex-shrink-0">
@@ -213,9 +271,11 @@ export default function SettingsPage() {
               )}
               {!licenseChecking && !licenseResult?.authorized && (
                 <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  {(licenseResult as any)?.error?.includes('NEXT_PUBLIC_SITE_URL')
-                    ? '请在服务器 .env 中配置 NEXT_PUBLIC_SITE_URL=https://你的域名'
-                    : '当前域名未在授权服务器登记，请联系主题作者。'}
+                  {(licenseResult as any)?.error?.includes('尚未绑定域名')
+                    ? '请在上方「域名绑定」中填写您的博客域名'
+                    : (licenseResult as any)?.error?.includes('NEXT_PUBLIC_SITE_URL')
+                    ? '请在上方「域名绑定」中填写域名，或配置环境变量 NEXT_PUBLIC_SITE_URL'
+                    : '当前域名未授权，请联系主题作者。'}
                 </p>
               )}
             </div>

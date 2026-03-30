@@ -72,6 +72,7 @@ export type SiteConfig = {
   rightPanelWidgets: string
   copyright: string
   defaultTheme: string
+  customDomain: string
 }
 
 const DEFAULT_NAV: NavItem[] = [

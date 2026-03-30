@@ -28,15 +28,17 @@ export async function PUT(req: NextRequest) {
     data.rightPanelWidgets = JSON.stringify(data.rightPanelWidgets)
   }
 
-  // 动态迁移列（siteIcon / rightPanelWidgets / copyright / defaultTheme）Prisma schema 不认识，需单独处理
+  // 动态迁移列（siteIcon / rightPanelWidgets / copyright / defaultTheme / customDomain）Prisma schema 不认识，需单独处理
   const siteIcon = data.siteIcon ?? null
   const rightPanelWidgets = data.rightPanelWidgets ?? null
   const copyright = data.copyright ?? null
   const defaultTheme = data.defaultTheme ?? null
+  const customDomain = data.customDomain !== undefined ? (data.customDomain ?? '') : null
   delete data.siteIcon
   delete data.rightPanelWidgets
   delete data.copyright
   delete data.defaultTheme
+  delete data.customDomain
 
   // 先 upsert Prisma 已知字段
   const config = await prisma.siteConfig.upsert({
@@ -58,6 +60,9 @@ export async function PUT(req: NextRequest) {
     }
     if (defaultTheme !== null) {
       await prisma.$executeRawUnsafe(`UPDATE SiteConfig SET defaultTheme = ? WHERE id = 'singleton'`, defaultTheme)
+    }
+    if (customDomain !== null) {
+      await prisma.$executeRawUnsafe(`UPDATE SiteConfig SET customDomain = ? WHERE id = 'singleton'`, customDomain)
     }
   } catch (e: any) {
     console.warn('[config PUT] raw update:', e?.message)
