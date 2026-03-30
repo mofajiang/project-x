@@ -32,6 +32,17 @@ const ICON_OPTIONS = [
   { value: 'user', label: '👤 用户' },
 ]
 
+function Field({ label, value, onChange, placeholder, type = 'text' }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) {
+  return (
+    <div>
+      <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>{label}</label>
+      <IMEInput type={type} value={value} onValueChange={onChange} placeholder={placeholder}
+        className="w-full px-3 py-2 rounded-2xl text-sm outline-none"
+        style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+    </div>
+  )
+}
+
 export default function SettingsPage() {
   const [config, setConfig] = useState({
     siteName: '', siteDesc: '', socialX: '', socialGithub: '', socialEmail: '', commentApproval: true, copyright: '',
@@ -175,15 +186,6 @@ export default function SettingsPage() {
       toast.error('上传失败')
     }
   }
-
-  const Field = ({ label, value, onChange, placeholder, type = 'text' }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) => (
-    <div>
-      <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>{label}</label>
-      <IMEInput type={type} value={value} onValueChange={onChange} placeholder={placeholder}
-        className="w-full px-3 py-2 rounded-2xl text-sm outline-none"
-        style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
-    </div>
-  )
 
   return (
     <div>
