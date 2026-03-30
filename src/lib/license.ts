@@ -70,16 +70,17 @@ export async function checkLicense(host: string): Promise<boolean> {
       signal: AbortSignal.timeout(5000),
     })
     if (!res.ok) {
-      // 授权服务器不可达时，允许通过（避免服务器宕机影响用户）
-      cache.set(host, { valid: true, token: '', exp: Date.now() + 5 * 60 * 1000 })
-      return true
+      // 严格模式：授权服务器返回非 2xx，拒绝访问，短暂缓存避免频繁请求
+      cache.set(host, { valid: false, token: '', exp: Date.now() + 2 * 60 * 1000 })
+      return false
     }
     const data = await res.json()
     const valid: boolean = data.valid === true
     cache.set(host, { valid, token: data.token || '', exp: Date.now() + CACHE_TTL })
     return valid
   } catch {
-    // 网络错误时允许通过，避免误伤正常用户
-    return true
+    // 严格模式：网络异常（授权服务器不可达），拒绝访问，短暂缓存 2 分钟
+    cache.set(host, { valid: false, token: '', exp: Date.now() + 2 * 60 * 1000 })
+    return false
   }
 }
