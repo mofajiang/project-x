@@ -1,5 +1,6 @@
 'use client'
 import { useRouter } from 'next/navigation'
+import { useState, useEffect, useRef } from 'react'
 import type { JWTPayload } from '@/lib/auth'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 
@@ -9,10 +10,32 @@ interface Props {
   avatar?: string | null
   displayName?: string
   handle?: string
+  loginMode?: string
+  secretClicks?: number
+  loginPath?: string
 }
 
-export function MobileHeader({ siteName, session, avatar, displayName, handle }: Props) {
+export function MobileHeader({ siteName, session, avatar, displayName, handle, loginMode, secretClicks = 5, loginPath = '/admin-login' }: Props) {
   const router = useRouter()
+  const [clicks, setClicks] = useState(0)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (clicks > 0 && clicks >= secretClicks && (loginMode === 'secret-click' || loginMode === 'both')) {
+      window.location.href = loginPath.startsWith('/') ? loginPath : `/${loginPath}`
+    }
+  }, [clicks, secretClicks, loginMode, loginPath])
+
+  const handleLogoClick = () => {
+    if (loginMode === 'secret-click' || loginMode === 'both') {
+      setClicks(c => c + 1)
+      if (timerRef.current) clearTimeout(timerRef.current)
+      timerRef.current = setTimeout(() => setClicks(0), 3000)
+    } else {
+      router.push('/')
+    }
+  }
+
   return (
     <header
       className="md:hidden flex items-center justify-between px-4 h-14 sticky top-0 z-40"
@@ -34,7 +57,7 @@ export function MobileHeader({ siteName, session, avatar, displayName, handle }:
 
       {/* 中间：X Logo */}
       <button
-        onClick={() => router.push('/')}
+        onClick={handleLogoClick}
         className="text-2xl font-black select-none"
         style={{ color: 'var(--text-primary)' }}
         title={siteName}
