@@ -53,4 +53,15 @@ export async function runMigrations() {
   await addColumn('SiteConfig', 'copyright', `TEXT NOT NULL DEFAULT ''`, 'copyright')
   await addColumn('SiteConfig', 'defaultTheme', `TEXT NOT NULL DEFAULT 'dark'`, 'defaultTheme')
   // authorId 改为可空（访客评论）— SQLite 不支持 ALTER COLUMN，新数据已可为 null
+
+  // 登录限流持久化表
+  await createTable(
+    `CREATE TABLE IF NOT EXISTS LoginFailure (
+      ip TEXT PRIMARY KEY,
+      count INTEGER NOT NULL DEFAULT 0,
+      lockedUntil INTEGER NOT NULL DEFAULT 0,
+      updatedAt INTEGER NOT NULL DEFAULT 0
+    )`,
+    'LoginFailure'
+  )
 }

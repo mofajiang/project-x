@@ -2,17 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSiteConfig } from '@/lib/config'
 import { signJWT } from '@/lib/auth'
+import { runMigrations } from '@/lib/db-migrate'
 import bcrypt from 'bcryptjs'
 
-// 简单内存限流：登录失败计数
-const failMap = new Map<string, { count: number; lockedUntil: number }>()
-
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get('x-forwarded-for') || 'unknown'
+  await runMigrations()
+  const ip = (req.headers.get('x-forwarded-for') || 'unknown').split(',')[0].trim()
   const now = Date.now()
 
-  // 检查锁定
-  const fail = failMap.get(ip)
+  // 检查锁定（SQLite 持久化，重启不丢失）
+  const rows = await prisma.$queryRawUnsafe<any[]>(
+    `SELECT count, lockedUntil FROM LoginFailure WHERE ip = ?`, ip
+  )
+  const fail = rows[0]
   if (fail && fail.lockedUntil > now) {
     const mins = Math.ceil((fail.lockedUntil - now) / 60000)
     return NextResponse.json({ error: `登录失败次数过多，请 ${mins} 分钟后再试` }, { status: 429 })
@@ -34,18 +36,21 @@ export async function POST(req: NextRequest) {
   const valid = user && (await bcrypt.compare(password, user.password))
 
   if (!valid) {
-    const cur = failMap.get(ip) || { count: 0, lockedUntil: 0 }
-    cur.count += 1
-    if (cur.count >= 5) {
-      cur.lockedUntil = now + 30 * 60 * 1000
-      cur.count = 0
-    }
-    failMap.set(ip, cur)
+    const cur = fail || { count: 0, lockedUntil: 0 }
+    const newCount = cur.count + 1
+    const newLocked = newCount >= 5 ? now + 30 * 60 * 1000 : cur.lockedUntil
+    const resetCount = newCount >= 5 ? 0 : newCount
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO LoginFailure (ip, count, lockedUntil, updatedAt)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT(ip) DO UPDATE SET count=excluded.count, lockedUntil=excluded.lockedUntil, updatedAt=excluded.updatedAt`,
+      ip, resetCount, newLocked, now
+    )
     return NextResponse.json({ error: '用户名或密码错误' }, { status: 401 })
   }
 
   // 清除失败记录
-  failMap.delete(ip)
+  await prisma.$executeRawUnsafe(`DELETE FROM LoginFailure WHERE ip = ?`, ip)
 
   const token = await signJWT({ userId: user.id, username: user.username })
 

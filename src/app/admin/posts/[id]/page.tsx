@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { MarkdownEditor } from '@/components/admin/MarkdownEditor'
@@ -9,28 +9,74 @@ export default function EditPostPage() {
   const params = useParams()
   const router = useRouter()
   const isNew = params.id === 'new'
+  const DRAFT_KEY = `post-draft-${params.id}`
 
   const [form, setForm] = useState({
     title: '', content: '', excerpt: '', coverImage: '', published: false, tags: '',
   })
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [hasDraft, setHasDraft] = useState(false)
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // 自动保存草稿到 localStorage
+  const scheduleDraftSave = useCallback((newForm: typeof form) => {
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
+    autoSaveTimer.current = setTimeout(() => {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(newForm))
+      setHasDraft(true)
+    }, 2000)
+  }, [DRAFT_KEY])
+
+  const updateForm = useCallback((updater: (f: typeof form) => typeof form) => {
+    setForm(prev => {
+      const next = updater(prev)
+      scheduleDraftSave(next)
+      return next
+    })
+  }, [scheduleDraftSave])
 
   useEffect(() => {
     if (!isNew) {
       fetch(`/api/admin/posts/${params.id}`).then(r => r.json()).then(data => {
-        if (data) setForm({
-          title: data.title || '',
-          content: data.content || '',
-          excerpt: data.excerpt || '',
-          coverImage: data.coverImage || '',
-          published: data.published || false,
-          tags: (data.tags || []).map((t: { tag: { name: string } }) => t.tag.name).join(', '),
-        })
+        if (data) {
+          const serverForm = {
+            title: data.title || '',
+            content: data.content || '',
+            excerpt: data.excerpt || '',
+            coverImage: data.coverImage || '',
+            published: data.published || false,
+            tags: (data.tags || []).map((t: { tag: { name: string } }) => t.tag.name).join(', '),
+          }
+          // 检查是否有未保存的草稿
+          const saved = localStorage.getItem(DRAFT_KEY)
+          if (saved) {
+            try {
+              const draft = JSON.parse(saved)
+              setForm(draft)
+              setHasDraft(true)
+            } catch {
+              setForm(serverForm)
+            }
+          } else {
+            setForm(serverForm)
+          }
+        }
       })
+    } else {
+      // 新建文章也检查草稿
+      const saved = localStorage.getItem(DRAFT_KEY)
+      if (saved) {
+        try { setForm(JSON.parse(saved)); setHasDraft(true) } catch {}
+      }
     }
-  }, [isNew, params.id])
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current) }
+  }, [isNew, params.id, DRAFT_KEY])
+
+  const clearDraft = () => {
+    localStorage.removeItem(DRAFT_KEY)
+    setHasDraft(false)
+  }
 
   const save = async (publish?: boolean) => {
     setSaving(true)
@@ -41,6 +87,7 @@ export default function EditPostPage() {
     const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     setSaving(false)
     if (res.ok) {
+      clearDraft()
       toast.success(isNew ? '文章已创建' : '已保存')
       if (isNew) router.push('/admin/posts')
     } else {
@@ -57,15 +104,24 @@ export default function EditPostPage() {
     const res = await fetch('/api/upload', { method: 'POST', body: fd })
     const data = await res.json()
     setUploading(false)
-    if (data.url) setForm(f => ({ ...f, coverImage: data.url }))
+    if (data.url) updateForm(f => ({ ...f, coverImage: data.url }))
   }
 
   return (
     <div className="max-w-3xl">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-          {isNew ? '新建文章' : '编辑文章'}
-        </h1>
+        <div>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+            {isNew ? '新建文章' : '编辑文章'}
+          </h1>
+          {hasDraft && (
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-xs" style={{ color: 'var(--accent)' }}>● 有未保存的本地草稿</span>
+              <button onClick={() => { const saved = localStorage.getItem(DRAFT_KEY); if (saved) { try { setForm(JSON.parse(saved)) } catch {} } }} className="text-xs underline" style={{ color: 'var(--text-secondary)' }}>恢复</button>
+              <button onClick={clearDraft} className="text-xs underline" style={{ color: 'var(--text-secondary)' }}>丢弃</button>
+            </div>
+          )}
+        </div>
         <div className="flex gap-2">
           <button onClick={() => save(false)} disabled={saving}
             className="px-4 py-2 rounded-full text-sm font-bold disabled:opacity-50"
@@ -84,7 +140,7 @@ export default function EditPostPage() {
         {/* 标题 */}
         <IMEInput
           type="text" placeholder="文章标题"
-          value={form.title} onValueChange={v => setForm(f => ({ ...f, title: v }))}
+          value={form.title} onValueChange={v => updateForm(f => ({ ...f, title: v }))}
           className="w-full text-2xl font-bold bg-transparent outline-none border-b py-2"
           style={{ color: 'var(--text-primary)', borderColor: 'var(--border)' }}
         />
@@ -92,7 +148,7 @@ export default function EditPostPage() {
         {/* 摘要 */}
         <IMEInput
           type="text" placeholder="摘要（可选）"
-          value={form.excerpt} onValueChange={v => setForm(f => ({ ...f, excerpt: v }))}
+          value={form.excerpt} onValueChange={v => updateForm(f => ({ ...f, excerpt: v }))}
           className="w-full bg-transparent outline-none py-2 text-sm"
           style={{ color: 'var(--text-secondary)' }}
         />
@@ -100,7 +156,7 @@ export default function EditPostPage() {
         {/* 标签 */}
         <IMEInput
           type="text" placeholder="标签（逗号分隔，如：Rust, 后端, 教程）"
-          value={form.tags} onValueChange={v => setForm(f => ({ ...f, tags: v }))}
+          value={form.tags} onValueChange={v => updateForm(f => ({ ...f, tags: v }))}
           className="w-full bg-transparent outline-none py-2 text-sm border rounded-xl px-3"
           style={{ color: 'var(--text-primary)', borderColor: 'var(--border)' }}
         />
@@ -123,7 +179,7 @@ export default function EditPostPage() {
           </div>
           <MarkdownEditor
             value={form.content}
-            onChange={v => setForm(f => ({ ...f, content: v }))}
+            onChange={v => updateForm(f => ({ ...f, content: v }))}
           />
         </div>
         <p className="text-xs pb-2" style={{ color: 'var(--text-secondary)' }}>

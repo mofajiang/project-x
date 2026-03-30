@@ -106,7 +106,7 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
 export const getSiteConfig = unstable_cache(
   fetchSiteConfig,
   ['site-config'],
-  { revalidate: 60, tags: ['site-config'] }
+  { revalidate: 300, tags: ['site-config'] }
 )
 
 // 保存设置后调用此函数使缓存失效
