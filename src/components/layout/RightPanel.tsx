@@ -1,6 +1,7 @@
 import { unstable_cache } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { SearchBox } from './SearchBox'
+import { CarouselWidget } from './CarouselWidget'
 import type { RightPanelWidget, FriendLink } from '@/lib/config'
 
 const getTopTags = unstable_cache(
@@ -151,6 +152,14 @@ export async function RightPanel({ siteDesc, social, widgets = [], copyright = '
                 ))}
               </div>
             </div>
+          )
+        }
+
+        if (widget.type === 'carousel') {
+          const slides = widget.slides || []
+          if (!slides.length) return null
+          return (
+            <CarouselWidget key={i} slides={slides} interval={widget.interval || 3000} title={title} />
           )
         }
 

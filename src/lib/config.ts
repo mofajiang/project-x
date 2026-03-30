@@ -8,7 +8,7 @@ export type NavItem = {
   icon: string
 }
 
-export type WidgetType = 'search' | 'about' | 'tags' | 'hotPosts' | 'custom' | 'links'
+export type WidgetType = 'search' | 'about' | 'tags' | 'hotPosts' | 'custom' | 'links' | 'carousel'
 
 export type FriendLink = {
   label: string
@@ -17,12 +17,21 @@ export type FriendLink = {
   avatar?: string
 }
 
+export type CarouselSlide = {
+  image: string     // 图片 URL
+  title?: string    // 可选标题
+  desc?: string     // 可选描述
+  link?: string     // 可选跳转链接
+}
+
 export type RightPanelWidget = {
   type: WidgetType
   enabled: boolean
-  title?: string   // 自定义标题（覆盖默认）
-  content?: string // type=custom 时的内容
-  links?: FriendLink[] // type=links 时的友情链接列表
+  title?: string        // 自定义标题（覆盖默认）
+  content?: string      // type=custom 时的内容
+  links?: FriendLink[]  // type=links 时的友情链接列表
+  slides?: CarouselSlide[] // type=carousel 时的轮播内容
+  interval?: number     // type=carousel 自动播放间隔（毫秒），默认 3000
 }
 
 export const DEFAULT_WIDGETS: RightPanelWidget[] = [

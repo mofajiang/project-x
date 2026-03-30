@@ -5,9 +5,10 @@ import Image from 'next/image'
 import { IMEInput, IMETextarea } from '@/components/ui/IMEInput'
 
 type NavItem = { label: string; href: string; icon: string }
-type WidgetType = 'search' | 'about' | 'tags' | 'hotPosts' | 'custom' | 'links'
+type WidgetType = 'search' | 'about' | 'tags' | 'hotPosts' | 'custom' | 'links' | 'carousel'
 type FriendLink = { label: string; url: string; desc?: string; avatar?: string }
-type Widget = { type: WidgetType; enabled: boolean; title?: string; content?: string; links?: FriendLink[] }
+type CarouselSlide = { image: string; title?: string; desc?: string; link?: string }
+type Widget = { type: WidgetType; enabled: boolean; title?: string; content?: string; links?: FriendLink[]; slides?: CarouselSlide[]; interval?: number }
 
 const WIDGET_LABELS: Record<WidgetType, string> = {
   search: '🔍 搜索框',
@@ -16,6 +17,7 @@ const WIDGET_LABELS: Record<WidgetType, string> = {
   hotPosts: '🔥 热门文章',
   custom: '📝 自定义文本',
   links: '🔗 友情链接',
+  carousel: '🎠 轮播图',
 }
 
 const DEFAULT_WIDGETS: Widget[] = [
@@ -386,6 +388,32 @@ export default function SettingsPage() {
                   </div>
                   <IMEInput value={w.title || ''} onValueChange={v => setWidgets(arr => arr.map((x,j) => j===i ? {...x, title: v} : x))} placeholder={'标题（留空用默认）'} className="w-full px-2 py-1.5 rounded-lg text-sm outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
                   {w.type === 'custom' && <IMETextarea value={w.content || ''} onValueChange={v => setWidgets(arr => arr.map((x,j) => j===i ? {...x, content: v} : x))} placeholder="自定义内容" rows={3} className="w-full px-2 py-1.5 rounded-lg text-sm outline-none resize-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />}
+                  {w.type === 'carousel' && (
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>自动切换间隔（毫秒）</span>
+                        <input type="number" min={500} max={30000} step={500}
+                          value={w.interval || 3000}
+                          onChange={e => setWidgets(arr => arr.map((x,j) => j===i ? {...x, interval: Number(e.target.value)} : x))}
+                          className="w-24 px-2 py-1 rounded-lg text-xs outline-none"
+                          style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}
+                        />
+                      </div>
+                      {(w.slides || []).map((sl, si) => (
+                        <div key={si} className="flex flex-col gap-1 p-2 rounded-lg" style={{ background: 'var(--bg-secondary)' }}>
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>#{si+1}</span>
+                            <button onClick={() => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; return {...x, slides:(x.slides||[]).filter((_,k)=>k!==si)} }))} className="ml-auto w-5 h-5 flex items-center justify-center rounded-full text-xs" style={{ color: '#F4212E' }}>×</button>
+                          </div>
+                          <IMEInput value={sl.image} onValueChange={v => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; const ss=[...(x.slides||[])]; ss[si]={...ss[si],image:v}; return {...x,slides:ss} }))} placeholder="图片 URL（必填）" className="w-full px-2 py-1 rounded text-xs outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+                          <IMEInput value={sl.title||''} onValueChange={v => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; const ss=[...(x.slides||[])]; ss[si]={...ss[si],title:v}; return {...x,slides:ss} }))} placeholder="标题（可选）" className="w-full px-2 py-1 rounded text-xs outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+                          <IMEInput value={sl.desc||''} onValueChange={v => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; const ss=[...(x.slides||[])]; ss[si]={...ss[si],desc:v}; return {...x,slides:ss} }))} placeholder="描述（可选）" className="w-full px-2 py-1 rounded text-xs outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+                          <IMEInput value={sl.link||''} onValueChange={v => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; const ss=[...(x.slides||[])]; ss[si]={...ss[si],link:v}; return {...x,slides:ss} }))} placeholder="点击跳转链接（可选）" className="w-full px-2 py-1 rounded text-xs outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+                        </div>
+                      ))}
+                      <button onClick={() => setWidgets(arr => arr.map((x,j) => j===i ? {...x, slides:[...(x.slides||[]),{image:'',title:'',desc:'',link:''}]} : x))} className="text-xs px-3 py-1 rounded-full self-start" style={{ background: 'rgba(29,155,240,0.15)', color: 'var(--accent)' }}>+ 添加图片</button>
+                    </div>
+                  )}
                   {w.type === 'links' && (
                     <div className="flex flex-col gap-2">
                       {(w.links || []).map((lk, li) => (
