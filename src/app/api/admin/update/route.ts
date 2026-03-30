@@ -5,7 +5,12 @@ import { revalidatePath } from 'next/cache'
 
 const REPO = 'mofajiang/project-x'
 const GH = `https://api.github.com/repos/${REPO}`
-const HEADERS = { Accept: 'application/vnd.github.v3+json', 'User-Agent': 'x-blog-admin' }
+function ghHeaders() {
+  const h: Record<string, string> = { Accept: 'application/vnd.github.v3+json', 'User-Agent': 'x-blog-admin' }
+  const token = process.env.GITHUB_TOKEN
+  if (token) h['Authorization'] = `Bearer ${token}`
+  return h
+}
 
 function getLocalCommit(): string {
   try { return execSync('git rev-parse HEAD', { cwd: process.cwd(), timeout: 5000, encoding: 'utf8' }).trim() }
@@ -26,7 +31,7 @@ export async function GET(req: NextRequest) {
     const branch = getLocalBranch()
 
     // 获取远程最新 commit
-    const branchRes = await fetch(`${GH}/branches/${branch}`, { headers: HEADERS, cache: 'no-store' })
+    const branchRes = await fetch(`${GH}/branches/${branch}`, { headers: ghHeaders(), cache: 'no-store' })
     if (!branchRes.ok) throw new Error(`GitHub API ${branchRes.status}: ${await branchRes.text()}`)
     const branchData = await branchRes.json()
     const remoteCommit: string = branchData.commit?.sha ?? ''
@@ -36,7 +41,7 @@ export async function GET(req: NextRequest) {
     let commits: { sha: string; message: string; date: string; author: string }[] = []
     if (hasUpdate) {
       // 用 compare API 精确获取两个 commit 之间的差异
-      const compareRes = await fetch(`${GH}/compare/${localCommit}...${remoteCommit}`, { headers: HEADERS, cache: 'no-store' })
+      const compareRes = await fetch(`${GH}/compare/${localCommit}...${remoteCommit}`, { headers: ghHeaders(), cache: 'no-store' })
       if (compareRes.ok) {
         const cmp = await compareRes.json()
         commits = ((cmp.commits as { sha: string; commit: { message: string; committer: { date: string }; author: { name: string } } }[]) || [])
