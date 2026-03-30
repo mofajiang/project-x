@@ -111,6 +111,8 @@ export const getSiteConfig = unstable_cache(
 
 // 保存设置后调用此函数使缓存失效
 export async function revalidateSiteConfig() {
-  const { revalidateTag } = await import('next/cache')
+  const { revalidateTag, revalidatePath } = await import('next/cache')
   revalidateTag('site-config')
+  // 同时刷新所有前台页面，确保右侧栏立即生效
+  revalidatePath('/', 'layout')
 }
