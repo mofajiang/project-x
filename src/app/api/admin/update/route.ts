@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSessionFromRequest } from '@/lib/auth'
 import { execSync, spawnSync } from 'child_process'
 import { revalidatePath } from 'next/cache'
+import { rmSync } from 'fs'
 
 const REPO = 'mofajiang/project-x'
 const GH = `https://api.github.com/repos/${REPO}`
@@ -19,7 +20,15 @@ function getLocalCommit(): string {
 
 function getLocalBranch(): string {
   try { return execSync('git rev-parse --abbrev-ref HEAD', { cwd: process.cwd(), timeout: 5000, encoding: 'utf8' }).trim() }
-  catch { return 'main' }
+  catch {
+    return process.env.GIT_BRANCH
+      || process.env.VERCEL_GIT_COMMIT_REF
+      || 'main'
+  }
+}
+
+function getRemoteBranch(branch: string): string {
+  return branch || process.env.GIT_BRANCH || process.env.VERCEL_GIT_COMMIT_REF || 'main'
 }
 
 export async function GET(req: NextRequest) {
@@ -89,11 +98,18 @@ export async function POST(req: NextRequest) {
 
       try {
         const cwd = process.cwd()
+        const branch = getRemoteBranch(getLocalBranch())
+
+        if (!process.env.DATABASE_URL) {
+          sendError('❌ 缺少 DATABASE_URL，请先在服务器配置 .env 后再执行更新')
+          sendDone(false)
+          return
+        }
 
         // Step 1: git pull（强制 fast-forward，避免分支分叉 fatal）
         send('⏳ 正在拉取最新代码...')
         try {
-          const pullOut = execSync('git fetch origin && git reset --hard origin/main', { cwd, encoding: 'utf8', stdio: 'pipe', timeout: 60000 })
+          const pullOut = execSync(`git fetch origin ${branch} && git reset --hard origin/${branch}`, { cwd, encoding: 'utf8', stdio: 'pipe', timeout: 60000 })
           send(`✅ git pull 完成\n${pullOut.trim()}`)
         } catch (e: any) {
           sendError(`❌ git pull 失败：${e.message}`)
@@ -104,7 +120,7 @@ export async function POST(req: NextRequest) {
         // Step 2: 清除 .next 缓存，避免 stale incremental cache 导致构建失败
         send('⏳ 清除旧构建缓存...')
         try {
-          execSync('rm -rf .next', { cwd, timeout: 15000 })
+          rmSync('.next', { recursive: true, force: true })
           send('✅ 缓存已清除')
         } catch { /* 忽略，Windows 环境可能不支持 */ }
 
@@ -132,7 +148,8 @@ export async function POST(req: NextRequest) {
         // Step 4: pm2 restart
         send('⏳ 正在重启服务（pm2 restart）...')
         try {
-          const pm2Out = execSync('pm2 restart x-blog', { cwd, encoding: 'utf8', stdio: 'pipe', timeout: 30000 })
+          const pm2Name = process.env.PM2_APP_NAME || 'x-blog'
+          const pm2Out = execSync(`pm2 restart ${pm2Name}`, { cwd, encoding: 'utf8', stdio: 'pipe', timeout: 30000 })
           send(`✅ 服务已重启\n${pm2Out.trim()}`)
         } catch {
           // pm2 可能不存在（本地开发环境），忽略
