@@ -265,6 +265,53 @@ SMTP_FROM=your@qq.com
 
 ---
 
+## 故障排查
+
+### 构建失败：Module not found
+
+如果构建时出现 `Module not found: Can't resolve '@/lib/utils'` 等错误，通常是由于缓存污染或文件签出不完整。
+
+**快速修复：**
+
+```bash
+# 方法 1：自动修复脚本（推荐）
+chmod +x fix-build.sh
+./fix-build.sh
+
+# 方法 2：手动修复
+git checkout HEAD -- src/lib/utils.ts src/components/admin/MarkdownEditor.tsx src/components/ui/IMEInput.tsx src/hooks/useIMEInput.ts src/hooks/useTheme.ts
+rm -rf node_modules/.cache .next
+npm cache clean --force
+npm ci
+npm run build
+pm2 restart x-blog
+```
+
+### PM2 日志查看
+
+```bash
+# 查看最近 50 行日志
+pm2 logs x-blog --lines 50
+
+# 实时查看日志
+pm2 logs x-blog
+
+# 查看错误日志
+pm2 logs x-blog err
+```
+
+### Nginx 反向代理问题
+
+若 HTTPS 下出现重定向循环，检查 Nginx 配置是否包含：
+
+```nginx
+proxy_set_header X-Forwarded-Proto $scheme;
+```
+
+不要使用宝塔的图形化反向代理功能，直接编辑配置文件。
+
+---
+
 ## 目录结构
 
 ```
@@ -277,8 +324,9 @@ src/
 ├── components/
 │   ├── blog/            # 博客组件（PostCard、QuickPost、评论等）
 │   ├── layout/          # 布局组件（导航栏、手机端底栏等）
-│   └── admin/           # 后台组件
-└── lib/                 # 工具库（auth、prisma、mailer 等）
+│   ├── admin/           # 后台组件
+│   └── ui/              # UI 基础组件（IMEInput 等）
+└── lib/                 # 工具库（auth、prisma、mailer、utils 等）
 prisma/
 └── schema.prisma        # 数据库 Schema
 scripts/
