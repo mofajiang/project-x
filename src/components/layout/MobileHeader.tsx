@@ -3,6 +3,8 @@ import { useRouter } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
 import type { JWTPayload } from '@/lib/auth'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { MobileDrawer } from './MobileDrawer'
+import type { NavItemDef } from './Sidebar'
 
 interface Props {
   siteName: string
@@ -13,11 +15,13 @@ interface Props {
   loginMode?: string
   secretClicks?: number
   loginPath?: string
+  navItems?: NavItemDef[]
 }
 
-export function MobileHeader({ siteName, session, avatar, displayName, handle, loginMode, secretClicks = 5, loginPath = '/admin-login' }: Props) {
+export function MobileHeader({ siteName, session, avatar, displayName, handle, loginMode, secretClicks = 5, loginPath = '/admin-login', navItems }: Props) {
   const router = useRouter()
   const [clicks, setClicks] = useState(0)
+  const [drawerOpen, setDrawerOpen] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -37,23 +41,39 @@ export function MobileHeader({ siteName, session, avatar, displayName, handle, l
   }
 
   return (
-    <header
-      className="md:hidden flex items-center justify-between px-4 h-14 sticky top-0 z-40"
-      style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}
-    >
-      {/* 左侧：头像（有登录）或占位 */}
-      <div className="w-8 h-8">
-        {session && (
-          <div
-            className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center font-bold text-sm flex-shrink-0"
-            style={{ background: 'var(--accent)', color: '#fff' }}
-          >
-            {avatar
-              ? <img src={avatar} alt={handle || session.username} className="w-full h-full object-cover" />
-              : (displayName || handle || session.username)[0]?.toUpperCase()}
-          </div>
-        )}
-      </div>
+    <>
+      <MobileDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        navItems={navItems}
+        session={session}
+        avatar={avatar}
+        displayName={displayName}
+        handle={handle}
+      />
+      <header
+        className="md:hidden flex items-center justify-between px-4 h-14 sticky top-0 z-40"
+        style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}
+      >
+        {/* 左侧：头像（点击打开抽屉） */}
+        <button
+          className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center font-bold text-sm flex-shrink-0 transition-opacity active:opacity-70"
+          style={{ background: session ? 'var(--accent)' : 'transparent', color: '#fff' }}
+          onClick={() => setDrawerOpen(true)}
+          aria-label="打开菜单"
+        >
+          {session
+            ? (avatar
+                ? <img src={avatar} alt={handle || session.username} className="w-full h-full object-cover" />
+                : (displayName || handle || session.username)[0]?.toUpperCase())
+            : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--text-secondary)' }}>
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            )}
+        </button>
 
       {/* 中间：X Logo */}
       <button
@@ -68,5 +88,6 @@ export function MobileHeader({ siteName, session, avatar, displayName, handle, l
       {/* 右侧：主题切换 */}
       <ThemeToggle className="w-8 h-8" />
     </header>
+    </>
   )
 }

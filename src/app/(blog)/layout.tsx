@@ -32,7 +32,7 @@ export default async function BlogLayout({ children }: { children: React.ReactNo
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
       {/* 移动端顶部 header */}
-      <MobileHeader siteName={config.siteName} session={session} avatar={avatar} displayName={displayName} handle={handle} loginMode={config.loginMode} secretClicks={config.secretClicks} loginPath={config.loginPath} />
+      <MobileHeader siteName={config.siteName} session={session} avatar={avatar} displayName={displayName} handle={handle} loginMode={config.loginMode} secretClicks={config.secretClicks} loginPath={config.loginPath} navItems={navItems} />
 
       <div className="max-w-[1280px] mx-auto flex justify-center">
         {/* 左侧导航（桌面端） */}
