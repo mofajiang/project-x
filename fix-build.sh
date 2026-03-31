@@ -1,21 +1,59 @@
 #!/bin/bash
 set -e
 
-echo "=== Step 1: Force checkout missing files ==="
-git checkout HEAD -- src/lib/utils.ts src/components/admin/MarkdownEditor.tsx src/components/ui/IMEInput.tsx src/hooks/useIMEInput.ts src/hooks/useTheme.ts
+cd "$(dirname "$0")" || exit 1
 
-echo "=== Step 2: Clear all caches ==="
-rm -rf node_modules/.cache
+echo "=== Step 1: Verify git status ==="
+git status --short || true
+echo ""
+
+echo "=== Step 2: Force reset to origin/main ==="
+git fetch origin
+git reset --hard origin/main || true
+
+echo ""
+echo "=== Step 3: Force checkout all files from HEAD ==="
+git checkout HEAD -- . || true
+
+echo ""
+echo "=== Step 4: Verify critical files exist ==="
+if [ ! -f "src/lib/utils.ts" ]; then
+  echo "❌ ERROR: src/lib/utils.ts not found!"
+  exit 1
+fi
+if [ ! -f "src/components/admin/MarkdownEditor.tsx" ]; then
+  echo "❌ ERROR: src/components/admin/MarkdownEditor.tsx not found!"
+  exit 1
+fi
+if [ ! -f "src/components/ui/IMEInput.tsx" ]; then
+  echo "❌ ERROR: src/components/ui/IMEInput.tsx not found!"
+  exit 1
+fi
+echo "✅ All critical files present"
+
+echo ""
+echo "=== Step 5: Deep clean - remove all caches and node_modules ==="
 rm -rf .next
-npm cache clean --force
+rm -rf node_modules/.cache
+rm -rf node_modules
+npm cache clean --force --verbose
 
-echo "=== Step 3: Reinstall dependencies ==="
-npm ci
+echo ""
+echo "=== Step 6: Reinstall dependencies with npm ci ==="
+npm ci --preferred-offline --no-audit 2>&1 | tail -20
 
-echo "=== Step 4: Rebuild ==="
-npm run build
+echo ""
+echo "=== Step 7: Generate Prisma Client ==="
+npx prisma generate
 
-echo "=== Step 5: Restart PM2 ==="
-pm2 restart x-blog
+echo ""
+echo "=== Step 8: Full rebuild with detailed output ==="
+npm run build 2>&1 | tail -50
 
+echo ""
+echo "=== Step 9: Restart PM2 process ==="
+pm2 restart x-blog || pm2 start npm --name x-blog -- start
+
+echo ""
 echo "✅ Build and restart completed successfully!"
+echo "Check logs: pm2 logs x-blog"
