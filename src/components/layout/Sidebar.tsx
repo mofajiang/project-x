@@ -139,18 +139,20 @@ export function Sidebar({ siteName, loginMode, secretClicks, loginPath = '/admin
           )
         })}
 
-        {/* 写文章按钮 — 紧跟导航项之后 */}
-        <button
-          onClick={() => window.dispatchEvent(new Event('open-compose'))}
-          className="mt-3 py-3 rounded-full text-center font-bold text-white text-[15px] transition-all duration-150 hover:opacity-90 active:scale-95 xl:w-[90%] w-12 h-12 flex items-center justify-center"
-          style={{ background: 'var(--accent)' }}
-        >
-          <span className="hidden xl:inline">写文章</span>
-          <svg className="xl:hidden" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
-            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-          </svg>
-        </button>
+        {/* 写文章按钮 — 仅登录后显示 */}
+        {session && (
+          <button
+            onClick={() => window.dispatchEvent(new Event('open-compose'))}
+            className="mt-3 py-3 rounded-full text-center font-bold text-white text-[15px] transition-all duration-150 hover:opacity-90 active:scale-95 xl:w-[90%] w-12 h-12 flex items-center justify-center"
+            style={{ background: 'var(--accent)' }}
+          >
+            <span className="hidden xl:inline">写文章</span>
+            <svg className="xl:hidden" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
+              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+        )}
       </nav>
 
       {/* 底部用户卡片（X 风格） */}
