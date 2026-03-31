@@ -64,7 +64,7 @@ export async function checkLicense(host: string): Promise<boolean> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ domain: host, timestamp, sig }),
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(8000),
     })
     if (!res.ok) {
       // 授权服务器返回非 2xx，拒绝访问，不缓存（白名单更新后立即生效）
@@ -79,7 +79,16 @@ export async function checkLicense(host: string): Promise<boolean> {
     // 授权失败不缓存，下次请求立即重新验证
     return valid
   } catch {
-    // 网络异常，拒绝访问，不缓存（服务器恢复后立即可用）
+    // 网络异常：若有未过期的本地缓存 token，降级为本地验证
+    const stale = cache.get(host)
+    if (stale && stale.token) {
+      const local = verifyToken(stale.token)
+      if (local.valid) {
+        // 延长缓存 10 分钟，等待服务器恢复
+        cache.set(host, { ...stale, exp: Date.now() + 10 * 60 * 1000 })
+        return true
+      }
+    }
     return false
   }
 }
