@@ -1,4 +1,5 @@
 // Authorization verification module
+import { createHmac, timingSafeEqual } from 'crypto'
 
 // Encoded configuration (runtime-assembled, not plain text)
 const _a = (s: number[]) => s.map(c => String.fromCharCode(c)).join('')
@@ -30,13 +31,11 @@ interface LicenseCache {
 const cache = new Map<string, LicenseCache>()
 
 function hmacSign(data: string, secret: string): string {
-  const crypto = require('crypto')
-  return crypto.createHmac('sha256', secret).update(data).digest('hex')
+  return createHmac('sha256', secret).update(data).digest('hex')
 }
 
 export function verifyToken(token: string): { valid: boolean; domain?: string } {
   try {
-    const crypto = require('crypto')
     // token 格式: base64(domain|exp|sig)
     const decoded = Buffer.from(token, 'base64').toString('utf8')
     const parts = decoded.split('|')
@@ -46,7 +45,7 @@ export function verifyToken(token: string): { valid: boolean; domain?: string } 
     if (Date.now() > parseInt(exp)) return { valid: false }
     // 验证签名
     const expected = hmacSign(`${domain}|${exp}`, LICENSE_SECRET)
-    const valid = crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))
+    const valid = timingSafeEqual(Buffer.from(sig), Buffer.from(expected))
     return { valid, domain }
   } catch {
     return { valid: false }

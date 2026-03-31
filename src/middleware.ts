@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getSessionFromRequest } from './lib/auth'
-import { checkLicense } from './lib/license'
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -17,14 +16,21 @@ export async function middleware(request: NextRequest) {
     pathname === '/feed.xml'
 
   if (!skipLicense) {
-    // 优先使用 x-forwarded-host（反向代理场景），其次 host 头
     const forwarded = request.headers.get('x-forwarded-host') || request.headers.get('host') || ''
     const hostname = forwarded.split(':')[0]
-    const allowed = await checkLicense(hostname)
-    if (!allowed) {
-      const url = new URL('/unlicensed', request.url)
-      url.searchParams.set('host', hostname)
-      return NextResponse.redirect(url)
+    try {
+      // 调用内部 Node.js API 路由做授权检查（绕开 Edge Runtime crypto 限制）
+      const checkUrl = new URL('/api/license-check-internal', request.url)
+      checkUrl.searchParams.set('host', hostname)
+      const res = await fetch(checkUrl.toString(), { signal: AbortSignal.timeout(9000) })
+      const data = await res.json()
+      if (!data.valid) {
+        const url = new URL('/unlicensed', request.url)
+        url.searchParams.set('host', hostname)
+        return NextResponse.redirect(url)
+      }
+    } catch {
+      // 内部调用异常时放行，避免因自身故障锁死访问
     }
   }
 
