@@ -18,19 +18,24 @@ export async function middleware(request: NextRequest) {
   if (!skipLicense) {
     const forwarded = request.headers.get('x-forwarded-host') || request.headers.get('host') || ''
     const hostname = forwarded.split(':')[0]
+    const checkUrl = new URL('/api/license-check-internal', request.url)
+    checkUrl.searchParams.set('host', hostname)
+    let allowed = false
     try {
       // 调用内部 Node.js API 路由做授权检查（绕开 Edge Runtime crypto 限制）
-      const checkUrl = new URL('/api/license-check-internal', request.url)
-      checkUrl.searchParams.set('host', hostname)
-      const res = await fetch(checkUrl.toString(), { signal: AbortSignal.timeout(9000) })
+      const res = await fetch(checkUrl.toString(), {
+        headers: { 'x-internal-call': '1' },
+        signal: AbortSignal.timeout(9000),
+      })
       const data = await res.json()
-      if (!data.valid) {
-        const url = new URL('/unlicensed', request.url)
-        url.searchParams.set('host', hostname)
-        return NextResponse.redirect(url)
-      }
+      allowed = data.valid === true
     } catch {
-      // 内部调用异常时放行，避免因自身故障锁死访问
+      allowed = false
+    }
+    if (!allowed) {
+      const url = new URL('/unlicensed', request.url)
+      url.searchParams.set('host', hostname)
+      return NextResponse.redirect(url)
     }
   }
 
