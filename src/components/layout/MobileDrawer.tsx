@@ -360,6 +360,7 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
               </div>
             )}
           </div>
+        )}
       </div>
 
       <style>{`
