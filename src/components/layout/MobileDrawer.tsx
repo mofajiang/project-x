@@ -292,43 +292,73 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
           )}
         </nav>
 
-        {/* 底部用户卡片 */}
+        {/* 底部用户区 */}
         {session && (
-          <div className="mt-auto relative">
+          <div className="mt-4 pt-2 border-t relative" style={{ borderColor: 'var(--border)' }}>
+            <div className="px-1 pb-2 flex items-center justify-between">
+              <span className="text-[11px] font-bold tracking-wide" style={{ color: 'var(--text-secondary)' }}>账号</span>
+              <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>菜单</span>
+            </div>
+
+            <button
+              onClick={() => setMenuOpen(v => !v)}
+              className="flex items-center gap-3 w-full px-1 py-2 transition-colors"
+              style={{ color: 'var(--text-primary)' }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              <div
+                className="w-9 h-9 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center font-bold text-sm"
+                style={{ background: 'var(--accent)', color: '#fff' }}
+              >
+                {avatar
+                  ? <img src={avatar} alt={session.username} className="w-full h-full object-cover" />
+                  : session.username[0]?.toUpperCase()}
+              </div>
+              <div className="flex flex-col items-start min-w-0 flex-1">
+                <span className="text-sm font-medium truncate w-full leading-5" style={{ color: 'var(--text-primary)' }}>
+                  {displayName || handle || session.username}
+                </span>
+                <span className="text-[10px] truncate w-full" style={{ color: 'var(--text-secondary)' }}>
+                  @{handle || session.username}
+                </span>
+              </div>
+              <svg className="flex-shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ color: 'var(--text-secondary)' }}>
+                <circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" />
+              </svg>
+            </button>
+
             {/* 弹出菜单 */}
             {menuOpen && (
-              <div
-                className="absolute bottom-[calc(100%+8px)] left-0 right-0 rounded-2xl overflow-hidden shadow-xl"
-                style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}
-              >
+              <div className="mt-2 overflow-hidden" style={{ borderTop: '1px solid var(--border)' }}>
                 <Link
                   href="/admin"
                   onClick={() => { setMenuOpen(false); onClose() }}
-                  className="flex items-center gap-3 px-4 py-3 text-sm font-bold transition-colors"
+                  className="flex items-center gap-3 px-1 py-3 text-sm font-medium transition-colors"
                   style={{ color: 'var(--text-primary)' }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--text-secondary)' }}>
                     <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
                     <rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
                   </svg>
                   后台控制台
                 </Link>
                 <div style={{ borderTop: '1px solid var(--border)' }} />
-                <div className="flex items-center justify-between px-4 py-2.5">
-                  <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>切换主题</span>
+                <div className="flex items-center justify-between px-1 py-3">
+                  <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>切换主题</span>
                   <ThemeToggle className="w-9 h-9" />
                 </div>
                 <div style={{ borderTop: '1px solid var(--border)' }} />
                 <button
                   onClick={logout}
-                  className="flex items-center gap-3 px-4 py-3 text-sm font-bold w-full text-left transition-colors"
+                  className="flex items-center gap-3 px-1 py-3 text-sm font-medium w-full text-left transition-colors"
                   style={{ color: 'var(--text-primary)' }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--text-secondary)' }}>
                     <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
                     <polyline points="16 17 21 12 16 7" />
                     <line x1="21" y1="12" x2="9" y2="12" />
@@ -337,35 +367,6 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
                 </button>
               </div>
             )}
-
-            {/* 用户卡片触发按钮 */}
-            <button
-              onClick={() => setMenuOpen(v => !v)}
-              className="flex items-center gap-3 w-full px-2 py-2.5 rounded-full transition-colors"
-              style={{ color: 'var(--text-primary)' }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-            >
-              <div
-                className="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center font-bold text-base"
-                style={{ background: 'var(--accent)', color: '#fff' }}
-              >
-                {avatar
-                  ? <img src={avatar} alt={session.username} className="w-full h-full object-cover" />
-                  : session.username[0]?.toUpperCase()}
-              </div>
-              <div className="flex flex-col items-start min-w-0 flex-1">
-                <span className="text-sm font-bold truncate w-full" style={{ color: 'var(--text-primary)' }}>
-                  {displayName || handle || session.username}
-                </span>
-                <span className="text-xs truncate w-full" style={{ color: 'var(--text-secondary)' }}>
-                  @{handle || session.username}
-                </span>
-              </div>
-              <svg className="flex-shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" />
-              </svg>
-            </button>
           </div>
         )}
       </div>
