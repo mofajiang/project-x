@@ -298,11 +298,12 @@ export default function SettingsPage() {
             <button onClick={saveProfile} disabled={savingProfile} className="self-stretch sm:self-start px-6 py-2.5 rounded-full text-sm font-bold text-white disabled:opacity-50" style={{ background: 'var(--accent)' }}>{savingProfile ? '保存中...' : '保存个人资料'}</button>
           </div>
 
-          {/* 基本信息 */}
+          {/* 站点选项 */}
           <div className={`${mobileCardClass} flex flex-col gap-2.5 sm:gap-4`} style={{ background: 'var(--bg-secondary)' }}>
-            <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>🌐 基本信息</h2>
+            <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>🌐 站点选项</h2>
             <Field compact label="博客名称" value={config.siteName} onChange={v => setConfig(c => ({ ...c, siteName: v }))} placeholder="我的博客" />
             <div><label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>博客简介</label><IMETextarea value={config.siteDesc} onValueChange={v => setConfig(c => ({ ...c, siteDesc: v }))} rows={3} placeholder="一句话介绍自己..." className="w-full px-3 py-2 rounded-2xl text-sm outline-none resize-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} /></div>
+            <Field compact label="邮箱" value={config.socialEmail} onChange={v => setConfig(c => ({ ...c, socialEmail: v }))} placeholder="you@example.com" />
           </div>
 
           {/* 社交账号 */}
@@ -310,7 +311,6 @@ export default function SettingsPage() {
             <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>🔗 社交账号</h2>
             <Field compact label="X (Twitter) 用户名" value={config.socialX} onChange={v => setConfig(c => ({ ...c, socialX: v }))} placeholder="yourusername" />
             <Field compact label="GitHub 用户名" value={config.socialGithub} onChange={v => setConfig(c => ({ ...c, socialGithub: v }))} placeholder="yourusername" />
-            <Field compact label="邮箱" value={config.socialEmail} onChange={v => setConfig(c => ({ ...c, socialEmail: v }))} placeholder="you@example.com" />
           </div>
 
           {/* 评论设置 */}
@@ -391,58 +391,62 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* 导航菜单 */}
+          {/* 导航与组件 */}
           <div className={`${mobileCardClass} flex flex-col gap-3 sm:gap-4`} style={{ background: 'var(--bg-secondary)' }}>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>🧭 导航菜单</h2>
-              <button onClick={addNavItem} className="px-3 py-2 rounded-full text-sm font-medium w-full sm:w-auto min-h-10" style={{ background: 'rgba(29,155,240,0.15)', color: 'var(--accent)' }}>+ 添加</button>
+            <div className="flex flex-col gap-1.5">
+              <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>🧭 导航与组件</h2>
+              <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>把前台导航和右侧栏放在同一组里统一管理</p>
             </div>
-            <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>自定义前台导航栏菜单项</p>
-            <div className="flex flex-col gap-2 sm:gap-3">
-              {navItems.map((item, i) => (
-                <div key={i} className={`${mobileSubCardClass} flex flex-col gap-2 sm:gap-3`} style={{ background: 'var(--bg-hover)' }}>
-                  <div className="flex items-center gap-1 sm:flex-col sm:gap-0.5 self-start">
-                    <button onClick={() => moveNavItem(i, -1)} disabled={i === 0} className="w-8 h-8 sm:w-5 sm:h-5 flex items-center justify-center rounded text-xs disabled:opacity-30" style={{ color: 'var(--text-secondary)' }}>↑</button>
-                    <button onClick={() => moveNavItem(i, 1)} disabled={i === navItems.length - 1} className="w-8 h-8 sm:w-5 sm:h-5 flex items-center justify-center rounded text-xs disabled:opacity-30" style={{ color: 'var(--text-secondary)' }}>↓</button>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-[92px_minmax(0,1fr)_minmax(0,1fr)_auto] gap-2">
-                    <select value={item.icon} onChange={e => updateNavItem(i, 'icon', e.target.value)} className="px-2 py-2 rounded-lg text-sm outline-none w-full" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)', minWidth: 90 }}>
-                      {ICON_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
-                    <IMEInput value={item.label} onValueChange={v => updateNavItem(i, 'label', v)} placeholder="标签" className="flex-1 px-2 py-2 rounded-lg text-sm outline-none w-full" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }} />
-                    <IMEInput value={item.href} onValueChange={v => updateNavItem(i, 'href', v)} placeholder="/about" className="flex-1 px-2 py-2 rounded-lg text-sm outline-none w-full" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }} />
-                    <button onClick={() => removeNavItem(i)} className="w-full sm:w-7 h-10 sm:h-7 flex items-center justify-center rounded-full" style={{ color: '#F4212E' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(244,33,46,0.1)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>×</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>修改后点击底部「保存设置」生效</p>
-          </div>
 
-          {/* 右侧栏组件 */}
-          <div className={`${mobileCardClass} flex flex-col gap-3 sm:gap-4`} style={{ background: 'var(--bg-secondary)' }}>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>📌 右侧栏组件</h2>
-              <button onClick={() => setWidgets(v => [...v, { type: 'custom', enabled: true, title: '', content: '' }])} className="px-3 py-2 rounded-full text-sm font-medium w-full sm:w-auto min-h-10" style={{ background: 'rgba(29,155,240,0.15)', color: 'var(--accent)' }}>+ 添加</button>
-            </div>
-            <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>配置前台右侧栏显示的组件</p>
-            <div className="flex flex-col gap-2 sm:gap-3">
-              {widgets.map((w, i) => (
-                <div key={i} className={`${mobileSubCardClass} relative flex flex-col gap-2 sm:gap-3`} style={{ background: 'var(--bg-hover)' }}>
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:pr-10">
-                    <div className="flex items-center gap-1 sm:flex-col sm:gap-0.5 flex-shrink-0 self-start">
-                      <button onClick={() => { const a = [...widgets]; if (i > 0) { [a[i-1],a[i]]=[a[i],a[i-1]]; setWidgets(a); } }} disabled={i === 0} className="w-8 h-8 sm:w-5 sm:h-5 flex items-center justify-center text-xs disabled:opacity-30" style={{ color: 'var(--text-secondary)' }}>↑</button>
-                      <button onClick={() => { const a = [...widgets]; if (i < a.length-1) { [a[i],a[i+1]]=[a[i+1],a[i]]; setWidgets(a); } }} disabled={i === widgets.length - 1} className="w-8 h-8 sm:w-5 sm:h-5 flex items-center justify-center text-xs disabled:opacity-30" style={{ color: 'var(--text-secondary)' }}>↓</button>
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2.5 sm:gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>导航菜单</h3>
+                  <button onClick={addNavItem} className="px-3 py-2 rounded-full text-sm font-medium w-full sm:w-auto min-h-10" style={{ background: 'rgba(29,155,240,0.15)', color: 'var(--accent)' }}>+ 添加</button>
+                </div>
+                <div className="flex flex-col gap-2 sm:gap-3">
+                  {navItems.map((item, i) => (
+                    <div key={i} className={`${mobileSubCardClass} flex flex-col gap-2 sm:gap-3`} style={{ background: 'var(--bg-hover)' }}>
+                      <div className="flex items-center gap-1 sm:flex-col sm:gap-0.5 self-start">
+                        <button onClick={() => moveNavItem(i, -1)} disabled={i === 0} className="w-8 h-8 sm:w-5 sm:h-5 flex items-center justify-center rounded text-xs disabled:opacity-30" style={{ color: 'var(--text-secondary)' }}>↑</button>
+                        <button onClick={() => moveNavItem(i, 1)} disabled={i === navItems.length - 1} className="w-8 h-8 sm:w-5 sm:h-5 flex items-center justify-center rounded text-xs disabled:opacity-30" style={{ color: 'var(--text-secondary)' }}>↓</button>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-[92px_minmax(0,1fr)_minmax(0,1fr)_auto] gap-2">
+                        <select value={item.icon} onChange={e => updateNavItem(i, 'icon', e.target.value)} className="px-2 py-2 rounded-lg text-sm outline-none w-full" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)', minWidth: 90 }}>
+                          {ICON_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        </select>
+                        <IMEInput value={item.label} onValueChange={v => updateNavItem(i, 'label', v)} placeholder="标签" className="flex-1 px-2 py-2 rounded-lg text-sm outline-none w-full" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }} />
+                        <IMEInput value={item.href} onValueChange={v => updateNavItem(i, 'href', v)} placeholder="/about" className="flex-1 px-2 py-2 rounded-lg text-sm outline-none w-full" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }} />
+                        <button onClick={() => removeNavItem(i)} className="w-full sm:w-7 h-10 sm:h-7 flex items-center justify-center rounded-full" style={{ color: '#F4212E' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(244,33,46,0.1)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>×</button>
+                      </div>
                     </div>
-                    <input type="checkbox" checked={w.enabled} onChange={e => setWidgets(v => v.map((x,j) => j===i ? {...x, enabled: e.target.checked} : x))} className="w-4 h-4 flex-shrink-0" />
-                    <select value={w.type} onChange={e => setWidgets(v => v.map((x,j) => j===i ? {...x, type: e.target.value as WidgetType} : x))} className="flex-1 px-2 py-2 rounded-lg text-sm outline-none w-full" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}>
-                      {(Object.keys(WIDGET_LABELS) as WidgetType[]).map(t => <option key={t} value={t}>{WIDGET_LABELS[t]}</option>)}
-                    </select>
-                  </div>
-                  <button onClick={() => setWidgets(v => v.filter((_,j) => j !== i))} className="absolute right-2 top-2 w-8 h-8 flex items-center justify-center rounded-full flex-shrink-0" style={{ color: '#F4212E' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(244,33,46,0.1)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>×</button>
-                  <IMEInput value={w.title || ''} onValueChange={v => setWidgets(arr => arr.map((x,j) => j===i ? {...x, title: v} : x))} placeholder={'标题（留空用默认）'} className="w-full px-2 py-2 rounded-lg text-sm outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
-                  {w.type === 'custom' && <IMETextarea value={w.content || ''} onValueChange={v => setWidgets(arr => arr.map((x,j) => j===i ? {...x, content: v} : x))} placeholder="自定义内容" rows={3} className="w-full px-2 py-2 rounded-lg text-sm outline-none resize-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />}
-                  {w.type === 'carousel' && (
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>右侧栏组件</h3>
+                  <button onClick={() => setWidgets(v => [...v, { type: 'custom', enabled: true, title: '', content: '' }])} className="px-3 py-2 rounded-full text-sm font-medium w-full sm:w-auto min-h-10" style={{ background: 'rgba(29,155,240,0.15)', color: 'var(--accent)' }}>+ 添加</button>
+                </div>
+                <p className={`${sectionHintClass} mt-1`} style={{ color: 'var(--text-secondary)' }}>配置前台右侧栏显示的组件</p>
+                <div className="flex flex-col gap-2 sm:gap-3 mt-3">
+                  {widgets.map((w, i) => (
+                    <div key={i} className={`${mobileSubCardClass} relative flex flex-col gap-2 sm:gap-3`} style={{ background: 'var(--bg-hover)' }}>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:pr-10">
+                        <div className="flex items-center gap-1 sm:flex-col sm:gap-0.5 flex-shrink-0 self-start">
+                          <button onClick={() => { const a = [...widgets]; if (i > 0) { [a[i-1],a[i]]=[a[i],a[i-1]]; setWidgets(a); } }} disabled={i === 0} className="w-8 h-8 sm:w-5 sm:h-5 flex items-center justify-center text-xs disabled:opacity-30" style={{ color: 'var(--text-secondary)' }}>↑</button>
+                          <button onClick={() => { const a = [...widgets]; if (i < a.length-1) { [a[i],a[i+1]]=[a[i+1],a[i]]; setWidgets(a); } }} disabled={i === widgets.length - 1} className="w-8 h-8 sm:w-5 sm:h-5 flex items-center justify-center text-xs disabled:opacity-30" style={{ color: 'var(--text-secondary)' }}>↓</button>
+                        </div>
+                        <input type="checkbox" checked={w.enabled} onChange={e => setWidgets(v => v.map((x,j) => j===i ? {...x, enabled: e.target.checked} : x))} className="w-4 h-4 flex-shrink-0" />
+                        <select value={w.type} onChange={e => setWidgets(v => v.map((x,j) => j===i ? {...x, type: e.target.value as WidgetType} : x))} className="flex-1 px-2 py-2 rounded-lg text-sm outline-none w-full" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}>
+                          {(Object.keys(WIDGET_LABELS) as WidgetType[]).map(t => <option key={t} value={t}>{WIDGET_LABELS[t]}</option>)}
+                        </select>
+                      </div>
+                      <button onClick={() => setWidgets(v => v.filter((_,j) => j !== i))} className="absolute right-2 top-2 w-8 h-8 flex items-center justify-center rounded-full flex-shrink-0" style={{ color: '#F4212E' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(244,33,46,0.1)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>×</button>
+                      <IMEInput value={w.title || ''} onValueChange={v => setWidgets(arr => arr.map((x,j) => j===i ? {...x, title: v} : x))} placeholder={'标题（留空用默认）'} className="w-full px-2 py-2 rounded-lg text-sm outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+                      {w.type === 'custom' && <IMETextarea value={w.content || ''} onValueChange={v => setWidgets(arr => arr.map((x,j) => j===i ? {...x, content: v} : x))} placeholder="自定义内容" rows={3} className="w-full px-2 py-2 rounded-lg text-sm outline-none resize-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />}
+                      {w.type === 'carousel' && (
                     <div className="flex flex-col gap-2">
                       <div className="flex flex-col gap-2 rounded-xl p-2.5 sm:p-0 sm:rounded-none sm:gap-2 sm:flex-row sm:items-center">
                         <div className="flex items-center gap-2 sm:flex-1">
@@ -518,6 +522,9 @@ export default function SettingsPage() {
               ))}
             </div>
             <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>修改后点击底部「保存设置」生效</p>
+          </div>
+
+        </div>
           </div>
 
         </div>
