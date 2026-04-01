@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 
 type ThemeMode = 'dark' | 'light'
@@ -64,6 +64,7 @@ function AdminUpdateChecker({ compact = false }: { compact?: boolean }) {
   const [confirmUpdate, setConfirmUpdate] = useState(false)
   const [updateLogs, setUpdateLogs] = useState<{ msg: string; error?: boolean }[]>([])
   const [open, setOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
 
   const check = async () => {
     setLoading(true)
@@ -83,6 +84,17 @@ function AdminUpdateChecker({ compact = false }: { compact?: boolean }) {
     const t = setInterval(check, 10 * 60 * 1000) // 每10分钟自动检查
     return () => clearInterval(t)
   }, [])
+
+  useEffect(() => {
+    if (!open) return
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('pointerdown', handlePointerDown)
+    return () => document.removeEventListener('pointerdown', handlePointerDown)
+  }, [open])
 
   const doUpdate = async () => {
     if (!confirmUpdate) {
@@ -115,6 +127,7 @@ function AdminUpdateChecker({ compact = false }: { compact?: boolean }) {
               if (obj.success) {
                 toast.success('✅ 更新完成，服务已重启')
                 await check()
+                setOpen(false)
               } else {
                 toast.error('❌ 更新失败，请查看日志')
               }
@@ -130,9 +143,13 @@ function AdminUpdateChecker({ compact = false }: { compact?: boolean }) {
   }
 
   return (
-    <div className="relative">
+    <div ref={rootRef} className="relative">
       <button
-        onClick={() => { setOpen(o => !o); if (!open && !info) check() }}
+        onClick={() => {
+          const nextOpen = !open
+          setOpen(nextOpen)
+          if (nextOpen && !info) check()
+        }}
         title={info?.hasUpdate ? `有新版本可用（${info.commits.length} 个更新）` : '检查更新'}
         className={compact
           ? 'flex items-center justify-center gap-1 px-3 py-2 rounded-full text-xs transition-colors relative shrink-0 min-w-[68px]'
@@ -156,54 +173,71 @@ function AdminUpdateChecker({ compact = false }: { compact?: boolean }) {
       </button>
 
       {open && (
-        <div className="static md:absolute md:bottom-full md:left-0 md:right-0 md:mb-2 mt-2 md:mt-0 rounded-2xl shadow-2xl z-50 overflow-hidden" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', minWidth: 260 }}>
-          <div className="p-4 flex flex-col gap-3 max-h-72 md:max-h-96 overflow-y-auto">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>🔄 版本更新</span>
-              <button onClick={() => setOpen(false)} className="text-xs" style={{ color: 'var(--text-secondary)' }}>✕</button>
+        <div
+          className={compact
+            ? 'absolute right-0 top-full mt-2 z-50 w-[min(92vw,340px)] rounded-2xl shadow-2xl overflow-hidden'
+            : 'absolute left-0 bottom-full mb-2 z-50 w-[360px] max-w-[calc(100vw-16px)] rounded-2xl shadow-2xl overflow-hidden'}
+          style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
+        >
+          <div className={compact ? 'p-3 flex flex-col gap-2 max-h-[70vh] overflow-y-auto' : 'p-4 flex flex-col gap-3 max-h-96 overflow-y-auto'}>
+            <div className="flex items-center justify-between gap-2">
+              <span className={compact ? 'font-bold text-xs' : 'font-bold text-sm'} style={{ color: 'var(--text-primary)' }}>🔄 版本更新</span>
+              <button
+                onClick={() => setOpen(false)}
+                className={compact ? 'w-7 h-7 rounded-full flex items-center justify-center text-xs' : 'text-xs'}
+                style={{ color: 'var(--text-secondary)', background: compact ? 'var(--bg-hover)' : 'transparent' }}
+              >
+                ✕
+              </button>
             </div>
 
-            <div className="flex gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
-              <span>本地：<code className="px-1 rounded" style={{ background: 'var(--bg-hover)' }}>{info?.localCommit || '—'}</code></span>
-              <span>远程：<code className="px-1 rounded" style={{ background: 'var(--bg-hover)' }}>{info?.remoteCommit || '—'}</code></span>
+            <div className={compact ? 'grid grid-cols-1 gap-2 text-[11px]' : 'flex gap-2 text-xs'} style={{ color: 'var(--text-secondary)' }}>
+              <span className="flex items-center gap-2 rounded-xl px-2 py-1.5" style={{ background: 'var(--bg-hover)' }}>
+                <span className="shrink-0">本地</span>
+                <code className="px-1 rounded bg-transparent">{info?.localCommit || '—'}</code>
+              </span>
+              <span className="flex items-center gap-2 rounded-xl px-2 py-1.5" style={{ background: 'var(--bg-hover)' }}>
+                <span className="shrink-0">远程</span>
+                <code className="px-1 rounded bg-transparent">{info?.remoteCommit || '—'}</code>
+              </span>
             </div>
 
-            {info?.error && <p className="text-xs" style={{ color: '#F4212E' }}>⚠️ {info.error}</p>}
+            {info?.error && <p className={compact ? 'text-[11px]' : 'text-xs'} style={{ color: '#F4212E' }}>⚠️ {info.error}</p>}
 
             {info?.hasUpdate && info.commits.length > 0 && (
-              <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
-                <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>更新内容：</p>
+              <div className="flex flex-col gap-1 max-h-44 overflow-y-auto">
+                <p className={compact ? 'text-[11px] font-medium' : 'text-xs font-medium'} style={{ color: 'var(--text-secondary)' }}>更新内容：</p>
                 {info.commits.map(c => (
-                  <div key={c.sha} className="flex flex-col gap-0.5 px-2 py-1.5 rounded-lg" style={{ background: 'var(--bg-hover)' }}>
-                    <p className="text-xs" style={{ color: 'var(--text-primary)' }}>{c.message}</p>
-                    <p className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>{c.sha} · {c.author} · {c.date ? new Date(c.date).toLocaleDateString('zh-CN') : ''}</p>
+                  <div key={c.sha} className="flex flex-col gap-1 px-3 py-2 rounded-xl" style={{ background: 'var(--bg-hover)' }}>
+                    <p className={compact ? 'text-[11px] leading-snug' : 'text-xs'} style={{ color: 'var(--text-primary)' }}>{c.message}</p>
+                    <p className="text-[10px] leading-none" style={{ color: 'var(--text-secondary)' }}>{c.sha} · {c.author} · {c.date ? new Date(c.date).toLocaleDateString('zh-CN') : ''}</p>
                   </div>
                 ))}
               </div>
             )}
 
             {!info?.hasUpdate && !info?.error && (
-              <p className="text-xs text-center py-2" style={{ color: 'var(--text-secondary)' }}>✅ 当前已是最新版本</p>
+              <p className={compact ? 'text-[11px] text-center py-2' : 'text-xs text-center py-2'} style={{ color: 'var(--text-secondary)' }}>✅ 当前已是最新版本</p>
             )}
 
             {updateLogs.length > 0 && (
               <div className="flex flex-col gap-0.5 max-h-40 overflow-y-auto rounded-xl p-2" style={{ background: 'var(--bg)', fontFamily: 'monospace' }}>
                 {updateLogs.map((log, i) => (
-                  <p key={i} className="text-[11px] whitespace-pre-wrap" style={{ color: log.error ? '#F4212E' : 'var(--text-primary)' }}>{log.msg}</p>
+                  <p key={i} className={compact ? 'text-[10px] whitespace-pre-wrap' : 'text-[11px] whitespace-pre-wrap'} style={{ color: log.error ? '#F4212E' : 'var(--text-primary)' }}>{log.msg}</p>
                 ))}
-                {updating && <p className="text-[11px] animate-pulse" style={{ color: 'var(--accent)' }}>▋</p>}
+                {updating && <p className={compact ? 'text-[10px] animate-pulse' : 'text-[11px] animate-pulse'} style={{ color: 'var(--accent)' }}>▋</p>}
               </div>
             )}
 
-            <div className="flex gap-2">
-              <button onClick={check} disabled={loading || updating} className="flex-1 px-3 py-1.5 rounded-xl text-xs disabled:opacity-50" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
+            <div className={compact ? 'flex flex-col gap-2' : 'flex gap-2'}>
+              <button onClick={check} disabled={loading || updating} className="flex-1 px-3 py-2 rounded-xl text-xs disabled:opacity-50" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
                 {loading ? '检查中...' : '重新检查'}
               </button>
               {info?.hasUpdate && (
                 <button
                   onClick={doUpdate}
                   disabled={updating}
-                  className="flex-1 px-3 py-1.5 rounded-xl text-xs font-bold text-white disabled:opacity-50 transition-all"
+                  className="flex-1 px-3 py-2 rounded-xl text-xs font-bold text-white disabled:opacity-50 transition-all"
                   style={{ background: confirmUpdate ? '#F4212E' : 'var(--accent)' }}
                 >
                   {updating ? '更新中...' : confirmUpdate ? '⚠️ 再次点击确认' : '立即更新'}
