@@ -103,7 +103,7 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
       {/* 抽屉主体 — 从左侧滑入 */}
       <div
         ref={drawerRef}
-        className="absolute left-0 top-0 h-full w-[min(84vw,20rem)] flex flex-col py-4 px-3"
+        className="absolute left-0 top-0 h-full w-[min(84vw,20rem)] flex flex-col py-2.5 px-3"
         style={{
           background: 'var(--bg)',
           borderRight: '1px solid var(--border)',
@@ -111,21 +111,6 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* 顶部：关闭 */}
-        <div className="flex items-center justify-end mb-4 px-1">
-          <button
-            onClick={onClose}
-            className="w-9 h-9 rounded-full flex items-center justify-center transition-colors"
-            style={{ color: 'var(--text-secondary)' }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
         <div className="flex-1 overflow-y-auto pr-1 space-y-4">
           {/* 主入口 */}
           <section className="px-1 space-y-1.5">
@@ -311,7 +296,7 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
               aria-label="打开账号菜单"
               className="flex items-center gap-2 w-full px-1.5 py-1.25 rounded-full transition-colors"
               style={{ color: 'var(--text-primary)' }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(29,155,240,0.06)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
             >
               <div
@@ -343,7 +328,7 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
                   onClick={() => { setMenuOpen(false); onClose() }}
                   className="flex items-center gap-3 px-0.5 py-2.5 text-sm font-medium transition-colors"
                   style={{ color: 'var(--text-primary)' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(29,155,240,0.05)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--text-secondary)' }}>
@@ -353,7 +338,7 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
                   后台控制台
                 </Link>
                 <div style={{ borderTop: '1px solid var(--border)' }} />
-                <div className="flex items-center justify-between px-0.5 py-2.5">
+                <div className="flex items-center justify-between px-0.5 py-2.5" onMouseEnter={e => (e.currentTarget.style.background = 'rgba(29,155,240,0.05)')}>
                   <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>切换主题</span>
                   <ThemeToggle className="w-8 h-8" />
                 </div>
@@ -362,7 +347,7 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
                   onClick={logout}
                   className="flex items-center gap-3 px-0.5 py-2.5 text-sm font-medium w-full text-left transition-colors"
                   style={{ color: 'var(--text-primary)' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(29,155,240,0.05)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--text-secondary)' }}>
@@ -375,7 +360,6 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
               </div>
             )}
           </div>
-        )}
       </div>
 
       <style>{`
