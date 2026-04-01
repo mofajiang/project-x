@@ -428,8 +428,8 @@ export default function SettingsPage() {
             <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>配置前台右侧栏显示的组件</p>
             <div className="flex flex-col gap-2 sm:gap-3">
               {widgets.map((w, i) => (
-                <div key={i} className={`${mobileSubCardClass} flex flex-col gap-2 sm:gap-3`} style={{ background: 'var(--bg-hover)' }}>
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <div key={i} className={`${mobileSubCardClass} relative flex flex-col gap-2 sm:gap-3`} style={{ background: 'var(--bg-hover)' }}>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:pr-10">
                     <div className="flex items-center gap-1 sm:flex-col sm:gap-0.5 flex-shrink-0 self-start">
                       <button onClick={() => { const a = [...widgets]; if (i > 0) { [a[i-1],a[i]]=[a[i],a[i-1]]; setWidgets(a); } }} disabled={i === 0} className="w-8 h-8 sm:w-5 sm:h-5 flex items-center justify-center text-xs disabled:opacity-30" style={{ color: 'var(--text-secondary)' }}>↑</button>
                       <button onClick={() => { const a = [...widgets]; if (i < a.length-1) { [a[i],a[i+1]]=[a[i+1],a[i]]; setWidgets(a); } }} disabled={i === widgets.length - 1} className="w-8 h-8 sm:w-5 sm:h-5 flex items-center justify-center text-xs disabled:opacity-30" style={{ color: 'var(--text-secondary)' }}>↓</button>
@@ -438,8 +438,8 @@ export default function SettingsPage() {
                     <select value={w.type} onChange={e => setWidgets(v => v.map((x,j) => j===i ? {...x, type: e.target.value as WidgetType} : x))} className="flex-1 px-2 py-2 rounded-lg text-sm outline-none w-full" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}>
                       {(Object.keys(WIDGET_LABELS) as WidgetType[]).map(t => <option key={t} value={t}>{WIDGET_LABELS[t]}</option>)}
                     </select>
-                    <button onClick={() => setWidgets(v => v.filter((_,j) => j !== i))} className="w-full sm:w-7 h-10 sm:h-7 flex items-center justify-center rounded-full flex-shrink-0" style={{ color: '#F4212E' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(244,33,46,0.1)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>×</button>
                   </div>
+                  <button onClick={() => setWidgets(v => v.filter((_,j) => j !== i))} className="absolute right-2 top-2 w-8 h-8 flex items-center justify-center rounded-full flex-shrink-0" style={{ color: '#F4212E' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(244,33,46,0.1)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>×</button>
                   <IMEInput value={w.title || ''} onValueChange={v => setWidgets(arr => arr.map((x,j) => j===i ? {...x, title: v} : x))} placeholder={'标题（留空用默认）'} className="w-full px-2 py-2 rounded-lg text-sm outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
                   {w.type === 'custom' && <IMETextarea value={w.content || ''} onValueChange={v => setWidgets(arr => arr.map((x,j) => j===i ? {...x, content: v} : x))} placeholder="自定义内容" rows={3} className="w-full px-2 py-2 rounded-lg text-sm outline-none resize-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />}
                   {w.type === 'carousel' && (
