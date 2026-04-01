@@ -30,7 +30,37 @@ const ICON_OPTIONS = [
   { value: 'user', label: '👤 用户' },
 ]
 
-function Field({ label, value, onChange, placeholder, type = 'text' }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) {
+function Field({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = 'text',
+  compact = false,
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  placeholder?: string
+  type?: string
+  compact?: boolean
+}) {
+  if (compact) {
+    return (
+      <div className="flex items-center gap-2 min-w-0">
+        <label className="w-24 shrink-0 text-[11px] sm:text-sm font-medium leading-tight truncate" style={{ color: 'var(--text-secondary)' }}>{label}</label>
+        <IMEInput
+          type={type}
+          value={value}
+          onValueChange={onChange}
+          placeholder={placeholder}
+          className="min-w-0 flex-1 px-3 py-2 rounded-2xl text-sm outline-none"
+          style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}
+        />
+      </div>
+    )
+  }
+
   return (
     <div>
       <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>{label}</label>
@@ -198,9 +228,9 @@ export default function SettingsPage() {
   }, [])
 
   const sectionTitleClass = 'text-base sm:text-lg font-bold leading-tight tracking-tight'
-  const sectionHintClass = 'text-[11px] sm:text-xs leading-relaxed text-balance'
-  const mobileCardClass = 'rounded-2xl p-3 sm:p-6'
-  const mobileSubCardClass = 'rounded-xl p-2.5 sm:p-4'
+  const sectionHintClass = 'text-[10px] sm:text-xs leading-relaxed text-balance'
+  const mobileCardClass = 'rounded-2xl p-2.5 sm:p-6'
+  const mobileSubCardClass = 'rounded-xl p-2 sm:p-4'
 
   return (
     <div>
@@ -220,26 +250,16 @@ export default function SettingsPage() {
         <div className="flex flex-col gap-3 sm:gap-6">
 
           {/* 授权状态 */}
-          <div className={`${mobileCardClass} flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4`} style={{ background: licenseChecking ? 'var(--bg-secondary)' : licenseResult?.authorized ? 'rgba(0,186,124,0.08)' : 'rgba(244,33,46,0.08)', border: `1px solid ${licenseChecking ? 'var(--border)' : licenseResult?.authorized ? '#00ba7c' : '#F4212E'}` }}>
-            <div className="text-2xl sm:text-3xl flex-shrink-0 leading-none">
+          <div className={`${mobileCardClass} flex flex-row items-center gap-2 sm:gap-4`} style={{ background: licenseChecking ? 'var(--bg-secondary)' : licenseResult?.authorized ? 'rgba(0,186,124,0.08)' : 'rgba(244,33,46,0.08)', border: `1px solid ${licenseChecking ? 'var(--border)' : licenseResult?.authorized ? '#00ba7c' : '#F4212E'}` }}>
+            <div className="text-xl sm:text-3xl flex-shrink-0 leading-none">
               {licenseChecking ? '⏳' : licenseResult?.authorized ? '✅' : '❌'}
             </div>
-            <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-              <p className="font-bold text-sm sm:text-base leading-tight" style={{ color: licenseChecking ? 'var(--text-primary)' : licenseResult?.authorized ? '#00ba7c' : '#F4212E' }}>
-                {licenseChecking ? '正在验证授权...' : licenseResult?.authorized ? '授权有效' : '未授权'}
+            <div className="min-w-0 flex-1">
+              <p className="font-bold text-sm leading-tight truncate sm:text-base" style={{ color: licenseChecking ? 'var(--text-primary)' : licenseResult?.authorized ? '#00ba7c' : '#F4212E' }}>
+                {licenseChecking
+                  ? '正在验证授权...'
+                  : `${licenseResult?.authorized ? '授权有效' : '未授权'}${licenseResult?.currentHost ? ` · ${licenseResult.currentHost}` : ''}`}
               </p>
-              {!licenseChecking && licenseResult?.currentHost && (
-                <p className="text-[11px] sm:text-xs font-mono break-all sm:truncate" style={{ color: 'var(--text-secondary)' }}>{licenseResult.currentHost}</p>
-              )}
-              {!licenseChecking && !licenseResult?.authorized && (
-                <p className="text-[11px] sm:text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                  {(licenseResult as any)?.error?.includes('尚未绑定域名')
-                    ? '请在上方「域名绑定」中填写您的博客域名'
-                    : (licenseResult as any)?.error?.includes('NEXT_PUBLIC_SITE_URL')
-                    ? '请在上方「域名绑定」中填写域名，或配置环境变量 NEXT_PUBLIC_SITE_URL'
-                    : '当前域名未授权，请联系主题作者。'}
-                </p>
-              )}
             </div>
             <button
               onClick={() => {
@@ -252,16 +272,16 @@ export default function SettingsPage() {
                   .finally(() => setLicenseChecking(false))
               }}
               disabled={licenseChecking}
-              className="self-end sm:self-auto sm:ml-auto flex-shrink-0 w-9 h-9 sm:w-8 sm:h-8 flex items-center justify-center rounded-full transition-colors disabled:opacity-40"
+              className="ml-auto flex-shrink-0 w-8 h-8 sm:w-8 sm:h-8 flex items-center justify-center rounded-full transition-colors disabled:opacity-40"
               style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}
               title="重新检测"
             >↻</button>
           </div>
 
           {/* 个人资料 */}
-          <div className={`${mobileCardClass} flex flex-col gap-3 sm:gap-4`} style={{ background: 'var(--bg-secondary)' }}>
+          <div className={`${mobileCardClass} flex flex-col gap-2.5 sm:gap-4`} style={{ background: 'var(--bg-secondary)' }}>
             <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>👤 个人资料</h2>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
               <div className="relative w-16 h-16 rounded-full overflow-hidden flex-shrink-0 cursor-pointer" style={{ background: 'var(--bg-hover)' }} onClick={() => avatarInputRef.current?.click()}>
                 {profile.avatar ? <Image src={profile.avatar} alt="头像" fill className="object-cover" /> : <div className="w-full h-full flex items-center justify-center text-2xl">👤</div>}
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity" style={{ background: 'rgba(0,0,0,0.5)' }}><span className="text-white text-xs">更换</span></div>
@@ -272,25 +292,25 @@ export default function SettingsPage() {
               </div>
               <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={uploadAvatar} />
             </div>
-            <div><label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>显示名称</label><IMEInput type="text" value={profile.displayName} onValueChange={v => setProfile(p => ({ ...p, displayName: v }))} placeholder="我的博客" className="w-full px-3 py-2 rounded-2xl text-sm outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} /></div>
-            <div><label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>账号 @handle（用于登录）</label><IMEInput type="text" value={profile.username} onValueChange={v => setProfile(p => ({ ...p, username: v }))} placeholder="admin" className="w-full px-3 py-2 rounded-2xl text-sm outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} /></div>
+            <Field compact label="显示名称" value={profile.displayName} onChange={v => setProfile(p => ({ ...p, displayName: v }))} placeholder="我的博客" />
+            <Field compact label="账号 @handle（用于登录）" value={profile.username} onChange={v => setProfile(p => ({ ...p, username: v }))} placeholder="admin" />
             <div><label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>个人简介</label><IMETextarea value={profile.bio} onValueChange={v => setProfile(p => ({ ...p, bio: v }))} rows={3} placeholder="一句话介绍自己..." className="w-full px-3 py-2 rounded-2xl text-sm outline-none resize-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} /></div>
             <button onClick={saveProfile} disabled={savingProfile} className="self-stretch sm:self-start px-6 py-2.5 rounded-full text-sm font-bold text-white disabled:opacity-50" style={{ background: 'var(--accent)' }}>{savingProfile ? '保存中...' : '保存个人资料'}</button>
           </div>
 
           {/* 基本信息 */}
-          <div className={`${mobileCardClass} flex flex-col gap-3 sm:gap-4`} style={{ background: 'var(--bg-secondary)' }}>
+          <div className={`${mobileCardClass} flex flex-col gap-2.5 sm:gap-4`} style={{ background: 'var(--bg-secondary)' }}>
             <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>🌐 基本信息</h2>
-            <Field label="博客名称" value={config.siteName} onChange={v => setConfig(c => ({ ...c, siteName: v }))} placeholder="我的博客" />
+            <Field compact label="博客名称" value={config.siteName} onChange={v => setConfig(c => ({ ...c, siteName: v }))} placeholder="我的博客" />
             <div><label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>博客简介</label><IMETextarea value={config.siteDesc} onValueChange={v => setConfig(c => ({ ...c, siteDesc: v }))} rows={3} placeholder="一句话介绍自己..." className="w-full px-3 py-2 rounded-2xl text-sm outline-none resize-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} /></div>
           </div>
 
           {/* 社交账号 */}
-          <div className={`${mobileCardClass} flex flex-col gap-3 sm:gap-4`} style={{ background: 'var(--bg-secondary)' }}>
+          <div className={`${mobileCardClass} flex flex-col gap-2.5 sm:gap-4`} style={{ background: 'var(--bg-secondary)' }}>
             <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>🔗 社交账号</h2>
-            <Field label="X (Twitter) 用户名" value={config.socialX} onChange={v => setConfig(c => ({ ...c, socialX: v }))} placeholder="yourusername" />
-            <Field label="GitHub 用户名" value={config.socialGithub} onChange={v => setConfig(c => ({ ...c, socialGithub: v }))} placeholder="yourusername" />
-            <Field label="邮箱" value={config.socialEmail} onChange={v => setConfig(c => ({ ...c, socialEmail: v }))} placeholder="you@example.com" />
+            <Field compact label="X (Twitter) 用户名" value={config.socialX} onChange={v => setConfig(c => ({ ...c, socialX: v }))} placeholder="yourusername" />
+            <Field compact label="GitHub 用户名" value={config.socialGithub} onChange={v => setConfig(c => ({ ...c, socialGithub: v }))} placeholder="yourusername" />
+            <Field compact label="邮箱" value={config.socialEmail} onChange={v => setConfig(c => ({ ...c, socialEmail: v }))} placeholder="you@example.com" />
           </div>
 
           {/* 评论设置 */}
@@ -303,11 +323,11 @@ export default function SettingsPage() {
           </div>
 
           {/* 版权信息 */}
-          <div className={`${mobileCardClass} flex flex-col gap-3 sm:gap-4`} style={{ background: 'var(--bg-secondary)' }}>
+          <div className={`${mobileCardClass} flex flex-col gap-2.5 sm:gap-4`} style={{ background: 'var(--bg-secondary)' }}>
             <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>© 版权信息</h2>
-            <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>显示在右侧栏底部，支持 HTML</p>
+            <p className={`${sectionHintClass} hidden sm:block`} style={{ color: 'var(--text-secondary)' }}>显示在右侧栏底部，支持 HTML</p>
             {/* 模板快捷按钮 */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {[
                 { label: '简洁版', text: `© ${new Date().getFullYear()} ${config.siteName || '我的博客'}. All rights reserved.` },
                 { label: 'CC BY 4.0', text: `© ${new Date().getFullYear()} ${config.siteName || '我的博客'}\n本站内容采用 <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank">CC BY 4.0</a> 协议授权。` },
@@ -318,7 +338,7 @@ export default function SettingsPage() {
                   key={tpl.label}
                   type="button"
                   onClick={() => setConfig(c => ({ ...c, copyright: tpl.text }))}
-                  className="text-xs px-3 py-2 rounded-lg transition-colors text-left sm:text-center w-full"
+                  className="text-xs px-2.5 py-2 rounded-lg transition-colors text-left sm:text-center w-full"
                   style={{ background: 'var(--bg-hover)', color: 'var(--accent)', border: '1px solid var(--border)' }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#fff')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg-hover)', e.currentTarget.style.color = 'var(--accent)')}
@@ -334,34 +354,38 @@ export default function SettingsPage() {
         <div className="flex flex-col gap-4 sm:gap-6">
 
           {/* 网站图标 */}
-          <div className={`${mobileCardClass} flex flex-col gap-3 sm:gap-4`} style={{ background: 'var(--bg-secondary)' }}>
+          <div className={`${mobileCardClass} flex flex-col gap-2.5 sm:gap-4`} style={{ background: 'var(--bg-secondary)' }}>
             <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>🖼 网站图标</h2>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-5">
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden" style={{ background: 'var(--bg-hover)' }}>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden" style={{ background: 'var(--bg-hover)' }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                {siteIcon ? <img src={siteIcon} alt="网站图标" className="w-full h-full object-contain" /> : <span className="text-3xl">🌐</span>}
-              </div>
-              <div className="flex flex-col gap-2 w-full sm:w-auto">
-                <button onClick={() => iconInputRef.current?.click()} disabled={uploadingIcon} className="px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50 w-full sm:w-auto" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>{uploadingIcon ? '上传中...' : '上传图标'}</button>
-                <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>建议 32x32 或 64x64 PNG/ICO</p>
-                {siteIcon && <button onClick={() => setSiteIcon('')} className="text-xs self-start" style={{ color: '#F4212E' }}>移除图标</button>}
+                  {siteIcon ? <img src={siteIcon} alt="网站图标" className="w-full h-full object-contain" /> : <span className="text-3xl">🌐</span>}
+                </div>
+                <div className="flex flex-col gap-2 min-w-0 flex-1">
+                  <button onClick={() => iconInputRef.current?.click()} disabled={uploadingIcon} className="px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50 w-full sm:w-auto" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>{uploadingIcon ? '上传中...' : '上传图标'}</button>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>建议 32x32 或 64x64 PNG/ICO</p>
+                    {siteIcon && <button onClick={() => setSiteIcon('')} className="text-xs shrink-0" style={{ color: '#F4212E' }}>移除</button>}
+                  </div>
+                </div>
               </div>
               <input ref={iconInputRef} type="file" accept="image/*,.ico" className="hidden" onChange={uploadIcon} />
+              {siteIcon && <div className="flex items-center gap-2 min-w-0 overflow-hidden"><span className="text-xs shrink-0" style={{ color: 'var(--text-secondary)' }}>路径：</span><span className="text-xs font-mono px-2 py-0.5 rounded truncate" style={{ background: 'var(--bg)', color: 'var(--accent)' }}>{siteIcon}</span></div>}
             </div>
-            {siteIcon && <div className="flex items-center gap-2"><span className="text-xs" style={{ color: 'var(--text-secondary)' }}>路径：</span><span className="text-xs font-mono px-2 py-0.5 rounded" style={{ background: 'var(--bg)', color: 'var(--accent)' }}>{siteIcon}</span></div>}
             <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>上传后点击底部「保存设置」生效</p>
           </div>
 
           {/* 默认主题 */}
-          <div className={mobileCardClass} style={{ background: 'var(--bg-secondary)' }}>
+          <div className={`${mobileCardClass} flex flex-col gap-2.5 sm:gap-4`} style={{ background: 'var(--bg-secondary)' }}>
             <h2 className={`${sectionTitleClass} mb-1`} style={{ color: 'var(--text-primary)' }}>🌙 默认主题</h2>
-            <p className={`${sectionHintClass} mb-3`} style={{ color: 'var(--text-secondary)' }}>访客首次访问时使用的主题</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <p className={`${sectionHintClass} hidden sm:block`} style={{ color: 'var(--text-secondary)' }}>访客首次访问时使用的主题</p>
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
               {(['dark', 'light'] as const).map((t) => (
-                <button key={t} onClick={() => setDefaultTheme(t)} className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl border-2 transition-colors" style={{ background: defaultTheme === t ? 'var(--bg-hover)' : 'transparent', borderColor: defaultTheme === t ? 'var(--accent)' : 'var(--border)' }}>
-                  <span className="text-xl">{t === 'dark' ? '🌙' : '☀️'}</span>
-                  <div className="text-left"><p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{t === 'dark' ? '深色' : '浅色'}</p><p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{t === 'dark' ? '黑色背景' : '白色背景'}</p></div>
-                  {defaultTheme === t && <span className="ml-auto text-xs font-bold" style={{ color: 'var(--accent)' }}>✓</span>}
+                <button key={t} onClick={() => setDefaultTheme(t)} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl border-2 transition-colors" style={{ background: defaultTheme === t ? 'var(--bg-hover)' : 'transparent', borderColor: defaultTheme === t ? 'var(--accent)' : 'var(--border)' }}>
+                  <span className="text-xl flex-shrink-0">{t === 'dark' ? '🌙' : '☀️'}</span>
+                  <div className="min-w-0 text-left flex-1"><p className="text-sm font-bold leading-tight" style={{ color: 'var(--text-primary)' }}>{t === 'dark' ? '深色' : '浅色'}</p><p className="hidden sm:block text-xs" style={{ color: 'var(--text-secondary)' }}>{t === 'dark' ? '黑色背景' : '白色背景'}</p></div>
+                  {defaultTheme === t && <span className="ml-auto text-xs font-bold shrink-0" style={{ color: 'var(--accent)' }}>✓</span>}
                 </button>
               ))}
             </div>
