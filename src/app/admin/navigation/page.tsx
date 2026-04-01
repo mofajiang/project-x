@@ -29,9 +29,16 @@ const ICON_OPTIONS = [
   { value: 'user', label: '👤 用户' },
 ]
 
+function normalizeWidget(widget: Widget): Widget {
+  return {
+    ...widget,
+    mobileVisible: widget.mobileVisible ?? widget.type !== 'search',
+  }
+}
+
 export default function AdminNavigationPage() {
   const [navItems, setNavItems] = useState<NavItem[]>(DEFAULT_NAV)
-  const [widgets, setWidgets] = useState<Widget[]>(DEFAULT_WIDGETS)
+  const [widgets, setWidgets] = useState<Widget[]>(DEFAULT_WIDGETS.map(normalizeWidget))
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -42,7 +49,7 @@ export default function AdminNavigationPage() {
       } catch {}
       try {
         const w = JSON.parse(data.rightPanelWidgets || '[]')
-        if (Array.isArray(w)) setWidgets(w)
+        if (Array.isArray(w)) setWidgets(w.map((item: Widget) => normalizeWidget(item)))
       } catch {}
     })
   }, [])
@@ -70,6 +77,9 @@ export default function AdminNavigationPage() {
   }
   const updateNavItem = (i: number, field: keyof NavItem, val: string) =>
     setNavItems(v => v.map((item, idx) => idx === i ? { ...item, [field]: val } : item))
+
+  const updateWidget = (i: number, next: Partial<Widget>) =>
+    setWidgets(v => v.map((item, idx) => idx === i ? { ...item, ...next } : item))
 
   const sectionTitleClass = 'text-base sm:text-lg font-bold leading-tight tracking-tight'
   const sectionHintClass = 'text-[10px] sm:text-xs leading-relaxed text-balance'
@@ -116,7 +126,7 @@ export default function AdminNavigationPage() {
             <div className="pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>右侧栏组件</h3>
-                <button onClick={() => setWidgets(v => [...v, { type: 'custom', enabled: true, title: '', content: '' }])} className="px-3 py-2 rounded-full text-sm font-medium w-full sm:w-auto min-h-10" style={{ background: 'rgba(29,155,240,0.15)', color: 'var(--accent)' }}>+ 添加</button>
+                <button onClick={() => setWidgets(v => [...v, normalizeWidget({ type: 'custom', enabled: true, mobileVisible: true, title: '', content: '' })])} className="px-3 py-2 rounded-full text-sm font-medium w-full sm:w-auto min-h-10" style={{ background: 'rgba(29,155,240,0.15)', color: 'var(--accent)' }}>+ 添加</button>
               </div>
               <p className={`${sectionHintClass} mt-1`} style={{ color: 'var(--text-secondary)' }}>配置前台右侧栏显示的组件</p>
               <div className="flex flex-col gap-2 sm:gap-3 mt-3">
@@ -127,13 +137,23 @@ export default function AdminNavigationPage() {
                         <button onClick={() => { const a = [...widgets]; if (i > 0) { [a[i-1],a[i]]=[a[i],a[i-1]]; setWidgets(a); } }} disabled={i === 0} className="w-8 h-8 sm:w-5 sm:h-5 flex items-center justify-center text-xs disabled:opacity-30" style={{ color: 'var(--text-secondary)' }}>↑</button>
                         <button onClick={() => { const a = [...widgets]; if (i < a.length-1) { [a[i],a[i+1]]=[a[i+1],a[i]]; setWidgets(a); } }} disabled={i === widgets.length - 1} className="w-8 h-8 sm:w-5 sm:h-5 flex items-center justify-center text-xs disabled:opacity-30" style={{ color: 'var(--text-secondary)' }}>↓</button>
                       </div>
-                      <input type="checkbox" checked={w.enabled} onChange={e => setWidgets(v => v.map((x,j) => j===i ? {...x, enabled: e.target.checked} : x))} className="w-4 h-4 flex-shrink-0" />
-                      <select value={w.type} onChange={e => setWidgets(v => v.map((x,j) => j===i ? {...x, type: e.target.value as WidgetType} : x))} className="flex-1 px-2 py-2 rounded-lg text-sm outline-none w-full" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <label className="inline-flex items-center gap-2 text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                          <input type="checkbox" checked={w.enabled} onChange={e => updateWidget(i, { enabled: e.target.checked })} className="w-4 h-4 flex-shrink-0" />
+                          启用
+                        </label>
+                        <label className="inline-flex items-center gap-2 text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                          <input type="checkbox" checked={w.mobileVisible !== false} onChange={e => updateWidget(i, { mobileVisible: e.target.checked })} className="w-4 h-4 flex-shrink-0" />
+                          手机端显示
+                        </label>
+                      </div>
+                      <select value={w.type} onChange={e => updateWidget(i, { type: e.target.value as WidgetType, mobileVisible: e.target.value === 'search' ? false : true })} className="flex-1 px-2 py-2 rounded-lg text-sm outline-none w-full" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}>
                         {(Object.keys(WIDGET_LABELS) as WidgetType[]).map(t => <option key={t} value={t}>{WIDGET_LABELS[t]}</option>)}
                       </select>
                     </div>
                     <button onClick={() => setWidgets(v => v.filter((_,j) => j !== i))} className="absolute right-2 top-2 w-8 h-8 flex items-center justify-center rounded-full flex-shrink-0" style={{ color: '#F4212E' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(244,33,46,0.1)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>×</button>
                     <IMEInput value={w.title || ''} onValueChange={v => setWidgets(arr => arr.map((x,j) => j===i ? {...x, title: v} : x))} placeholder={'标题（留空用默认）'} className="w-full px-2 py-2 rounded-lg text-sm outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+                    {w.type === 'search' && <p className="text-[10px] sm:text-xs" style={{ color: 'var(--text-secondary)' }}>搜索默认在手机端隐藏，避免和底部搜索重复；可在这里单独开启。</p>}
                     {w.type === 'custom' && <IMETextarea value={w.content || ''} onValueChange={v => setWidgets(arr => arr.map((x,j) => j===i ? {...x, content: v} : x))} placeholder="自定义内容" rows={3} className="w-full px-2 py-2 rounded-lg text-sm outline-none resize-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />}
                     {w.type === 'carousel' && (
                       <div className="flex flex-col gap-2">

@@ -66,7 +66,7 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
   const drawerRef = useRef<HTMLDivElement>(null)
-  const enabledWidgets = widgets.filter(w => w.enabled)
+  const enabledWidgets = widgets.filter(w => w.enabled && w.mobileVisible !== false)
 
   // 路由变化时关闭抽屉
   useEffect(() => { onClose() }, [pathname]) // eslint-disable-line react-hooks/exhaustive-deps

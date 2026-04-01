@@ -34,6 +34,7 @@ export type CarouselSlide = {
 export type RightPanelWidget = {
   type: WidgetType
   enabled: boolean
+  mobileVisible?: boolean   // 是否在手机端侧栏显示
   title?: string        // 自定义标题（覆盖默认）
   content?: string      // type=custom 时的内容
   links?: FriendLink[]  // type=links 时的友情链接列表
@@ -42,18 +43,25 @@ export type RightPanelWidget = {
 }
 
 export const DEFAULT_WIDGETS: RightPanelWidget[] = [
-  { type: 'search',   enabled: true },
-  { type: 'about',    enabled: true },
-  { type: 'tags',     enabled: true },
-  { type: 'hotPosts', enabled: true },
+  { type: 'search',   enabled: true, mobileVisible: false },
+  { type: 'about',    enabled: true, mobileVisible: true },
+  { type: 'tags',     enabled: true, mobileVisible: true },
+  { type: 'hotPosts', enabled: true, mobileVisible: true },
 ]
+
+function normalizeWidget(widget: RightPanelWidget): RightPanelWidget {
+  return {
+    ...widget,
+    mobileVisible: widget.mobileVisible ?? widget.type !== 'search',
+  }
+}
 
 export function parseWidgets(raw: string | undefined | null): RightPanelWidget[] {
   try {
     const parsed = JSON.parse(raw || '')
-    if (Array.isArray(parsed)) return parsed
+    if (Array.isArray(parsed)) return parsed.map(item => normalizeWidget(item as RightPanelWidget))
   } catch {}
-  return DEFAULT_WIDGETS
+  return DEFAULT_WIDGETS.map(normalizeWidget)
 }
 
 export type SiteConfig = {
