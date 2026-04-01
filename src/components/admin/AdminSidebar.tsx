@@ -175,9 +175,19 @@ function AdminUpdateChecker({ compact = false }: { compact?: boolean }) {
       {open && (
         <div
           className={compact
-            ? 'absolute right-0 top-full mt-2 z-50 w-[min(92vw,340px)] rounded-2xl shadow-2xl overflow-hidden'
+            ? 'fixed z-50 rounded-2xl shadow-2xl overflow-hidden'
             : 'absolute left-0 bottom-full mb-2 z-50 w-[360px] max-w-[calc(100vw-16px)] rounded-2xl shadow-2xl overflow-hidden'}
-          style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
+          style={compact
+            ? {
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border)',
+                left: '50%',
+                top: 'calc(3.5rem + env(safe-area-inset-top))',
+                transform: 'translateX(-50%)',
+                width: 'min(calc(100vw - 1rem), 360px)',
+                maxHeight: 'calc(100vh - 5rem)',
+              }
+            : { background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
         >
           <div className={compact ? 'p-3 flex flex-col gap-2 max-h-[70vh] overflow-y-auto' : 'p-4 flex flex-col gap-3 max-h-96 overflow-y-auto'}>
             <div className="flex items-center justify-between gap-2">
