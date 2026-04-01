@@ -4,6 +4,7 @@ import { useRouter, useParams } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { MarkdownEditor } from '@/components/admin/MarkdownEditor'
 import { IMEInput } from '@/components/ui/IMEInput'
+import { ADMIN_PAGE_TITLE_CLASS } from '@/components/admin/adminUi'
 
 export default function EditPostPage() {
   const params = useParams()
@@ -109,9 +110,9 @@ export default function EditPostPage() {
 
   return (
     <div className="max-w-3xl">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+          <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)' }}>
             {isNew ? '新建文章' : '编辑文章'}
           </h1>
           {hasDraft && (
@@ -122,14 +123,14 @@ export default function EditPostPage() {
             </div>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <button onClick={() => save(false)} disabled={saving}
-            className="px-4 py-2 rounded-full text-sm font-bold disabled:opacity-50"
+            className="px-4 py-2 rounded-full text-sm font-bold disabled:opacity-50 w-full sm:w-auto"
             style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
             保存草稿
           </button>
           <button onClick={() => save(true)} disabled={saving}
-            className="px-4 py-2 rounded-full text-sm font-bold text-white disabled:opacity-50"
+            className="px-4 py-2 rounded-full text-sm font-bold text-white disabled:opacity-50 w-full sm:w-auto"
             style={{ background: 'var(--accent)' }}>
             {saving ? '保存中...' : '发布'}
           </button>

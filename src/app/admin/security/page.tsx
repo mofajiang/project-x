@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import { ADMIN_PAGE_TITLE_CLASS, ADMIN_CARD_LG_CLASS } from '@/components/admin/adminUi'
 
 export default function SecurityPage() {
   const [config, setConfig] = useState({
@@ -43,10 +44,10 @@ export default function SecurityPage() {
 
   return (
     <div className="max-w-xl">
-      <h1 className="text-2xl font-bold mb-6" style={{ color: 'var(--text-primary)' }}>🔒 安全设置</h1>
+      <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)' }}>🔒 安全设置</h1>
 
       {/* 登录入口配置 */}
-      <div className="rounded-2xl p-6 mb-6" style={{ background: 'var(--bg-secondary)' }}>
+      <div className={`${ADMIN_CARD_LG_CLASS} mb-4 sm:mb-6`} style={{ background: 'var(--bg-secondary)' }}>
         <h2 className="font-bold text-lg mb-4" style={{ color: 'var(--text-primary)' }}>登录入口配置</h2>
 
         {/* 登录模式 */}
@@ -91,21 +92,21 @@ export default function SecurityPage() {
             <input
               type="number" min={3} max={20} value={config.secretClicks}
               onChange={e => setConfig(c => ({ ...c, secretClicks: Number(e.target.value) }))}
-              className="w-24 px-3 py-2 rounded-2xl text-sm outline-none"
+              className="w-28 sm:w-24 px-3 py-2 rounded-2xl text-sm outline-none"
               style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}
             />
           </div>
         )}
 
         <button onClick={saveConfig} disabled={saving}
-          className="px-6 py-2 rounded-full text-sm font-bold text-white disabled:opacity-50"
+          className="px-6 py-3 rounded-full text-sm font-bold text-white disabled:opacity-50 w-full sm:w-auto"
           style={{ background: 'var(--accent)' }}>
           {saving ? '保存中...' : '保存设置'}
         </button>
       </div>
 
       {/* 修改密码 */}
-      <div className="rounded-2xl p-6" style={{ background: 'var(--bg-secondary)' }}>
+      <div className={ADMIN_CARD_LG_CLASS} style={{ background: 'var(--bg-secondary)' }}>
         <h2 className="font-bold text-lg mb-4" style={{ color: 'var(--text-primary)' }}>修改密码</h2>
         <div className="flex flex-col gap-3">
           <input type="password" placeholder="旧密码" value={oldPassword} onChange={e => setOldPassword(e.target.value)}
@@ -115,7 +116,7 @@ export default function SecurityPage() {
             className="w-full px-3 py-2 rounded-2xl text-sm outline-none"
             style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
           <button onClick={changePassword}
-            className="px-6 py-2 rounded-full text-sm font-bold text-white w-fit"
+            className="px-6 py-3 rounded-full text-sm font-bold text-white w-full sm:w-fit"
             style={{ background: 'var(--accent)' }}>修改密码</button>
         </div>
       </div>

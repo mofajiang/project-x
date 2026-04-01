@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { useEffect, useState, useCallback } from 'react'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { ADMIN_PAGE_TITLE_CLASS, ADMIN_CARD_CLASS } from '@/components/admin/adminUi'
 
 interface Post {
   id: string
@@ -75,39 +76,72 @@ export default function AdminPostsPage() {
     toast.success('已删除')
   }
 
+  const renderPostCard = (post: Post) => (
+    <div key={post.id} className={`${ADMIN_CARD_CLASS} flex flex-col gap-3`} style={{ background: 'var(--bg-secondary)' }}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <Link href={`/admin/posts/${post.id}`} className="font-medium text-base leading-6 block truncate" style={{ color: 'var(--text-primary)' }}>
+            {post.title}
+          </Link>
+          <div className="text-xs mt-1 flex flex-wrap gap-x-3 gap-y-1" style={{ color: 'var(--text-secondary)' }}>
+            <span>浏览 {post.views}</span>
+            <span>评论 {post._count.comments}</span>
+            <span>{formatDate(post.createdAt)}</span>
+          </div>
+        </div>
+        <span className="px-2 py-0.5 rounded-full text-[11px] shrink-0 leading-none" style={{ background: post.published ? '#00BA7C22' : '#71767B22', color: post.published ? 'var(--green)' : 'var(--text-secondary)' }}>
+          {post.published ? '已发布' : '草稿'}
+        </span>
+      </div>
+
+      <div className="text-xs leading-5 break-words" style={{ color: 'var(--text-secondary)' }}>
+        {post.tags.map(t => `#${t.tag.name}`).join(' ')}
+      </div>
+
+      <div className="flex gap-2">
+        <Link href={`/admin/posts/${post.id}`}
+          className="flex-1 text-center px-3 py-2 rounded-full text-xs font-bold transition-colors hover:opacity-80 min-h-9"
+          style={{ background: 'rgba(29,155,240,0.15)', color: 'var(--accent)' }}>编辑</Link>
+        <button onClick={() => deletePost(post.id, post.title)}
+          className="flex-1 px-3 py-2 rounded-full text-xs font-bold transition-colors hover:opacity-80 min-h-9"
+          style={{ background: 'rgba(249,24,128,0.12)', color: 'var(--red)' }}>删除</button>
+      </div>
+    </div>
+  )
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>文章管理</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)' }}>文章管理</h1>
         <Link href="/admin/posts/new"
-          className="px-4 py-2 rounded-full text-sm font-bold text-white"
+          className="px-4 py-2 rounded-full text-sm font-bold text-white text-center"
           style={{ background: 'var(--accent)' }}>+ 新建文章</Link>
       </div>
 
       {/* 搜索 + 状态筛选 */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <form onSubmit={handleSearch} className="flex gap-2 flex-1">
+      <div className="flex flex-col gap-3 mb-4">
+        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2 flex-1">
           <input
             type="text"
             placeholder="搜索文章标题..."
             value={searchInput}
             onChange={e => setSearchInput(e.target.value)}
-            className="flex-1 px-4 py-2 rounded-full text-sm outline-none"
+            className="flex-1 px-4 py-2 rounded-full text-sm outline-none min-w-0"
             style={{ background: 'var(--bg-hover)', border: '1px solid transparent', color: 'var(--text-primary)' }}
           />
           <button type="submit"
-            className="px-4 py-2 rounded-full text-sm font-bold text-white"
+            className="px-4 py-2 rounded-full text-sm font-bold text-white sm:w-auto w-full"
             style={{ background: 'var(--accent)' }}>搜索</button>
           {search && (
             <button type="button" onClick={() => { setSearchInput(''); setSearch(''); setPage(1) }}
-              className="px-4 py-2 rounded-full text-sm"
+              className="px-4 py-2 rounded-full text-sm sm:w-auto w-full"
                 style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>清除</button>
           )}
         </form>
-        <div className="flex gap-1 p-1 rounded-full" style={{ background: 'var(--bg-hover)' }}>
+        <div className="flex gap-1 p-1 rounded-full overflow-x-auto" style={{ background: 'var(--bg-hover)' }}>
           {statusTabs.map(tab => (
             <button key={tab.key} onClick={() => handleStatus(tab.key)}
-              className="px-4 py-1.5 rounded-full text-sm font-medium transition-colors"
+              className="px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap"
               style={{
                 background: status === tab.key ? 'var(--accent)' : 'transparent',
                 color: status === tab.key ? '#fff' : 'var(--text-secondary)',
@@ -128,7 +162,11 @@ export default function AdminPostsPage() {
         </div>
       ) : (
         <>
-          <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-secondary)' }}>
+          <div className="sm:hidden flex flex-col gap-3">
+            {data.posts.map(renderPostCard)}
+          </div>
+
+          <div className="hidden sm:block rounded-2xl overflow-hidden" style={{ background: 'var(--bg-secondary)' }}>
             <table className="w-full text-sm">
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)' }}>

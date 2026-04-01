@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { ADMIN_CARD_CLASS, ADMIN_SUBCARD_CLASS } from './adminUi'
 
 type QuickLink = { href: string; label: string; icon: string; badge?: number }
 type PendingComment = {
@@ -87,7 +88,7 @@ export function AdminRightPanelClient({
 
       {/* 模块设置面板 */}
       {showSettings && !state.collapsed && (
-        <div className="rounded-2xl p-3" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--accent)' }}>
+        <div className={ADMIN_CARD_CLASS} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--accent)' }}>
           <p className="text-xs font-bold mb-2" style={{ color: 'var(--text-primary)' }}>显示模块</p>
           {(Object.keys(MODULE_LABELS) as Module[]).map(m => (
             <label key={m} className="flex items-center gap-2 py-1 cursor-pointer select-none">
@@ -107,14 +108,14 @@ export function AdminRightPanelClient({
         <>
           {/* 快捷操作 */}
           {state.modules.quicklinks && (
-            <div className="rounded-2xl p-3" style={{ background: 'var(--bg-secondary)' }}>
-              <h3 className="font-bold text-sm mb-2" style={{ color: 'var(--text-primary)' }}>快捷操作</h3>
+            <div className={ADMIN_CARD_CLASS} style={{ background: 'var(--bg-secondary)' }}>
+              <h3 className="font-bold text-sm mb-3" style={{ color: 'var(--text-primary)' }}>快捷操作</h3>
               <div className="flex flex-col">
                 {quickLinks.map(link => (
                   <Link
                     key={link.href}
                     href={link.href}
-                    className="flex items-center justify-between px-2 py-2 rounded-xl transition-colors hover:bg-white/5"
+                    className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl transition-colors hover:bg-white/5 min-h-11"
                   >
                     <span className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-primary)' }}>
                       <span>{link.icon}</span>
@@ -135,24 +136,24 @@ export function AdminRightPanelClient({
 
           {/* 待审评论 */}
           {state.modules.pending && pendingComments.length > 0 && (
-            <div className="rounded-2xl p-3" style={{ background: 'var(--bg-secondary)' }}>
-              <div className="flex items-center justify-between mb-2">
+            <div className={ADMIN_CARD_CLASS} style={{ background: 'var(--bg-secondary)' }}>
+              <div className="flex items-center justify-between mb-3 gap-2">
                 <h3 className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>⏳ 待审评论</h3>
                 <Link href="/admin/comments" className="text-xs" style={{ color: 'var(--accent)' }}>全部 →</Link>
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-3">
                 {pendingComments.map(c => (
-                  <div key={c.id} className="rounded-xl p-2" style={{ background: 'var(--bg-hover)' }}>
-                    <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
+                  <div key={c.id} className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg-hover)' }}>
+                    <div className="flex items-center justify-between mb-1 gap-2">
+                      <span className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>
                         {c.guestName || '匿名'}
                       </span>
-                      <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>
+                      <span className="text-[10px] shrink-0" style={{ color: 'var(--text-secondary)' }}>
                         {new Date(c.createdAt).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })}
                       </span>
                     </div>
-                    <p className="text-xs line-clamp-2" style={{ color: 'var(--text-secondary)' }}>{c.content}</p>
-                    <p className="text-[10px] mt-0.5 truncate" style={{ color: 'var(--accent)' }}>《{c.post.title}》</p>
+                    <p className="text-xs line-clamp-2 leading-5" style={{ color: 'var(--text-secondary)' }}>{c.content}</p>
+                    <p className="text-[10px] mt-1 truncate" style={{ color: 'var(--accent)' }}>《{c.post.title}》</p>
                   </div>
                 ))}
               </div>
@@ -161,14 +162,14 @@ export function AdminRightPanelClient({
 
           {/* 热门文章 */}
           {state.modules.topposts && topPosts.length > 0 && (
-            <div className="rounded-2xl p-3" style={{ background: 'var(--bg-secondary)' }}>
-              <h3 className="font-bold text-sm mb-2" style={{ color: 'var(--text-primary)' }}>🔥 热门文章</h3>
+            <div className={ADMIN_CARD_CLASS} style={{ background: 'var(--bg-secondary)' }}>
+              <h3 className="font-bold text-sm mb-3" style={{ color: 'var(--text-primary)' }}>🔥 热门文章</h3>
               <div className="flex flex-col">
                 {topPosts.map((post, i) => (
                   <Link
                     key={post.id}
                     href={`/admin/posts/${post.id}`}
-                    className="flex items-center gap-2 py-1.5 hover:opacity-80 transition-opacity"
+                    className="flex items-center gap-2 py-2 hover:opacity-80 transition-opacity min-h-10"
                     style={{ borderBottom: i < topPosts.length - 1 ? '1px solid var(--border)' : 'none' }}
                   >
                     <span className="text-xs font-bold w-5 text-center shrink-0" style={{ color: i < 3 ? 'var(--accent)' : 'var(--text-secondary)' }}>

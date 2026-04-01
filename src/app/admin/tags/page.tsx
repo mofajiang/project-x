@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import { ADMIN_PAGE_TITLE_CLASS, ADMIN_CARD_CLASS } from '@/components/admin/adminUi'
 
 interface Tag { id: string; name: string; slug: string; _count: { posts: number } }
 
@@ -21,10 +22,27 @@ export default function AdminTagsPage() {
     toast.success('已删除')
   }
 
+  const renderTagCard = (tag: Tag) => (
+    <div key={tag.id} className={`${ADMIN_CARD_CLASS} flex items-center justify-between gap-3`} style={{ background: 'var(--bg-hover)' }}>
+      <div className="min-w-0 flex-1">
+        <p className="font-medium text-sm truncate" style={{ color: 'var(--accent)' }}>#{tag.name}</p>
+        <p className="text-xs mt-1 break-all" style={{ color: 'var(--text-secondary)' }}>{tag.slug}</p>
+        <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>文章数：{tag._count.posts}</p>
+      </div>
+      <button onClick={() => deleteTag(tag.id, tag.name)}
+        className="px-3 py-2 rounded-full text-xs font-bold transition-colors hover:opacity-80 shrink-0"
+        style={{ background: 'rgba(249,24,128,0.12)', color: 'var(--red)' }}>删除</button>
+    </div>
+  )
+
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6" style={{ color: 'var(--text-primary)' }}>🏷 标签管理</h1>
-      <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-secondary)' }}>
+      <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)' }}>🏷 标签管理</h1>
+      <div className="sm:hidden flex flex-col gap-3">
+        {tags.map(renderTagCard)}
+      </div>
+
+      <div className="hidden sm:block rounded-2xl overflow-hidden" style={{ background: 'var(--bg-secondary)' }}>
         <table className="w-full text-sm">
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)' }}>

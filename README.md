@@ -83,7 +83,7 @@ npm run dev
 
 ### 一键安装
 
-在服务器终端执行，脚本会交互式引导完成所有配置：
+在服务器终端执行，脚本会交互式引导完成所有配置。该脚本也支持 `update` / `uninstall` / `status` / `restart` / `stop` / `logs` / `menu` 等子命令：
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/mofajiang/project-x/main/scripts/install.sh)
@@ -211,7 +211,9 @@ git pull origin main && npm run build && pm2 restart x-blog
 bash <(curl -fsSL https://raw.githubusercontent.com/mofajiang/project-x/main/scripts/uninstall.sh)
 ```
 
-卸载前会提示备份数据库，并自动清理 PM2 进程和 Nginx 配置。
+等价于执行统一脚本的卸载命令：`bash <(curl -fsSL https://raw.githubusercontent.com/mofajiang/project-x/main/scripts/install.sh) uninstall`。
+
+卸载前会提示备份数据库，并自动清理 PM2 进程和项目目录。
 
 **常用 PM2 命令：**
 
@@ -331,7 +333,7 @@ prisma/
 └── schema.prisma        # 数据库 Schema
 scripts/
 ├── init-admin.ts        # 初始化管理员
-├── install.sh           # 一键安装脚本
-└── uninstall.sh         # 一键卸载脚本
+├── install.sh           # 统一管理脚本（install/update/uninstall/status/restart/stop/logs/menu）
+└── uninstall.sh         # 兼容包装脚本（转发到 install.sh uninstall）
 ```
 

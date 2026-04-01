@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { IMEInput } from '@/components/ui/IMEInput'
+import { ADMIN_PAGE_TITLE_CLASS, ADMIN_CARD_LG_CLASS } from '@/components/admin/adminUi'
 
 export default function SmtpPage() {
   const [smtp, setSmtp] = useState({ SMTP_HOST: '', SMTP_PORT: '465', SMTP_USER: '', SMTP_PASS: '', SMTP_FROM: '' })
@@ -53,8 +54,8 @@ export default function SmtpPage() {
 
   return (
     <div className="max-w-xl">
-      <div className="flex items-center gap-3 mb-6">
-        <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>📧 邮件通知</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
+        <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)' }}>📧 邮件通知</h1>
         {configured && (
           <span className="px-2 py-1 rounded-full text-xs font-medium" style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E' }}>
             已配置
@@ -62,32 +63,34 @@ export default function SmtpPage() {
         )}
       </div>
 
-      <div className="rounded-2xl p-6 mb-6" style={{ background: 'var(--bg-secondary)' }}>
+      <div className={`${ADMIN_CARD_LG_CLASS} mb-4 sm:mb-6`} style={{ background: 'var(--bg-secondary)' }}>
         <h2 className="font-bold text-lg mb-4" style={{ color: 'var(--text-primary)' }}>SMTP 配置</h2>
-        <div className="flex flex-col gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="SMTP 服务器" value={smtp.SMTP_HOST} onChange={v => setSmtp(s => ({ ...s, SMTP_HOST: v }))} placeholder="smtp.example.com" />
           <Field label="端口" value={smtp.SMTP_PORT} onChange={v => setSmtp(s => ({ ...s, SMTP_PORT: v }))} placeholder="465" />
           <Field label="用户名" value={smtp.SMTP_USER} onChange={v => setSmtp(s => ({ ...s, SMTP_USER: v }))} placeholder="your-email@example.com" />
           <Field label="密码" value={smtp.SMTP_PASS} onChange={v => setSmtp(s => ({ ...s, SMTP_PASS: v }))} placeholder="your-password" type="password" />
-          <Field label="发件人邮箱" value={smtp.SMTP_FROM} onChange={v => setSmtp(s => ({ ...s, SMTP_FROM: v }))} placeholder="noreply@example.com" />
+          <div className="sm:col-span-2">
+            <Field label="发件人邮箱" value={smtp.SMTP_FROM} onChange={v => setSmtp(s => ({ ...s, SMTP_FROM: v }))} placeholder="noreply@example.com" />
+          </div>
         </div>
 
         <button onClick={save} disabled={saving}
-          className="mt-6 px-6 py-2 rounded-full text-sm font-bold text-white disabled:opacity-50"
+          className="mt-6 px-6 py-3 rounded-full text-sm font-bold text-white disabled:opacity-50 w-full sm:w-auto"
           style={{ background: 'var(--accent)' }}>
           {saving ? '保存中...' : '保存配置'}
         </button>
       </div>
 
       {configured && (
-        <div className="rounded-2xl p-6" style={{ background: 'var(--bg-secondary)' }}>
+        <div className={ADMIN_CARD_LG_CLASS} style={{ background: 'var(--bg-secondary)' }}>
           <h2 className="font-bold text-lg mb-4" style={{ color: 'var(--text-primary)' }}>测试邮件</h2>
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <IMEInput value={testEmail} onValueChange={setTestEmail} placeholder="收件人邮箱"
-              className="flex-1 px-3 py-2 rounded-xl text-sm outline-none"
+              className="flex-1 px-3 py-2.5 rounded-xl text-sm outline-none"
               style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
             <button onClick={sendTest} disabled={testing}
-              className="px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50"
+              className="px-4 py-3 rounded-full text-sm font-medium disabled:opacity-50 w-full sm:w-auto"
               style={{ background: 'var(--accent)', color: '#fff' }}>
               {testing ? '发送中...' : '发送测试'}
             </button>

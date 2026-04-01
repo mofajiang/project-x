@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import Image from 'next/image'
 import { IMEInput, IMETextarea } from '@/components/ui/IMEInput'
 import ImageCropModal from '@/components/ui/ImageCropModal'
+import { ADMIN_PAGE_TITLE_CLASS, ADMIN_CARD_LG_CLASS } from '@/components/admin/adminUi'
 
 type NavItem = { label: string; href: string; icon: string }
 type WidgetType = 'search' | 'about' | 'tags' | 'hotPosts' | 'custom' | 'links' | 'carousel'
@@ -220,14 +221,14 @@ export default function SettingsPage() {
           onCancel={handleCropCancel}
         />
       )}
-      <h1 className="text-2xl font-bold mb-6" style={{ color: 'var(--text-primary)' }}>⚙️ 站点设置</h1>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+      <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)' }}>⚙️ 站点设置</h1>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 items-start">
 
         {/* 左列 */}
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4 sm:gap-6">
 
           {/* 授权状态 */}
-          <div className="rounded-2xl p-5 flex items-center gap-4" style={{ background: licenseChecking ? 'var(--bg-secondary)' : licenseResult?.authorized ? 'rgba(0,186,124,0.08)' : 'rgba(244,33,46,0.08)', border: `1px solid ${licenseChecking ? 'var(--border)' : licenseResult?.authorized ? '#00ba7c' : '#F4212E'}` }}>
+          <div className={`${ADMIN_CARD_LG_CLASS} flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4`} style={{ background: licenseChecking ? 'var(--bg-secondary)' : licenseResult?.authorized ? 'rgba(0,186,124,0.08)' : 'rgba(244,33,46,0.08)', border: `1px solid ${licenseChecking ? 'var(--border)' : licenseResult?.authorized ? '#00ba7c' : '#F4212E'}` }}>
             <div className="text-3xl flex-shrink-0">
               {licenseChecking ? '⏳' : licenseResult?.authorized ? '✅' : '❌'}
             </div>
@@ -259,22 +260,22 @@ export default function SettingsPage() {
                   .finally(() => setLicenseChecking(false))
               }}
               disabled={licenseChecking}
-              className="ml-auto flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full transition-colors disabled:opacity-40"
+              className="self-end sm:self-auto sm:ml-auto flex-shrink-0 w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center rounded-full transition-colors disabled:opacity-40"
               style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}
               title="重新检测"
             >↻</button>
           </div>
 
           {/* 个人资料 */}
-          <div className="rounded-2xl p-6 flex flex-col gap-4" style={{ background: 'var(--bg-secondary)' }}>
+          <div className={`${ADMIN_CARD_LG_CLASS} flex flex-col gap-4`} style={{ background: 'var(--bg-secondary)' }}>
             <h2 className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>👤 个人资料</h2>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <div className="relative w-16 h-16 rounded-full overflow-hidden flex-shrink-0 cursor-pointer" style={{ background: 'var(--bg-hover)' }} onClick={() => avatarInputRef.current?.click()}>
                 {profile.avatar ? <Image src={profile.avatar} alt="头像" fill className="object-cover" /> : <div className="w-full h-full flex items-center justify-center text-2xl">👤</div>}
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity" style={{ background: 'rgba(0,0,0,0.5)' }}><span className="text-white text-xs">更换</span></div>
               </div>
-              <div className="flex flex-col gap-1">
-                <button onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar} className="px-4 py-1.5 rounded-full text-sm font-medium disabled:opacity-50" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>{uploadingAvatar ? '上传中...' : '更换头像'}</button>
+              <div className="flex flex-col gap-2 w-full sm:w-auto">
+                <button onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar} className="px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50 w-full sm:w-auto" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>{uploadingAvatar ? '上传中...' : '更换头像'}</button>
                 <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>支持 JPG、PNG、GIF，建议 200x200</p>
               </div>
               <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={uploadAvatar} />
@@ -282,18 +283,18 @@ export default function SettingsPage() {
             <div><label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>显示名称</label><IMEInput type="text" value={profile.displayName} onValueChange={v => setProfile(p => ({ ...p, displayName: v }))} placeholder="我的博客" className="w-full px-3 py-2 rounded-2xl text-sm outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} /></div>
             <div><label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>账号 @handle（用于登录）</label><IMEInput type="text" value={profile.username} onValueChange={v => setProfile(p => ({ ...p, username: v }))} placeholder="admin" className="w-full px-3 py-2 rounded-2xl text-sm outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} /></div>
             <div><label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>个人简介</label><IMETextarea value={profile.bio} onValueChange={v => setProfile(p => ({ ...p, bio: v }))} rows={3} placeholder="一句话介绍自己..." className="w-full px-3 py-2 rounded-2xl text-sm outline-none resize-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} /></div>
-            <button onClick={saveProfile} disabled={savingProfile} className="self-start px-6 py-2 rounded-full text-sm font-bold text-white disabled:opacity-50" style={{ background: 'var(--accent)' }}>{savingProfile ? '保存中...' : '保存个人资料'}</button>
+            <button onClick={saveProfile} disabled={savingProfile} className="self-stretch sm:self-start px-6 py-2 rounded-full text-sm font-bold text-white disabled:opacity-50" style={{ background: 'var(--accent)' }}>{savingProfile ? '保存中...' : '保存个人资料'}</button>
           </div>
 
           {/* 基本信息 */}
-          <div className="rounded-2xl p-6 flex flex-col gap-4" style={{ background: 'var(--bg-secondary)' }}>
+          <div className={`${ADMIN_CARD_LG_CLASS} flex flex-col gap-4`} style={{ background: 'var(--bg-secondary)' }}>
             <h2 className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>🌐 基本信息</h2>
             <Field label="博客名称" value={config.siteName} onChange={v => setConfig(c => ({ ...c, siteName: v }))} placeholder="我的博客" />
             <div><label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>博客简介</label><IMETextarea value={config.siteDesc} onValueChange={v => setConfig(c => ({ ...c, siteDesc: v }))} rows={3} placeholder="一句话介绍自己..." className="w-full px-3 py-2 rounded-2xl text-sm outline-none resize-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} /></div>
           </div>
 
           {/* 社交账号 */}
-          <div className="rounded-2xl p-6 flex flex-col gap-4" style={{ background: 'var(--bg-secondary)' }}>
+          <div className={`${ADMIN_CARD_LG_CLASS} flex flex-col gap-4`} style={{ background: 'var(--bg-secondary)' }}>
             <h2 className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>🔗 社交账号</h2>
             <Field label="X (Twitter) 用户名" value={config.socialX} onChange={v => setConfig(c => ({ ...c, socialX: v }))} placeholder="yourusername" />
             <Field label="GitHub 用户名" value={config.socialGithub} onChange={v => setConfig(c => ({ ...c, socialGithub: v }))} placeholder="yourusername" />
@@ -301,7 +302,7 @@ export default function SettingsPage() {
           </div>
 
           {/* 评论设置 */}
-          <div className="rounded-2xl p-6" style={{ background: 'var(--bg-secondary)' }}>
+          <div className={ADMIN_CARD_LG_CLASS} style={{ background: 'var(--bg-secondary)' }}>
             <h2 className="font-bold text-lg mb-4" style={{ color: 'var(--text-primary)' }}>💬 评论设置</h2>
             <label className="flex items-center gap-3 cursor-pointer">
               <input type="checkbox" checked={config.commentApproval} onChange={e => setConfig(c => ({ ...c, commentApproval: e.target.checked }))} className="w-4 h-4" />
@@ -310,11 +311,11 @@ export default function SettingsPage() {
           </div>
 
           {/* 版权信息 */}
-          <div className="rounded-2xl p-6 flex flex-col gap-4" style={{ background: 'var(--bg-secondary)' }}>
+          <div className={`${ADMIN_CARD_LG_CLASS} flex flex-col gap-4`} style={{ background: 'var(--bg-secondary)' }}>
             <h2 className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>© 版权信息</h2>
             <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>显示在右侧栏底部，支持 HTML</p>
             {/* 模板快捷按钮 */}
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {[
                 { label: '简洁版', text: `© ${new Date().getFullYear()} ${config.siteName || '我的博客'}. All rights reserved.` },
                 { label: 'CC BY 4.0', text: `© ${new Date().getFullYear()} ${config.siteName || '我的博客'}\n本站内容采用 <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank">CC BY 4.0</a> 协议授权。` },
@@ -325,7 +326,7 @@ export default function SettingsPage() {
                   key={tpl.label}
                   type="button"
                   onClick={() => setConfig(c => ({ ...c, copyright: tpl.text }))}
-                  className="text-xs px-2.5 py-1 rounded-lg transition-colors"
+                  className="text-xs px-3 py-2 rounded-lg transition-colors text-left sm:text-center"
                   style={{ background: 'var(--bg-hover)', color: 'var(--accent)', border: '1px solid var(--border)' }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#fff')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg-hover)', e.currentTarget.style.color = 'var(--accent)')}
@@ -338,18 +339,18 @@ export default function SettingsPage() {
         </div>
 
         {/* 右列 */}
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4 sm:gap-6">
 
           {/* 网站图标 */}
-          <div className="rounded-2xl p-6 flex flex-col gap-4" style={{ background: 'var(--bg-secondary)' }}>
+          <div className={`${ADMIN_CARD_LG_CLASS} flex flex-col gap-4`} style={{ background: 'var(--bg-secondary)' }}>
             <h2 className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>🖼 网站图标</h2>
-            <div className="flex items-center gap-5">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-5">
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden" style={{ background: 'var(--bg-hover)' }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 {siteIcon ? <img src={siteIcon} alt="网站图标" className="w-full h-full object-contain" /> : <span className="text-3xl">🌐</span>}
               </div>
-              <div className="flex flex-col gap-2">
-                <button onClick={() => iconInputRef.current?.click()} disabled={uploadingIcon} className="px-4 py-1.5 rounded-full text-sm font-medium disabled:opacity-50" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>{uploadingIcon ? '上传中...' : '上传图标'}</button>
+              <div className="flex flex-col gap-2 w-full sm:w-auto">
+                <button onClick={() => iconInputRef.current?.click()} disabled={uploadingIcon} className="px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50 w-full sm:w-auto" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>{uploadingIcon ? '上传中...' : '上传图标'}</button>
                 <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>建议 32x32 或 64x64 PNG/ICO</p>
                 {siteIcon && <button onClick={() => setSiteIcon('')} className="text-xs self-start" style={{ color: '#F4212E' }}>移除图标</button>}
               </div>
@@ -360,12 +361,12 @@ export default function SettingsPage() {
           </div>
 
           {/* 默认主题 */}
-          <div className="rounded-2xl p-6" style={{ background: 'var(--bg-secondary)' }}>
+          <div className={ADMIN_CARD_LG_CLASS} style={{ background: 'var(--bg-secondary)' }}>
             <h2 className="font-bold text-lg mb-1" style={{ color: 'var(--text-primary)' }}>🌙 默认主题</h2>
             <p className="text-xs mb-4" style={{ color: 'var(--text-secondary)' }}>访客首次访问时使用的主题</p>
-            <div className="flex gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {(['dark', 'light'] as const).map((t) => (
-                <button key={t} onClick={() => setDefaultTheme(t)} className="flex-1 flex items-center gap-3 px-4 py-3 rounded-2xl border-2 transition-colors" style={{ background: defaultTheme === t ? 'var(--bg-hover)' : 'transparent', borderColor: defaultTheme === t ? 'var(--accent)' : 'var(--border)' }}>
+                <button key={t} onClick={() => setDefaultTheme(t)} className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl border-2 transition-colors" style={{ background: defaultTheme === t ? 'var(--bg-hover)' : 'transparent', borderColor: defaultTheme === t ? 'var(--accent)' : 'var(--border)' }}>
                   <span className="text-xl">{t === 'dark' ? '🌙' : '☀️'}</span>
                   <div className="text-left"><p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{t === 'dark' ? '深色' : '浅色'}</p><p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{t === 'dark' ? '黑色背景' : '白色背景'}</p></div>
                   {defaultTheme === t && <span className="ml-auto text-xs font-bold" style={{ color: 'var(--accent)' }}>✓</span>}
@@ -375,25 +376,25 @@ export default function SettingsPage() {
           </div>
 
           {/* 导航菜单 */}
-          <div className="rounded-2xl p-6 flex flex-col gap-4" style={{ background: 'var(--bg-secondary)' }}>
-            <div className="flex items-center justify-between">
+          <div className={`${ADMIN_CARD_LG_CLASS} flex flex-col gap-4`} style={{ background: 'var(--bg-secondary)' }}>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <h2 className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>🧭 导航菜单</h2>
-              <button onClick={addNavItem} className="px-3 py-1 rounded-full text-sm font-medium" style={{ background: 'rgba(29,155,240,0.15)', color: 'var(--accent)' }}>+ 添加</button>
+              <button onClick={addNavItem} className="px-3 py-2 rounded-full text-sm font-medium w-full sm:w-auto" style={{ background: 'rgba(29,155,240,0.15)', color: 'var(--accent)' }}>+ 添加</button>
             </div>
             <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>自定义前台导航栏菜单项</p>
             <div className="flex flex-col gap-2">
               {navItems.map((item, i) => (
-                <div key={i} className="flex items-center gap-2 p-3 rounded-xl" style={{ background: 'var(--bg-hover)' }}>
-                  <div className="flex flex-col gap-0.5">
-                    <button onClick={() => moveNavItem(i, -1)} disabled={i === 0} className="w-5 h-5 flex items-center justify-center rounded text-xs disabled:opacity-30" style={{ color: 'var(--text-secondary)' }}>↑</button>
-                    <button onClick={() => moveNavItem(i, 1)} disabled={i === navItems.length - 1} className="w-5 h-5 flex items-center justify-center rounded text-xs disabled:opacity-30" style={{ color: 'var(--text-secondary)' }}>↓</button>
+                <div key={i} className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 rounded-xl" style={{ background: 'var(--bg-hover)' }}>
+                  <div className="flex items-center gap-1 sm:flex-col sm:gap-0.5">
+                    <button onClick={() => moveNavItem(i, -1)} disabled={i === 0} className="w-8 h-8 sm:w-5 sm:h-5 flex items-center justify-center rounded text-xs disabled:opacity-30" style={{ color: 'var(--text-secondary)' }}>↑</button>
+                    <button onClick={() => moveNavItem(i, 1)} disabled={i === navItems.length - 1} className="w-8 h-8 sm:w-5 sm:h-5 flex items-center justify-center rounded text-xs disabled:opacity-30" style={{ color: 'var(--text-secondary)' }}>↓</button>
                   </div>
-                  <select value={item.icon} onChange={e => updateNavItem(i, 'icon', e.target.value)} className="px-2 py-1.5 rounded-lg text-sm outline-none" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)', minWidth: 90 }}>
+                  <select value={item.icon} onChange={e => updateNavItem(i, 'icon', e.target.value)} className="px-2 py-2 rounded-lg text-sm outline-none w-full sm:w-auto" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)', minWidth: 90 }}>
                     {ICON_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
-                  <IMEInput value={item.label} onValueChange={v => updateNavItem(i, 'label', v)} placeholder="标签" className="flex-1 px-2 py-1.5 rounded-lg text-sm outline-none" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)', minWidth: 60 }} />
-                  <IMEInput value={item.href} onValueChange={v => updateNavItem(i, 'href', v)} placeholder="/about" className="flex-1 px-2 py-1.5 rounded-lg text-sm outline-none" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)', minWidth: 80 }} />
-                  <button onClick={() => removeNavItem(i)} className="w-7 h-7 flex items-center justify-center rounded-full" style={{ color: '#F4212E' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(244,33,46,0.1)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>×</button>
+                  <IMEInput value={item.label} onValueChange={v => updateNavItem(i, 'label', v)} placeholder="标签" className="flex-1 px-2 py-2 rounded-lg text-sm outline-none w-full" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }} />
+                  <IMEInput value={item.href} onValueChange={v => updateNavItem(i, 'href', v)} placeholder="/about" className="flex-1 px-2 py-2 rounded-lg text-sm outline-none w-full" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }} />
+                  <button onClick={() => removeNavItem(i)} className="w-full sm:w-7 h-9 sm:h-7 flex items-center justify-center rounded-full" style={{ color: '#F4212E' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(244,33,46,0.1)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>×</button>
                 </div>
               ))}
             </div>
@@ -401,36 +402,36 @@ export default function SettingsPage() {
           </div>
 
           {/* 右侧栏组件 */}
-          <div className="rounded-2xl p-6 flex flex-col gap-4" style={{ background: 'var(--bg-secondary)' }}>
-            <div className="flex items-center justify-between">
+          <div className={`${ADMIN_CARD_LG_CLASS} flex flex-col gap-4`} style={{ background: 'var(--bg-secondary)' }}>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <h2 className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>📌 右侧栏组件</h2>
-              <button onClick={() => setWidgets(v => [...v, { type: 'custom', enabled: true, title: '', content: '' }])} className="px-3 py-1 rounded-full text-sm font-medium" style={{ background: 'rgba(29,155,240,0.15)', color: 'var(--accent)' }}>+ 添加</button>
+              <button onClick={() => setWidgets(v => [...v, { type: 'custom', enabled: true, title: '', content: '' }])} className="px-3 py-2 rounded-full text-sm font-medium w-full sm:w-auto" style={{ background: 'rgba(29,155,240,0.15)', color: 'var(--accent)' }}>+ 添加</button>
             </div>
             <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>配置前台右侧栏显示的组件</p>
             <div className="flex flex-col gap-2">
               {widgets.map((w, i) => (
                 <div key={i} className="rounded-xl p-3 flex flex-col gap-2" style={{ background: 'var(--bg-hover)' }}>
-                  <div className="flex items-center gap-2">
-                    <div className="flex flex-col gap-0.5 flex-shrink-0">
-                      <button onClick={() => { const a = [...widgets]; if (i > 0) { [a[i-1],a[i]]=[a[i],a[i-1]]; setWidgets(a); } }} disabled={i === 0} className="w-5 h-5 flex items-center justify-center text-xs disabled:opacity-30" style={{ color: 'var(--text-secondary)' }}>↑</button>
-                      <button onClick={() => { const a = [...widgets]; if (i < a.length-1) { [a[i],a[i+1]]=[a[i+1],a[i]]; setWidgets(a); } }} disabled={i === widgets.length - 1} className="w-5 h-5 flex items-center justify-center text-xs disabled:opacity-30" style={{ color: 'var(--text-secondary)' }}>↓</button>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <div className="flex items-center gap-1 sm:flex-col sm:gap-0.5 flex-shrink-0">
+                      <button onClick={() => { const a = [...widgets]; if (i > 0) { [a[i-1],a[i]]=[a[i],a[i-1]]; setWidgets(a); } }} disabled={i === 0} className="w-8 h-8 sm:w-5 sm:h-5 flex items-center justify-center text-xs disabled:opacity-30" style={{ color: 'var(--text-secondary)' }}>↑</button>
+                      <button onClick={() => { const a = [...widgets]; if (i < a.length-1) { [a[i],a[i+1]]=[a[i+1],a[i]]; setWidgets(a); } }} disabled={i === widgets.length - 1} className="w-8 h-8 sm:w-5 sm:h-5 flex items-center justify-center text-xs disabled:opacity-30" style={{ color: 'var(--text-secondary)' }}>↓</button>
                     </div>
                     <input type="checkbox" checked={w.enabled} onChange={e => setWidgets(v => v.map((x,j) => j===i ? {...x, enabled: e.target.checked} : x))} className="w-4 h-4 flex-shrink-0" />
-                    <select value={w.type} onChange={e => setWidgets(v => v.map((x,j) => j===i ? {...x, type: e.target.value as WidgetType} : x))} className="flex-1 px-2 py-1.5 rounded-lg text-sm outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}>
+                    <select value={w.type} onChange={e => setWidgets(v => v.map((x,j) => j===i ? {...x, type: e.target.value as WidgetType} : x))} className="flex-1 px-2 py-2 rounded-lg text-sm outline-none w-full" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}>
                       {(Object.keys(WIDGET_LABELS) as WidgetType[]).map(t => <option key={t} value={t}>{WIDGET_LABELS[t]}</option>)}
                     </select>
-                    <button onClick={() => setWidgets(v => v.filter((_,j) => j !== i))} className="w-7 h-7 flex items-center justify-center rounded-full flex-shrink-0" style={{ color: '#F4212E' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(244,33,46,0.1)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>×</button>
+                    <button onClick={() => setWidgets(v => v.filter((_,j) => j !== i))} className="w-full sm:w-7 h-9 sm:h-7 flex items-center justify-center rounded-full flex-shrink-0" style={{ color: '#F4212E' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(244,33,46,0.1)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>×</button>
                   </div>
-                  <IMEInput value={w.title || ''} onValueChange={v => setWidgets(arr => arr.map((x,j) => j===i ? {...x, title: v} : x))} placeholder={'标题（留空用默认）'} className="w-full px-2 py-1.5 rounded-lg text-sm outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
-                  {w.type === 'custom' && <IMETextarea value={w.content || ''} onValueChange={v => setWidgets(arr => arr.map((x,j) => j===i ? {...x, content: v} : x))} placeholder="自定义内容" rows={3} className="w-full px-2 py-1.5 rounded-lg text-sm outline-none resize-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />}
+                  <IMEInput value={w.title || ''} onValueChange={v => setWidgets(arr => arr.map((x,j) => j===i ? {...x, title: v} : x))} placeholder={'标题（留空用默认）'} className="w-full px-2 py-2 rounded-lg text-sm outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+                  {w.type === 'custom' && <IMETextarea value={w.content || ''} onValueChange={v => setWidgets(arr => arr.map((x,j) => j===i ? {...x, content: v} : x))} placeholder="自定义内容" rows={3} className="w-full px-2 py-2 rounded-lg text-sm outline-none resize-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />}
                   {w.type === 'carousel' && (
                     <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                         <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>自动切换间隔（毫秒）</span>
                         <input type="number" min={500} max={30000} step={500}
                           value={w.interval || 3000}
                           onChange={e => setWidgets(arr => arr.map((x,j) => j===i ? {...x, interval: Number(e.target.value)} : x))}
-                          className="w-24 px-2 py-1 rounded-lg text-xs outline-none"
+                          className="w-full sm:w-24 px-2 py-2 rounded-lg text-xs outline-none"
                           style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}
                         />
                       </div>
@@ -438,13 +439,13 @@ export default function SettingsPage() {
                         const stype = sl.slideType || 'image'
                         return (
                           <div key={si} className="flex flex-col gap-1 p-2 rounded-lg" style={{ background: 'var(--bg-secondary)' }}>
-                            <div className="flex items-center gap-1">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1">
                               <span className="text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>#{si+1}</span>
                               <select value={stype} onChange={e => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; const ss=[...(x.slides||[])]; ss[si]={...ss[si], slideType: e.target.value as CarouselSlideType}; return {...x,slides:ss} }))}
-                                className="flex-1 px-2 py-1 rounded text-xs outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}>
+                                className="flex-1 px-2 py-2 rounded text-xs outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}>
                                 {(Object.keys(SLIDE_TYPE_LABELS) as CarouselSlideType[]).map(t => <option key={t} value={t}>{SLIDE_TYPE_LABELS[t]}</option>)}
                               </select>
-                              <button onClick={() => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; return {...x, slides:(x.slides||[]).filter((_,k)=>k!==si)} }))} className="w-5 h-5 flex items-center justify-center rounded-full text-xs" style={{ color: '#F4212E' }}>×</button>
+                              <button onClick={() => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; return {...x, slides:(x.slides||[]).filter((_,k)=>k!==si)} }))} className="w-full sm:w-5 h-8 sm:h-5 flex items-center justify-center rounded-full text-xs" style={{ color: '#F4212E' }}>×</button>
                             </div>
                             {stype === 'image' && (
                               <IMEInput value={sl.image||''} onValueChange={v => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; const ss=[...(x.slides||[])]; ss[si]={...ss[si],image:v}; return {...x,slides:ss} }))} placeholder="图片 URL（必填）" className="w-full px-2 py-1 rounded text-xs outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
@@ -464,25 +465,25 @@ export default function SettingsPage() {
                           </div>
                         )
                       })}
-                      <button onClick={() => setWidgets(arr => arr.map((x,j) => j===i ? {...x, slides:[...(x.slides||[]),{slideType:'image',image:'',title:'',desc:'',link:''}]} : x))} className="text-xs px-3 py-1 rounded-full self-start" style={{ background: 'rgba(29,155,240,0.15)', color: 'var(--accent)' }}>+ 添加幻灯片</button>
+                      <button onClick={() => setWidgets(arr => arr.map((x,j) => j===i ? {...x, slides:[...(x.slides||[]),{slideType:'image',image:'',title:'',desc:'',link:''}]} : x))} className="text-xs px-3 py-2 rounded-full self-stretch sm:self-start" style={{ background: 'rgba(29,155,240,0.15)', color: 'var(--accent)' }}>+ 添加幻灯片</button>
                     </div>
                   )}
                   {w.type === 'links' && (
                     <div className="flex flex-col gap-2">
                       {(w.links || []).map((lk, li) => (
                         <div key={li} className="flex flex-col gap-1 p-2 rounded-lg" style={{ background: 'var(--bg-secondary)' }}>
-                          <div className="flex items-center gap-1">
-                            <IMEInput value={lk.label} onValueChange={v => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; const ls=[...(x.links||[])]; ls[li]={...ls[li],label:v}; return {...x,links:ls} }))} placeholder="名称" className="flex-1 px-2 py-1 rounded text-xs outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
-                            <IMEInput value={lk.url} onValueChange={v => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; const ls=[...(x.links||[])]; ls[li]={...ls[li],url:v}; return {...x,links:ls} }))} placeholder="https://" className="flex-1 px-2 py-1 rounded text-xs outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
-                            <button onClick={() => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; return {...x, links:(x.links||[]).filter((_,k)=>k!==li)} }))} className="w-5 h-5 flex items-center justify-center rounded-full text-xs flex-shrink-0" style={{ color: '#F4212E' }}>×</button>
+                          <div className="flex flex-col sm:flex-row gap-1">
+                            <IMEInput value={lk.label} onValueChange={v => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; const ls=[...(x.links||[])]; ls[li]={...ls[li],label:v}; return {...x,links:ls} }))} placeholder="名称" className="flex-1 px-2 py-2 rounded text-xs outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+                            <IMEInput value={lk.url} onValueChange={v => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; const ls=[...(x.links||[])]; ls[li]={...ls[li],url:v}; return {...x,links:ls} }))} placeholder="https://" className="flex-1 px-2 py-2 rounded text-xs outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+                            <button onClick={() => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; return {...x, links:(x.links||[]).filter((_,k)=>k!==li)} }))} className="w-full sm:w-5 h-8 sm:h-5 flex items-center justify-center rounded-full text-xs flex-shrink-0" style={{ color: '#F4212E' }}>×</button>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <IMEInput value={lk.desc||''} onValueChange={v => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; const ls=[...(x.links||[])]; ls[li]={...ls[li],desc:v}; return {...x,links:ls} }))} placeholder="简介（可选）" className="flex-1 px-2 py-1 rounded text-xs outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
-                            <IMEInput value={lk.avatar||''} onValueChange={v => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; const ls=[...(x.links||[])]; ls[li]={...ls[li],avatar:v}; return {...x,links:ls} }))} placeholder="头像URL（可选）" className="flex-1 px-2 py-1 rounded text-xs outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+                          <div className="flex flex-col sm:flex-row gap-1">
+                            <IMEInput value={lk.desc||''} onValueChange={v => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; const ls=[...(x.links||[])]; ls[li]={...ls[li],desc:v}; return {...x,links:ls} }))} placeholder="简介（可选）" className="flex-1 px-2 py-2 rounded text-xs outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+                            <IMEInput value={lk.avatar||''} onValueChange={v => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; const ls=[...(x.links||[])]; ls[li]={...ls[li],avatar:v}; return {...x,links:ls} }))} placeholder="头像URL（可选）" className="flex-1 px-2 py-2 rounded text-xs outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
                           </div>
                         </div>
                       ))}
-                      <button onClick={() => setWidgets(arr => arr.map((x,j) => j===i ? {...x, links:[...(x.links||[]),{label:'',url:''}]} : x))} className="text-xs px-3 py-1 rounded-full self-start" style={{ background: 'rgba(29,155,240,0.15)', color: 'var(--accent)' }}>+ 添加链接</button>
+                      <button onClick={() => setWidgets(arr => arr.map((x,j) => j===i ? {...x, links:[...(x.links||[]),{label:'',url:''}]} : x))} className="text-xs px-3 py-2 rounded-full self-stretch sm:self-start" style={{ background: 'rgba(29,155,240,0.15)', color: 'var(--accent)' }}>+ 添加链接</button>
                     </div>
                   )}
                 </div>
@@ -494,7 +495,9 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <button onClick={save} disabled={saving} className="px-6 py-2 rounded-full text-sm font-bold text-white disabled:opacity-50 mt-6" style={{ background: 'var(--accent)' }}>{saving ? '保存中...' : '保存设置'}</button>
+      <div className="sticky bottom-3 z-10 mt-6 md:static">
+        <button onClick={save} disabled={saving} className="px-6 py-3 rounded-full text-sm font-bold text-white disabled:opacity-50 w-full sm:w-auto shadow-lg" style={{ background: 'var(--accent)' }}>{saving ? '保存中...' : '保存设置'}</button>
+      </div>
     </div>
   )
 }

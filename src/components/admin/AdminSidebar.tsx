@@ -152,8 +152,8 @@ function AdminUpdateChecker() {
       </button>
 
       {open && (
-        <div className="absolute bottom-full left-0 right-0 mb-2 rounded-2xl shadow-2xl z-50 overflow-hidden" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', minWidth: 260 }}>
-          <div className="p-4 flex flex-col gap-3">
+        <div className="static md:absolute md:bottom-full md:left-0 md:right-0 md:mb-2 mt-2 md:mt-0 rounded-2xl shadow-2xl z-50 overflow-hidden" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', minWidth: 260 }}>
+          <div className="p-4 flex flex-col gap-3 max-h-72 md:max-h-96 overflow-y-auto">
             <div className="flex items-center justify-between">
               <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>🔄 版本更新</span>
               <button onClick={() => setOpen(false)} className="text-xs" style={{ color: 'var(--text-secondary)' }}>✕</button>
@@ -303,23 +303,27 @@ export function AdminSidebar({ username }: { username: string }) {
       </header>
 
       {/* 移动端底部 tab bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center overflow-x-auto"
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex items-stretch overflow-x-auto overscroll-x-contain"
         style={{ background: 'var(--bg-secondary)', borderTop: '0.5px solid var(--border)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
         {navItems.map(item => {
           const active = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))
           return (
             <Link key={item.href} href={item.href}
-              className="flex flex-col items-center justify-center gap-0.5 flex-1 min-w-[60px] py-2 text-[10px] relative"
-              style={{ color: active ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: active ? 700 : 400 }}>
-              <span className="text-lg leading-none relative inline-block">
+              className="flex flex-col items-center justify-center gap-0.5 flex-1 min-w-[52px] py-2.5 px-1 text-[9px] relative transition-colors"
+              style={{
+                color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+                fontWeight: active ? 700 : 400,
+                background: active ? 'var(--bg-hover)' : 'transparent',
+              }}>
+              <span className="text-[17px] leading-none relative inline-block">
                 {item.icon}
                 {item.badge && pendingCount > 0 && (
-                  <span className="absolute -top-1 -right-2 text-[9px] font-bold px-1 rounded-full leading-tight" style={{ background: 'var(--red,#F4212E)', color: '#fff', minWidth: '14px', textAlign: 'center' }}>
+                  <span className="absolute -top-1 -right-2 text-[8px] font-bold px-1 rounded-full leading-tight" style={{ background: 'var(--red,#F4212E)', color: '#fff', minWidth: '14px', textAlign: 'center' }}>
                     {pendingCount > 99 ? '99+' : pendingCount}
                   </span>
                 )}
               </span>
-              <span className="truncate w-full text-center px-1">{item.label.replace('管理','').replace('设置','').replace('通知','')}</span>
+              <span className="truncate w-full text-center px-0.5">{item.label.replace('管理','').replace('设置','').replace('通知','')}</span>
             </Link>
           )
         })}

@@ -9,9 +9,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!session) redirect('/')
 
   return (
-    <div className="min-h-screen flex" style={{ background: 'var(--bg)' }}>
+    <div className="min-h-screen flex flex-col md:flex-row" style={{ background: 'var(--bg)' }}>
       <AdminSidebar username={session.username} />
-      <main className="flex-1 min-h-screen p-4 md:p-6 overflow-y-auto pt-[72px] pb-24 md:pt-6 md:pb-6" style={{ borderLeft: '1px solid var(--border)' }}>
+      <main className="flex-1 min-h-screen min-w-0 p-3 sm:p-4 md:p-6 overflow-y-auto overflow-x-hidden pt-[72px] pb-[92px] md:pt-6 md:pb-6" style={{ borderLeft: '1px solid var(--border)' }}>
         {children}
       </main>
     </div>

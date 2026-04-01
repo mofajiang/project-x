@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { ADMIN_CARD_CLASS } from './adminUi'
 
 type SysInfo = {
   nodeVersion: string
@@ -66,7 +67,7 @@ export function AdminSysInfo() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {/* 系统信息 */}
-      <div className="rounded-2xl p-4" style={{ background: 'var(--bg-secondary)' }}>
+      <div className={ADMIN_CARD_CLASS} style={{ background: 'var(--bg-secondary)' }}>
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>🖥 系统信息</h3>
           <button
@@ -98,7 +99,7 @@ export function AdminSysInfo() {
       </div>
 
       {/* 内存使用 */}
-      <div className="rounded-2xl p-4" style={{ background: 'var(--bg-secondary)' }}>
+      <div className={ADMIN_CARD_CLASS} style={{ background: 'var(--bg-secondary)' }}>
         <h3 className="font-bold text-sm mb-3" style={{ color: 'var(--text-primary)' }}>💾 内存使用</h3>
         {loading ? (
           <div className="flex flex-col gap-3">
@@ -134,7 +135,7 @@ export function AdminSysInfo() {
       </div>
 
       {/* 系统负载 */}
-      <div className="rounded-2xl p-4" style={{ background: 'var(--bg-secondary)' }}>
+      <div className={ADMIN_CARD_CLASS} style={{ background: 'var(--bg-secondary)' }}>
         <h3 className="font-bold text-sm mb-3" style={{ color: 'var(--text-primary)' }}>📊 系统负载</h3>
         {loading ? (
           <div className="flex flex-col gap-3">

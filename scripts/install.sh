@@ -1,10 +1,10 @@
 #!/bin/bash
 # ============================================================
-#  X-Blog 一键安装脚本
+#  X-Blog 统一管理脚本
 #  支持宝塔面板 / 纯 Linux 环境
 # ============================================================
 
-set -e
+set -euo pipefail
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -48,6 +48,68 @@ prompt() {
   echo -e -n "${CYAN}$1${NC} "
 }
 
+ACTION="install"
+if [[ $# -gt 0 && "$1" != -* ]]; then
+  case "$1" in
+    install|update|uninstall|status|restart|stop|logs|menu)
+      ACTION="$1"
+      shift || true
+      ;;
+  esac
+fi
+
+INSTALL_DIR="/www/wwwroot/x-blog"
+DOMAIN="localhost"
+APP_PORT="3000"
+SITE_URL=""
+JWT_SECRET=""
+ADMIN_USER="admin"
+ADMIN_PASS=""
+PM2_NAME="x-blog"
+USE_HTTPS="y"
+BACKUP_PATH=""
+
+read_env_value() {
+  local file="$1"
+  local key="$2"
+  [[ -f "$file" ]] || return 1
+  grep -E "^${key}=" "$file" | tail -n1 | cut -d= -f2-
+}
+
+extract_domain_from_url() {
+  local url="$1"
+  if [[ "$url" =~ ^https?://([^/:]+) ]]; then
+    echo "${BASH_REMATCH[1]}"
+  fi
+}
+
+load_existing_config() {
+  local env_file="$1"
+  [[ -f "$env_file" ]] || return 0
+
+  local existing_port existing_site_url
+  existing_port="$(read_env_value "$env_file" PORT || true)"
+  existing_site_url="$(read_env_value "$env_file" NEXT_PUBLIC_SITE_URL || true)"
+
+  if [[ -n "$existing_port" ]]; then
+    APP_PORT="$existing_port"
+  fi
+
+  if [[ -n "$existing_site_url" ]]; then
+    SITE_URL="$existing_site_url"
+    local extracted_domain
+    extracted_domain="$(extract_domain_from_url "$existing_site_url" || true)"
+    if [[ -n "$extracted_domain" ]]; then
+      DOMAIN="$extracted_domain"
+    fi
+    if [[ "$existing_site_url" == https://* ]]; then
+      USE_HTTPS="y"
+    else
+      USE_HTTPS="n"
+    fi
+  fi
+}
+
 # ── 检查依赖 ──────────────────────────────────────────────
 check_deps() {
   step "检查系统依赖"
@@ -81,17 +143,25 @@ collect_config() {
   step "配置安装参数"
 
   # 安装目录
-  prompt "安装目录 [默认: /www/wwwroot/x-blog]:"
+  prompt "安装目录 [默认: ${INSTALL_DIR}]:"
   read INSTALL_DIR
   INSTALL_DIR=${INSTALL_DIR:-/www/wwwroot/x-blog}
 
   # 域名（可选，仅用于显示）
-  prompt "你的域名（如 example.com，仅用于生成站点 URL，留空则用 localhost）:"
+  local default_domain
+  default_domain="$DOMAIN"
+  if [[ -n "$SITE_URL" ]]; then
+    extracted_domain="$(extract_domain_from_url "$SITE_URL" || true)"
+    if [[ -n "$extracted_domain" ]]; then
+      default_domain="$extracted_domain"
+    fi
+  fi
+  prompt "你的域名（如 example.com，仅用于生成站点 URL，留空则用 localhost） [默认: ${default_domain}]:"
   read DOMAIN
-  DOMAIN=${DOMAIN:-localhost}
+  DOMAIN=${DOMAIN:-$default_domain}
 
   # 端口
-  prompt "监听端口 [默认: 3000]:"
+  prompt "监听端口 [默认: ${APP_PORT}]:"
   read APP_PORT
   APP_PORT=${APP_PORT:-3000}
 
@@ -99,7 +169,7 @@ collect_config() {
   if [ "$DOMAIN" = "localhost" ]; then
     SITE_URL="http://localhost:${APP_PORT}"
   else
-    prompt "是否使用 HTTPS？(y/n) [默认: y]:"
+    prompt "是否使用 HTTPS？(y/n) [默认: ${USE_HTTPS}]:"
     read USE_HTTPS
     USE_HTTPS=${USE_HTTPS:-y}
     if [[ "$USE_HTTPS" =~ ^[Yy]$ ]]; then
@@ -118,16 +188,16 @@ collect_config() {
   fi
 
   # 管理员账号
-  prompt "管理员用户名 [默认: admin]:"
+  prompt "管理员用户名 [默认: ${ADMIN_USER}]:"
   read ADMIN_USER
   ADMIN_USER=${ADMIN_USER:-admin}
 
-  prompt "管理员密码 [默认: Admin@123456]:"
+  prompt "管理员密码 [默认: ${ADMIN_PASS:-Admin@123456}]:"
   read ADMIN_PASS
   ADMIN_PASS=${ADMIN_PASS:-Admin@123456}
 
   # PM2 进程名
-  prompt "PM2 进程名 [默认: x-blog]:"
+  prompt "PM2 进程名 [默认: ${PM2_NAME}]:"
   read PM2_NAME
   PM2_NAME=${PM2_NAME:-x-blog}
 
@@ -157,6 +227,9 @@ install_code() {
     cd "$INSTALL_DIR"
     git pull origin main
   else
+    if [[ "$ACTION" == "update" ]]; then
+      error "更新模式要求安装目录已存在且包含 Git 仓库：${INSTALL_DIR}"
+    fi
     mkdir -p "$(dirname $INSTALL_DIR)"
     git clone https://github.com/mofajiang/project-x.git "$INSTALL_DIR"
     cd "$INSTALL_DIR"
@@ -305,17 +378,195 @@ print_done() {
   echo ''
 }
 
+sync_db() {
+  step "同步数据库结构"
+  cd "$INSTALL_DIR"
+  npm run db:push
+}
+
+show_status() {
+  step "查看 PM2 状态"
+  if command -v pm2 &>/dev/null; then
+    pm2 list
+    pm2 show "$PM2_NAME" 2>/dev/null || warn "未找到 PM2 进程：${PM2_NAME}"
+  else
+    error "未找到 PM2"
+  fi
+}
+
+restart_pm2_only() {
+  step "重启 PM2 进程"
+  if command -v pm2 &>/dev/null; then
+    pm2 restart "$PM2_NAME"
+    info "已重启：${PM2_NAME}"
+  else
+    error "未找到 PM2"
+  fi
+}
+
+stop_pm2_only() {
+  step "停止 PM2 进程"
+  if command -v pm2 &>/dev/null; then
+    pm2 stop "$PM2_NAME" 2>/dev/null || warn "进程不存在或已停止"
+    info "已停止：${PM2_NAME}"
+  else
+    error "未找到 PM2"
+  fi
+}
+
+show_logs() {
+  step "查看 PM2 日志"
+  if command -v pm2 &>/dev/null; then
+    pm2 logs "$PM2_NAME" --lines 120
+  else
+    error "未找到 PM2"
+  fi
+}
+
+do_uninstall() {
+  step "卸载博客主程序"
+
+  prompt "PM2 进程名 [默认: ${PM2_NAME}]:"
+  read PM2_INPUT || true
+  PM2_NAME=${PM2_INPUT:-$PM2_NAME}
+
+  prompt "项目安装目录 [默认: ${INSTALL_DIR}]:"
+  read INSTALL_INPUT || true
+  INSTALL_DIR=${INSTALL_INPUT:-$INSTALL_DIR}
+
+  echo ''
+  warn "即将执行以下操作："
+  echo "  1. 停止并删除 PM2 进程：${PM2_NAME}"
+  echo "  2. 删除项目目录：${INSTALL_DIR}"
+  echo ''
+  prompt "确认卸载？输入 YES 继续（其他任意键取消）:"
+  read CONFIRM || true
+
+  if [ "${CONFIRM:-}" != "YES" ]; then
+    echo "已取消卸载。"
+    exit 0
+  fi
+
+  if command -v pm2 &>/dev/null; then
+    info "停止 PM2 进程：${PM2_NAME}"
+    pm2 stop "$PM2_NAME" 2>/dev/null && echo "  已停止" || warn "进程不存在或已停止"
+    pm2 delete "$PM2_NAME" 2>/dev/null && echo "  已删除" || warn "进程已不存在"
+    pm2 save 2>/dev/null || true
+  else
+    warn "未找到 PM2，跳过"
+  fi
+
+  if [ -f "${INSTALL_DIR}/data/db.sqlite" ]; then
+    BACKUP_PATH="/tmp/x-blog-db-backup-$(date +%Y%m%d%H%M%S).sqlite"
+    prompt "检测到数据库文件，是否备份到 ${BACKUP_PATH}？(y/n) [默认: y]:"
+    read DO_BACKUP || true
+    DO_BACKUP=${DO_BACKUP:-y}
+    if [[ "$DO_BACKUP" =~ ^[Yy]$ ]]; then
+      cp "${INSTALL_DIR}/data/db.sqlite" "$BACKUP_PATH"
+      info "数据库已备份到：${BACKUP_PATH}"
+    fi
+  fi
+
+  info "删除项目目录：${INSTALL_DIR}"
+  if [ -d "$INSTALL_DIR" ]; then
+    rm -rf "$INSTALL_DIR"
+    echo "  已删除"
+  else
+    warn "目录不存在，跳过"
+  fi
+
+  echo ''
+  echo -e "${GREEN}卸载完成${NC}"
+  echo ''
+  if [ -n "${BACKUP_PATH}" ] && [ -f "${BACKUP_PATH}" ]; then
+    echo -e "  数据库备份：${CYAN}${BACKUP_PATH}${NC}"
+  fi
+  echo -e "  如需重新安装："
+  echo -e "  ${CYAN}bash <(curl -fsSL https://raw.githubusercontent.com/mofajiang/project-x/main/scripts/install.sh)${NC}"
+  echo ''
+}
+
+print_menu() {
+  print_banner
+  echo "请选择操作："
+  echo "  1) install   安装到生产目录"
+  echo "  2) update    升级生产目录"
+  echo "  3) uninstall 卸载并删除目录"
+  echo "  4) status    查看 PM2 状态"
+  echo "  5) restart   重启 PM2 进程"
+  echo "  6) stop      停止 PM2 进程"
+  echo "  7) logs      查看 PM2 日志"
+  echo ''
+  prompt "请输入数字 [默认: 1]:"
+  read MENU_CHOICE || true
+  case "${MENU_CHOICE:-1}" in
+    1) ACTION="install" ;;
+    2) ACTION="update" ;;
+    3) ACTION="uninstall" ;;
+    4) ACTION="status" ;;
+    5) ACTION="restart" ;;
+    6) ACTION="stop" ;;
+    7) ACTION="logs" ;;
+    *) ACTION="install" ;;
+  esac
+}
+
 # ── 主流程 ────────────────────────────────────────────────
 main() {
-  print_banner
-  check_deps
-  collect_config
-  install_code
-  setup_env
-  build_app
-  init_db
-  start_pm2
-  print_done
+  case "$ACTION" in
+    menu)
+      print_menu
+      ;;
+  esac
+
+  case "$ACTION" in
+    install)
+      print_banner
+      check_deps
+      collect_config
+      install_code
+      setup_env
+      build_app
+      init_db
+      start_pm2
+      print_done
+      ;;
+    update)
+      print_banner
+      check_deps
+      load_existing_config "$INSTALL_DIR/.env"
+      collect_config
+      install_code
+      setup_env
+      build_app
+      sync_db
+      start_pm2
+      print_done
+      ;;
+    uninstall)
+      print_banner
+      do_uninstall
+      ;;
+    status)
+      print_banner
+      show_status
+      ;;
+    restart)
+      print_banner
+      restart_pm2_only
+      ;;
+    stop)
+      print_banner
+      stop_pm2_only
+      ;;
+    logs)
+      print_banner
+      show_logs
+      ;;
+    *)
+      error "未知操作：${ACTION}"
+      ;;
+  esac
 }
 
 main
