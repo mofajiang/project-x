@@ -272,7 +272,7 @@ const navItems = [
   { label: '标签管理', href: '/admin/tags', icon: '🏷' },
   { label: '安全设置', href: '/admin/security', icon: '🔒' },
   { label: '站点设置', href: '/admin/settings', icon: '⚙️' },
-  { label: '邮件通知', href: '/admin/smtp', icon: '📧' },
+  { label: '导航与组件', href: '/admin/navigation', icon: '🧭' },
 ]
 
 export function AdminSidebar({ username }: { username: string }) {

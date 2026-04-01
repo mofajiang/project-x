@@ -88,6 +88,11 @@ export default function SettingsPage() {
   const [savingDomain, setSavingDomain] = useState(false)
   const [licenseChecking, setLicenseChecking] = useState(true)
   const [licenseResult, setLicenseResult] = useState<{ authorized: boolean; domains: string[]; currentHost?: string; source?: string } | null>(null)
+  const [smtp, setSmtp] = useState({ SMTP_HOST: '', SMTP_PORT: '465', SMTP_USER: '', SMTP_PASS: '', SMTP_FROM: '' })
+  const [smtpConfigured, setSmtpConfigured] = useState(false)
+  const [smtpSaving, setSmtpSaving] = useState(false)
+  const [smtpTesting, setSmtpTesting] = useState(false)
+  const [testEmail, setTestEmail] = useState('')
 
 
 
@@ -134,6 +139,20 @@ export default function SettingsPage() {
       .catch(() => setLicenseResult({ authorized: false, domains: [] }))
       .finally(() => setLicenseChecking(false))
 
+    fetch('/api/admin/smtp').then(r => r.json()).then(data => {
+      if (data) {
+        setSmtp({
+          SMTP_HOST: data.SMTP_HOST || '',
+          SMTP_PORT: data.SMTP_PORT || '465',
+          SMTP_USER: data.SMTP_USER || '',
+          SMTP_PASS: data.SMTP_PASS || '',
+          SMTP_FROM: data.SMTP_FROM || '',
+        })
+        setSmtpConfigured(data.configured || false)
+        setTestEmail(data.SMTP_USER || '')
+      }
+    })
+
   }, [])
 
   const save = async () => {
@@ -141,7 +160,7 @@ export default function SettingsPage() {
     const res = await fetch('/api/admin/config', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...config, navItems, siteIcon, rightPanelWidgets: widgets, copyright: config.copyright, defaultTheme }),
+      body: JSON.stringify({ ...config, siteIcon, copyright: config.copyright, defaultTheme }),
     })
     setSaving(false)
     if (res.ok) toast.success('站点设置已保存')
@@ -193,6 +212,32 @@ export default function SettingsPage() {
     } else {
       toast.error(data.error || '保存失败')
     }
+  }
+
+  const saveSmtp = async () => {
+    setSmtpSaving(true)
+    const res = await fetch('/api/admin/smtp', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(smtp),
+    })
+    setSmtpSaving(false)
+    if (res.ok) {
+      toast.success('SMTP 配置已保存，重启服务后生效')
+      setSmtpConfigured(!!(smtp.SMTP_HOST && smtp.SMTP_USER && smtp.SMTP_PASS))
+    } else {
+      const data = await res.json()
+      toast.error(data.error || '保存失败')
+    }
+  }
+
+  const sendTestEmail = async () => {
+    if (!testEmail.trim()) { toast.error('请填写收件人邮箱'); return }
+    setSmtpTesting(true)
+    const res = await fetch('/api/admin/smtp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to: testEmail }) })
+    setSmtpTesting(false)
+    if (res.ok) toast.success('测试邮件已发送，请检查收件箱')
+    else { const data = await res.json(); toast.error(data.error || '发送失败') }
   }
 
   const uploadAvatar = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -391,8 +436,54 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* 导航与组件 */}
+          {/* 邮件通知 */}
           <div className={`${mobileCardClass} flex flex-col gap-3 sm:gap-4`} style={{ background: 'var(--bg-secondary)' }}>
+            <div className="flex flex-col gap-1.5">
+              <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>📧 邮件通知</h2>
+              <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>SMTP 配置与测试邮件现在合并到站点设置中。</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>SMTP 服务器</label>
+                <IMEInput type="text" value={smtp.SMTP_HOST} onValueChange={v => setSmtp(s => ({ ...s, SMTP_HOST: v }))} placeholder="smtp.example.com" className="w-full px-3 py-2 rounded-2xl text-sm outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>端口</label>
+                <IMEInput type="text" value={smtp.SMTP_PORT} onValueChange={v => setSmtp(s => ({ ...s, SMTP_PORT: v }))} placeholder="465" className="w-full px-3 py-2 rounded-2xl text-sm outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>用户名</label>
+                <IMEInput type="text" value={smtp.SMTP_USER} onValueChange={v => setSmtp(s => ({ ...s, SMTP_USER: v }))} placeholder="your-email@example.com" className="w-full px-3 py-2 rounded-2xl text-sm outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>密码</label>
+                <IMEInput type="password" value={smtp.SMTP_PASS} onValueChange={v => setSmtp(s => ({ ...s, SMTP_PASS: v }))} placeholder="your-password" className="w-full px-3 py-2 rounded-2xl text-sm outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>发件人邮箱</label>
+                <IMEInput type="text" value={smtp.SMTP_FROM} onValueChange={v => setSmtp(s => ({ ...s, SMTP_FROM: v }))} placeholder="noreply@example.com" className="w-full px-3 py-2 rounded-2xl text-sm outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button onClick={saveSmtp} disabled={smtpSaving} className="px-6 py-3 rounded-full text-sm font-bold text-white disabled:opacity-50 w-full sm:w-auto" style={{ background: 'var(--accent)' }}>{smtpSaving ? '保存中...' : '保存配置'}</button>
+              {smtpConfigured && <span className="px-3 py-2 rounded-full text-xs font-medium self-start sm:self-center" style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E' }}>已配置</span>}
+            </div>
+
+            {smtpConfigured && (
+              <div className="pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
+                <h3 className="font-bold text-sm mb-3" style={{ color: 'var(--text-primary)' }}>测试邮件</h3>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <IMEInput value={testEmail} onValueChange={setTestEmail} placeholder="收件人邮箱" className="flex-1 px-3 py-2.5 rounded-2xl text-sm outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+                  <button onClick={sendTestEmail} disabled={smtpTesting} className="px-4 py-3 rounded-full text-sm font-medium disabled:opacity-50 w-full sm:w-auto" style={{ background: 'var(--accent)', color: '#fff' }}>{smtpTesting ? '发送中...' : '发送测试'}</button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 导航与组件（已移至独立页面） */}
+          <div className={`${mobileCardClass} hidden flex-col gap-3 sm:gap-4`} style={{ background: 'var(--bg-secondary)' }}>
             <div className="flex flex-col gap-1.5">
               <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>🧭 导航与组件</h2>
               <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>把前台导航和右侧栏放在同一组里统一管理</p>
