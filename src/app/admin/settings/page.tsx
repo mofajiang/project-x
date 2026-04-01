@@ -78,13 +78,13 @@ export default function SettingsPage() {
         })
         try {
           const nav = JSON.parse(data.navItems || '[]')
-          if (Array.isArray(nav) && nav.length > 0) setNavItems(nav)
+          if (Array.isArray(nav)) setNavItems(nav)
         } catch {}
         setSiteIcon(data.siteIcon || '')
         setDefaultTheme(data.defaultTheme === 'light' ? 'light' : 'dark')
         try {
           const w = JSON.parse(data.rightPanelWidgets || '[]')
-          if (Array.isArray(w) && w.length > 0) setWidgets(w)
+          if (Array.isArray(w)) setWidgets(w)
         } catch {}
       }
     })

@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
-import { revalidateSiteConfig } from '@/lib/config'
+import { getSiteConfig, revalidateSiteConfig } from '@/lib/config'
 import { runMigrations } from '@/lib/db-migrate'
 
 export async function GET(req: NextRequest) {
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   await runMigrations()
-  const config = await prisma.siteConfig.findUnique({ where: { id: 'singleton' } })
+  const config = await getSiteConfig()
   return NextResponse.json(config)
 }
 
