@@ -13,6 +13,21 @@ export default async function BlogLayout({ children }: { children: React.ReactNo
   const navItems = parseNavItems((config as any).navItems)
   const widgets = parseWidgets((config as any).rightPanelWidgets)
   const session = await getSession()
+  const [topTags, hotPosts] = await Promise.all([
+    prisma.tag.findMany({
+      orderBy: { posts: { _count: 'desc' } },
+      take: 8,
+      select: { id: true, name: true, slug: true, _count: { select: { posts: true } } },
+    }),
+    prisma.post.findMany({
+      where: { published: true },
+      orderBy: { views: 'desc' },
+      take: 5,
+      select: { id: true, title: true, slug: true, views: true },
+    }),
+  ])
+
+  const mobileTopTags = topTags.map(tag => ({ id: tag.id, name: tag.name, slug: tag.slug, posts: tag._count.posts }))
   let avatar: string | null = null
   let displayName: string = ''
   let handle: string = session?.username || ''
@@ -32,7 +47,23 @@ export default async function BlogLayout({ children }: { children: React.ReactNo
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
       {/* 移动端顶部 header */}
-      <MobileHeader siteName={config.siteName} session={session} avatar={avatar} displayName={displayName} handle={handle} loginMode={config.loginMode} secretClicks={config.secretClicks} loginPath={config.loginPath} navItems={navItems} />
+      <MobileHeader
+        siteName={config.siteName}
+        session={session}
+        avatar={avatar}
+        displayName={displayName}
+        handle={handle}
+        loginMode={config.loginMode}
+        secretClicks={config.secretClicks}
+        loginPath={config.loginPath}
+        navItems={navItems}
+        siteDesc={config.siteDesc}
+        social={{ x: config.socialX, github: config.socialGithub, email: config.socialEmail }}
+        widgets={widgets}
+        copyright={(config as any).copyright || ''}
+        topTags={mobileTopTags}
+        hotPosts={hotPosts}
+      />
 
       <div className="max-w-[1280px] mx-auto flex justify-center">
         {/* 左侧导航（桌面端） */}

@@ -2,9 +2,13 @@
 import { useRouter } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
 import type { JWTPayload } from '@/lib/auth'
+import type { RightPanelWidget } from '@/lib/config'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { MobileDrawer } from './MobileDrawer'
 import type { NavItemDef } from './Sidebar'
+
+type TopTag = { id: string; name: string; slug: string; posts: number }
+type TopPost = { id: string; title: string; slug: string; views: number }
 
 interface Props {
   siteName: string
@@ -16,9 +20,15 @@ interface Props {
   secretClicks?: number
   loginPath?: string
   navItems?: NavItemDef[]
+  siteDesc?: string
+  social?: { x: string; github: string; email: string }
+  widgets?: RightPanelWidget[]
+  copyright?: string
+  topTags?: TopTag[]
+  hotPosts?: TopPost[]
 }
 
-export function MobileHeader({ siteName, session, avatar, displayName, handle, loginMode, secretClicks = 5, loginPath = '/admin-login', navItems }: Props) {
+export function MobileHeader({ siteName, session, avatar, displayName, handle, loginMode, secretClicks = 5, loginPath = '/admin-login', navItems, siteDesc = '', social = { x: '', github: '', email: '' }, widgets = [], copyright = '', topTags = [], hotPosts = [] }: Props) {
   const router = useRouter()
   const [clicks, setClicks] = useState(0)
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -50,6 +60,12 @@ export function MobileHeader({ siteName, session, avatar, displayName, handle, l
         avatar={avatar}
         displayName={displayName}
         handle={handle}
+        siteDesc={siteDesc}
+        social={social}
+        widgets={widgets}
+        copyright={copyright}
+        topTags={topTags}
+        hotPosts={hotPosts}
       />
       <header
         className="md:hidden flex items-center justify-between px-4 h-14 sticky top-0 z-40"

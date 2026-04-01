@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import type { JWTPayload } from '@/lib/auth'
+import type { RightPanelWidget, FriendLink } from '@/lib/config'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import type { NavItemDef } from './Sidebar'
 
@@ -50,14 +51,21 @@ interface Props {
   avatar?: string | null
   displayName?: string
   handle?: string
+  siteDesc?: string
+  social?: { x: string; github: string; email: string }
+  widgets?: RightPanelWidget[]
+  copyright?: string
+  topTags?: { id: string; name: string; slug: string; posts: number }[]
+  hotPosts?: { id: string; title: string; slug: string; views: number }[]
 }
 
-export function MobileDrawer({ open, onClose, navItems, session, avatar, displayName = '', handle = '' }: Props) {
+export function MobileDrawer({ open, onClose, navItems, session, avatar, displayName = '', handle = '', siteDesc = '', social = { x: '', github: '', email: '' }, widgets = [], copyright = '', topTags = [], hotPosts = [] }: Props) {
   const items = (navItems && navItems.length > 0) ? navItems : DEFAULT_NAV
   const pathname = usePathname()
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
   const drawerRef = useRef<HTMLDivElement>(null)
+  const enabledWidgets = widgets.filter(w => w.enabled)
 
   // 路由变化时关闭抽屉
   useEffect(() => { onClose() }, [pathname]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -119,7 +127,7 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
         </div>
 
         {/* 导航项 */}
-        <nav className="flex flex-col gap-0.5 flex-1">
+        <nav className="flex flex-col gap-0.5 flex-1 overflow-y-auto pr-1">
           {items.map((item) => {
             const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href)
             const Icon = ICON_MAP[item.icon] || IconHome
@@ -147,6 +155,148 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
             >
               写文章
             </button>
+          )}
+
+          {/* 右侧栏（移动端） */}
+          {enabledWidgets.length > 0 && (
+            <div className="mt-4 px-1 pb-2 space-y-3">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>右侧栏</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>与桌面同源</span>
+              </div>
+
+              {enabledWidgets.map((widget, index) => {
+                const title = widget.title?.trim() || ({ search: '搜索', about: '关于我', tags: '热门标签', hotPosts: '热门文章', custom: '自定义文本', links: '友情链接', carousel: '轮播图' } as Record<string, string>)[widget.type]
+
+                if (widget.type === 'search') {
+                  return (
+                    <Link key={`search-${index}`} href="/search" className="flex items-center justify-between gap-3 px-4 py-3 rounded-2xl transition-colors" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
+                      <span className="flex items-center gap-2 min-w-0">
+                        <span>🔎</span>
+                        <span className="text-sm font-medium truncate">站内搜索</span>
+                      </span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(29,155,240,0.12)', color: 'var(--accent)' }}>打开</span>
+                    </Link>
+                  )
+                }
+
+                if (widget.type === 'about') {
+                  if (!siteDesc && !social.x && !social.github && !social.email) return null
+                  return (
+                    <div key={`about-${index}`} className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-hover)' }}>
+                      <div className="px-4 pt-3 pb-2">
+                        <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{title}</h3>
+                      </div>
+                      {siteDesc && <p className="px-4 pb-3 text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{siteDesc}</p>}
+                      {(social.x || social.github || social.email) && (
+                        <div className="flex flex-wrap gap-2 px-4 pb-4">
+                          {social.x && <a href={`https://x.com/${social.x}`} target="_blank" className="text-[10px] px-2.5 py-1 rounded-full font-bold" style={{ background: 'var(--accent)', color: '#fff' }}>𝕏 @{social.x}</a>}
+                          {social.github && <a href={`https://github.com/${social.github}`} target="_blank" className="text-[10px] px-2.5 py-1 rounded-full font-bold" style={{ background: 'var(--accent)', color: '#fff' }}>GitHub</a>}
+                          {social.email && <a href={`mailto:${social.email}`} className="text-[10px] px-2.5 py-1 rounded-full font-bold" style={{ background: 'var(--accent)', color: '#fff' }}>邮件</a>}
+                        </div>
+                      )}
+                    </div>
+                  )
+                }
+
+                if (widget.type === 'tags') {
+                  if (!topTags.length) return null
+                  return (
+                    <div key={`tags-${index}`} className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-hover)' }}>
+                      <div className="px-4 pt-3 pb-2">
+                        <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{title}</h3>
+                      </div>
+                      <div className="flex flex-wrap gap-2 px-4 pb-4">
+                        {topTags.slice(0, 8).map(tag => (
+                          <Link key={tag.id} href={`/tag/${tag.slug}`} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-medium" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
+                            <span>#{tag.name}</span>
+                            <span style={{ color: 'var(--text-secondary)' }}>{tag.posts}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                }
+
+                if (widget.type === 'hotPosts') {
+                  if (!hotPosts.length) return null
+                  return (
+                    <div key={`hot-${index}`} className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-hover)' }}>
+                      <div className="px-4 pt-3 pb-2">
+                        <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{title}</h3>
+                      </div>
+                      <div className="flex flex-col">
+                        {hotPosts.slice(0, 5).map((post, idx) => (
+                          <Link key={post.id} href={`/post/${post.slug}`} className="flex items-center justify-between gap-3 px-4 py-3" style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--border)' }}>
+                            <span className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>{post.title}</span>
+                            <span className="text-[10px] shrink-0" style={{ color: 'var(--text-secondary)' }}>{post.views} 阅</span>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                }
+
+                if (widget.type === 'custom') {
+                  if (!widget.content) return null
+                  return (
+                    <div key={`custom-${index}`} className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-hover)' }}>
+                      {title && <div className="px-4 pt-3 pb-2"><h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{title}</h3></div>}
+                      <div className="px-4 pb-4 text-xs leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--text-secondary)' }}>{widget.content}</div>
+                    </div>
+                  )
+                }
+
+                if (widget.type === 'links') {
+                  const links: FriendLink[] = widget.links || []
+                  if (!links.length) return null
+                  return (
+                    <div key={`links-${index}`} className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-hover)' }}>
+                      <div className="px-4 pt-3 pb-2">
+                        <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{title}</h3>
+                      </div>
+                      <div className="flex flex-col pb-2">
+                        {links.slice(0, 6).map((link, idx) => (
+                          <a key={idx} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-2.5" style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--border)' }}>
+                            <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center shrink-0" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
+                              {link.avatar ? <img src={link.avatar} alt={link.label} className="w-full h-full object-cover" /> : <span className="text-xs font-bold">{link.label[0]?.toUpperCase()}</span>}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-bold truncate" style={{ color: 'var(--text-primary)' }}>{link.label}</p>
+                              {link.desc && <p className="text-[10px] truncate" style={{ color: 'var(--text-secondary)' }}>{link.desc}</p>}
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                }
+
+                if (widget.type === 'carousel') {
+                  const slides = widget.slides || []
+                  if (!slides.length) return null
+                  const first = slides[0]
+                  return (
+                    <div key={`carousel-${index}`} className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-hover)' }}>
+                      <div className="px-4 pt-3 pb-2">
+                        <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{title}</h3>
+                      </div>
+                      <div className="px-4 pb-4">
+                        {first.image && <img src={first.image} alt={first.title || title} className="w-full h-24 object-cover rounded-xl mb-2" />}
+                        {first.title && <p className="text-xs font-bold mb-1" style={{ color: 'var(--text-primary)' }}>{first.title}</p>}
+                        {(first.desc || first.markdown) && <p className="text-[10px] leading-relaxed line-clamp-3" style={{ color: 'var(--text-secondary)' }}>{first.desc || first.markdown}</p>}
+                      </div>
+                    </div>
+                  )
+                }
+
+                return null
+              })}
+
+              {copyright && (
+                <div className="rounded-2xl px-4 py-3 text-[11px] leading-relaxed" style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }} dangerouslySetInnerHTML={{ __html: copyright }} />
+              )}
+            </div>
           )}
         </nav>
 

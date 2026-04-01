@@ -279,7 +279,6 @@ export function AdminSidebar({ username }: { username: string }) {
   const pathname = usePathname()
   const router = useRouter()
   const [pendingCount, setPendingCount] = useState(0)
-  const [mobileToolsOpen, setMobileToolsOpen] = useState(false)
 
   useEffect(() => {
     const fetchPending = () => fetch('/api/admin/comments/pending')
@@ -291,10 +290,6 @@ export function AdminSidebar({ username }: { username: string }) {
 
     return () => clearInterval(timer)
   }, [])
-
-  useEffect(() => {
-    setMobileToolsOpen(false)
-  }, [pathname])
 
   const logout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
@@ -351,15 +346,6 @@ export function AdminSidebar({ username }: { username: string }) {
         <div className="flex items-center gap-2">
           <AdminUpdateChecker compact />
           <AdminThemeToggle compact />
-          <button
-            type="button"
-            onClick={() => setMobileToolsOpen(v => !v)}
-            className="flex items-center gap-1 px-3 py-2 rounded-full text-xs transition-colors shrink-0"
-            style={{ color: mobileToolsOpen ? 'var(--text-primary)' : 'var(--text-secondary)', background: mobileToolsOpen ? 'var(--bg-hover)' : 'transparent' }}
-          >
-            <span>🧩</span>
-            <span>工具</span>
-          </button>
           <a href="/" target="_blank" className="text-xs px-3 py-1 rounded-full" style={{ color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>前台 ↗</a>
           <button onClick={logout} className="text-xs px-3 py-1 rounded-full" style={{ color: 'var(--red)', border: '1px solid var(--border)' }}>退出</button>
         </div>
@@ -390,92 +376,7 @@ export function AdminSidebar({ username }: { username: string }) {
             </Link>
           )
         })}
-        <button
-          type="button"
-          onClick={() => setMobileToolsOpen(v => !v)}
-          className="flex flex-col items-center justify-center gap-0.5 flex-1 min-w-[52px] py-2.5 px-1 text-[9px] relative transition-colors"
-          style={{
-            color: mobileToolsOpen ? 'var(--text-primary)' : 'var(--text-secondary)',
-            fontWeight: mobileToolsOpen ? 700 : 400,
-            background: mobileToolsOpen ? 'var(--bg-hover)' : 'transparent',
-          }}
-        >
-          <span className="text-[17px] leading-none">🧩</span>
-          <span className="truncate w-full text-center px-0.5">工具</span>
-        </button>
       </nav>
-
-      {mobileToolsOpen && (
-        <div className="md:hidden fixed inset-0 z-50" onClick={() => setMobileToolsOpen(false)}>
-          <div className="absolute inset-0 bg-black/35" />
-          <div
-            className="absolute left-2 right-2 rounded-2xl shadow-2xl overflow-hidden"
-            style={{
-              bottom: 'calc(3.75rem + env(safe-area-inset-bottom))',
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--border)',
-            }}
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-4 pt-4 pb-2">
-              <div>
-                <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>🧩 后台工具</p>
-                <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>常用入口和右侧栏快捷操作</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setMobileToolsOpen(false)}
-                className="w-8 h-8 rounded-full flex items-center justify-center"
-                style={{ color: 'var(--text-secondary)', background: 'var(--bg-hover)' }}
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="px-4 pb-4 flex flex-col gap-3 max-h-[65vh] overflow-y-auto">
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { href: '/admin/posts/new', label: '写新文章', icon: '✏️' },
-                  { href: '/admin/comments', label: '管理评论', icon: '💬', badge: pendingCount },
-                  { href: '/admin/tags', label: '管理标签', icon: '🏷️' },
-                  { href: '/admin/settings', label: '站点设置', icon: '⚙️' },
-                  { href: '/admin/smtp', label: '邮件设置', icon: '📧' },
-                  { href: '/admin/security', label: '安全设置', icon: '🔒' },
-                ].map(item => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="flex items-center justify-between gap-2 px-3 py-3 rounded-xl text-sm min-h-11"
-                    style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
-                  >
-                    <span className="flex items-center gap-2 min-w-0">
-                      <span>{item.icon}</span>
-                      <span className="truncate">{item.label}</span>
-                    </span>
-                    {(item.badge ?? 0) > 0 ? (
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: 'var(--red)', color: '#fff' }}>
-                        {item.badge}
-                      </span>
-                    ) : (
-                      <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>→</span>
-                    )}
-                  </Link>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <AdminUpdateChecker compact />
-                <AdminThemeToggle compact />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <a href="/" target="_blank" className="flex items-center justify-center px-3 py-3 rounded-xl text-sm" style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>前台 ↗</a>
-                <button onClick={logout} className="px-3 py-3 rounded-xl text-sm" style={{ color: 'var(--red)', background: 'var(--bg-hover)' }}>退出登录</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   )
 }
