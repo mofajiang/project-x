@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { IMEInput, IMETextarea } from '@/components/ui/IMEInput'
 import ImageCropModal from '@/components/ui/ImageCropModal'
 import { ADMIN_PAGE_TITLE_CLASS, ADMIN_CARD_LG_CLASS, ADMIN_SUBCARD_CLASS } from '@/components/admin/adminUi'
-import { DEFAULT_NAV, DEFAULT_WIDGETS, type NavItem, type RightPanelWidget as Widget } from '@/lib/config'
+import { DEFAULT_NAV, DEFAULT_WIDGETS, DEFAULT_SITE_LOGO, parseSiteLogo, type NavItem, type RightPanelWidget as Widget, type SiteLogo } from '@/lib/config'
 
 type WidgetType = 'search' | 'about' | 'tags' | 'hotPosts' | 'custom' | 'links' | 'carousel'
 type FriendLink = { label: string; url: string; desc?: string; avatar?: string }
@@ -28,6 +28,11 @@ const ICON_OPTIONS = [
   { value: 'archive', label: '📅 归档' },
   { value: 'tag', label: '🏷️ 标签' },
   { value: 'user', label: '👤 用户' },
+]
+
+const SITE_LOGO_TYPES: { value: SiteLogo['type']; label: string }[] = [
+  { value: 'text', label: '文字' },
+  { value: 'icon', label: '图标' },
 ]
 
 function Field({
@@ -79,6 +84,7 @@ export default function SettingsPage() {
   const [navItems, setNavItems] = useState<NavItem[]>(DEFAULT_NAV)
   const [profile, setProfile] = useState({ username: '', displayName: '', avatar: '', bio: '' })
   const [siteIcon, setSiteIcon] = useState('')
+  const [siteLogo, setSiteLogo] = useState<SiteLogo>(DEFAULT_SITE_LOGO)
   const [widgets, setWidgets] = useState<Widget[]>(DEFAULT_WIDGETS)
   const [saving, setSaving] = useState(false)
   const [savingProfile, setSavingProfile] = useState(false)
@@ -115,6 +121,7 @@ export default function SettingsPage() {
           const nav = JSON.parse(data.navItems || '[]')
           if (Array.isArray(nav)) setNavItems(nav)
         } catch {}
+        setSiteLogo(parseSiteLogo(data.siteLogo || ''))
         setSiteIcon(data.siteIcon || '')
         setDefaultTheme(data.defaultTheme === 'light' ? 'light' : 'dark')
         try {
@@ -160,7 +167,7 @@ export default function SettingsPage() {
     const res = await fetch('/api/admin/config', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...config, siteIcon, copyright: config.copyright, defaultTheme }),
+      body: JSON.stringify({ ...config, siteIcon, siteLogo: JSON.stringify(siteLogo), copyright: config.copyright, defaultTheme }),
     })
     setSaving(false)
     if (res.ok) toast.success('站点设置已保存')
@@ -419,6 +426,51 @@ export default function SettingsPage() {
               {siteIcon && <div className="flex items-center gap-2 min-w-0 overflow-hidden"><span className="text-xs shrink-0" style={{ color: 'var(--text-secondary)' }}>路径：</span><span className="text-xs font-mono px-2 py-0.5 rounded truncate" style={{ background: 'var(--bg)', color: 'var(--accent)' }}>{siteIcon}</span></div>}
             </div>
             <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>上传后点击底部「保存设置」生效</p>
+          </div>
+
+          {/* 顶部标识 */}
+          <div className={`${mobileCardClass} flex flex-col gap-2.5 sm:gap-4`} style={{ background: 'var(--bg-secondary)' }}>
+            <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>✕ 顶部标识</h2>
+            <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>控制桌面侧栏和手机侧边栏顶部显示的文字或图标。</p>
+
+            <div className="grid grid-cols-1 gap-3">
+              <div className="flex flex-wrap gap-2">
+                {SITE_LOGO_TYPES.map((item) => (
+                  <button
+                    key={item.value}
+                    type="button"
+                    onClick={() => setSiteLogo(v => ({ ...v, type: item.value }))}
+                    className="px-3 py-2 rounded-full text-sm font-medium transition-colors"
+                    style={{
+                      background: siteLogo.type === item.value ? 'var(--accent)' : 'var(--bg-hover)',
+                      color: siteLogo.type === item.value ? '#fff' : 'var(--text-primary)',
+                    }}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+
+              <Field
+                label="显示内容"
+                value={siteLogo.value}
+                onChange={v => setSiteLogo(s => ({ ...s, value: v }))}
+                placeholder={siteLogo.type === 'text' ? '例如：我的博客' : '例如：✕ / 🅧 / ⓿'}
+                compact
+              />
+
+              <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: 'var(--bg-hover)' }}>
+                <div className="min-w-[3rem] h-12 px-3 rounded-full flex items-center justify-center shrink-0" style={{ background: 'var(--bg)' }}>
+                  <span className={siteLogo.type === 'text' ? 'text-[18px] font-black leading-none' : 'text-[22px] leading-none'} style={{ color: 'var(--text-primary)' }}>
+                    {siteLogo.value || DEFAULT_SITE_LOGO.value}
+                  </span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold leading-tight" style={{ color: 'var(--text-primary)' }}>预览</p>
+                  <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>会显示在桌面侧栏顶部和手机侧边栏顶部</p>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* 默认主题 */}

@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
 import type { JWTPayload } from '@/lib/auth'
-import type { RightPanelWidget } from '@/lib/config'
+import type { RightPanelWidget, SiteLogo } from '@/lib/config'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { MobileDrawer } from './MobileDrawer'
 import type { NavItemDef } from './Sidebar'
@@ -26,9 +26,10 @@ interface Props {
   copyright?: string
   topTags?: TopTag[]
   hotPosts?: TopPost[]
+  siteLogo?: SiteLogo | null
 }
 
-export function MobileHeader({ siteName, session, avatar, displayName, handle, loginMode, secretClicks = 5, loginPath = '/admin-login', navItems, siteDesc = '', social = { x: '', github: '', email: '' }, widgets = [], copyright = '', topTags = [], hotPosts = [] }: Props) {
+export function MobileHeader({ siteName, session, avatar, displayName, handle, loginMode, secretClicks = 5, loginPath = '/admin-login', navItems, siteDesc = '', social = { x: '', github: '', email: '' }, widgets = [], copyright = '', topTags = [], hotPosts = [], siteLogo = null }: Props) {
   const router = useRouter()
   const [clicks, setClicks] = useState(0)
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -55,6 +56,8 @@ export function MobileHeader({ siteName, session, avatar, displayName, handle, l
       <MobileDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
+        onLogoClick={handleLogoClick}
+        siteLogo={siteLogo}
         navItems={navItems}
         session={session}
         avatar={avatar}
@@ -84,16 +87,6 @@ export function MobileHeader({ siteName, session, avatar, displayName, handle, l
             <line x1="3" y1="18" x2="21" y2="18" />
           </svg>
         </button>
-
-      {/* 中间：X Logo */}
-      <button
-        onClick={handleLogoClick}
-        className="text-2xl font-black select-none"
-        style={{ color: 'var(--text-primary)' }}
-        title={siteName}
-      >
-        ✕
-      </button>
 
       {/* 右侧：主题切换 */}
       <ThemeToggle className="w-8 h-8" />

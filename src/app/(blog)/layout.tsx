@@ -4,13 +4,14 @@ import { MobileHeader } from '@/components/layout/MobileHeader'
 import { MobileTabBar } from '@/components/layout/MobileTabBar'
 import { ScrollToTop } from '@/components/blog/ScrollToTop'
 import { ComposeModal } from '@/components/blog/ComposeModal'
-import { getSiteConfig, parseNavItems, parseWidgets } from '@/lib/config'
+import { getSiteConfig, parseNavItems, parseSiteLogo, parseWidgets } from '@/lib/config'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 export default async function BlogLayout({ children }: { children: React.ReactNode }) {
   const config = await getSiteConfig()
   const navItems = parseNavItems((config as any).navItems)
+  const siteLogo = parseSiteLogo((config as any).siteLogo)
   const widgets = parseWidgets((config as any).rightPanelWidgets)
   const session = await getSession()
   const [topTags, hotPosts] = await Promise.all([
@@ -53,6 +54,7 @@ export default async function BlogLayout({ children }: { children: React.ReactNo
         avatar={avatar}
         displayName={displayName}
         handle={handle}
+        siteLogo={siteLogo}
         loginMode={config.loginMode}
         secretClicks={config.secretClicks}
         loginPath={config.loginPath}
@@ -68,7 +70,7 @@ export default async function BlogLayout({ children }: { children: React.ReactNo
       <div className="max-w-[1280px] mx-auto flex justify-center">
         {/* 左侧导航（桌面端） */}
         <div className="hidden md:flex w-[72px] xl:w-[240px] flex-shrink-0">
-          <Sidebar siteName={config.siteName} loginMode={config.loginMode} secretClicks={config.secretClicks} loginPath={config.loginPath} navItems={navItems} session={session} avatar={avatar} displayName={displayName} handle={handle} />
+          <Sidebar siteName={config.siteName} siteLogo={siteLogo} loginMode={config.loginMode} secretClicks={config.secretClicks} loginPath={config.loginPath} navItems={navItems} session={session} avatar={avatar} displayName={displayName} handle={handle} />
         </div>
         {/* 主内容 */}
         <main className="w-full min-h-screen border-x pb-16 md:pb-0" style={{ borderColor: 'var(--border)', maxWidth: 600, minWidth: 0 }}>

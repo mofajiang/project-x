@@ -8,6 +8,18 @@ export type NavItem = {
   icon: string
 }
 
+export type SiteLogoType = 'text' | 'icon'
+
+export type SiteLogo = {
+  type: SiteLogoType
+  value: string
+}
+
+export const DEFAULT_SITE_LOGO: SiteLogo = {
+  type: 'text',
+  value: '✕',
+}
+
 export type WidgetType = 'search' | 'about' | 'tags' | 'hotPosts' | 'custom' | 'links' | 'carousel'
 
 export type FriendLink = {
@@ -76,6 +88,7 @@ export type SiteConfig = {
   socialGithub: string
   socialEmail: string
   navItems: string
+  siteLogo: string
   siteIcon: string
   rightPanelWidgets: string
   copyright: string
@@ -98,6 +111,22 @@ export function parseNavItems(raw: string | undefined | null): NavItem[] {
   return DEFAULT_NAV
 }
 
+export function parseSiteLogo(raw: string | undefined | null): SiteLogo {
+  if (!raw) return DEFAULT_SITE_LOGO
+  try {
+    const parsed = JSON.parse(raw)
+    if (parsed && typeof parsed === 'object' && typeof parsed.value === 'string') {
+      if (parsed.type === 'text' || parsed.type === 'icon') {
+        return { type: parsed.type, value: parsed.value }
+      }
+      return { type: 'text', value: parsed.value }
+    }
+  } catch {
+    return { type: 'text', value: raw }
+  }
+  return DEFAULT_SITE_LOGO
+}
+
 async function fetchSiteConfig(): Promise<SiteConfig> {
   await runMigrations()
   // 一次 raw SQL 读取所有字段（含动态迁移列）
@@ -105,6 +134,7 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
   try {
     rows = await prisma.$queryRawUnsafe<any[]>(
       `SELECT *, COALESCE(copyright,'') as copyright, COALESCE(siteIcon,'') as siteIcon,
+       COALESCE(siteLogo,'') as siteLogo,
        COALESCE(navItems,'') as navItems, COALESCE(rightPanelWidgets,'') as rightPanelWidgets,
        COALESCE(defaultTheme,'dark') as defaultTheme
        FROM SiteConfig WHERE id = 'singleton'`
@@ -114,6 +144,7 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
     await prisma.siteConfig.create({ data: { id: 'singleton' } })
     rows = await prisma.$queryRawUnsafe<any[]>(
       `SELECT *, COALESCE(copyright,'') as copyright, COALESCE(siteIcon,'') as siteIcon,
+       COALESCE(siteLogo,'') as siteLogo,
        COALESCE(navItems,'') as navItems, COALESCE(rightPanelWidgets,'') as rightPanelWidgets,
        COALESCE(defaultTheme,'dark') as defaultTheme
        FROM SiteConfig WHERE id = 'singleton'`
@@ -122,6 +153,7 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
   const config: any = rows[0] || {}
   if (!config.navItems) config.navItems = JSON.stringify(DEFAULT_NAV)
   if (!config.rightPanelWidgets) config.rightPanelWidgets = JSON.stringify(DEFAULT_WIDGETS)
+  if (!config.siteLogo) config.siteLogo = JSON.stringify(DEFAULT_SITE_LOGO)
   if (!config.siteIcon) config.siteIcon = ''
   if (!config.copyright) config.copyright = ''
   if (!config.defaultTheme) config.defaultTheme = 'dark'

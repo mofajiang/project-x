@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import type { JWTPayload } from '@/lib/auth'
+import type { SiteLogo } from '@/lib/config'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 
 // X 风格 SVG 图标
@@ -43,6 +44,7 @@ export type NavItemDef = { label: string; href: string; icon: string }
 
 interface Props {
   siteName: string
+  siteLogo?: SiteLogo | null
   loginMode: string
   secretClicks: number
   loginPath?: string
@@ -60,7 +62,7 @@ const DEFAULT_NAV: NavItemDef[] = [
   { label: '关于', href: '/about', icon: 'user' },
 ]
 
-export function Sidebar({ siteName, loginMode, secretClicks, loginPath = '/admin-login', navItems, session, avatar, displayName = '', handle = '' }: Props) {
+export function Sidebar({ siteName, siteLogo, loginMode, secretClicks, loginPath = '/admin-login', navItems, session, avatar, displayName = '', handle = '' }: Props) {
   const items = (navItems && navItems.length > 0) ? navItems : DEFAULT_NAV
   const pathname = usePathname()
   const router = useRouter()
@@ -103,18 +105,22 @@ export function Sidebar({ siteName, loginMode, secretClicks, loginPath = '/admin
     }
   }
 
+  const logoText = (siteLogo?.value || '✕').trim() || '✕'
+
   return (
     <aside className="w-[72px] xl:w-[240px] sticky top-0 h-screen flex flex-col px-2 xl:px-3 py-4">
       {/* Logo */}
       <button
         onClick={handleLogoClick}
-        className="w-12 h-12 rounded-full flex items-center justify-center mb-2 transition-colors text-2xl font-black select-none"
+        className="min-w-[3rem] h-12 px-3 rounded-full flex items-center justify-center mb-2 transition-colors select-none"
         style={{ color: 'var(--text-primary)' }}
         title={siteName}
         onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
       >
-        ✕
+        <span className={siteLogo?.type === 'text' ? 'text-[18px] font-black leading-none' : 'text-[22px] leading-none'}>
+          {logoText}
+        </span>
       </button>
 
       {/* 导航 + 写文章按钮 */}

@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import type { JWTPayload } from '@/lib/auth'
-import type { RightPanelWidget, FriendLink } from '@/lib/config'
+import type { RightPanelWidget, FriendLink, SiteLogo } from '@/lib/config'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import type { NavItemDef } from './Sidebar'
 
@@ -46,6 +46,8 @@ const DEFAULT_NAV: NavItemDef[] = [
 interface Props {
   open: boolean
   onClose: () => void
+  onLogoClick?: () => void
+  siteLogo?: SiteLogo | null
   navItems?: NavItemDef[]
   session?: JWTPayload | null
   avatar?: string | null
@@ -59,7 +61,7 @@ interface Props {
   hotPosts?: { id: string; title: string; slug: string; views: number }[]
 }
 
-export function MobileDrawer({ open, onClose, navItems, session, avatar, displayName = '', handle = '', siteDesc = '', social = { x: '', github: '', email: '' }, widgets = [], copyright = '', topTags = [], hotPosts = [] }: Props) {
+export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, session, avatar, displayName = '', handle = '', siteDesc = '', social = { x: '', github: '', email: '' }, widgets = [], copyright = '', topTags = [], hotPosts = [] }: Props) {
   const items = (navItems && navItems.length > 0) ? navItems : DEFAULT_NAV
   const primaryItems = items.slice(0, 4)
   const pathname = usePathname()
@@ -67,6 +69,7 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
   const [menuOpen, setMenuOpen] = useState(false)
   const drawerRef = useRef<HTMLDivElement>(null)
   const enabledWidgets = widgets.filter(w => w.enabled && w.mobileVisible !== false)
+  const logoText = (siteLogo?.value || '✕').trim() || '✕'
 
   // 路由变化时关闭抽屉
   useEffect(() => { onClose() }, [pathname]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -111,6 +114,23 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
         }}
         onClick={(e) => e.stopPropagation()}
       >
+        <div className="flex items-center justify-start pb-3 px-1">
+          <button
+            type="button"
+            onClick={onLogoClick || onClose}
+            className="min-w-[2.5rem] h-10 px-3 rounded-full flex items-center justify-center text-[22px] font-black transition-colors select-none"
+            style={{ color: 'var(--text-primary)' }}
+            title="首页"
+            aria-label="返回首页"
+            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(29,155,240,0.06)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+          >
+            <span className={siteLogo?.type === 'text' ? 'text-[18px] font-black leading-none' : 'text-[22px] leading-none'}>
+              {logoText}
+            </span>
+          </button>
+        </div>
+
         <div className="flex-1 overflow-y-auto pr-1 space-y-4">
           {/* 主入口 */}
           <section className="px-1 space-y-1.5">

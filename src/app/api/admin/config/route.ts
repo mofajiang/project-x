@@ -27,14 +27,19 @@ export async function PUT(req: NextRequest) {
   if (Array.isArray(data.rightPanelWidgets)) {
     data.rightPanelWidgets = JSON.stringify(data.rightPanelWidgets)
   }
+  if (data.siteLogo && typeof data.siteLogo === 'object') {
+    data.siteLogo = JSON.stringify(data.siteLogo)
+  }
 
-  // 动态迁移列（siteIcon / rightPanelWidgets / copyright / defaultTheme / customDomain）Prisma schema 不认识，需单独处理
+  // 动态迁移列（siteIcon / siteLogo / rightPanelWidgets / copyright / defaultTheme / customDomain）Prisma schema 不认识，需单独处理
   const siteIcon = data.siteIcon ?? null
+  const siteLogo = data.siteLogo ?? null
   const rightPanelWidgets = data.rightPanelWidgets ?? null
   const copyright = data.copyright ?? null
   const defaultTheme = data.defaultTheme ?? null
   const customDomain = data.customDomain !== undefined ? (data.customDomain ?? '') : null
   delete data.siteIcon
+  delete data.siteLogo
   delete data.rightPanelWidgets
   delete data.copyright
   delete data.defaultTheme
@@ -51,6 +56,9 @@ export async function PUT(req: NextRequest) {
   try {
     if (siteIcon !== null) {
       await prisma.$executeRawUnsafe(`UPDATE SiteConfig SET siteIcon = ? WHERE id = 'singleton'`, siteIcon)
+    }
+    if (siteLogo !== null) {
+      await prisma.$executeRawUnsafe(`UPDATE SiteConfig SET siteLogo = ? WHERE id = 'singleton'`, siteLogo)
     }
     if (rightPanelWidgets !== null) {
       await prisma.$executeRawUnsafe(`UPDATE SiteConfig SET rightPanelWidgets = ? WHERE id = 'singleton'`, rightPanelWidgets)

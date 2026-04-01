@@ -45,6 +45,7 @@ export async function runMigrations() {
     'OgCache'
   )
   await addColumn('SiteConfig', 'navItems', `TEXT NOT NULL DEFAULT '[{"label":"首页","href":"/","icon":"home"},{"label":"归档","href":"/archive","icon":"archive"},{"label":"标签","href":"/tags","icon":"tag"},{"label":"关于","href":"/about","icon":"user"}]'`, 'navItems')
+  await addColumn('SiteConfig', 'siteLogo', `TEXT NOT NULL DEFAULT '{"type":"text","value":"✕"}'`, 'siteLogo')
   await addColumn('SiteConfig', 'siteIcon', `TEXT NOT NULL DEFAULT ''`, 'siteIcon')
   await addColumn('SiteConfig', 'rightPanelWidgets', `TEXT NOT NULL DEFAULT '[{"type":"search","enabled":true},{"type":"about","enabled":true},{"type":"tags","enabled":true},{"type":"hotPosts","enabled":true}]'`, 'rightPanelWidgets')
   await addColumn('Comment', 'guestName', 'TEXT', 'guestName')
