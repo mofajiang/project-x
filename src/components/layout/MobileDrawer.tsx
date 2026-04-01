@@ -159,9 +159,9 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
 
           {/* 右侧栏（移动端） */}
           {enabledWidgets.length > 0 && (
-            <div className="mt-4 px-1 pb-2 space-y-4">
+            <div className="mt-3 px-1 pb-2 space-y-3">
               <div className="flex items-center justify-between px-1">
-                <span className="text-[11px] font-bold tracking-wide" style={{ color: 'var(--text-secondary)' }}>侧栏</span>
+                <span className="text-[10px] uppercase tracking-[0.18em]" style={{ color: 'var(--text-secondary)' }}>侧栏</span>
                 <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>同源内容</span>
               </div>
 
@@ -184,7 +184,7 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
                   if (!siteDesc && !social.x && !social.github && !social.email) return null
                   return (
                     <div key={`about-${index}`} className="pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
-                      <h3 className="px-1 text-[11px] font-bold tracking-wide mb-1" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
+                      <h3 className="px-1 text-[10px] uppercase tracking-[0.18em] mb-1" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
                       {siteDesc && <p className="px-1 text-xs leading-relaxed line-clamp-2" style={{ color: 'var(--text-primary)' }}>{siteDesc}</p>}
                       {(social.x || social.github || social.email) && (
                         <div className="flex flex-wrap gap-2 px-1 pt-2">
@@ -201,7 +201,7 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
                   if (!topTags.length) return null
                   return (
                     <div key={`tags-${index}`} className="pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
-                      <h3 className="px-1 text-[11px] font-bold tracking-wide mb-2" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
+                      <h3 className="px-1 text-[10px] uppercase tracking-[0.18em] mb-2" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
                       <div className="flex flex-wrap gap-1.5 px-1">
                         {topTags.slice(0, 8).map(tag => (
                           <Link key={tag.id} href={`/tag/${tag.slug}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
@@ -218,10 +218,10 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
                   if (!hotPosts.length) return null
                   return (
                     <div key={`hot-${index}`} className="pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
-                      <h3 className="px-1 text-[11px] font-bold tracking-wide mb-1" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
+                      <h3 className="px-1 text-[10px] uppercase tracking-[0.18em] mb-1" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
                       <div className="flex flex-col">
                         {hotPosts.slice(0, 5).map((post, idx) => (
-                          <Link key={post.id} href={`/post/${post.slug}`} className="flex items-center justify-between gap-3 px-1 py-2" style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--border)' }}>
+                          <Link key={post.id} href={`/post/${post.slug}`} className="flex items-center justify-between gap-3 px-1 py-1.5" style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--border)' }}>
                             <span className="text-xs font-medium truncate leading-5" style={{ color: 'var(--text-primary)' }}>{post.title}</span>
                             <span className="text-[10px] shrink-0" style={{ color: 'var(--text-secondary)' }}>{post.views}阅</span>
                           </Link>
@@ -235,7 +235,7 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
                   if (!widget.content) return null
                   return (
                     <div key={`custom-${index}`} className="pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
-                      {title && <h3 className="px-1 text-[11px] font-bold tracking-wide mb-1" style={{ color: 'var(--text-secondary)' }}>{title}</h3>}
+                      {title && <h3 className="px-1 text-[10px] uppercase tracking-[0.18em] mb-1" style={{ color: 'var(--text-secondary)' }}>{title}</h3>}
                       <div className="px-1 text-xs leading-relaxed whitespace-pre-wrap line-clamp-4" style={{ color: 'var(--text-primary)' }}>{widget.content}</div>
                     </div>
                   )
@@ -246,10 +246,10 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
                   if (!links.length) return null
                   return (
                     <div key={`links-${index}`} className="pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
-                      <h3 className="px-1 text-[11px] font-bold tracking-wide mb-1" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
+                      <h3 className="px-1 text-[10px] uppercase tracking-[0.18em] mb-1" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
                       <div className="flex flex-col">
                         {links.slice(0, 6).map((link, idx) => (
-                          <a key={idx} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-1 py-2" style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--border)' }}>
+                          <a key={idx} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-1 py-1.5" style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--border)' }}>
                             <div className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center shrink-0" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
                               {link.avatar ? <img src={link.avatar} alt={link.label} className="w-full h-full object-cover" /> : <span className="text-xs font-bold">{link.label[0]?.toUpperCase()}</span>}
                             </div>
@@ -270,7 +270,7 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
                   const first = slides[0]
                   return (
                     <div key={`carousel-${index}`} className="pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
-                      <h3 className="px-1 text-[11px] font-bold tracking-wide mb-1" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
+                      <h3 className="px-1 text-[10px] uppercase tracking-[0.18em] mb-1" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
                       <div className="px-1 flex items-start gap-3">
                         {first.image && <img src={first.image} alt={first.title || title} className="w-14 h-14 object-cover rounded-xl shrink-0" />}
                         <div className="min-w-0 flex-1">
@@ -286,7 +286,7 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
               })}
 
               {copyright && (
-                <div className="pt-2 border-t px-1 text-[10px] leading-relaxed" style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }} dangerouslySetInnerHTML={{ __html: copyright }} />
+                <div className="pt-2 border-t px-1 text-[10px] leading-relaxed opacity-90" style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }} dangerouslySetInnerHTML={{ __html: copyright }} />
               )}
             </div>
           )}
