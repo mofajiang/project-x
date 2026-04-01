@@ -4,7 +4,7 @@ import toast from 'react-hot-toast'
 import Image from 'next/image'
 import { IMEInput, IMETextarea } from '@/components/ui/IMEInput'
 import ImageCropModal from '@/components/ui/ImageCropModal'
-import { ADMIN_PAGE_TITLE_CLASS, ADMIN_CARD_LG_CLASS } from '@/components/admin/adminUi'
+import { ADMIN_PAGE_TITLE_CLASS, ADMIN_CARD_LG_CLASS, ADMIN_SUBCARD_CLASS } from '@/components/admin/adminUi'
 
 type NavItem = { label: string; href: string; icon: string }
 type WidgetType = 'search' | 'about' | 'tags' | 'hotPosts' | 'custom' | 'links' | 'carousel'
@@ -326,7 +326,7 @@ export default function SettingsPage() {
                   key={tpl.label}
                   type="button"
                   onClick={() => setConfig(c => ({ ...c, copyright: tpl.text }))}
-                  className="text-xs px-3 py-2 rounded-lg transition-colors text-left sm:text-center"
+                  className="text-xs px-3 py-2 rounded-lg transition-colors text-left sm:text-center w-full"
                   style={{ background: 'var(--bg-hover)', color: 'var(--accent)', border: '1px solid var(--border)' }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#fff')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg-hover)', e.currentTarget.style.color = 'var(--accent)')}
@@ -379,22 +379,24 @@ export default function SettingsPage() {
           <div className={`${ADMIN_CARD_LG_CLASS} flex flex-col gap-4`} style={{ background: 'var(--bg-secondary)' }}>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <h2 className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>🧭 导航菜单</h2>
-              <button onClick={addNavItem} className="px-3 py-2 rounded-full text-sm font-medium w-full sm:w-auto" style={{ background: 'rgba(29,155,240,0.15)', color: 'var(--accent)' }}>+ 添加</button>
+              <button onClick={addNavItem} className="px-3 py-2 rounded-full text-sm font-medium w-full sm:w-auto min-h-9" style={{ background: 'rgba(29,155,240,0.15)', color: 'var(--accent)' }}>+ 添加</button>
             </div>
             <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>自定义前台导航栏菜单项</p>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 sm:gap-3">
               {navItems.map((item, i) => (
-                <div key={i} className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 rounded-xl" style={{ background: 'var(--bg-hover)' }}>
+                <div key={i} className={`${ADMIN_SUBCARD_CLASS} flex flex-col gap-2 sm:gap-3`} style={{ background: 'var(--bg-hover)' }}>
                   <div className="flex items-center gap-1 sm:flex-col sm:gap-0.5">
                     <button onClick={() => moveNavItem(i, -1)} disabled={i === 0} className="w-8 h-8 sm:w-5 sm:h-5 flex items-center justify-center rounded text-xs disabled:opacity-30" style={{ color: 'var(--text-secondary)' }}>↑</button>
                     <button onClick={() => moveNavItem(i, 1)} disabled={i === navItems.length - 1} className="w-8 h-8 sm:w-5 sm:h-5 flex items-center justify-center rounded text-xs disabled:opacity-30" style={{ color: 'var(--text-secondary)' }}>↓</button>
                   </div>
-                  <select value={item.icon} onChange={e => updateNavItem(i, 'icon', e.target.value)} className="px-2 py-2 rounded-lg text-sm outline-none w-full sm:w-auto" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)', minWidth: 90 }}>
-                    {ICON_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                  <IMEInput value={item.label} onValueChange={v => updateNavItem(i, 'label', v)} placeholder="标签" className="flex-1 px-2 py-2 rounded-lg text-sm outline-none w-full" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }} />
-                  <IMEInput value={item.href} onValueChange={v => updateNavItem(i, 'href', v)} placeholder="/about" className="flex-1 px-2 py-2 rounded-lg text-sm outline-none w-full" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }} />
-                  <button onClick={() => removeNavItem(i)} className="w-full sm:w-7 h-9 sm:h-7 flex items-center justify-center rounded-full" style={{ color: '#F4212E' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(244,33,46,0.1)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>×</button>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <select value={item.icon} onChange={e => updateNavItem(i, 'icon', e.target.value)} className="px-2 py-2 rounded-lg text-sm outline-none w-full sm:w-auto" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)', minWidth: 90 }}>
+                      {ICON_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                    <IMEInput value={item.label} onValueChange={v => updateNavItem(i, 'label', v)} placeholder="标签" className="flex-1 px-2 py-2 rounded-lg text-sm outline-none w-full" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }} />
+                    <IMEInput value={item.href} onValueChange={v => updateNavItem(i, 'href', v)} placeholder="/about" className="flex-1 px-2 py-2 rounded-lg text-sm outline-none w-full" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }} />
+                    <button onClick={() => removeNavItem(i)} className="w-full sm:w-7 h-9 sm:h-7 flex items-center justify-center rounded-full" style={{ color: '#F4212E' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(244,33,46,0.1)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>×</button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -405,12 +407,12 @@ export default function SettingsPage() {
           <div className={`${ADMIN_CARD_LG_CLASS} flex flex-col gap-4`} style={{ background: 'var(--bg-secondary)' }}>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <h2 className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>📌 右侧栏组件</h2>
-              <button onClick={() => setWidgets(v => [...v, { type: 'custom', enabled: true, title: '', content: '' }])} className="px-3 py-2 rounded-full text-sm font-medium w-full sm:w-auto" style={{ background: 'rgba(29,155,240,0.15)', color: 'var(--accent)' }}>+ 添加</button>
+              <button onClick={() => setWidgets(v => [...v, { type: 'custom', enabled: true, title: '', content: '' }])} className="px-3 py-2 rounded-full text-sm font-medium w-full sm:w-auto min-h-9" style={{ background: 'rgba(29,155,240,0.15)', color: 'var(--accent)' }}>+ 添加</button>
             </div>
             <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>配置前台右侧栏显示的组件</p>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 sm:gap-3">
               {widgets.map((w, i) => (
-                <div key={i} className="rounded-xl p-3 flex flex-col gap-2" style={{ background: 'var(--bg-hover)' }}>
+                <div key={i} className={`${ADMIN_SUBCARD_CLASS} flex flex-col gap-2 sm:gap-3`} style={{ background: 'var(--bg-hover)' }}>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                     <div className="flex items-center gap-1 sm:flex-col sm:gap-0.5 flex-shrink-0">
                       <button onClick={() => { const a = [...widgets]; if (i > 0) { [a[i-1],a[i]]=[a[i],a[i-1]]; setWidgets(a); } }} disabled={i === 0} className="w-8 h-8 sm:w-5 sm:h-5 flex items-center justify-center text-xs disabled:opacity-30" style={{ color: 'var(--text-secondary)' }}>↑</button>

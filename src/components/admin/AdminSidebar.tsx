@@ -8,7 +8,7 @@ type ThemeMode = 'dark' | 'light'
 const THEME_CYCLE: ThemeMode[] = ['dark', 'light']
 const THEME_LABELS: Record<ThemeMode, string> = { dark: '🌙 暗黑', light: '☀️ 浅色' }
 
-function AdminThemeToggle() {
+function AdminThemeToggle({ compact = false }: { compact?: boolean }) {
   const [theme, setTheme] = useState<ThemeMode>('dark')
 
   useEffect(() => {
@@ -33,14 +33,16 @@ function AdminThemeToggle() {
     <button
       onClick={toggle}
       title={`当前：${THEME_LABELS[theme]}，点击切换`}
-      className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-colors"
+      className={compact
+        ? 'flex items-center gap-1 px-3 py-2 rounded-full text-xs transition-colors shrink-0'
+        : 'w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-colors'}
       style={{ color: 'var(--text-secondary)' }}
       onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
     >
       <span>{THEME_LABELS[theme].split(' ')[0]}</span>
-      <span className="flex-1 text-left text-xs">{THEME_LABELS[theme].split(' ')[1]}</span>
-      <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>切换</span>
+      <span className={compact ? 'text-[11px]' : 'flex-1 text-left text-xs'}>{THEME_LABELS[theme].split(' ')[1]}</span>
+      {!compact && <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>切换</span>}
     </button>
   )
 }
@@ -55,7 +57,7 @@ type UpdateInfo = {
   error?: string
 }
 
-function AdminUpdateChecker() {
+function AdminUpdateChecker({ compact = false }: { compact?: boolean }) {
   const [info, setInfo] = useState<UpdateInfo | null>(null)
   const [loading, setLoading] = useState(false)
   const [updating, setUpdating] = useState(false)
@@ -132,19 +134,21 @@ function AdminUpdateChecker() {
       <button
         onClick={() => { setOpen(o => !o); if (!open && !info) check() }}
         title={info?.hasUpdate ? `有新版本可用（${info.commits.length} 个更新）` : '检查更新'}
-        className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-colors relative"
+        className={compact
+          ? 'flex items-center justify-center gap-1 px-3 py-2 rounded-full text-xs transition-colors relative shrink-0 min-w-[68px]'
+          : 'w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-colors relative'}
         style={{ color: 'var(--text-secondary)' }}
         onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
       >
-        <span className="relative inline-block">
+        <span className="relative inline-block leading-none">
           🔄
           {info?.hasUpdate && (
             <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full" style={{ background: '#F4212E' }} />
           )}
         </span>
-        <span className="flex-1 text-left text-xs">
-          {loading ? '检查中...' : info?.hasUpdate ? `有更新 (${info.commits.length})` : '已是最新'}
+        <span className={compact ? 'text-[11px] leading-none' : 'flex-1 text-left text-xs'}>
+          {loading ? '检查中' : info?.hasUpdate ? '更新' : '最新'}
         </span>
         {info?.hasUpdate && (
           <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold" style={{ background: 'rgba(244,33,46,0.15)', color: '#F4212E' }}>NEW</span>
@@ -296,7 +300,8 @@ export function AdminSidebar({ username }: { username: string }) {
         style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border)' }}>
         <p className="font-bold text-base" style={{ color: 'var(--text-primary)' }}>⚙ 后台管理</p>
         <div className="flex items-center gap-2">
-          <AdminThemeToggle />
+          <AdminUpdateChecker compact />
+          <AdminThemeToggle compact />
           <a href="/" target="_blank" className="text-xs px-3 py-1 rounded-full" style={{ color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>前台 ↗</a>
           <button onClick={logout} className="text-xs px-3 py-1 rounded-full" style={{ color: 'var(--red)', border: '1px solid var(--border)' }}>退出</button>
         </div>
