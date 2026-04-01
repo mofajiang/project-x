@@ -58,21 +58,15 @@ export function MobileHeader({ siteName, session, avatar, displayName, handle, l
         {/* 左侧：头像（点击打开抽屉） */}
         <button
           className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center font-bold text-sm flex-shrink-0 transition-opacity active:opacity-70"
-          style={{ background: session ? 'var(--accent)' : 'transparent', color: '#fff' }}
+          style={{ background: 'transparent', color: 'var(--text-secondary)' }}
           onClick={() => setDrawerOpen(true)}
           aria-label="打开菜单"
         >
-          {session
-            ? (avatar
-                ? <img src={avatar} alt={handle || session.username} className="w-full h-full object-cover" />
-                : (displayName || handle || session.username)[0]?.toUpperCase())
-            : (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--text-secondary)' }}>
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="18" x2="21" y2="18" />
-              </svg>
-            )}
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--text-secondary)' }}>
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
         </button>
 
       {/* 中间：X Logo */}
