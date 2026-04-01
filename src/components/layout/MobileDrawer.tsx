@@ -129,11 +129,6 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
         <div className="flex-1 overflow-y-auto pr-1 space-y-4">
           {/* 主入口 */}
           <section className="px-1 space-y-1.5">
-            <div className="flex items-center justify-between px-1">
-              <span className="text-[10px] uppercase tracking-[0.18em]" style={{ color: 'var(--text-secondary)' }}>主入口</span>
-              <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>{primaryItems.length}项</span>
-            </div>
-
             <div className="rounded-3xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
               {primaryItems.map((item, index) => {
                 const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href)
@@ -171,7 +166,6 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
                     </svg>
                     <span className="text-[15px] font-medium">写文章</span>
                   </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>快捷</span>
                 </button>
               )}
             </div>
@@ -180,11 +174,6 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
           {/* 右侧栏轻信息流 */}
           {enabledWidgets.length > 0 && (
             <section className="px-1 pb-1 space-y-3">
-              <div className="flex items-center justify-between px-1">
-                <span className="text-[10px] uppercase tracking-[0.18em]" style={{ color: 'var(--text-secondary)' }}>右侧栏信息流</span>
-                <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>轻量</span>
-              </div>
-
               <div className="space-y-3">
                 {enabledWidgets.map((widget, index) => {
                   const title = widget.title?.trim() || ({ search: '搜索', about: '关于我', tags: '热门标签', hotPosts: '热门文章', custom: '自定义文本', links: '友情链接', carousel: '轮播图' } as Record<string, string>)[widget.type]
@@ -317,14 +306,16 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
         {session && (
           <div className="mt-2 pt-1.5 border-t relative" style={{ borderColor: 'var(--border)' }}>
             <button
+              type="button"
               onClick={() => setMenuOpen(v => !v)}
-              className="flex items-center gap-2 w-full px-0 py-2 transition-colors"
+              aria-label="打开账号菜单"
+              className="flex items-center gap-2 w-full px-1.5 py-1.25 rounded-full transition-colors"
               style={{ color: 'var(--text-primary)' }}
               onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
             >
               <div
-                className="w-9 h-9 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center font-bold text-[13px]"
+                className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center font-bold text-[12px]"
                 style={{ background: 'var(--accent)', color: '#fff' }}
               >
                 {avatar
@@ -332,14 +323,14 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
                   : session.username[0]?.toUpperCase()}
               </div>
               <div className="flex flex-col items-start min-w-0 flex-1 pr-1">
-                <span className="text-[13px] font-semibold truncate w-full leading-4" style={{ color: 'var(--text-primary)' }}>
+                <span className="text-[12.5px] font-semibold truncate w-full leading-4" style={{ color: 'var(--text-primary)' }}>
                   {displayName || handle || session.username}
                 </span>
-                <span className="text-[10px] truncate w-full leading-4" style={{ color: 'var(--text-secondary)' }}>
+                <span className="text-[9px] truncate w-full leading-4" style={{ color: 'var(--text-secondary)' }}>
                   @{handle || session.username}
                 </span>
               </div>
-              <svg className="flex-shrink-0" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" style={{ color: 'var(--text-secondary)' }}>
+              <svg className="flex-shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style={{ color: 'var(--text-secondary)' }}>
                 <circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" />
               </svg>
             </button>
