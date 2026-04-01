@@ -112,7 +112,7 @@ export function Sidebar({ siteName, siteLogo, loginMode, secretClicks, loginPath
       {/* Logo */}
       <button
         onClick={handleLogoClick}
-        className="min-w-[3rem] h-12 px-3 rounded-full flex items-center justify-center mb-2 transition-colors select-none"
+        className="min-w-[3rem] h-12 px-3 rounded-full flex items-center justify-start mb-2 transition-colors select-none self-start"
         style={{ color: 'var(--text-primary)' }}
         title={siteName}
         onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}

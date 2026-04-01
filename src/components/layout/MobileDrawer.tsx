@@ -114,7 +114,7 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-start pb-3 px-1">
+        <div className="flex items-center justify-center pb-3 px-1">
           <button
             type="button"
             onClick={onLogoClick || onClose}
