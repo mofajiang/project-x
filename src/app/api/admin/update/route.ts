@@ -27,10 +27,6 @@ function getLocalBranch(): string {
   }
 }
 
-function getRemoteBranch(branch: string): string {
-  return branch || process.env.GIT_BRANCH || process.env.VERCEL_GIT_COMMIT_REF || 'main'
-}
-
 export async function GET(req: NextRequest) {
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -98,18 +94,16 @@ export async function POST(req: NextRequest) {
 
       try {
         const cwd = process.cwd()
-        const branch = getRemoteBranch(getLocalBranch())
+        const branch = 'main'
 
         if (!process.env.DATABASE_URL) {
-          sendError('❌ 缺少 DATABASE_URL，请先在服务器配置 .env 后再执行更新')
-          sendDone(false)
-          return
+          send('⚠️ 未检测到 DATABASE_URL，继续执行更新流程')
         }
 
-        // Step 1: git pull（强制 fast-forward，避免分支分叉 fatal）
+        // Step 1: git pull（尽量贴近手工更新命令）
         send('⏳ 正在拉取最新代码...')
         try {
-          const pullOut = execSync(`git fetch origin ${branch} && git reset --hard origin/${branch}`, { cwd, encoding: 'utf8', stdio: 'pipe', timeout: 60000 })
+          const pullOut = execSync(`git pull origin ${branch}`, { cwd, encoding: 'utf8', stdio: 'pipe', timeout: 60000 })
           send(`✅ git pull 完成\n${pullOut.trim()}`)
         } catch (e: any) {
           sendError(`❌ git pull 失败：${e.message}`)
@@ -117,24 +111,7 @@ export async function POST(req: NextRequest) {
           return
         }
 
-        // Step 2: 清除 .next 缓存，避免 stale incremental cache 导致构建失败
-        send('⏳ 清除旧构建缓存...')
-        try {
-          rmSync('.next', { recursive: true, force: true })
-          send('✅ 缓存已清除')
-        } catch { /* 忽略，Windows 环境可能不支持 */ }
-
-        // Step 3: npm install（确保新依赖已安装）
-        send('⏳ 正在安装依赖（npm install）...')
-        const installResult = spawnSync('npm', ['install'], { cwd, encoding: 'utf8', timeout: 120000 })
-        if (installResult.status !== 0) {
-          sendError(`❌ npm install 失败：${installResult.stderr || installResult.stdout}`)
-          sendDone(false)
-          return
-        }
-        send('✅ 依赖安装完成')
-
-        // Step 4: npm run build（用 spawnSync 避免大输出 pipe buffer 死锁）
+        // Step 2: npm run build（用 spawnSync 避免大输出 pipe buffer 死锁）
         send('⏳ 正在构建（npm run build）...')
         const buildResult = spawnSync('npm', ['run', 'build'], { cwd, encoding: 'utf8', timeout: 300000 })
         if (buildResult.status !== 0) {
@@ -145,7 +122,7 @@ export async function POST(req: NextRequest) {
         }
         send('✅ 构建完成')
 
-        // Step 4: pm2 restart
+        // Step 3: pm2 restart
         send('⏳ 正在重启服务（pm2 restart）...')
         try {
           const pm2Name = process.env.PM2_APP_NAME || 'x-blog'

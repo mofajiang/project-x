@@ -75,7 +75,7 @@ export type SiteConfig = {
   customDomain: string
 }
 
-const DEFAULT_NAV: NavItem[] = [
+export const DEFAULT_NAV: NavItem[] = [
   { label: '首页', href: '/', icon: 'home' },
   { label: '归档', href: '/archive', icon: 'archive' },
   { label: '标签', href: '/tags', icon: 'tag' },

@@ -270,6 +270,21 @@ build_app() {
   npm run build
 }
 
+# ── 仅构建并重启（用于更新） ───────────────────────────────
+update_app() {
+  step "构建生产版本"
+  cd "$INSTALL_DIR"
+  npm run build
+
+  step "重启 PM2 进程"
+  if command -v pm2 &>/dev/null; then
+    pm2 restart "$PM2_NAME"
+    info "已重启：${PM2_NAME}"
+  else
+    error "未找到 PM2"
+  fi
+}
+
 # ── 初始化数据库 ──────────────────────────────────────────
 init_db() {
   step "初始化数据库"
@@ -373,7 +388,7 @@ print_done() {
   echo -e "    查看状态：  ${BLUE}pm2 list${NC}"
   echo -e "    查看日志：  ${BLUE}pm2 logs ${PM2_NAME}${NC}"
   echo -e "    重启服务：  ${BLUE}pm2 restart ${PM2_NAME}${NC}"
-  echo -e "    更新部署：  ${BLUE}cd ${INSTALL_DIR} && git pull && npm run build && pm2 restart ${PM2_NAME}${NC}"
+  echo -e "    更新部署：  ${BLUE}cd ${INSTALL_DIR} && git pull origin main && npm run build && pm2 restart ${PM2_NAME}${NC}"
   echo -e "    一键卸载：  ${BLUE}bash <(curl -fsSL https://raw.githubusercontent.com/mofajiang/project-x/main/scripts/uninstall.sh)${NC}"
   echo ''
 }
@@ -537,10 +552,7 @@ main() {
       load_existing_config "$INSTALL_DIR/.env"
       collect_config
       install_code
-      setup_env
-      build_app
-      sync_db
-      start_pm2
+      update_app
       print_done
       ;;
     uninstall)

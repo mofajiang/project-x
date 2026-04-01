@@ -5,14 +5,13 @@ import Image from 'next/image'
 import { IMEInput, IMETextarea } from '@/components/ui/IMEInput'
 import ImageCropModal from '@/components/ui/ImageCropModal'
 import { ADMIN_PAGE_TITLE_CLASS, ADMIN_CARD_LG_CLASS, ADMIN_SUBCARD_CLASS } from '@/components/admin/adminUi'
+import { DEFAULT_NAV, DEFAULT_WIDGETS, type NavItem, type RightPanelWidget as Widget } from '@/lib/config'
 
-type NavItem = { label: string; href: string; icon: string }
 type WidgetType = 'search' | 'about' | 'tags' | 'hotPosts' | 'custom' | 'links' | 'carousel'
 type FriendLink = { label: string; url: string; desc?: string; avatar?: string }
 type CarouselSlideType = 'image' | 'text' | 'markdown'
 type CarouselSlide = { slideType?: CarouselSlideType; image?: string; title?: string; desc?: string; link?: string; markdown?: string }
 const SLIDE_TYPE_LABELS: Record<CarouselSlideType, string> = { image: '🖼 图片', text: '📝 文字/链接', markdown: '📄 Markdown' }
-type Widget = { type: WidgetType; enabled: boolean; title?: string; content?: string; links?: FriendLink[]; slides?: CarouselSlide[]; interval?: number }
 
 const WIDGET_LABELS: Record<WidgetType, string> = {
   search: '🔍 搜索框',
@@ -23,13 +22,6 @@ const WIDGET_LABELS: Record<WidgetType, string> = {
   links: '🔗 友情链接',
   carousel: '🎠 轮播图',
 }
-
-const DEFAULT_WIDGETS: Widget[] = [
-  { type: 'search', enabled: true },
-  { type: 'about', enabled: true },
-  { type: 'tags', enabled: true },
-  { type: 'hotPosts', enabled: true },
-]
 
 const ICON_OPTIONS = [
   { value: 'home', label: '🏠 首页' },
@@ -54,12 +46,7 @@ export default function SettingsPage() {
     siteName: '', siteDesc: '', socialX: '', socialGithub: '', socialEmail: '', commentApproval: true, copyright: '',
   })
   const [defaultTheme, setDefaultTheme] = useState<'dark' | 'light'>('dark')
-  const [navItems, setNavItems] = useState<NavItem[]>([
-    { label: '首页', href: '/', icon: 'home' },
-    { label: '归档', href: '/archive', icon: 'archive' },
-    { label: '标签', href: '/tags', icon: 'tag' },
-    { label: '关于', href: '/about', icon: 'user' },
-  ])
+  const [navItems, setNavItems] = useState<NavItem[]>(DEFAULT_NAV)
   const [profile, setProfile] = useState({ username: '', displayName: '', avatar: '', bio: '' })
   const [siteIcon, setSiteIcon] = useState('')
   const [widgets, setWidgets] = useState<Widget[]>(DEFAULT_WIDGETS)
