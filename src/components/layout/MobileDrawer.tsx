@@ -61,6 +61,7 @@ interface Props {
 
 export function MobileDrawer({ open, onClose, navItems, session, avatar, displayName = '', handle = '', siteDesc = '', social = { x: '', github: '', email: '' }, widgets = [], copyright = '', topTags = [], hotPosts = [] }: Props) {
   const items = (navItems && navItems.length > 0) ? navItems : DEFAULT_NAV
+  const primaryItems = items.slice(0, 4)
   const pathname = usePathname()
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -102,7 +103,7 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
       {/* 抽屉主体 — 从左侧滑入 */}
       <div
         ref={drawerRef}
-        className="absolute left-0 top-0 h-full w-72 flex flex-col py-4 px-3"
+        className="absolute left-0 top-0 h-full w-[min(84vw,20rem)] flex flex-col py-4 px-3"
         style={{
           background: 'var(--bg)',
           borderRight: '1px solid var(--border)',
@@ -110,9 +111,8 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* 顶部：logo + 关闭 */}
-        <div className="flex items-center justify-between mb-4 px-1">
-          <span className="text-xl font-black select-none" style={{ color: 'var(--text-primary)' }}>✕</span>
+        {/* 顶部：关闭 */}
+        <div className="flex items-center justify-end mb-4 px-1">
           <button
             onClick={onClose}
             className="w-9 h-9 rounded-full flex items-center justify-center transition-colors"
@@ -126,178 +126,227 @@ export function MobileDrawer({ open, onClose, navItems, session, avatar, display
           </button>
         </div>
 
-        {/* 导航项 */}
-        <nav className="flex flex-col gap-0.5 flex-1 overflow-y-auto pr-1">
-          {items.map((item) => {
-            const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href)
-            const Icon = ICON_MAP[item.icon] || IconHome
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="flex items-center gap-4 px-4 py-3 rounded-full transition-colors"
-                style={{ color: 'var(--text-primary)' }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+        <div className="flex-1 overflow-y-auto pr-1 space-y-4">
+          {/* 顶部头像区 */}
+          <section className="pt-1 px-1 pb-3 border-b" style={{ borderColor: 'var(--border)' }}>
+            <div className="flex items-start gap-3">
+              <div
+                className="w-12 h-12 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center font-bold text-base"
+                style={{ background: 'var(--accent)', color: '#fff' }}
               >
-                <span className="flex-shrink-0"><Icon filled={active} /></span>
-                <span className="text-[17px]" style={{ fontWeight: active ? 700 : 400 }}>{item.label}</span>
-              </Link>
-            )
-          })}
-
-          {/* 写文章按钮（登录后显示） */}
-          {session && (
-            <button
-              onClick={() => { onClose(); window.dispatchEvent(new Event('open-compose')) }}
-              className="mt-3 mx-2 py-3 rounded-full font-bold text-white text-[15px] transition-all hover:opacity-90 active:scale-95"
-              style={{ background: 'var(--accent)' }}
-            >
-              写文章
-            </button>
-          )}
-
-          {/* 右侧栏（移动端） */}
-          {enabledWidgets.length > 0 && (
-            <div className="mt-3 px-1 pb-2 space-y-3">
-              <div className="flex items-center justify-between px-1">
-                <span className="text-[10px] uppercase tracking-[0.18em]" style={{ color: 'var(--text-secondary)' }}>侧栏</span>
-                <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>同源内容</span>
+                {avatar
+                  ? <img src={avatar} alt={session?.username || displayName || 'user'} className="w-full h-full object-cover" />
+                  : (session?.username || displayName || 'U')[0]?.toUpperCase()}
               </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-[16px] font-bold truncate" style={{ color: 'var(--text-primary)' }}>
+                    {displayName || handle || session?.username || '访客'}
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full shrink-0" style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>
+                    {session ? '已登录' : '浏览中'}
+                  </span>
+                </div>
+                <p className="mt-1 text-[11px] leading-5 truncate" style={{ color: 'var(--text-secondary)' }}>
+                  {session ? `@${handle || session.username}` : '轻量侧栏 · 主页入口 · 账号操作'}
+                </p>
+              </div>
+            </div>
+          </section>
 
-              {enabledWidgets.map((widget, index) => {
-                const title = widget.title?.trim() || ({ search: '搜索', about: '关于我', tags: '热门标签', hotPosts: '热门文章', custom: '自定义文本', links: '友情链接', carousel: '轮播图' } as Record<string, string>)[widget.type]
+          {/* 主入口 */}
+          <section className="px-1 space-y-1.5">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-[10px] uppercase tracking-[0.18em]" style={{ color: 'var(--text-secondary)' }}>主入口</span>
+              <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>{primaryItems.length}项</span>
+            </div>
 
-                if (widget.type === 'search') {
-                  return (
-                    <Link key={`search-${index}`} href="/search" className="flex items-center justify-between gap-3 px-1 py-2 transition-colors border-t" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}>
-                      <span className="flex items-center gap-2 min-w-0">
-                        <span>🔎</span>
-                        <span className="text-sm font-medium truncate">站内搜索</span>
-                      </span>
-                      <span className="text-[10px]" style={{ color: 'var(--accent)' }}>打开</span>
-                    </Link>
-                  )
-                }
-
-                if (widget.type === 'about') {
-                  if (!siteDesc && !social.x && !social.github && !social.email) return null
-                  return (
-                    <div key={`about-${index}`} className="pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
-                      <h3 className="px-1 text-[10px] uppercase tracking-[0.18em] mb-1" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
-                      {siteDesc && <p className="px-1 text-xs leading-relaxed line-clamp-2" style={{ color: 'var(--text-primary)' }}>{siteDesc}</p>}
-                      {(social.x || social.github || social.email) && (
-                        <div className="flex flex-wrap gap-2 px-1 pt-2">
-                          {social.x && <a href={`https://x.com/${social.x}`} target="_blank" className="text-[10px] px-2 py-1 rounded-full font-bold" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>𝕏 @{social.x}</a>}
-                          {social.github && <a href={`https://github.com/${social.github}`} target="_blank" className="text-[10px] px-2 py-1 rounded-full font-bold" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>GitHub</a>}
-                          {social.email && <a href={`mailto:${social.email}`} className="text-[10px] px-2 py-1 rounded-full font-bold" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>邮件</a>}
-                        </div>
-                      )}
-                    </div>
-                  )
-                }
-
-                if (widget.type === 'tags') {
-                  if (!topTags.length) return null
-                  return (
-                    <div key={`tags-${index}`} className="pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
-                      <h3 className="px-1 text-[10px] uppercase tracking-[0.18em] mb-2" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
-                      <div className="flex flex-wrap gap-1.5 px-1">
-                        {topTags.slice(0, 8).map(tag => (
-                          <Link key={tag.id} href={`/tag/${tag.slug}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
-                            <span className="truncate max-w-[8.5rem]">#{tag.name}</span>
-                            <span style={{ color: 'var(--text-secondary)' }}>{tag.posts}</span>
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  )
-                }
-
-                if (widget.type === 'hotPosts') {
-                  if (!hotPosts.length) return null
-                  return (
-                    <div key={`hot-${index}`} className="pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
-                      <h3 className="px-1 text-[10px] uppercase tracking-[0.18em] mb-1" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
-                      <div className="flex flex-col">
-                        {hotPosts.slice(0, 5).map((post, idx) => (
-                          <Link key={post.id} href={`/post/${post.slug}`} className="flex items-center justify-between gap-3 px-1 py-1.5" style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--border)' }}>
-                            <span className="text-xs font-medium truncate leading-5" style={{ color: 'var(--text-primary)' }}>{post.title}</span>
-                            <span className="text-[10px] shrink-0" style={{ color: 'var(--text-secondary)' }}>{post.views}阅</span>
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  )
-                }
-
-                if (widget.type === 'custom') {
-                  if (!widget.content) return null
-                  return (
-                    <div key={`custom-${index}`} className="pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
-                      {title && <h3 className="px-1 text-[10px] uppercase tracking-[0.18em] mb-1" style={{ color: 'var(--text-secondary)' }}>{title}</h3>}
-                      <div className="px-1 text-xs leading-relaxed whitespace-pre-wrap line-clamp-4" style={{ color: 'var(--text-primary)' }}>{widget.content}</div>
-                    </div>
-                  )
-                }
-
-                if (widget.type === 'links') {
-                  const links: FriendLink[] = widget.links || []
-                  if (!links.length) return null
-                  return (
-                    <div key={`links-${index}`} className="pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
-                      <h3 className="px-1 text-[10px] uppercase tracking-[0.18em] mb-1" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
-                      <div className="flex flex-col">
-                        {links.slice(0, 6).map((link, idx) => (
-                          <a key={idx} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-1 py-1.5" style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--border)' }}>
-                            <div className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center shrink-0" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
-                              {link.avatar ? <img src={link.avatar} alt={link.label} className="w-full h-full object-cover" /> : <span className="text-xs font-bold">{link.label[0]?.toUpperCase()}</span>}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>{link.label}</p>
-                              {link.desc && <p className="text-[10px] truncate" style={{ color: 'var(--text-secondary)' }}>{link.desc}</p>}
-                            </div>
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  )
-                }
-
-                if (widget.type === 'carousel') {
-                  const slides = widget.slides || []
-                  if (!slides.length) return null
-                  const first = slides[0]
-                  return (
-                    <div key={`carousel-${index}`} className="pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
-                      <h3 className="px-1 text-[10px] uppercase tracking-[0.18em] mb-1" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
-                      <div className="px-1 flex items-start gap-3">
-                        {first.image && <img src={first.image} alt={first.title || title} className="w-14 h-14 object-cover rounded-xl shrink-0" />}
-                        <div className="min-w-0 flex-1">
-                          {first.title && <p className="text-xs font-medium leading-5 truncate" style={{ color: 'var(--text-primary)' }}>{first.title}</p>}
-                          {(first.desc || first.markdown) && <p className="text-[10px] leading-relaxed line-clamp-2" style={{ color: 'var(--text-secondary)' }}>{first.desc || first.markdown}</p>}
-                        </div>
-                      </div>
-                    </div>
-                  )
-                }
-
-                return null
+            <div className="rounded-3xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
+              {primaryItems.map((item, index) => {
+                const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href)
+                const Icon = ICON_MAP[item.icon] || IconHome
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="flex items-center gap-3 px-4 py-3.5 transition-colors"
+                    style={{
+                      color: 'var(--text-primary)',
+                      borderTop: index === 0 ? 'none' : '1px solid var(--border)',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <span className="flex-shrink-0 text-[var(--text-secondary)]"><Icon filled={active} /></span>
+                    <span className="flex-1 text-[15px]" style={{ fontWeight: active ? 700 : 500 }}>{item.label}</span>
+                    {active && <span className="w-2.5 h-2.5 rounded-full" style={{ background: 'var(--accent)' }} />}
+                  </Link>
+                )
               })}
 
-              {copyright && (
-                <div className="pt-2 border-t px-1 text-[10px] leading-relaxed opacity-90" style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }} dangerouslySetInnerHTML={{ __html: copyright }} />
+              {session && (
+                <button
+                  onClick={() => { onClose(); window.dispatchEvent(new Event('open-compose')) }}
+                  className="flex items-center justify-between gap-3 w-full px-4 py-3.5 text-left transition-colors"
+                  style={{ color: 'var(--text-primary)', borderTop: '1px solid var(--border)' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <span className="flex items-center gap-3 min-w-0">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--text-secondary)' }}>
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    <span className="text-[15px] font-medium">写文章</span>
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>快捷</span>
+                </button>
               )}
             </div>
-          )}
-        </nav>
+          </section>
 
-        {/* 底部用户区 */}
+          {/* 右侧栏轻信息流 */}
+          {enabledWidgets.length > 0 && (
+            <section className="px-1 pb-1 space-y-3">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-[10px] uppercase tracking-[0.18em]" style={{ color: 'var(--text-secondary)' }}>右侧栏信息流</span>
+                <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>轻量</span>
+              </div>
+
+              <div className="space-y-3">
+                {enabledWidgets.map((widget, index) => {
+                  const title = widget.title?.trim() || ({ search: '搜索', about: '关于我', tags: '热门标签', hotPosts: '热门文章', custom: '自定义文本', links: '友情链接', carousel: '轮播图' } as Record<string, string>)[widget.type]
+
+                  if (widget.type === 'search') {
+                    return (
+                      <Link key={`search-${index}`} href="/search" className="flex items-center justify-between gap-3 px-1 py-2.5 border-t" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}>
+                        <span className="flex items-center gap-2 min-w-0">
+                          <span>🔎</span>
+                          <span className="text-sm font-medium truncate">站内搜索</span>
+                        </span>
+                        <span className="text-[10px]" style={{ color: 'var(--accent)' }}>打开</span>
+                      </Link>
+                    )
+                  }
+
+                  if (widget.type === 'about') {
+                    if (!siteDesc && !social.x && !social.github && !social.email) return null
+                    return (
+                      <div key={`about-${index}`} className="pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
+                        <h3 className="px-1 text-[10px] uppercase tracking-[0.18em] mb-1" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
+                        {siteDesc && <p className="px-1 text-xs leading-relaxed line-clamp-2" style={{ color: 'var(--text-primary)' }}>{siteDesc}</p>}
+                        {(social.x || social.github || social.email) && (
+                          <div className="flex flex-wrap gap-2 px-1 pt-2">
+                            {social.x && <a href={`https://x.com/${social.x}`} target="_blank" className="text-[10px] px-2 py-1 rounded-full font-bold" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>𝕏 @{social.x}</a>}
+                            {social.github && <a href={`https://github.com/${social.github}`} target="_blank" className="text-[10px] px-2 py-1 rounded-full font-bold" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>GitHub</a>}
+                            {social.email && <a href={`mailto:${social.email}`} className="text-[10px] px-2 py-1 rounded-full font-bold" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>邮件</a>}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  }
+
+                  if (widget.type === 'tags') {
+                    if (!topTags.length) return null
+                    return (
+                      <div key={`tags-${index}`} className="pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
+                        <h3 className="px-1 text-[10px] uppercase tracking-[0.18em] mb-2" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
+                        <div className="flex flex-wrap gap-1.5 px-1">
+                          {topTags.slice(0, 8).map(tag => (
+                            <Link key={tag.id} href={`/tag/${tag.slug}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
+                              <span className="truncate max-w-[8.5rem]">#{tag.name}</span>
+                              <span style={{ color: 'var(--text-secondary)' }}>{tag.posts}</span>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  }
+
+                  if (widget.type === 'hotPosts') {
+                    if (!hotPosts.length) return null
+                    return (
+                      <div key={`hot-${index}`} className="pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
+                        <h3 className="px-1 text-[10px] uppercase tracking-[0.18em] mb-1" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
+                        <div className="flex flex-col">
+                          {hotPosts.slice(0, 5).map((post, idx) => (
+                            <Link key={post.id} href={`/post/${post.slug}`} className="flex items-center justify-between gap-3 px-1 py-1.5" style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--border)' }}>
+                              <span className="text-xs font-medium truncate leading-5" style={{ color: 'var(--text-primary)' }}>{post.title}</span>
+                              <span className="text-[10px] shrink-0" style={{ color: 'var(--text-secondary)' }}>{post.views}阅</span>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  }
+
+                  if (widget.type === 'custom') {
+                    if (!widget.content) return null
+                    return (
+                      <div key={`custom-${index}`} className="pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
+                        {title && <h3 className="px-1 text-[10px] uppercase tracking-[0.18em] mb-1" style={{ color: 'var(--text-secondary)' }}>{title}</h3>}
+                        <div className="px-1 text-xs leading-relaxed whitespace-pre-wrap line-clamp-4" style={{ color: 'var(--text-primary)' }}>{widget.content}</div>
+                      </div>
+                    )
+                  }
+
+                  if (widget.type === 'links') {
+                    const links: FriendLink[] = widget.links || []
+                    if (!links.length) return null
+                    return (
+                      <div key={`links-${index}`} className="pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
+                        <h3 className="px-1 text-[10px] uppercase tracking-[0.18em] mb-1" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
+                        <div className="flex flex-col">
+                          {links.slice(0, 6).map((link, idx) => (
+                            <a key={idx} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-1 py-1.5" style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--border)' }}>
+                              <div className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center shrink-0" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
+                                {link.avatar ? <img src={link.avatar} alt={link.label} className="w-full h-full object-cover" /> : <span className="text-xs font-bold">{link.label[0]?.toUpperCase()}</span>}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>{link.label}</p>
+                                {link.desc && <p className="text-[10px] truncate" style={{ color: 'var(--text-secondary)' }}>{link.desc}</p>}
+                              </div>
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  }
+
+                  if (widget.type === 'carousel') {
+                    const slides = widget.slides || []
+                    if (!slides.length) return null
+                    const first = slides[0]
+                    return (
+                      <div key={`carousel-${index}`} className="pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
+                        <h3 className="px-1 text-[10px] uppercase tracking-[0.18em] mb-1" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
+                        <div className="px-1 flex items-start gap-3">
+                          {first.image && <img src={first.image} alt={first.title || title} className="w-14 h-14 object-cover rounded-xl shrink-0" />}
+                          <div className="min-w-0 flex-1">
+                            {first.title && <p className="text-xs font-medium leading-5 truncate" style={{ color: 'var(--text-primary)' }}>{first.title}</p>}
+                            {(first.desc || first.markdown) && <p className="text-[10px] leading-relaxed line-clamp-2" style={{ color: 'var(--text-secondary)' }}>{first.desc || first.markdown}</p>}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  }
+
+                  return null
+                })}
+
+                {copyright && (
+                  <div className="pt-2 border-t px-1 text-[10px] leading-relaxed opacity-90" style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }} dangerouslySetInnerHTML={{ __html: copyright }} />
+                )}
+              </div>
+            </section>
+          )}
+        </div>
+
+        {/* 底部账号操作 */}
         {session && (
-          <div className="mt-4 pt-2 border-t relative" style={{ borderColor: 'var(--border)' }}>
+          <div className="mt-4 pt-3 border-t relative" style={{ borderColor: 'var(--border)' }}>
             <div className="px-1 pb-2 flex items-center justify-between">
-              <span className="text-[11px] font-bold tracking-wide" style={{ color: 'var(--text-secondary)' }}>账号</span>
-              <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>菜单</span>
+              <span className="text-[10px] uppercase tracking-[0.18em]" style={{ color: 'var(--text-secondary)' }}>账号操作</span>
+              <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>底部</span>
             </div>
 
             <button
