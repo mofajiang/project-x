@@ -351,6 +351,15 @@ export function AdminSidebar({ username }: { username: string }) {
         <div className="flex items-center gap-2">
           <AdminUpdateChecker compact />
           <AdminThemeToggle compact />
+          <button
+            type="button"
+            onClick={() => setMobileToolsOpen(v => !v)}
+            className="flex items-center gap-1 px-3 py-2 rounded-full text-xs transition-colors shrink-0"
+            style={{ color: mobileToolsOpen ? 'var(--text-primary)' : 'var(--text-secondary)', background: mobileToolsOpen ? 'var(--bg-hover)' : 'transparent' }}
+          >
+            <span>🧩</span>
+            <span>工具</span>
+          </button>
           <a href="/" target="_blank" className="text-xs px-3 py-1 rounded-full" style={{ color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>前台 ↗</a>
           <button onClick={logout} className="text-xs px-3 py-1 rounded-full" style={{ color: 'var(--red)', border: '1px solid var(--border)' }}>退出</button>
         </div>
