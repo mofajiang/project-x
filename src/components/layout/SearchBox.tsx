@@ -11,7 +11,7 @@ export function SearchBox() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    if (value.trim()) router.push(`/archive?q=${encodeURIComponent(value.trim())}`)
+    if (value.trim()) router.push(`/search?q=${encodeURIComponent(value.trim())}`)
   }
 
   return (

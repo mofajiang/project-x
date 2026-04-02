@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { relativeTime } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { InternalQuoteCard, ExternalQuoteCard } from './QuoteCard'
@@ -60,9 +60,15 @@ function stripMarkdown(md: string): string {
 }
 
 export function PostCard({ post }: { post: Post }) {
+  const storageKey = `liked_post_${post.id}`
   const [likes, setLikes] = useState(post.likes)
   const [liked, setLiked] = useState(false)
   const [liking, setLiking] = useState(false)
+
+  // Hydrate liked state from localStorage after mount
+  useEffect(() => {
+    setLiked(localStorage.getItem(storageKey) === '1')
+  }, [storageKey])
 
   const handleLike = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -75,6 +81,7 @@ export function PostCard({ post }: { post: Post }) {
       const data = await res.json()
       setLikes(data.likes)
       setLiked(true)
+      localStorage.setItem(storageKey, '1')
     } else if (res.status === 429) {
       toast.error('操作太频繁，请稍后再试')
     }

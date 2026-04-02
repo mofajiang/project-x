@@ -162,7 +162,7 @@ export function Sidebar({ siteName, siteLogo, loginMode, secretClicks, loginPath
       </nav>
 
       {/* 底部用户卡片（X 风格） */}
-      {session && (
+      {session ? (
         <div ref={menuRef} className="mt-auto relative">
           {/* 弹出菜单 */}
           {menuOpen && (
@@ -223,6 +223,11 @@ export function Sidebar({ siteName, siteLogo, loginMode, secretClicks, loginPath
               <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
             </svg>
           </button>
+        </div>
+      ) : (
+        /* 未登录时在底部显示主题切换按钮 */
+        <div className="mt-auto px-2 py-2">
+          <ThemeToggle className="w-10 h-10" />
         </div>
       )}
     </aside>

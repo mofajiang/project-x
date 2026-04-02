@@ -9,7 +9,7 @@ const tabs = [
 export function FeedTabs({ active }: { active: string }) {
   return (
     <div
-      className="sticky top-0 z-10 flex backdrop-blur-md"
+      className="sticky top-14 md:top-0 z-10 flex backdrop-blur-md"
       style={{ background: 'var(--bg-blur)', borderBottom: '1px solid var(--border)' }}
     >
       {tabs.map(tab => (

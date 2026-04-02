@@ -88,6 +88,18 @@ export function MobileHeader({ siteName, session, avatar, displayName, handle, l
           </svg>
         </button>
 
+        {/* 中央 Logo */}
+        <button
+          onClick={handleLogoClick}
+          className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center select-none"
+          style={{ color: 'var(--text-primary)' }}
+          title={siteName}
+        >
+          <span className={siteLogo?.type === 'text' ? 'text-[18px] font-black leading-none' : 'text-[22px] leading-none'}>
+            {(siteLogo?.value || '✕').trim() || '✕'}
+          </span>
+        </button>
+
       {/* 右侧：主题切换 */}
       <ThemeToggle className="w-8 h-8" />
     </header>

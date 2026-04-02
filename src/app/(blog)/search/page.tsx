@@ -1,7 +1,7 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { formatDate } from '@/lib/utils'
 
 type PostResult = {
@@ -30,10 +30,11 @@ const IconX = () => (
   </svg>
 )
 
-export default function SearchPage() {
+function SearchContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const inputRef = useRef<HTMLInputElement>(null)
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = useState(searchParams.get('q') || '')
   const [results, setResults] = useState<PostResult[]>([])
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
@@ -80,7 +81,7 @@ export default function SearchPage() {
         </button>
         <div
           className="flex items-center flex-1 gap-2 px-3 py-2 rounded-full"
-          style={{ background: 'var(--hover)', color: 'var(--text-secondary)' }}
+          style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}
         >
           <IconSearch />
           <input
@@ -132,5 +133,13 @@ export default function SearchPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" style={{ background: 'var(--bg)' }} />}>
+      <SearchContent />
+    </Suspense>
   )
 }
