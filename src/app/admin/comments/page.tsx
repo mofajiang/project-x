@@ -11,6 +11,7 @@ interface Comment {
   createdAt: string
   author: { username: string } | null
   guestName: string | null
+  ip: string | null
   post: { title: string; slug: string }
 }
 
@@ -123,7 +124,7 @@ export default function AdminCommentsPage() {
         </div>
         <input
           value={search} onChange={e => handleSearch(e.target.value)}
-          placeholder="搜索评论内容或用户名"
+          placeholder="搜索评论内容、用户名或 IP"
           className="w-full px-3 py-2 rounded-xl text-sm outline-none"
           style={{ background: 'var(--bg-hover)', border: '1px solid transparent', color: 'var(--text-primary)' }}
         />
@@ -166,6 +167,7 @@ export default function AdminCommentsPage() {
                     {comment.author?.username || comment.guestName || '匿名'}
                   </span>
                   {!comment.author && <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>访客</span>}
+                  {comment.ip && <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(29,155,240,0.08)', color: 'var(--accent)' }}>IP {comment.ip}</span>}
                   <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>{relativeTime(comment.createdAt)}</span>
                   {!comment.approved && <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: '#F9188022', color: 'var(--red)' }}>待审</span>}
                 </div>

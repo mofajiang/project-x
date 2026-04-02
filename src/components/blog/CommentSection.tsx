@@ -11,6 +11,7 @@ interface Comment {
   createdAt: Date
   author: { username: string; avatar: string | null } | null
   guestName: string | null
+  ip?: string | null
   replies: Comment[]
 }
 
@@ -122,7 +123,7 @@ function CommentInput({
               className="px-4 py-1 rounded-full text-sm font-bold text-white disabled:opacity-50 transition-opacity"
               style={{ background: 'var(--accent)' }}
             >
-              {loading ? '提交中...' : '回复'}
+              {loading ? '提交中...' : parentId ? '回复' : '发布'}
             </button>
           </div>
         </div>
@@ -131,11 +132,12 @@ function CommentInput({
   )
 }
 
-function CommentItem({ comment, postId, session, depth = 0 }: {
+function CommentItem({ comment, postId, session, depth = 0, showCommentIp = false }: {
   comment: Comment
   postId: string
   session: JWTPayload | null
   depth?: number
+  showCommentIp?: boolean
 }) {
   const [replying, setReplying] = useState(false)
   const name = comment.author?.username || comment.guestName || '匿名'
@@ -154,10 +156,15 @@ function CommentItem({ comment, postId, session, depth = 0 }: {
       {/* 右侧内容 */}
       <div className="flex-1 min-w-0 pb-4">
         {/* 作者行 */}
-        <div className="flex items-center gap-1.5 mb-0.5">
+        <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
           <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>{name}</span>
           {!comment.author && (
             <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>访客</span>
+          )}
+          {showCommentIp && comment.ip && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(29,155,240,0.08)', color: 'var(--accent)' }} title={comment.ip}>
+              IP {comment.ip}
+            </span>
           )}
           <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>· {relativeTime(comment.createdAt)}</span>
         </div>
@@ -182,46 +189,50 @@ function CommentItem({ comment, postId, session, depth = 0 }: {
         {/* 内联回复输入框 */}
         {replying && (
           <div className="mt-3 p-2 sm:p-3 rounded-2xl overflow-hidden" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-            <CommentInput
-              session={session}
-              postId={postId}
-              parentId={comment.id}
-              placeholder={`回复 @${name}...`}
-              onDone={() => setReplying(false)}
-              onCancel={() => setReplying(false)}
-            />
-          </div>
-        )}
+            }
+          }
 
-        {/* 回复列表 */}
-        {comment.replies.length > 0 && (
-          <div className="mt-3 space-y-0">
-            {comment.replies.map(reply => (
-              <CommentItem key={reply.id} comment={reply} postId={postId} session={session} depth={depth + 1} />
-            ))}
-          </div>
-        )}
+          export function CommentSection({ postId, comments: initial, session, showCommentIp = false }: {
+            postId: string
+            comments: Comment[]
+            session: JWTPayload | null
+            showCommentIp?: boolean
+          }) {
+            const [comments] = useState(() => {
+              const normalize = (c: Comment): Comment => ({ ...c, replies: (c.replies ?? []).map(normalize) })
+              return initial.map(normalize)
+            })
+
+            return (
+              <section className="px-4 py-4">
+                <div className="flex items-center justify-between gap-3 mb-4">
+                  <h3 className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>评论 {comments.length}</h3>
+                  <span className="text-xs px-2 py-1 rounded-full" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>X 风格</span>
+                </div>
+
+                {/* 主评论输入框 */}
+                <div className="mb-5 p-4 rounded-3xl" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+                  <CommentInput session={session} postId={postId} placeholder="说点什么..." onDone={() => {}} />
+                </div>
+
+                {/* 评论列表 */}
+                {comments.length === 0 ? (
+                  <p className="py-8 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>暂无评论，来说点什么吧</p>
+                ) : (
+                  <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
+                    {comments.map(comment => (
+                      <div key={comment.id} className="pt-4">
+                        <CommentItem comment={comment} postId={postId} session={session} showCommentIp={showCommentIp} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            )
       </div>
-    </div>
-  )
-}
-
-export function CommentSection({ postId, comments: initial, session }: {
-  postId: string
-  comments: Comment[]
-  session: JWTPayload | null
-}) {
-  const [comments] = useState(() => {
-    const normalize = (c: Comment): Comment => ({ ...c, replies: (c.replies ?? []).map(normalize) })
-    return initial.map(normalize)
-  })
-
-  return (
-    <section className="px-4 py-4">
-      <h3 className="font-bold text-lg mb-5" style={{ color: 'var(--text-primary)' }}>评论 {comments.length}</h3>
 
       {/* 主评论输入框 */}
-      <div className="mb-6 p-4 rounded-2xl" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+      <div className="mb-5 p-4 rounded-3xl" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
         <CommentInput session={session} postId={postId} placeholder="说点什么..." onDone={() => {}} />
       </div>
 
@@ -232,7 +243,7 @@ export function CommentSection({ postId, comments: initial, session }: {
         <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
           {comments.map(comment => (
             <div key={comment.id} className="pt-4">
-              <CommentItem comment={comment} postId={postId} session={session} />
+              <CommentItem comment={comment} postId={postId} session={session} showCommentIp={showCommentIp} />
             </div>
           ))}
         </div>

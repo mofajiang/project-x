@@ -78,7 +78,7 @@ function Field({
 
 export default function SettingsPage() {
   const [config, setConfig] = useState({
-    siteName: '', siteDesc: '', socialX: '', socialGithub: '', socialEmail: '', commentApproval: true, copyright: '',
+    siteName: '', siteDesc: '', socialX: '', socialGithub: '', socialEmail: '', commentApproval: true, showCommentIp: false, copyright: '',
   })
   const [defaultTheme, setDefaultTheme] = useState<'dark' | 'light'>('dark')
   const [navItems, setNavItems] = useState<NavItem[]>(DEFAULT_NAV)
@@ -117,6 +117,7 @@ export default function SettingsPage() {
           socialGithub: data.socialGithub || '',
           socialEmail: data.socialEmail || '',
           commentApproval: data.commentApproval ?? true,
+          showCommentIp: data.showCommentIp ?? false,
           copyright: data.copyright || '',
         })
         try {
@@ -390,6 +391,10 @@ export default function SettingsPage() {
             <label className="flex items-start sm:items-center gap-3 cursor-pointer">
               <input type="checkbox" checked={config.commentApproval} onChange={e => setConfig(c => ({ ...c, commentApproval: e.target.checked }))} className="w-4 h-4" />
               <div className="min-w-0"><p className="text-sm font-medium leading-tight" style={{ color: 'var(--text-primary)' }}>评论需审核后显示</p><p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>关闭后评论立即公开显示</p></div>
+            </label>
+            <label className="flex items-start sm:items-center gap-3 cursor-pointer mt-3 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
+              <input type="checkbox" checked={config.showCommentIp} onChange={e => setConfig(c => ({ ...c, showCommentIp: e.target.checked }))} className="w-4 h-4" />
+              <div className="min-w-0"><p className="text-sm font-medium leading-tight" style={{ color: 'var(--text-primary)' }}>前台显示评论 IP</p><p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>默认只在后台可见，开启后前台也会显示</p></div>
             </label>
           </div>
 

@@ -66,6 +66,7 @@ model Comment {
   authorId    String?
   author      User?    @relation(fields: [authorId], references: [id])
   guestName   String?  // 访客昵称（未登录时使用）
+  ip          String?  @default("")
   postId      String
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   parentId  String?
@@ -85,9 +86,29 @@ model SiteConfig {
   loginMode   String @default("path")  // path | secret-click | both
   secretClicks Int   @default(5)
   commentApproval Boolean @default(true)
+  showCommentIp Boolean @default(false)
   socialX      String @default("")
   socialGithub String @default("")
   socialEmail  String @default("")
   navItems     String @default("[{\"label\":\"首页\",\"href\":\"/\",\"icon\":\"home\"},{\"label\":\"归档\",\"href\":\"/archive\",\"icon\":\"archive\"},{\"label\":\"标签\",\"href\":\"/tags\",\"icon\":\"tag\"},{\"label\":\"关于\",\"href\":\"/about\",\"icon\":\"user\"}]")
   copyright    String @default("")
+}
+
+model Visitor {
+  id         String   @id @default(cuid())
+  ip         String
+  path       String
+  userAgent  String?  @default("")
+  referrer   String?  @default("")
+  country    String?  @default("")
+  countryCode String? @default("")
+  region     String?  @default("")
+  city       String?  @default("")
+  lat        Float?
+  lon        Float?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([countryCode])
+  @@index([ip])
 }

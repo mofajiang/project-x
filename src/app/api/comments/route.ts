@@ -4,6 +4,7 @@ import { getSessionFromRequest } from '@/lib/auth'
 import { getSiteConfig } from '@/lib/config'
 import { runMigrations } from '@/lib/db-migrate'
 import { sendNewCommentNotification } from '@/lib/mailer'
+import { getClientIp } from '@/lib/request-ip'
 
 export async function POST(req: NextRequest) {
   await runMigrations()
@@ -25,6 +26,7 @@ export async function POST(req: NextRequest) {
   }
 
   const config = await getSiteConfig()
+  const ip = getClientIp(req)
 
   // 构建评论数据，兼容 guestName 列不存在的情况
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -34,6 +36,7 @@ export async function POST(req: NextRequest) {
     authorId: session?.userId || null,
     parentId: parentId || null,
     approved: !config.commentApproval,
+    ip,
   }
   if (!session && guestName?.trim()) {
     commentData.guestName = guestName.trim()
@@ -47,9 +50,10 @@ export async function POST(req: NextRequest) {
     comment = await prisma.comment.create({ data: commentData })
   } catch (e: any) {
     // guestName 列可能尚未迁移，降级去掉该字段重试
-    if (e?.message?.includes('guestName') || e?.message?.includes('guestEmail') || e?.message?.includes('no such column')) {
+    if (e?.message?.includes('guestName') || e?.message?.includes('guestEmail') || e?.message?.includes('ip') || e?.message?.includes('no such column')) {
       delete commentData.guestName
       delete commentData.guestEmail
+      delete commentData.ip
       comment = await prisma.comment.create({ data: commentData })
     } else {
       console.error('[comment create]', e?.message)

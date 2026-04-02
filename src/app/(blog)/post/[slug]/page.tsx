@@ -6,6 +6,7 @@ import { PostActions } from '@/components/blog/PostActions'
 import { CommentSection } from '@/components/blog/CommentSection'
 import { MarkdownRenderer } from '@/components/blog/MarkdownRenderer'
 import { getSession } from '@/lib/auth'
+import { getSiteConfig } from '@/lib/config'
 import Image from 'next/image'
 
 export const dynamic = 'force-dynamic'
@@ -41,6 +42,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 }
 
 export default async function PostPage({ params }: { params: { slug: string } }) {
+  const config = await getSiteConfig()
   const post = await prisma.post.findUnique({
     where: { slug: params.slug, published: true },
     include: {
@@ -158,7 +160,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
       </article>
 
       {/* 评论区 */}
-      <CommentSection postId={post.id} comments={comments} session={session} />
+      <CommentSection postId={post.id} comments={comments} session={session} showCommentIp={!!(config as any).showCommentIp} />
     </div>
   )
 }

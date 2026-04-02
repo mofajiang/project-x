@@ -1,12 +1,15 @@
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { AdminSysInfo } from '@/components/admin/AdminSysInfo'
+import { AdminVisitorMap } from '@/components/admin/AdminVisitorMap'
 import { AdminRightPanel } from '@/components/admin/AdminRightPanel'
 import { ADMIN_PAGE_TITLE_CLASS, ADMIN_CARD_CLASS } from '@/components/admin/adminUi'
+import { runMigrations } from '@/lib/db-migrate'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AdminDashboard() {
+  await runMigrations()
   const [postCount, commentCount, pendingComments, totalViews] = await Promise.all([
     prisma.post.count({ where: { published: true } }),
     prisma.comment.count(),
@@ -98,6 +101,10 @@ export default async function AdminDashboard() {
         {/* 运行状态 */}
         <h2 className="font-bold text-lg mt-2 mb-4" style={{ color: 'var(--text-primary)' }}>运行状态</h2>
         <AdminSysInfo />
+
+        <div className="mt-6 sm:mt-8">
+          <AdminVisitorMap />
+        </div>
       </div>
 
       {/* 右侧栏 */}

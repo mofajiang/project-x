@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { ToasterProvider } from '@/components/ToasterProvider'
 import { getSiteConfig } from '@/lib/config'
+import { VisitorTracker } from '@/components/VisitorTracker'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,6 +45,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body>
         {children}
+        <VisitorTracker />
         <ToasterProvider />
       </body>
     </html>

@@ -47,13 +47,32 @@ export async function runMigrations() {
   await addColumn('SiteConfig', 'navItems', `TEXT NOT NULL DEFAULT '[{"label":"首页","href":"/","icon":"home"},{"label":"归档","href":"/archive","icon":"archive"},{"label":"标签","href":"/tags","icon":"tag"},{"label":"关于","href":"/about","icon":"user"}]'`, 'navItems')
   await addColumn('SiteConfig', 'siteLogo', `TEXT NOT NULL DEFAULT '{"type":"text","value":"✕"}'`, 'siteLogo')
   await addColumn('SiteConfig', 'siteIcon', `TEXT NOT NULL DEFAULT ''`, 'siteIcon')
+  await addColumn('SiteConfig', 'showCommentIp', `INTEGER NOT NULL DEFAULT 0`, 'showCommentIp')
   await addColumn('SiteConfig', 'rightPanelWidgets', `TEXT NOT NULL DEFAULT '[{"type":"search","enabled":true},{"type":"about","enabled":true},{"type":"tags","enabled":true},{"type":"hotPosts","enabled":true}]'`, 'rightPanelWidgets')
+  await addColumn('Comment', 'ip', `TEXT NOT NULL DEFAULT ''`, 'comment ip')
   await addColumn('Comment', 'guestName', 'TEXT', 'guestName')
   await addColumn('Comment', 'guestEmail', 'TEXT', 'guestEmail')
   await addColumn('User', 'displayName', `TEXT NOT NULL DEFAULT ''`, 'displayName')
   await addColumn('SiteConfig', 'copyright', `TEXT NOT NULL DEFAULT ''`, 'copyright')
   await addColumn('SiteConfig', 'defaultTheme', `TEXT NOT NULL DEFAULT 'dark'`, 'defaultTheme')
   await addColumn('SiteConfig', 'customDomain', `TEXT NOT NULL DEFAULT ''`, 'customDomain')
+  await createTable(
+    `CREATE TABLE IF NOT EXISTS Visitor (
+      id TEXT PRIMARY KEY,
+      ip TEXT NOT NULL,
+      path TEXT NOT NULL,
+      userAgent TEXT NOT NULL DEFAULT '',
+      referrer TEXT NOT NULL DEFAULT '',
+      country TEXT NOT NULL DEFAULT '',
+      countryCode TEXT NOT NULL DEFAULT '',
+      region TEXT NOT NULL DEFAULT '',
+      city TEXT NOT NULL DEFAULT '',
+      lat REAL,
+      lon REAL,
+      createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+    'Visitor'
+  )
   // authorId 改为可空（访客评论）— SQLite 不支持 ALTER COLUMN，新数据已可为 null
 
   // 登录限流持久化表

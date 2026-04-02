@@ -89,6 +89,7 @@ export type SiteConfig = {
   loginMode: string
   secretClicks: number
   commentApproval: boolean
+  showCommentIp: boolean
   socialX: string
   socialGithub: string
   socialEmail: string
@@ -160,6 +161,7 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
   if (!config.rightPanelWidgets) config.rightPanelWidgets = JSON.stringify(DEFAULT_WIDGETS)
   if (!config.siteLogo) config.siteLogo = JSON.stringify(DEFAULT_SITE_LOGO)
   if (!config.siteIcon) config.siteIcon = ''
+  if (config.showCommentIp === undefined || config.showCommentIp === null) config.showCommentIp = false
   if (!config.copyright) config.copyright = ''
   if (!config.defaultTheme) config.defaultTheme = 'dark'
   return config as SiteConfig
