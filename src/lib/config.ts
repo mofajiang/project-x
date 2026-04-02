@@ -97,6 +97,8 @@ export type SiteConfig = {
   siteLogo: string
   siteIcon: string
   rightPanelWidgets: string
+  visitorGeoMode: string
+  visitorGeoEndpoint: string
   copyright: string
   defaultTheme: string
   customDomain: string
@@ -142,6 +144,7 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
       `SELECT *, COALESCE(copyright,'') as copyright, COALESCE(siteIcon,'') as siteIcon,
        COALESCE(siteLogo,'') as siteLogo,
        COALESCE(navItems,'') as navItems, COALESCE(rightPanelWidgets,'') as rightPanelWidgets,
+       COALESCE(visitorGeoMode,'offline') as visitorGeoMode, COALESCE(visitorGeoEndpoint,'') as visitorGeoEndpoint,
        COALESCE(defaultTheme,'dark') as defaultTheme
        FROM SiteConfig WHERE id = 'singleton'`
     )
@@ -152,6 +155,7 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
       `SELECT *, COALESCE(copyright,'') as copyright, COALESCE(siteIcon,'') as siteIcon,
        COALESCE(siteLogo,'') as siteLogo,
        COALESCE(navItems,'') as navItems, COALESCE(rightPanelWidgets,'') as rightPanelWidgets,
+       COALESCE(visitorGeoMode,'offline') as visitorGeoMode, COALESCE(visitorGeoEndpoint,'') as visitorGeoEndpoint,
        COALESCE(defaultTheme,'dark') as defaultTheme
        FROM SiteConfig WHERE id = 'singleton'`
     )
@@ -161,6 +165,8 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
   if (!config.rightPanelWidgets) config.rightPanelWidgets = JSON.stringify(DEFAULT_WIDGETS)
   if (!config.siteLogo) config.siteLogo = JSON.stringify(DEFAULT_SITE_LOGO)
   if (!config.siteIcon) config.siteIcon = ''
+  if (!config.visitorGeoMode) config.visitorGeoMode = 'offline'
+  if (!config.visitorGeoEndpoint) config.visitorGeoEndpoint = ''
   if (config.showCommentIp === undefined || config.showCommentIp === null) config.showCommentIp = false
   if (!config.copyright) config.copyright = ''
   if (!config.defaultTheme) config.defaultTheme = 'dark'

@@ -1,5 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { runMigrations } from '@/lib/db-migrate'
+import { getSiteConfig } from '@/lib/config'
+import { AdminVisitorMapSettings } from './AdminVisitorMapSettings'
 
 type VisitorRow = {
   id: string
@@ -47,6 +49,8 @@ export async function AdminVisitorMap() {
     `),
     prisma.visitor.count(),
   ])
+  const config = await getSiteConfig()
+  const sourceLabel = config.visitorGeoMode === 'custom' ? '自定义接口' : '离线数据库'
 
   const withCoords = visitors.filter(v => typeof v.lat === 'number' && typeof v.lon === 'number')
   const countryMap = new Map<string, number>()
@@ -63,11 +67,14 @@ export async function AdminVisitorMap() {
       <div className="flex items-center justify-between gap-3 mb-4">
         <div>
           <h3 className="font-bold text-base sm:text-lg" style={{ color: 'var(--text-primary)' }}>🗺 访客地图</h3>
-          <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>按访问 IP 记录地理位置，展示最近访问分布</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>按访问 IP 记录地理位置，当前来源：{sourceLabel}</p>
         </div>
-        <div className="text-right">
+        <div className="flex items-center gap-2">
+          <div className="text-right">
           <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{total}</p>
           <p className="text-[10px] uppercase tracking-[0.18em]" style={{ color: 'var(--text-secondary)' }}>总访问</p>
+          </div>
+          <AdminVisitorMapSettings initialMode={config.visitorGeoMode} initialEndpoint={config.visitorGeoEndpoint} />
         </div>
       </div>
 
@@ -129,7 +136,7 @@ export async function AdminVisitorMap() {
               {visitors.slice(0, 8).map(visitor => (
                 <div key={visitor.id} className="flex items-center justify-between gap-3 text-xs">
                   <span className="truncate" style={{ color: 'var(--text-primary)' }}>
-                    {visitor.city || visitor.region || visitor.country || '未知'}
+                    {visitor.city || visitor.region || visitor.country || '未解析到真实地址'}
                   </span>
                   <span className="shrink-0" style={{ color: 'var(--text-secondary)' }}>{visitor.ip}</span>
                 </div>

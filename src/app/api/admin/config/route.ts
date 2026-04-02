@@ -31,16 +31,20 @@ export async function PUT(req: NextRequest) {
     data.siteLogo = JSON.stringify(data.siteLogo)
   }
 
-  // 动态迁移列（siteIcon / siteLogo / rightPanelWidgets / copyright / defaultTheme / customDomain）Prisma schema 不认识，需单独处理
+  // 动态迁移列（siteIcon / siteLogo / rightPanelWidgets / visitorGeoMode / visitorGeoEndpoint / copyright / defaultTheme / customDomain）Prisma schema 不认识，需单独处理
   const siteIcon = data.siteIcon ?? null
   const siteLogo = data.siteLogo ?? null
   const rightPanelWidgets = data.rightPanelWidgets ?? null
+  const visitorGeoMode = data.visitorGeoMode ?? null
+  const visitorGeoEndpoint = data.visitorGeoEndpoint ?? null
   const copyright = data.copyright ?? null
   const defaultTheme = data.defaultTheme ?? null
   const customDomain = data.customDomain !== undefined ? (data.customDomain ?? '') : null
   delete data.siteIcon
   delete data.siteLogo
   delete data.rightPanelWidgets
+  delete data.visitorGeoMode
+  delete data.visitorGeoEndpoint
   delete data.copyright
   delete data.defaultTheme
   delete data.customDomain
@@ -62,6 +66,12 @@ export async function PUT(req: NextRequest) {
     }
     if (rightPanelWidgets !== null) {
       await prisma.$executeRawUnsafe(`UPDATE SiteConfig SET rightPanelWidgets = ? WHERE id = 'singleton'`, rightPanelWidgets)
+    }
+    if (visitorGeoMode !== null) {
+      await prisma.$executeRawUnsafe(`UPDATE SiteConfig SET visitorGeoMode = ? WHERE id = 'singleton'`, visitorGeoMode)
+    }
+    if (visitorGeoEndpoint !== null) {
+      await prisma.$executeRawUnsafe(`UPDATE SiteConfig SET visitorGeoEndpoint = ? WHERE id = 'singleton'`, visitorGeoEndpoint)
     }
     if (copyright !== null) {
       await prisma.$executeRawUnsafe(`UPDATE SiteConfig SET copyright = ? WHERE id = 'singleton'`, copyright)
