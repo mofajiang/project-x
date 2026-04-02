@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { Settings2, Loader2 } from 'lucide-react'
+import { Settings2, Loader2, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 type Props = {
@@ -14,6 +14,7 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint }: Props)
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [clearing, setClearing] = useState(false)
   const [mode, setMode] = useState(initialMode || 'tencent')
   const [endpoint, setEndpoint] = useState(initialEndpoint || '')
 
@@ -33,6 +34,22 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint }: Props)
       toast.error('保存失败')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const clearLogs = async () => {
+    if (!confirm('确定清除所有访客日志？此操作不可恢复。')) return
+    setClearing(true)
+    try {
+      const res = await fetch('/api/admin/visitors', { method: 'DELETE' })
+      if (!res.ok) throw new Error('清除失败')
+      toast.success('访客日志已清除')
+      setOpen(false)
+      router.refresh()
+    } catch {
+      toast.error('清除失败')
+    } finally {
+      setClearing(false)
     }
   }
 
@@ -99,6 +116,17 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint }: Props)
             >
               {saving ? <Loader2 size={14} className="animate-spin" /> : null}
               保存设置
+            </button>
+
+            <button
+              type="button"
+              onClick={clearLogs}
+              disabled={clearing}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-sm font-medium disabled:opacity-60"
+              style={{ background: 'rgba(249,24,128,0.12)', color: 'var(--red)' }}
+            >
+              {clearing ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+              清除日志
             </button>
           </div>
         </div>

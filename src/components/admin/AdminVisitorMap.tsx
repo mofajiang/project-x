@@ -15,6 +15,24 @@ type VisitorRow = {
   createdAt: string
 }
 
+type CountryGroup = {
+  label: string
+  count: number
+  latestAt: string
+  visitors: VisitorRow[]
+}
+
+function formatTime(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleString('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 function toPoint(lat: number, lon: number) {
   return {
     left: `${((lon + 180) / 360) * 100}%`,
@@ -51,16 +69,31 @@ export async function AdminVisitorMap() {
   ])
   const config = await getSiteConfig()
   const sourceLabel = config.visitorGeoMode === 'custom' ? '自定义接口' : config.visitorGeoMode === 'offline' ? '离线数据库' : '腾讯内置接口'
+  const latestVisitorAt = visitors[0]?.createdAt || ''
 
   const withCoords = visitors.filter(v => typeof v.lat === 'number' && typeof v.lon === 'number')
-  const countryMap = new Map<string, number>()
+  const countryMap = new Map<string, CountryGroup>()
   visitors.forEach(v => {
-    const key = v.country || v.countryCode || '未知'
-    countryMap.set(key, (countryMap.get(key) || 0) + 1)
+    const label = v.country || v.countryCode || '未知'
+    const current = countryMap.get(label) || { label, count: 0, latestAt: v.createdAt, visitors: [] }
+    current.count += 1
+    current.visitors.push(v)
+    if (!current.latestAt || new Date(v.createdAt).getTime() > new Date(current.latestAt).getTime()) {
+      current.latestAt = v.createdAt
+    }
+    countryMap.set(label, current)
   })
   const topCountries = Array.from(countryMap.entries())
-    .sort((a, b) => b[1] - a[1])
+    .map(([, group]) => group)
+    .sort((a, b) => new Date(b.latestAt).getTime() - new Date(a.latestAt).getTime())
     .slice(0, 4)
+
+  const stats = [
+    { label: '总访问', value: total },
+    { label: '国家数', value: countryMap.size },
+    { label: '可定位', value: withCoords.length },
+    { label: '最近时间', value: latestVisitorAt ? formatTime(latestVisitorAt) : '暂无' },
+  ]
 
   return (
     <div className="rounded-2xl p-4 sm:p-5" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
@@ -76,6 +109,15 @@ export async function AdminVisitorMap() {
           </div>
           <AdminVisitorMapSettings initialMode={config.visitorGeoMode} initialEndpoint={config.visitorGeoEndpoint} />
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+        {stats.map(stat => (
+          <div key={stat.label} className="rounded-2xl px-3 py-2.5" style={{ background: 'var(--bg-hover)' }}>
+            <p className="text-[10px] uppercase tracking-[0.18em]" style={{ color: 'var(--text-secondary)' }}>{stat.label}</p>
+            <p className="mt-1 text-sm font-bold truncate" style={{ color: 'var(--text-primary)' }}>{stat.value}</p>
+          </div>
+        ))}
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.6fr)_minmax(260px,0.9fr)] gap-4">
@@ -119,11 +161,24 @@ export async function AdminVisitorMap() {
           <div className="rounded-2xl p-4" style={{ background: 'var(--bg-hover)' }}>
             <p className="text-xs uppercase tracking-[0.18em]" style={{ color: 'var(--text-secondary)' }}>最近访问国家</p>
             <div className="mt-3 flex flex-col gap-2">
-              {topCountries.length > 0 ? topCountries.map(([label, count]) => (
-                <div key={label} className="flex items-center justify-between gap-3">
-                  <span className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{label}</span>
-                  <span className="text-sm font-mono" style={{ color: 'var(--accent)' }}>{count}</span>
-                </div>
+              {topCountries.length > 0 ? topCountries.map(group => (
+                <details key={group.label} className="rounded-2xl px-3 py-2" style={{ background: 'var(--bg-secondary)' }}>
+                  <summary className="flex items-center justify-between gap-3 cursor-pointer list-none">
+                    <span className="flex items-center gap-2 min-w-0">
+                      <span className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{group.label}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(29,155,240,0.12)', color: 'var(--accent)' }}>▼</span>
+                    </span>
+                    <span className="text-sm font-mono shrink-0" style={{ color: 'var(--accent)' }}>{group.count}</span>
+                  </summary>
+                  <div className="mt-3 flex flex-col gap-2 border-t pt-2" style={{ borderColor: 'var(--border)' }}>
+                    {group.visitors.map(visitor => (
+                      <div key={visitor.id} className="flex items-center justify-between gap-3 text-[11px]">
+                        <span className="truncate" style={{ color: 'var(--text-primary)' }}>{visitor.ip}</span>
+                        <span className="shrink-0" style={{ color: 'var(--text-secondary)' }}>{formatTime(visitor.createdAt)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </details>
               )) : (
                 <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>暂无数据</p>
               )}
@@ -138,7 +193,10 @@ export async function AdminVisitorMap() {
                   <span className="truncate" style={{ color: 'var(--text-primary)' }}>
                     {visitor.city || visitor.region || visitor.country || '未解析到真实地址'}
                   </span>
-                  <span className="shrink-0" style={{ color: 'var(--text-secondary)' }}>{visitor.ip}</span>
+                  <span className="shrink-0 text-right" style={{ color: 'var(--text-secondary)' }}>
+                    <span className="block">{visitor.ip}</span>
+                    <span className="block text-[10px] mt-0.5">{formatTime(visitor.createdAt)}</span>
+                  </span>
                 </div>
               ))}
               {visitors.length === 0 && <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>暂无访问记录</p>}
