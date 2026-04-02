@@ -1,16 +1,15 @@
 'use client'
 
 import { useEffect } from 'react'
-import { usePathname, useSearchParams } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 
 export function VisitorTracker() {
   const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const query = searchParams.toString()
 
   useEffect(() => {
     if (pathname.startsWith('/admin')) return
 
+    const query = window.location.search.replace(/^\?/, '')
     const path = query ? `${pathname}?${query}` : pathname
     const payload = JSON.stringify({
       path,
@@ -29,7 +28,7 @@ export function VisitorTracker() {
       body: payload,
       keepalive: true,
     }).catch(() => {})
-  }, [pathname, query])
+  }, [pathname])
 
   return null
 }
