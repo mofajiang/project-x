@@ -147,7 +147,7 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
     )
   } catch {}
   if (!rows.length) {
-    await prisma.siteConfig.create({ data: { id: 'singleton' } })
+    await prisma.$executeRawUnsafe(`INSERT OR IGNORE INTO SiteConfig (id) VALUES ('singleton')`)
     rows = await prisma.$queryRawUnsafe<any[]>(
       `SELECT *, COALESCE(copyright,'') as copyright, COALESCE(siteIcon,'') as siteIcon,
        COALESCE(siteLogo,'') as siteLogo,

@@ -10,7 +10,7 @@ type VisitorRow = {
   city: string | null
   lat: number | null
   lon: number | null
-  createdAt: Date
+  createdAt: string
 }
 
 function toPoint(lat: number, lon: number) {
@@ -23,10 +23,28 @@ function toPoint(lat: number, lon: number) {
 export async function AdminVisitorMap() {
   await runMigrations()
   const [visitors, total] = await Promise.all([
-    prisma.visitor.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: 180,
-    }) as Promise<VisitorRow[]>,
+    prisma.$queryRawUnsafe<VisitorRow[]>(`
+      SELECT
+        id,
+        ip,
+        country,
+        countryCode,
+        region,
+        city,
+        lat,
+        lon,
+        CASE
+          WHEN typeof(createdAt) = 'integer' THEN datetime(createdAt / 1000, 'unixepoch')
+          ELSE createdAt
+        END AS createdAt
+      FROM Visitor
+      ORDER BY
+        CASE
+          WHEN typeof(createdAt) = 'integer' THEN createdAt
+          ELSE CAST(strftime('%s', createdAt) AS INTEGER) * 1000
+        END DESC
+      LIMIT 180
+    `),
     prisma.visitor.count(),
   ])
 

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { randomUUID } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { runMigrations } from '@/lib/db-migrate'
 import { getClientIp, isPublicIp } from '@/lib/request-ip'
@@ -41,22 +42,28 @@ export async function POST(req: NextRequest) {
 
   const ip = getClientIp(req)
   const geo = await geolocateIp(ip)
+  const createdAt = new Date().toISOString()
 
   try {
-    await prisma.visitor.create({
-      data: {
-        ip,
-        path: (payload.path || '/').slice(0, 500),
-        referrer: (payload.referrer || '').slice(0, 500),
-        userAgent: (payload.userAgent || req.headers.get('user-agent') || '').slice(0, 500),
-        country: (geo.country || '').slice(0, 100),
-        countryCode: (geo.countryCode || '').slice(0, 12),
-        region: (geo.region || '').slice(0, 100),
-        city: (geo.city || '').slice(0, 100),
-        lat: geo.lat,
-        lon: geo.lon,
-      },
-    })
+    await prisma.$executeRaw`
+      INSERT INTO Visitor (
+        id, ip, path, userAgent, referrer,
+        country, countryCode, region, city, lat, lon, createdAt
+      ) VALUES (
+        ${randomUUID()},
+        ${ip},
+        ${(payload.path || '/').slice(0, 500)},
+        ${(payload.userAgent || req.headers.get('user-agent') || '').slice(0, 500)},
+        ${(payload.referrer || '').slice(0, 500)},
+        ${(geo.country || '').slice(0, 100)},
+        ${(geo.countryCode || '').slice(0, 12)},
+        ${(geo.region || '').slice(0, 100)},
+        ${(geo.city || '').slice(0, 100)},
+        ${geo.lat},
+        ${geo.lon},
+        ${createdAt}
+      )
+    `
   } catch (e) {
     console.warn('[track-visit]', e)
   }
