@@ -2,6 +2,17 @@ import { prisma } from '@/lib/prisma'
 import { runMigrations } from '@/lib/db-migrate'
 import { getSiteConfig } from '@/lib/config'
 import { AdminVisitorMapSettings } from './AdminVisitorMapSettings'
+import { geoEquirectangular, geoGraticule10, geoPath } from 'd3-geo'
+import { feature } from 'topojson-client'
+
+const worldCountriesTopo = require('world-atlas/countries-110m.json')
+
+const MAP_WIDTH = 1200
+const MAP_HEIGHT = 600
+const worldProjection = geoEquirectangular().scale(MAP_WIDTH / (2 * Math.PI)).translate([MAP_WIDTH / 2, MAP_HEIGHT / 2])
+const worldPath = geoPath(worldProjection)
+const worldGraticule = worldPath(geoGraticule10()) || ''
+const worldCountries = feature(worldCountriesTopo, worldCountriesTopo.objects.countries) as any
 
 type VisitorRow = {
   id: string
@@ -333,13 +344,37 @@ export async function AdminVisitorMap() {
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.6fr)_minmax(260px,0.9fr)] gap-4">
         <div className="relative min-h-[260px] sm:min-h-[320px] overflow-hidden rounded-3xl" style={{ background: 'linear-gradient(180deg, rgba(29,155,240,0.10), rgba(29,155,240,0.02))', border: '1px solid var(--border)' }}>
-          <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.10) 1px, transparent 0)', backgroundSize: '24px 24px' }} />
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.02) 40%, transparent 100%)' }} />
+          <div className="absolute inset-0 opacity-25" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.10) 1px, transparent 0)', backgroundSize: '24px 24px' }} />
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.03) 40%, transparent 100%)' }} />
           <div className="absolute inset-0 p-4 sm:p-5">
-            <div className="absolute inset-4 rounded-[28px] border border-dashed" style={{ borderColor: 'rgba(255,255,255,0.10)' }} />
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-[86%] h-[70%] rounded-[42%] border border-[rgba(255,255,255,0.06)]" />
-            </div>
+            <svg
+              viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`}
+              preserveAspectRatio="none"
+              className="absolute inset-4 w-[calc(100%-2rem)] h-[calc(100%-2rem)]"
+              aria-hidden="true"
+            >
+              <defs>
+                <linearGradient id="world-map-ocean" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="rgba(29,155,240,0.08)" />
+                  <stop offset="100%" stopColor="rgba(29,155,240,0.02)" />
+                </linearGradient>
+                <linearGradient id="world-map-land" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="rgba(255,255,255,0.18)" />
+                  <stop offset="100%" stopColor="rgba(255,255,255,0.08)" />
+                </linearGradient>
+              </defs>
+              <rect width={MAP_WIDTH} height={MAP_HEIGHT} rx={32} fill="url(#world-map-ocean)" />
+              <path d={worldGraticule} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
+              {worldCountries.features.map((country: any) => (
+                <path
+                  key={country.id}
+                  d={worldPath(country) || undefined}
+                  fill="url(#world-map-land)"
+                  stroke="rgba(255,255,255,0.10)"
+                  strokeWidth={0.8}
+                />
+              ))}
+            </svg>
             {mapMarkers.map(marker => {
               const point = toPoint(marker.lat, marker.lon)
               return (
