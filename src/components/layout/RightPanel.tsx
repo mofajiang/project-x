@@ -131,26 +131,31 @@ export async function RightPanel({ siteDesc, social, widgets = [], copyright = '
           if (!links.length) return null
           return (
             <div key={i} className="rounded-2xl overflow-hidden mb-3" style={{ background: 'var(--bg-secondary)' }}>
-              <h2 className="font-extrabold text-[20px] px-4 pt-3 pb-1" style={{ color: 'var(--text-primary)' }}>{title}</h2>
-              <div className="flex flex-col">
-                {links.map((link, idx) => (
-                  <a key={idx} href={link.url} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-3 py-3 px-4 transition-colors hover:bg-white/5">
-                    {/* 头像/首字母 */}
-                    <div className="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center font-bold text-sm"
-                      style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
-                      {link.avatar
-                        ? <img src={link.avatar} alt={link.label} className="w-full h-full object-cover" />
-                        : <span>{link.label[0]?.toUpperCase()}</span>}
-                    </div>
-                    {/* 名称 + 简介 */}
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-sm font-bold truncate" style={{ color: 'var(--text-primary)' }}>{link.label}</span>
-                      {link.desc && <span className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>{link.desc}</span>}
-                    </div>
-                  </a>
-                ))}
-              </div>
+              <details className="group">
+                <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 transition-colors hover:bg-white/5">
+                  <span className="font-extrabold text-[20px]" style={{ color: 'var(--text-primary)' }}>{title}</span>
+                  <span className="text-sm transition-transform duration-150 group-open:rotate-180" style={{ color: 'var(--text-secondary)' }}>⌄</span>
+                </summary>
+                <div className="flex flex-col border-t" style={{ borderColor: 'var(--border)' }}>
+                  {links.map((link, idx) => (
+                    <a key={idx} href={link.url} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-3 py-3 px-4 transition-colors hover:bg-white/5">
+                      {/* 头像/首字母 */}
+                      <div className="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center font-bold text-sm"
+                        style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
+                        {link.avatar
+                          ? <img src={link.avatar} alt={link.label} className="w-full h-full object-cover" />
+                          : <span>{link.label[0]?.toUpperCase()}</span>}
+                      </div>
+                      {/* 名称 + 简介 */}
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-bold truncate" style={{ color: 'var(--text-primary)' }}>{link.label}</span>
+                        {link.desc && <span className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>{link.desc}</span>}
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </details>
             </div>
           )
         }

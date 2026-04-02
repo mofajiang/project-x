@@ -269,8 +269,11 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
                     const links: FriendLink[] = widget.links || []
                     if (!links.length) return null
                     return (
-                      <div key={`links-${index}`} className="pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
-                        <h3 className="px-1 text-[10px] uppercase tracking-[0.18em] mb-1" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
+                      <details key={`links-${index}`} className="pt-2 border-t group" style={{ borderColor: 'var(--border)' }}>
+                        <summary className="flex cursor-pointer list-none items-center justify-between px-1 py-1.5">
+                          <h3 className="text-[10px] uppercase tracking-[0.18em]" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
+                          <span className="text-[10px] transition-transform duration-150 group-open:rotate-180" style={{ color: 'var(--text-secondary)' }}>⌄</span>
+                        </summary>
                         <div className="flex flex-col">
                           {links.slice(0, 6).map((link, idx) => (
                             <a key={idx} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-1 py-1.5" style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--border)' }}>
@@ -284,7 +287,7 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
                             </a>
                           ))}
                         </div>
-                      </div>
+                      </details>
                     )
                   }
 
