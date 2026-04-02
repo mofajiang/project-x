@@ -38,6 +38,8 @@ type Point = {
   lon: number
 }
 
+type WorldRegion = 'northAmerica' | 'southAmerica' | 'europe' | 'africa' | 'asia' | 'oceania' | 'middleEast' | 'fallback'
+
 const CHINA_PROVINCE_POINTS: Record<string, Point> = {
   '北京市': { lat: 39.9042, lon: 116.4074 },
   '天津市': { lat: 39.3434, lon: 117.3616 },
@@ -87,19 +89,60 @@ const CHINA_PROVINCE_ALIASES: Array<[string, string]> = [
   ['新疆', '新疆维吾尔自治区'], ['香港', '香港特别行政区'], ['澳门', '澳门特别行政区'],
 ]
 
+const WORLD_REGION_POINTS: Record<WorldRegion, Point> = {
+  northAmerica: { lat: 40.0, lon: -100.0 },
+  southAmerica: { lat: -15.0, lon: -60.0 },
+  europe: { lat: 50.0, lon: 10.0 },
+  africa: { lat: 5.0, lon: 20.0 },
+  asia: { lat: 34.0, lon: 100.0 },
+  oceania: { lat: -25.0, lon: 135.0 },
+  middleEast: { lat: 31.0, lon: 45.0 },
+  fallback: { lat: 20.0, lon: 0.0 },
+}
+
+const COUNTRY_HINTS: Array<{ region: WorldRegion; keywords: string[] }> = [
+  { region: 'northAmerica', keywords: ['美国', '加拿大', '墨西哥', '北美', '格陵兰', '百慕大', '阿拉斯加'] },
+  { region: 'southAmerica', keywords: ['巴西', '阿根廷', '智利', '秘鲁', '哥伦比亚', '厄瓜多尔', '委内瑞拉', '乌拉圭', '巴拉圭', '玻利维亚', '南美'] },
+  { region: 'europe', keywords: ['英国', '法国', '德国', '意大利', '西班牙', '荷兰', '比利时', '瑞士', '奥地利', '瑞典', '挪威', '芬兰', '丹麦', '波兰', '捷克', '匈牙利', '罗马尼亚', '希腊', '葡萄牙', '爱尔兰', '冰岛', '俄罗斯', '乌克兰', '欧洲'] },
+  { region: 'africa', keywords: ['非洲', '埃及', '南非', '尼日利亚', '肯尼亚', '摩洛哥', '阿尔及利亚', '埃塞俄比亚', '加纳', '坦桑尼亚', '乌干达'] },
+  { region: 'asia', keywords: ['亚洲', '日本', '韩国', '朝鲜', '新加坡', '马来西亚', '泰国', '越南', '菲律宾', '印度', '印度尼西亚', '巴基斯坦', '孟加拉', '柬埔寨', '老挝', '缅甸'] },
+  { region: 'oceania', keywords: ['澳大利亚', '新西兰', '大洋洲', '悉尼', '墨尔本', '堪培拉'] },
+  { region: 'middleEast', keywords: ['中东', '阿联酋', '沙特', '以色列', '伊朗', '伊拉克', '土耳其', '卡塔尔', '科威特', '约旦', '黎巴嫩'] },
+]
+
 function cleanText(value: string) {
   return value.replace(/\s+/g, '').trim()
 }
 
-function hashToPoint(seed: string): Point {
+function hashToOffset(seed: string) {
   let hash = 0
   for (const char of seed) {
     hash = (hash * 31 + char.charCodeAt(0)) >>> 0
   }
 
-  const lat = -55 + ((hash % 12000) / 12000) * 120
-  const lon = -170 + (((hash / 12000) % 34000) / 34000) * 340
-  return { lat, lon }
+  return {
+    latDelta: ((hash % 2000) / 2000) * 8 - 4,
+    lonDelta: (((hash / 2000) % 2000) / 2000) * 8 - 4,
+  }
+}
+
+function pickWorldRegion(text: string): WorldRegion {
+  const normalized = cleanText(text)
+  for (const item of COUNTRY_HINTS) {
+    if (item.keywords.some(keyword => normalized.includes(cleanText(keyword)))) {
+      return item.region
+    }
+  }
+  return 'fallback'
+}
+
+function getRegionPoint(region: WorldRegion, seed: string): Point {
+  const base = WORLD_REGION_POINTS[region]
+  const offset = hashToOffset(seed)
+  return {
+    lat: Math.max(-60, Math.min(75, base.lat + offset.latDelta)),
+    lon: Math.max(-180, Math.min(180, base.lon + offset.lonDelta)),
+  }
 }
 
 function resolveChinaProvince(region: string, city: string) {
@@ -141,9 +184,10 @@ function resolveApproxLocation(visitor: VisitorRow) {
   }
 
   const label = country || region || city || '未知'
+  const regionKey = pickWorldRegion(`${country} ${region} ${city}`)
   return {
     label,
-    point: hashToPoint(label),
+    point: getRegionPoint(regionKey, label),
   }
 }
 
