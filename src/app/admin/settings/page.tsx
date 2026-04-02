@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { IMEInput, IMETextarea } from '@/components/ui/IMEInput'
 import ImageCropModal from '@/components/ui/ImageCropModal'
 import { ADMIN_PAGE_TITLE_CLASS, ADMIN_CARD_LG_CLASS, ADMIN_SUBCARD_CLASS } from '@/components/admin/adminUi'
-import { DEFAULT_NAV, DEFAULT_WIDGETS, DEFAULT_SITE_LOGO, parseSiteLogo, type NavItem, type RightPanelWidget as Widget, type SiteLogo } from '@/lib/config'
+import { DEFAULT_NAV, DEFAULT_WIDGETS, DEFAULT_SITE_LOGO, isImageSource, parseSiteLogo, type NavItem, type RightPanelWidget as Widget, type SiteLogo } from '@/lib/config'
 
 type WidgetType = 'search' | 'about' | 'tags' | 'hotPosts' | 'custom' | 'links' | 'carousel'
 type FriendLink = { label: string; url: string; desc?: string; avatar?: string }
@@ -32,7 +32,7 @@ const ICON_OPTIONS = [
 
 const SITE_LOGO_TYPES: { value: SiteLogo['type']; label: string }[] = [
   { value: 'text', label: '文字' },
-  { value: 'icon', label: '图标' },
+  { value: 'image', label: '图片' },
 ]
 
 function Field({
@@ -90,6 +90,7 @@ export default function SettingsPage() {
   const [savingProfile, setSavingProfile] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [uploadingIcon, setUploadingIcon] = useState(false)
+  const [uploadingSiteLogo, setUploadingSiteLogo] = useState(false)
   const [cropSrc, setCropSrc] = useState<string | null>(null)
   const [savingDomain, setSavingDomain] = useState(false)
   const [licenseChecking, setLicenseChecking] = useState(true)
@@ -104,6 +105,7 @@ export default function SettingsPage() {
 
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const iconInputRef = useRef<HTMLInputElement>(null)
+  const siteLogoInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     fetch('/api/admin/config').then(r => r.json()).then(data => {
@@ -186,6 +188,23 @@ export default function SettingsPage() {
     if (data.url) {
       setSiteIcon(data.url)
       toast.success('图标已上传，记得保存设置')
+    } else {
+      toast.error('上传失败')
+    }
+  }
+
+  const uploadSiteLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingSiteLogo(true)
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await fetch('/api/upload', { method: 'POST', body: fd })
+    const data = await res.json()
+    setUploadingSiteLogo(false)
+    if (data.url) {
+      setSiteLogo({ type: 'image', value: data.url })
+      toast.success('站点 Logo 已上传，记得保存设置')
     } else {
       toast.error('上传失败')
     }
@@ -428,10 +447,10 @@ export default function SettingsPage() {
             <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>上传后点击底部「保存设置」生效</p>
           </div>
 
-          {/* 顶部标识 */}
+          {/* 站点 Logo */}
           <div className={`${mobileCardClass} flex flex-col gap-2.5 sm:gap-4`} style={{ background: 'var(--bg-secondary)' }}>
-            <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>✕ 顶部标识</h2>
-            <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>控制桌面侧栏和手机侧边栏顶部显示的文字或图标。</p>
+            <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>🪪 站点 Logo</h2>
+            <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>控制桌面侧栏和手机侧边栏顶部显示的文字或图片，不影响站点图标。</p>
 
             <div className="grid grid-cols-1 gap-3">
               <div className="flex flex-wrap gap-2">
@@ -452,18 +471,46 @@ export default function SettingsPage() {
               </div>
 
               <Field
-                label="显示内容"
+                label={siteLogo.type === 'text' ? '显示文字' : '图片地址'}
                 value={siteLogo.value}
                 onChange={v => setSiteLogo(s => ({ ...s, value: v }))}
-                placeholder={siteLogo.type === 'text' ? '例如：我的博客' : '例如：✕ / 🅧 / ⓿'}
+                placeholder={siteLogo.type === 'text' ? '例如：我的博客' : '例如：/uploads/logo.png'}
                 compact
               />
 
+              {siteLogo.type === 'image' && (
+                <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                  <button
+                    type="button"
+                    onClick={() => siteLogoInputRef.current?.click()}
+                    disabled={uploadingSiteLogo}
+                    className="px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50 w-full sm:w-auto"
+                    style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+                  >
+                    {uploadingSiteLogo ? '上传中...' : '上传图片'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSiteLogo(s => ({ ...s, value: '' }))}
+                    className="px-4 py-2 rounded-full text-sm font-medium w-full sm:w-auto"
+                    style={{ background: 'var(--bg-hover)', color: '#F4212E' }}
+                  >
+                    清空
+                  </button>
+                  <input ref={siteLogoInputRef} type="file" accept="image/*,.ico" className="hidden" onChange={uploadSiteLogo} />
+                </div>
+              )}
+
               <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: 'var(--bg-hover)' }}>
-                <div className="min-w-[3rem] h-12 px-3 rounded-full flex items-center justify-center shrink-0" style={{ background: 'var(--bg)' }}>
-                  <span className={siteLogo.type === 'text' ? 'text-[18px] font-black leading-none' : 'text-[22px] leading-none'} style={{ color: 'var(--text-primary)' }}>
-                    {siteLogo.value || DEFAULT_SITE_LOGO.value}
-                  </span>
+                <div className="min-w-[3rem] h-12 px-3 rounded-full flex items-center justify-center shrink-0 overflow-hidden" style={{ background: 'var(--bg)' }}>
+                  {siteLogo.type === 'image' && isImageSource(siteLogo.value) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={siteLogo.value} alt="站点 Logo" className="w-full h-full object-contain" />
+                  ) : (
+                    <span className={siteLogo.type === 'text' ? 'text-[18px] font-black leading-none' : 'text-[22px] leading-none'} style={{ color: 'var(--text-primary)' }}>
+                      {siteLogo.value || DEFAULT_SITE_LOGO.value}
+                    </span>
+                  )}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-bold leading-tight" style={{ color: 'var(--text-primary)' }}>预览</p>

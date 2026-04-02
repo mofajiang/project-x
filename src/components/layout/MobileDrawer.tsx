@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import type { JWTPayload } from '@/lib/auth'
 import type { RightPanelWidget, FriendLink, SiteLogo } from '@/lib/config'
+import { isImageSource } from '@/lib/config'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import type { NavItemDef } from './Sidebar'
 
@@ -69,7 +70,7 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
   const [menuOpen, setMenuOpen] = useState(false)
   const drawerRef = useRef<HTMLDivElement>(null)
   const enabledWidgets = widgets.filter(w => w.enabled && w.mobileVisible !== false)
-  const logoText = (siteLogo?.value || '✕').trim() || '✕'
+  const logoValue = (siteLogo?.value || '✕').trim() || '✕'
 
   // 路由变化时关闭抽屉
   useEffect(() => { onClose() }, [pathname]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -118,16 +119,21 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
           <button
             type="button"
             onClick={onLogoClick || onClose}
-            className="min-w-[2.5rem] h-10 px-3 rounded-full flex items-center justify-center text-[22px] font-black transition-colors select-none"
+            className="min-w-[2.5rem] h-10 px-3 rounded-full flex items-center justify-center text-[22px] font-black transition-colors select-none overflow-hidden"
             style={{ color: 'var(--text-primary)' }}
             title="首页"
             aria-label="返回首页"
             onMouseEnter={e => (e.currentTarget.style.background = 'rgba(29,155,240,0.06)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
           >
-            <span className={siteLogo?.type === 'text' ? 'text-[18px] font-black leading-none' : 'text-[22px] leading-none'}>
-              {logoText}
-            </span>
+            {siteLogo?.type === 'image' && isImageSource(logoValue) ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoValue} alt="首页" className="max-h-full max-w-full object-contain" />
+            ) : (
+              <span className={siteLogo?.type === 'text' ? 'text-[18px] font-black leading-none' : 'text-[22px] leading-none'}>
+                {logoValue}
+              </span>
+            )}
           </button>
         </div>
 

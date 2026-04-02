@@ -8,7 +8,7 @@ export type NavItem = {
   icon: string
 }
 
-export type SiteLogoType = 'text' | 'icon'
+export type SiteLogoType = 'text' | 'image'
 
 export type SiteLogo = {
   type: SiteLogoType
@@ -18,6 +18,11 @@ export type SiteLogo = {
 export const DEFAULT_SITE_LOGO: SiteLogo = {
   type: 'text',
   value: '✕',
+}
+
+export function isImageSource(value: string) {
+  const trimmed = value.trim()
+  return /^(https?:\/\/|\/|data:)/i.test(trimmed)
 }
 
 export type WidgetType = 'search' | 'about' | 'tags' | 'hotPosts' | 'custom' | 'links' | 'carousel'
@@ -116,7 +121,7 @@ export function parseSiteLogo(raw: string | undefined | null): SiteLogo {
   try {
     const parsed = JSON.parse(raw)
     if (parsed && typeof parsed === 'object' && typeof parsed.value === 'string') {
-      if (parsed.type === 'text' || parsed.type === 'icon') {
+      if (parsed.type === 'text' || parsed.type === 'image') {
         return { type: parsed.type, value: parsed.value }
       }
       return { type: 'text', value: parsed.value }
