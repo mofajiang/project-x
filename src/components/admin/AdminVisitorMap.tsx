@@ -22,6 +22,131 @@ type CountryGroup = {
   visitors: VisitorRow[]
 }
 
+type MapMarker = {
+  key: string
+  label: string
+  count: number
+  latestAt: string
+  lat: number
+  lon: number
+  visitors: VisitorRow[]
+  kind: 'exact' | 'approx'
+}
+
+type Point = {
+  lat: number
+  lon: number
+}
+
+const CHINA_PROVINCE_POINTS: Record<string, Point> = {
+  '北京市': { lat: 39.9042, lon: 116.4074 },
+  '天津市': { lat: 39.3434, lon: 117.3616 },
+  '上海市': { lat: 31.2304, lon: 121.4737 },
+  '重庆市': { lat: 29.563, lon: 106.5516 },
+  '河北省': { lat: 38.0428, lon: 114.5149 },
+  '山西省': { lat: 37.8734, lon: 112.5627 },
+  '辽宁省': { lat: 41.8057, lon: 123.4315 },
+  '吉林省': { lat: 43.8171, lon: 125.3235 },
+  '黑龙江省': { lat: 45.75, lon: 126.6424 },
+  '江苏省': { lat: 32.0603, lon: 118.7969 },
+  '浙江省': { lat: 30.2741, lon: 120.1551 },
+  '安徽省': { lat: 31.8206, lon: 117.2272 },
+  '福建省': { lat: 26.0745, lon: 119.2965 },
+  '江西省': { lat: 28.682, lon: 115.8579 },
+  '山东省': { lat: 36.6758, lon: 117.0009 },
+  '河南省': { lat: 34.7466, lon: 113.6254 },
+  '湖北省': { lat: 30.5928, lon: 114.3055 },
+  '湖南省': { lat: 28.2282, lon: 112.9388 },
+  '广东省': { lat: 23.1291, lon: 113.2644 },
+  '海南省': { lat: 20.0458, lon: 110.3312 },
+  '四川省': { lat: 30.5728, lon: 104.0668 },
+  '贵州省': { lat: 26.647, lon: 106.6302 },
+  '云南省': { lat: 25.0389, lon: 102.7183 },
+  '陕西省': { lat: 34.3416, lon: 108.9398 },
+  '甘肃省': { lat: 36.0611, lon: 103.8343 },
+  '青海省': { lat: 36.6209, lon: 101.7801 },
+  '台湾省': { lat: 25.0329, lon: 121.5654 },
+  '内蒙古自治区': { lat: 40.8174, lon: 111.7663 },
+  '广西壮族自治区': { lat: 23.4768, lon: 108.3275 },
+  '西藏自治区': { lat: 29.652, lon: 91.1721 },
+  '宁夏回族自治区': { lat: 38.4872, lon: 106.2309 },
+  '新疆维吾尔自治区': { lat: 43.8256, lon: 87.6168 },
+  '香港特别行政区': { lat: 22.3193, lon: 114.1694 },
+  '澳门特别行政区': { lat: 22.1987, lon: 113.5439 },
+}
+
+const CHINA_PROVINCE_ALIASES: Array<[string, string]> = [
+  ['北京', '北京市'], ['天津', '天津市'], ['上海', '上海市'], ['重庆', '重庆市'],
+  ['河北', '河北省'], ['山西', '山西省'], ['辽宁', '辽宁省'], ['吉林', '吉林省'],
+  ['黑龙江', '黑龙江省'], ['江苏', '江苏省'], ['浙江', '浙江省'], ['安徽', '安徽省'],
+  ['福建', '福建省'], ['江西', '江西省'], ['山东', '山东省'], ['河南', '河南省'],
+  ['湖北', '湖北省'], ['湖南', '湖南省'], ['广东', '广东省'], ['海南', '海南省'],
+  ['四川', '四川省'], ['贵州', '贵州省'], ['云南', '云南省'], ['陕西', '陕西省'],
+  ['甘肃', '甘肃省'], ['青海', '青海省'], ['台湾', '台湾省'], ['内蒙古', '内蒙古自治区'],
+  ['广西', '广西壮族自治区'], ['西藏', '西藏自治区'], ['宁夏', '宁夏回族自治区'],
+  ['新疆', '新疆维吾尔自治区'], ['香港', '香港特别行政区'], ['澳门', '澳门特别行政区'],
+]
+
+function cleanText(value: string) {
+  return value.replace(/\s+/g, '').trim()
+}
+
+function hashToPoint(seed: string): Point {
+  let hash = 0
+  for (const char of seed) {
+    hash = (hash * 31 + char.charCodeAt(0)) >>> 0
+  }
+
+  const lat = -55 + ((hash % 12000) / 12000) * 120
+  const lon = -170 + (((hash / 12000) % 34000) / 34000) * 340
+  return { lat, lon }
+}
+
+function resolveChinaProvince(region: string, city: string) {
+  const candidates = [region, city].map(cleanText).filter(Boolean)
+  for (const candidate of candidates) {
+    for (const [alias, label] of CHINA_PROVINCE_ALIASES) {
+      if (candidate.includes(alias)) {
+        return { label, point: CHINA_PROVINCE_POINTS[label] }
+      }
+    }
+    for (const [label, point] of Object.entries(CHINA_PROVINCE_POINTS)) {
+      const short = label.replace(/(省|市|自治区|特别行政区)/g, '')
+      if (candidate.includes(short)) {
+        return { label, point }
+      }
+    }
+  }
+  return null
+}
+
+function resolveApproxLocation(visitor: VisitorRow) {
+  const country = (visitor.country || visitor.countryCode || '').trim()
+  const region = (visitor.region || '').trim()
+  const city = (visitor.city || '').trim()
+  const isChina = /中国/.test(country) || visitor.countryCode === 'CN' || /中国/.test(region)
+
+  if (isChina) {
+    const province = resolveChinaProvince(region, city)
+    if (province) {
+      return {
+        label: province.label,
+        point: province.point,
+      }
+    }
+    return {
+      label: '中国',
+      point: { lat: 35.8617, lon: 104.1954 },
+    }
+  }
+
+  const label = country || region || city || '未知'
+  return {
+    label,
+    point: hashToPoint(label),
+  }
+}
+
 function formatTime(value: string) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
@@ -71,7 +196,48 @@ export async function AdminVisitorMap() {
   const sourceLabel = config.visitorGeoMode === 'custom' ? '自定义接口' : config.visitorGeoMode === 'offline' ? '离线数据库' : '腾讯内置接口'
   const latestVisitorAt = visitors[0]?.createdAt || ''
 
-  const withCoords = visitors.filter(v => typeof v.lat === 'number' && typeof v.lon === 'number')
+  const exactMarkers: MapMarker[] = visitors
+    .filter(v => typeof v.lat === 'number' && typeof v.lon === 'number')
+    .map(v => ({
+      key: `exact-${v.id}`,
+      label: v.city || v.region || v.country || '未知',
+      count: 1,
+      latestAt: v.createdAt,
+      lat: v.lat!,
+      lon: v.lon!,
+      visitors: [v],
+      kind: 'exact' as const,
+    }))
+
+  const approxGroups = new Map<string, MapMarker>()
+  visitors
+    .filter(v => typeof v.lat !== 'number' || typeof v.lon !== 'number')
+    .forEach(v => {
+      const resolved = resolveApproxLocation(v)
+      const current = approxGroups.get(resolved.label) || {
+        key: `approx-${resolved.label}`,
+        label: resolved.label,
+        count: 0,
+        latestAt: v.createdAt,
+        lat: resolved.point.lat,
+        lon: resolved.point.lon,
+        visitors: [],
+        kind: 'approx' as const,
+      }
+      current.count += 1
+      current.visitors.push(v)
+      current.lat = resolved.point.lat
+      current.lon = resolved.point.lon
+      if (!current.latestAt || new Date(v.createdAt).getTime() > new Date(current.latestAt).getTime()) {
+        current.latestAt = v.createdAt
+      }
+      approxGroups.set(resolved.label, current)
+    })
+
+  const approxMarkers = Array.from(approxGroups.values())
+    .sort((a, b) => new Date(b.latestAt).getTime() - new Date(a.latestAt).getTime())
+
+  const mapMarkers = [...exactMarkers, ...approxMarkers]
   const countryMap = new Map<string, CountryGroup>()
   visitors.forEach(v => {
     const label = v.country || v.countryCode || '未知'
@@ -91,7 +257,8 @@ export async function AdminVisitorMap() {
   const stats = [
     { label: '总访问', value: total },
     { label: '国家数', value: countryMap.size },
-    { label: '可定位', value: withCoords.length },
+    { label: '精确坐标', value: exactMarkers.length },
+    { label: '国家/省份落点', value: approxMarkers.length },
     { label: '最近时间', value: latestVisitorAt ? formatTime(latestVisitorAt) : '暂无' },
   ]
 
@@ -100,7 +267,7 @@ export async function AdminVisitorMap() {
       <div className="flex items-center justify-between gap-3 mb-4">
         <div>
           <h3 className="font-bold text-base sm:text-lg" style={{ color: 'var(--text-primary)' }}>🗺 访客地图</h3>
-          <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>按访问 IP 记录地理位置，当前来源：{sourceLabel}</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>按访问 IP 记录地理位置，当前来源：{sourceLabel}，无精确坐标时会按国家或省份生成落点</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="text-right">
@@ -111,7 +278,7 @@ export async function AdminVisitorMap() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 mb-4">
         {stats.map(stat => (
           <div key={stat.label} className="rounded-2xl px-3 py-2.5" style={{ background: 'var(--bg-hover)' }}>
             <p className="text-[10px] uppercase tracking-[0.18em]" style={{ color: 'var(--text-secondary)' }}>{stat.label}</p>
@@ -129,27 +296,35 @@ export async function AdminVisitorMap() {
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="w-[86%] h-[70%] rounded-[42%] border border-[rgba(255,255,255,0.06)]" />
             </div>
-            {withCoords.map((visitor, index) => {
-              const point = toPoint(visitor.lat!, visitor.lon!)
+            {mapMarkers.map(marker => {
+              const point = toPoint(marker.lat, marker.lon)
               return (
                 <div
-                  key={visitor.id}
+                  key={marker.key}
                   className="absolute"
                   style={{ left: point.left, top: point.top, transform: 'translate(-50%, -50%)' }}
-                  title={`${visitor.city || visitor.region || visitor.country || '未知'} · ${visitor.ip}`}
+                  title={`${marker.label} · ${marker.count} 条访问 · ${formatTime(marker.latestAt)}`}
                 >
-                  <div className="relative flex items-center justify-center">
-                    <span className="absolute w-6 h-6 rounded-full animate-ping" style={{ background: 'rgba(29,155,240,0.18)' }} />
-                    <span className="absolute w-3 h-3 rounded-full" style={{ background: 'rgba(29,155,240,0.35)' }} />
-                    <span className="relative w-1.5 h-1.5 rounded-full" style={{ background: 'var(--accent)' }} />
-                  </div>
+                  {marker.kind === 'exact' ? (
+                    <div className="relative flex items-center justify-center">
+                      <span className="absolute w-6 h-6 rounded-full animate-ping" style={{ background: 'rgba(29,155,240,0.18)' }} />
+                      <span className="absolute w-3 h-3 rounded-full" style={{ background: 'rgba(29,155,240,0.35)' }} />
+                      <span className="relative w-1.5 h-1.5 rounded-full" style={{ background: 'var(--accent)' }} />
+                    </div>
+                  ) : (
+                    <div className="relative flex items-center justify-center">
+                      <span className="absolute w-8 h-8 rounded-full border animate-pulse" style={{ borderColor: 'rgba(29,155,240,0.28)', background: 'rgba(29,155,240,0.08)' }} />
+                      <span className="absolute w-5 h-5 rounded-full" style={{ background: 'rgba(29,155,240,0.24)' }} />
+                      <span className="relative px-1.5 py-0.5 rounded-full text-[10px] font-bold text-white" style={{ background: 'var(--accent)' }}>{marker.count}</span>
+                    </div>
+                  )}
                 </div>
               )
             })}
-            {withCoords.length === 0 && (
+            {mapMarkers.length === 0 && (
               <div className="absolute inset-0 flex items-center justify-center text-center px-6" style={{ color: 'var(--text-secondary)' }}>
                 <div>
-                  <p className="text-sm font-medium">暂无地理坐标数据</p>
+                  <p className="text-sm font-medium">暂无可显示的访问点位</p>
                   <p className="text-xs mt-1">新访问记录会在这里显示为地图标记</p>
                 </div>
               </div>
