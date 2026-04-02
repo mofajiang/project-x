@@ -71,6 +71,7 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
   const drawerRef = useRef<HTMLDivElement>(null)
   const enabledWidgets = widgets.filter(w => w.enabled && w.mobileVisible !== false)
   const logoValue = (siteLogo?.value || '✕').trim() || '✕'
+  const isLogoImage = siteLogo?.type === 'image' && isImageSource(logoValue)
 
   // 路由变化时关闭抽屉
   useEffect(() => { onClose() }, [pathname]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -119,16 +120,18 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
           <button
             type="button"
             onClick={onLogoClick || onClose}
-            className="min-w-[2.5rem] h-10 px-3 rounded-full flex items-center justify-center text-[22px] font-black transition-colors select-none overflow-hidden"
+            className={isLogoImage
+              ? "w-9 h-9 px-1.5 rounded-full flex items-center justify-center text-[22px] font-black transition-colors select-none overflow-hidden"
+              : "min-w-[2.5rem] h-10 px-3 rounded-full flex items-center justify-center text-[22px] font-black transition-colors select-none overflow-hidden"}
             style={{ color: 'var(--text-primary)' }}
             title="首页"
             aria-label="返回首页"
             onMouseEnter={e => (e.currentTarget.style.background = 'rgba(29,155,240,0.06)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
           >
-            {siteLogo?.type === 'image' && isImageSource(logoValue) ? (
+            {isLogoImage ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={logoValue} alt="首页" className="max-h-full max-w-full object-contain" />
+              <img src={logoValue} alt="首页" className="w-[18px] h-[18px] flex-none object-contain" />
             ) : (
               <span className={siteLogo?.type === 'text' ? 'text-[18px] font-black leading-none' : 'text-[22px] leading-none'}>
                 {logoValue}

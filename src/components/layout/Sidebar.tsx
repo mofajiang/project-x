@@ -107,21 +107,24 @@ export function Sidebar({ siteName, siteLogo, loginMode, secretClicks, loginPath
   }
 
   const logoValue = (siteLogo?.value || '✕').trim() || '✕'
+  const isLogoImage = siteLogo?.type === 'image' && isImageSource(logoValue)
 
   return (
     <aside className="w-[72px] xl:w-[240px] sticky top-0 h-screen flex flex-col px-2 xl:px-3 py-4">
       {/* Logo */}
       <button
         onClick={handleLogoClick}
-        className="min-w-[3rem] h-12 px-3 rounded-full flex items-center justify-start mb-2 transition-colors select-none self-start overflow-hidden"
+        className={isLogoImage
+          ? "w-10 h-10 px-1.5 rounded-full flex items-center justify-center mb-2 transition-colors select-none self-start overflow-hidden"
+          : "min-w-[3rem] h-12 px-3 rounded-full flex items-center justify-start mb-2 transition-colors select-none self-start overflow-hidden"}
         style={{ color: 'var(--text-primary)' }}
         title={siteName}
         onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
       >
-        {siteLogo?.type === 'image' && isImageSource(logoValue) ? (
+        {isLogoImage ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={logoValue} alt={siteName} className="max-h-full max-w-full object-contain" />
+          <img src={logoValue} alt={siteName} className="w-[20px] h-[20px] flex-none object-contain" />
         ) : (
           <span className={siteLogo?.type === 'text' ? 'text-[18px] font-black leading-none' : 'text-[22px] leading-none'}>
             {logoValue}

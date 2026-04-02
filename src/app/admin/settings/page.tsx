@@ -502,10 +502,12 @@ export default function SettingsPage() {
               )}
 
               <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: 'var(--bg-hover)' }}>
-                <div className="min-w-[3rem] h-12 px-3 rounded-full flex items-center justify-center shrink-0 overflow-hidden" style={{ background: 'var(--bg)' }}>
+                <div className={siteLogo.type === 'image' && isImageSource(siteLogo.value)
+                  ? "w-10 h-10 px-1.5 rounded-full flex items-center justify-center shrink-0 overflow-hidden"
+                  : "min-w-[3rem] h-12 px-3 rounded-full flex items-center justify-center shrink-0 overflow-hidden"} style={{ background: 'var(--bg)' }}>
                   {siteLogo.type === 'image' && isImageSource(siteLogo.value) ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={siteLogo.value} alt="站点 Logo" className="w-full h-full object-contain" />
+                    <img src={siteLogo.value} alt="站点 Logo" className="w-[20px] h-[20px] flex-none object-contain" />
                   ) : (
                     <span className={siteLogo.type === 'text' ? 'text-[18px] font-black leading-none' : 'text-[22px] leading-none'} style={{ color: 'var(--text-primary)' }}>
                       {siteLogo.value || DEFAULT_SITE_LOGO.value}
