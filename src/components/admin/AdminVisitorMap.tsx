@@ -50,7 +50,7 @@ export async function AdminVisitorMap() {
     prisma.visitor.count(),
   ])
   const config = await getSiteConfig()
-  const sourceLabel = config.visitorGeoMode === 'custom' ? '自定义接口' : '离线数据库'
+  const sourceLabel = config.visitorGeoMode === 'custom' ? '自定义接口' : config.visitorGeoMode === 'offline' ? '离线数据库' : '腾讯内置接口'
 
   const withCoords = visitors.filter(v => typeof v.lat === 'number' && typeof v.lon === 'number')
   const countryMap = new Map<string, number>()

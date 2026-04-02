@@ -14,7 +14,7 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint }: Props)
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [mode, setMode] = useState(initialMode || 'offline')
+  const [mode, setMode] = useState(initialMode || 'tencent')
   const [endpoint, setEndpoint] = useState(initialEndpoint || '')
 
   const save = async () => {
@@ -53,7 +53,7 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint }: Props)
           <div className="flex items-center justify-between gap-2 mb-3">
             <div>
               <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>访客地图设置</p>
-              <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>选择离线库或自定义地理接口</p>
+              <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>选择离线数据库、腾讯内置接口或自定义接口</p>
             </div>
             <button type="button" onClick={() => setOpen(false)} className="text-xs px-2 py-1 rounded-full" style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>关闭</button>
           </div>
@@ -68,6 +68,7 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint }: Props)
                 style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
               >
                 <option value="offline">离线数据库</option>
+                <option value="tencent">腾讯内置接口</option>
                 <option value="custom">自定义接口</option>
               </select>
             </label>
@@ -85,6 +86,7 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint }: Props)
             </label>
 
             <p className="text-[11px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+              腾讯接口直接请求 <span style={{ color: 'var(--text-primary)' }}>https://r.inews.qq.com/api/ip2city</span>，不需要参数。
               自定义接口支持 <span style={{ color: 'var(--text-primary)' }}>{'{ip}'}</span> 占位符；不填时会自动追加 <span style={{ color: 'var(--text-primary)' }}>ip</span> 参数。
             </p>
 

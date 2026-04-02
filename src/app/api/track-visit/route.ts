@@ -14,6 +14,20 @@ type GeoResult = {
   longitude?: number
 }
 
+type TencentIpResult = {
+  ret?: number
+  errMsg?: string
+  ip?: string
+  country?: string
+  province?: string
+  city?: string
+  district?: string
+  isp?: string
+  provcode?: string
+  citycode?: string
+  districtCode?: string
+}
+
 type NormalizedGeo = {
   country: string
   countryCode: string
@@ -78,8 +92,31 @@ async function geolocateIp(ip: string) {
   if (!isPublicIp(ip)) return EMPTY_GEO
 
   const config = await getSiteConfig().catch(() => null)
-  const geoMode = config?.visitorGeoMode || 'offline'
+  const geoMode = config?.visitorGeoMode || 'tencent'
   const customEndpoint = config?.visitorGeoEndpoint?.trim() || ''
+
+  if (geoMode === 'tencent') {
+    try {
+      const res = await fetch('https://r.inews.qq.com/api/ip2city', { signal: AbortSignal.timeout(4000) })
+      if (res.ok) {
+        const data = await res.json() as TencentIpResult
+        const province = (data.province || '').trim()
+        const city = (data.city || '').trim()
+        const district = (data.district || '').trim()
+        const country = (data.country || '').trim()
+        return {
+          country: country || '中国',
+          countryCode: country === '中国' || !country ? 'CN' : '',
+          region: [province, city, district].filter(Boolean).join(' '),
+          city: city || district || province,
+          lat: null,
+          lon: null,
+        }
+      }
+    } catch {
+      return lookupOfflineGeo(ip)
+    }
+  }
 
   if (geoMode === 'custom' && customEndpoint) {
     try {
