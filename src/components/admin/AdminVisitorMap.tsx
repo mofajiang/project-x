@@ -248,7 +248,14 @@ export async function AdminVisitorMap() {
     prisma.visitor.count(),
   ])
   const config = await getSiteConfig()
-  const sourceLabel = config.visitorGeoMode === 'custom' ? '自定义接口' : config.visitorGeoMode === 'offline' ? '离线数据库' : '腾讯内置接口'
+  const sourceLabelMap: Record<string, string> = {
+    offline: '离线数据库',
+    tencent: '腾讯内置接口',
+    ipstack: 'IPStack 内置接口',
+    ipip: 'IPIP 内置接口',
+    custom: '自定义接口',
+  }
+  const sourceLabel = sourceLabelMap[config.visitorGeoMode] || '自定义接口'
   const latestVisitorAt = visitors[0]?.createdAt || ''
 
   const exactMarkers: MapMarker[] = visitors
@@ -329,7 +336,7 @@ export async function AdminVisitorMap() {
           <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{total}</p>
           <p className="text-[10px] uppercase tracking-[0.18em]" style={{ color: 'var(--text-secondary)' }}>总访问</p>
           </div>
-          <AdminVisitorMapSettings initialMode={config.visitorGeoMode} initialEndpoint={config.visitorGeoEndpoint} />
+          <AdminVisitorMapSettings initialMode={config.visitorGeoMode} initialKey={config.visitorGeoKey} initialEndpoint={config.visitorGeoEndpoint} />
         </div>
       </div>
 
@@ -343,34 +350,30 @@ export async function AdminVisitorMap() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.6fr)_minmax(260px,0.9fr)] gap-4">
-        <div className="relative min-h-[260px] sm:min-h-[320px] overflow-hidden rounded-3xl" style={{ background: 'linear-gradient(180deg, rgba(29,155,240,0.10), rgba(29,155,240,0.02))', border: '1px solid var(--border)' }}>
-          <div className="absolute inset-0 opacity-25" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.10) 1px, transparent 0)', backgroundSize: '24px 24px' }} />
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.03) 40%, transparent 100%)' }} />
+        <div className="relative min-h-[260px] sm:min-h-[320px] overflow-hidden rounded-3xl" style={{ background: 'linear-gradient(180deg, var(--visitor-map-frame-start), var(--visitor-map-frame-end))', border: '1px solid var(--border)' }}>
+          <div className="absolute inset-0 opacity-100" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, var(--visitor-map-grid) 1px, transparent 0)', backgroundSize: '24px 24px' }} />
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.02) 42%, transparent 100%)' }} />
           <div className="absolute inset-0 p-4 sm:p-5">
             <svg
               viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`}
               preserveAspectRatio="none"
-              className="absolute inset-4 w-[calc(100%-2rem)] h-[calc(100%-2rem)]"
+              className="visitor-world-map absolute inset-4 w-[calc(100%-2rem)] h-[calc(100%-2rem)]"
               aria-hidden="true"
             >
               <defs>
                 <linearGradient id="world-map-ocean" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="rgba(29,155,240,0.08)" />
-                  <stop offset="100%" stopColor="rgba(29,155,240,0.02)" />
-                </linearGradient>
-                <linearGradient id="world-map-land" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="rgba(255,255,255,0.18)" />
-                  <stop offset="100%" stopColor="rgba(255,255,255,0.08)" />
+                  <stop offset="0%" stopColor="var(--visitor-map-ocean-top)" />
+                  <stop offset="100%" stopColor="var(--visitor-map-ocean-bottom)" />
                 </linearGradient>
               </defs>
               <rect width={MAP_WIDTH} height={MAP_HEIGHT} rx={32} fill="url(#world-map-ocean)" />
-              <path d={worldGraticule} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
+              <path d={worldGraticule} fill="none" stroke="var(--visitor-map-grid)" strokeWidth={1} />
               {worldCountries.features.map((country: any) => (
                 <path
                   key={country.id}
                   d={worldPath(country) || undefined}
-                  fill="url(#world-map-land)"
-                  stroke="rgba(255,255,255,0.10)"
+                  fill="var(--visitor-map-land-fill)"
+                  stroke="var(--visitor-map-land-stroke)"
                   strokeWidth={0.8}
                 />
               ))}

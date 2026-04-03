@@ -7,24 +7,30 @@ import toast from 'react-hot-toast'
 
 type Props = {
   initialMode: string
+  initialKey: string
   initialEndpoint: string
 }
 
-export function AdminVisitorMapSettings({ initialMode, initialEndpoint }: Props) {
+export function AdminVisitorMapSettings({ initialMode, initialKey, initialEndpoint }: Props) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [clearing, setClearing] = useState(false)
   const [mode, setMode] = useState(initialMode || 'tencent')
+  const [key, setKey] = useState(initialKey || '')
   const [endpoint, setEndpoint] = useState(initialEndpoint || '')
 
   const save = async () => {
+    if (mode === 'ipstack' && !key.trim()) {
+      toast.error('IPStack 需要 Access Key')
+      return
+    }
     setSaving(true)
     try {
       const res = await fetch('/api/admin/config', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ visitorGeoMode: mode, visitorGeoEndpoint: endpoint }),
+        body: JSON.stringify({ visitorGeoMode: mode, visitorGeoKey: key, visitorGeoEndpoint: endpoint }),
       })
       if (!res.ok) throw new Error('保存失败')
       toast.success('访客地图接口已保存')
@@ -70,7 +76,7 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint }: Props)
           <div className="flex items-center justify-between gap-2 mb-3">
             <div>
               <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>访客地图设置</p>
-              <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>选择离线数据库、腾讯内置接口或自定义接口</p>
+              <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>选择离线数据库、腾讯、IPStack、IPIP 或自定义接口</p>
             </div>
             <button type="button" onClick={() => setOpen(false)} className="text-xs px-2 py-1 rounded-full" style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>关闭</button>
           </div>
@@ -86,8 +92,22 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint }: Props)
               >
                 <option value="offline">离线数据库</option>
                 <option value="tencent">腾讯内置接口</option>
+                <option value="ipstack">IPStack 内置接口</option>
+                <option value="ipip">IPIP 内置接口</option>
                 <option value="custom">自定义接口</option>
               </select>
+            </label>
+
+            <label className="flex flex-col gap-1.5 text-xs">
+              <span style={{ color: 'var(--text-secondary)' }}>{mode === 'ipstack' ? 'Access Key' : mode === 'ipip' ? 'Token（可选）' : '密钥 / Token'}</span>
+              <input
+                value={key}
+                onChange={e => setKey(e.target.value)}
+                placeholder={mode === 'ipstack' ? 'sk-...' : mode === 'ipip' ? '可留空，留空则使用免费接口' : '仅 IPStack / IPIP 需要'}
+                className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                disabled={mode === 'offline' || mode === 'tencent'}
+                style={{ background: mode === 'offline' || mode === 'tencent' ? 'var(--bg)' : 'var(--bg-hover)', color: 'var(--text-primary)', opacity: mode === 'offline' || mode === 'tencent' ? 0.6 : 1 }}
+              />
             </label>
 
             <label className="flex flex-col gap-1.5 text-xs">
@@ -104,6 +124,7 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint }: Props)
 
             <p className="text-[11px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
               腾讯接口直接请求 <span style={{ color: 'var(--text-primary)' }}>https://r.inews.qq.com/api/ip2city</span>，不需要参数。
+              IPStack 需要 Access Key；IPIP 默认使用免费接口，填写 Token 时会切到其鉴权接口。
               自定义接口支持 <span style={{ color: 'var(--text-primary)' }}>{'{ip}'}</span> 占位符；不填时会自动追加 <span style={{ color: 'var(--text-primary)' }}>ip</span> 参数。
             </p>
 

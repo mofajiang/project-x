@@ -14,6 +14,13 @@
   --accent-hover: #1A8CD8;
   --red: #F91880;
   --green: #00BA7C;
+  --visitor-map-frame-start: rgba(29,155,240,0.14);
+  --visitor-map-frame-end: rgba(29,155,240,0.04);
+  --visitor-map-ocean-top: rgba(29,155,240,0.10);
+  --visitor-map-ocean-bottom: rgba(29,155,240,0.02);
+  --visitor-map-land-fill: rgba(231,233,234,0.10);
+  --visitor-map-land-stroke: rgba(231,233,234,0.18);
+  --visitor-map-grid: rgba(231,233,234,0.08);
 }
 
 html.light {
@@ -28,6 +35,13 @@ html.light {
   --accent-hover: #1A8CD8;
   --red: #F4212E;
   --green: #00BA7C;
+  --visitor-map-frame-start: rgba(29,155,240,0.12);
+  --visitor-map-frame-end: rgba(29,155,240,0.03);
+  --visitor-map-ocean-top: rgba(29,155,240,0.08);
+  --visitor-map-ocean-bottom: rgba(29,155,240,0.015);
+  --visitor-map-land-fill: rgba(15,20,25,0.08);
+  --visitor-map-land-stroke: rgba(15,20,25,0.14);
+  --visitor-map-grid: rgba(15,20,25,0.05);
 }
 
 html.sepia {
@@ -42,6 +56,13 @@ html.sepia {
   --accent-hover: #8f4f20;
   --red: #c43d20;
   --green: #5b7a3b;
+  --visitor-map-frame-start: rgba(166,90,39,0.14);
+  --visitor-map-frame-end: rgba(166,90,39,0.04);
+  --visitor-map-ocean-top: rgba(166,90,39,0.08);
+  --visitor-map-ocean-bottom: rgba(166,90,39,0.015);
+  --visitor-map-land-fill: rgba(90,55,40,0.08);
+  --visitor-map-land-stroke: rgba(90,55,40,0.14);
+  --visitor-map-grid: rgba(90,55,40,0.06);
 }
 
 body.admin-layout-1 .admin-content-grid {

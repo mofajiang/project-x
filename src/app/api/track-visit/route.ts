@@ -28,6 +28,26 @@ type TencentIpResult = {
   districtCode?: string
 }
 
+type IpstackResult = {
+  success?: boolean
+  error?: { info?: string }
+  country_code?: string
+  country_name?: string
+  region_name?: string
+  city?: string
+  latitude?: number
+  longitude?: number
+}
+
+type IpipLocationResult = {
+  country_name?: string
+  region_name?: string
+  city_name?: string
+  latitude?: string | number
+  longitude?: string | number
+  country_code?: string
+}
+
 type NormalizedGeo = {
   country: string
   countryCode: string
@@ -88,59 +108,136 @@ function normalizeGeo(data: Partial<GeoResult> & { countryCode?: string; regionN
   }
 }
 
+function normalizeIpipArray(data: unknown[]): NormalizedGeo {
+  const country = typeof data[0] === 'string' ? data[0] : ''
+  const region = typeof data[1] === 'string' ? data[1] : ''
+  const city = typeof data[2] === 'string' ? data[2] : ''
+  const countryCode = typeof data[10] === 'string' ? data[10].trim().toUpperCase() : ''
+  const latValue = typeof data[5] === 'string' || typeof data[5] === 'number' ? Number(data[5]) : Number.NaN
+  const lonValue = typeof data[6] === 'string' || typeof data[6] === 'number' ? Number(data[6]) : Number.NaN
+
+  return {
+    country: country.trim(),
+    countryCode,
+    region: region.trim(),
+    city: city.trim(),
+    lat: Number.isFinite(latValue) ? latValue : null,
+    lon: Number.isFinite(lonValue) ? lonValue : null,
+  }
+}
+
+function normalizeIpipLocation(data: IpipLocationResult): NormalizedGeo {
+  return {
+    country: (data.country_name || '').trim(),
+    countryCode: (data.country_code || '').trim().toUpperCase(),
+    region: (data.region_name || '').trim(),
+    city: (data.city_name || '').trim(),
+    lat: typeof data.latitude === 'number' ? data.latitude : typeof data.latitude === 'string' ? Number(data.latitude) : null,
+    lon: typeof data.longitude === 'number' ? data.longitude : typeof data.longitude === 'string' ? Number(data.longitude) : null,
+  }
+}
+
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T | null> {
+  try {
+    const res = await fetch(url, { ...init, signal: AbortSignal.timeout(4000) })
+    if (!res.ok) return null
+    return await res.json() as T
+  } catch {
+    return null
+  }
+}
+
 async function geolocateIp(ip: string) {
   if (!isPublicIp(ip)) return EMPTY_GEO
 
   const config = await getSiteConfig().catch(() => null)
   const geoMode = config?.visitorGeoMode || 'tencent'
+  const geoKey = config?.visitorGeoKey?.trim() || ''
   const customEndpoint = config?.visitorGeoEndpoint?.trim() || ''
 
   if (geoMode === 'tencent') {
-    try {
-      const res = await fetch('https://r.inews.qq.com/api/ip2city', { signal: AbortSignal.timeout(4000) })
-      if (res.ok) {
-        const data = await res.json() as TencentIpResult
-        const province = (data.province || '').trim()
-        const city = (data.city || '').trim()
-        const district = (data.district || '').trim()
-        const country = (data.country || '').trim()
-        return {
-          country: country || '中国',
-          countryCode: country === '中国' || !country ? 'CN' : '',
-          region: [province, city, district].filter(Boolean).join(' '),
-          city: city || district || province,
-          lat: null,
-          lon: null,
-        }
+    const data = await fetchJson<TencentIpResult>('https://r.inews.qq.com/api/ip2city')
+    if (data) {
+      const province = (data.province || '').trim()
+      const city = (data.city || '').trim()
+      const district = (data.district || '').trim()
+      const country = (data.country || '').trim()
+      return {
+        country: country || '中国',
+        countryCode: country === '中国' || !country ? 'CN' : '',
+        region: [province, city, district].filter(Boolean).join(' '),
+        city: city || district || province,
+        lat: null,
+        lon: null,
       }
-    } catch {
-      return lookupOfflineGeo(ip)
     }
+    return lookupOfflineGeo(ip)
   }
 
-  if (geoMode === 'custom' && customEndpoint) {
-    try {
-      const endpoint = customEndpoint.includes('{ip}')
-        ? customEndpoint.replaceAll('{ip}', encodeURIComponent(ip))
-        : `${customEndpoint}${customEndpoint.includes('?') ? '&' : '?'}ip=${encodeURIComponent(ip)}`
-      const res = await fetch(endpoint, { signal: AbortSignal.timeout(4000) })
-      if (res.ok) {
-        const data = await res.json() as Partial<GeoResult> & { countryCode?: string; regionName?: string; lat?: number; lon?: number }
-        const normalized = normalizeGeo({
-          country: toCountryName(data.country || data.country_code || data.countryCode || ''),
-          country_code: (data.country_code || data.countryCode || '').toUpperCase(),
-          region: data.region || data.regionName,
-          city: data.city,
-          latitude: data.latitude ?? data.lat,
-          longitude: data.longitude ?? data.lon,
-        })
+  if (geoMode === 'ipstack') {
+    if (!geoKey) return lookupOfflineGeo(ip)
+    const endpoint = `https://api.ipstack.com/${encodeURIComponent(ip)}?access_key=${encodeURIComponent(geoKey)}&language=zh&output=json&fields=country_code,country_name,region_name,city,latitude,longitude`
+    const data = await fetchJson<IpstackResult>(endpoint)
+    if (data && data.success !== false && !data.error) {
+      const normalized = normalizeGeo({
+        country: toCountryName(data.country_name || data.country_code || ''),
+        country_code: data.country_code,
+        region: data.region_name,
+        city: data.city,
+        latitude: data.latitude,
+        longitude: data.longitude,
+      })
+      if (normalized.country || normalized.countryCode || normalized.region || normalized.city || normalized.lat !== null || normalized.lon !== null) {
+        return normalized
+      }
+    }
+    return lookupOfflineGeo(ip)
+  }
+
+  if (geoMode === 'ipip') {
+    if (geoKey) {
+      const data = await fetchJson<{ ret?: string; data?: { location?: IpipLocationResult } }>(`https://ipapi.ipip.net/query/${encodeURIComponent(ip)}`, {
+        headers: { Token: geoKey },
+      })
+      const location = data?.data?.location
+      if (data?.ret === 'ok' && location) {
+        const normalized = normalizeIpipLocation(location)
         if (normalized.country || normalized.countryCode || normalized.region || normalized.city || normalized.lat !== null || normalized.lon !== null) {
           return normalized
         }
       }
-    } catch {
-      return lookupOfflineGeo(ip)
     }
+
+    const freeData = await fetchJson<unknown[]>(`http://freeapi.ipip.net/${encodeURIComponent(ip)}`)
+    if (Array.isArray(freeData)) {
+      const normalized = normalizeIpipArray(freeData)
+      if (normalized.country || normalized.countryCode || normalized.region || normalized.city || normalized.lat !== null || normalized.lon !== null) {
+        return normalized
+      }
+    }
+
+    return lookupOfflineGeo(ip)
+  }
+
+  if (geoMode === 'custom' && customEndpoint) {
+    const endpoint = customEndpoint.includes('{ip}')
+      ? customEndpoint.replaceAll('{ip}', encodeURIComponent(ip))
+      : `${customEndpoint}${customEndpoint.includes('?') ? '&' : '?'}ip=${encodeURIComponent(ip)}`
+    const data = await fetchJson<Partial<GeoResult> & { countryCode?: string; regionName?: string; lat?: number; lon?: number }>(endpoint)
+    if (data) {
+      const normalized = normalizeGeo({
+        country: toCountryName(data.country || data.country_code || data.countryCode || ''),
+        country_code: (data.country_code || data.countryCode || '').toUpperCase(),
+        region: data.region || data.regionName,
+        city: data.city,
+        latitude: data.latitude ?? data.lat,
+        longitude: data.longitude ?? data.lon,
+      })
+      if (normalized.country || normalized.countryCode || normalized.region || normalized.city || normalized.lat !== null || normalized.lon !== null) {
+        return normalized
+      }
+    }
+    return lookupOfflineGeo(ip)
   }
 
   return lookupOfflineGeo(ip)
