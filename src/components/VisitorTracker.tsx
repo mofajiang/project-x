@@ -21,10 +21,23 @@ type Props = {
 
 async function fetchJson<T>(url: string): Promise<T | null> {
   try {
-    const response = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(5000) })
-    if (!response.ok) return null
-    return await response.json() as T
-  } catch {
+    const response = await fetch(url, {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(5000),
+      mode: 'cors',
+      credentials: 'omit',
+      headers: {
+        'Accept': 'application/json',
+      },
+    })
+    if (!response.ok) {
+      console.debug('[VisitorTracker] fetch failed:', url, response.status, response.statusText)
+      return null
+    }
+    const data = await response.json() as T
+    return data
+  } catch (err) {
+    console.debug('[VisitorTracker] fetch error:', url, err instanceof Error ? err.message : String(err))
     return null
   }
 }
@@ -45,7 +58,11 @@ async function resolveVisitorGeo(mode: GeoMode, endpoint: string) {
 
   if (mode === 'ip9') {
     const ip = await fetchPublicIp()
-    if (!ip) return null
+    if (!ip) {
+      console.debug('[VisitorTracker] getPublicIp failed')
+      return null
+    }
+    const url = `https://ip9.com.cn/get?ip=${encodeURIComponent(ip)}`
     const data = await fetchJson<{
       ret?: number
       data?: {
@@ -57,14 +74,14 @@ async function resolveVisitorGeo(mode: GeoMode, endpoint: string) {
         lat?: string
         lng?: string
       }
-    }>(`https://ip9.com.cn/get?ip=${encodeURIComponent(ip)}`)
+    }>(url)
     // ip9 may return different 'ret' codes across versions; accept any response that contains `data`
     if (data?.data) {
       const d = data.data
       const lat = typeof d.lat === 'string' ? Number(d.lat) : null
       const lon = typeof d.lng === 'string' ? Number(d.lng) : null
       const region = [d.prov, d.city, d.area].filter(Boolean).join(' ')
-      return {
+      const result = {
         country: (d.country || '').trim(),
         countryCode: (d.country_code || '').trim().toUpperCase(),
         region,
@@ -72,7 +89,10 @@ async function resolveVisitorGeo(mode: GeoMode, endpoint: string) {
         lat: Number.isFinite(lat) ? lat : null,
         lon: Number.isFinite(lon) ? lon : null,
       }
+      console.debug('[VisitorTracker] ip9 resolved:', result)
+      return result
     }
+    console.debug('[VisitorTracker] ip9 response missing data field:', data)
     return null
   }
 
