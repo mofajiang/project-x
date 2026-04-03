@@ -62,7 +62,8 @@ async function resolveVisitorGeo(mode: GeoMode, endpoint: string) {
       console.debug('[VisitorTracker] getPublicIp failed')
       return null
     }
-    const url = `https://ip9.com.cn/get?ip=${encodeURIComponent(ip)}`
+    // Use backend proxy to avoid CORS issues
+    const url = `/api/geo/ip9?ip=${encodeURIComponent(ip)}`
     const data = await fetchJson<{
       ret?: number
       data?: {
