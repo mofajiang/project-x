@@ -37,6 +37,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const config = await getSiteConfig()
   const defaultTheme = (config as any).defaultTheme || 'dark'
   const antiFlash = `(function(){var t=localStorage.getItem('theme');var d=${JSON.stringify(defaultTheme)};var theme=t||d;if(theme==='light')document.documentElement.classList.add('light');})()`
+  const visitorGeoMode = (config as any).visitorGeoMode || 'offline'
+  const visitorGeoEndpoint = (config as any).visitorGeoEndpoint || ''
   return (
     <html lang="zh-CN">
       <head>
@@ -45,7 +47,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body>
         {children}
-        <VisitorTracker />
+        <VisitorTracker visitorGeoMode={visitorGeoMode} visitorGeoEndpoint={visitorGeoEndpoint} />
         <ToasterProvider />
       </body>
     </html>
