@@ -145,7 +145,7 @@ export function VisitorTracker({ visitorGeoMode = 'offline', visitorGeoEndpoint 
     let cancelled = false
 
     const send = async () => {
-      const query = window.location.search.replace(/^\?/, '')
+      const query = window.location.search.replace(/^\.?/, '')
       const path = query ? `${pathname}?${query}` : pathname
       const geo = await resolveVisitorGeo(visitorGeoMode, visitorGeoEndpoint)
       if (cancelled) return
@@ -156,6 +156,8 @@ export function VisitorTracker({ visitorGeoMode = 'offline', visitorGeoEndpoint 
         userAgent: navigator.userAgent,
         geo,
       })
+      
+      console.debug('[VisitorTracker] sending payload:', payload)
 
       if (navigator.sendBeacon) {
         navigator.sendBeacon('/api/track-visit', new Blob([payload], { type: 'application/json' }))
