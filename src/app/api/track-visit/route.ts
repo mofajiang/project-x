@@ -208,7 +208,7 @@ async function geolocateIp(ip: string) {
   const customEndpoint = config?.visitorGeoEndpoint?.trim() || ''
 
   if (geoMode === 'tencent') {
-    const data = await fetchJson<TencentIpResult>('https://r.inews.qq.com/api/ip2city')
+    const data = await fetchJson<TencentIpResult>(`https://r.inews.qq.com/api/ip2city?ip=${encodeURIComponent(ip)}`)
     if (data) {
       const province = (data.province || '').trim()
       const city = (data.city || '').trim()
@@ -228,7 +228,7 @@ async function geolocateIp(ip: string) {
 
   if (geoMode === 'ipstack') {
     try {
-      const res = await fetch('https://iplark.com/ipstack', { signal: AbortSignal.timeout(4000) })
+      const res = await fetch(`https://iplark.com/ipstack?ip=${encodeURIComponent(ip)}`, { signal: AbortSignal.timeout(4000) })
       if (res.ok) {
         const text = await res.text()
         const normalized = normalizeDirectLocation(text)
