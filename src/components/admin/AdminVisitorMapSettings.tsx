@@ -15,7 +15,7 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint }: Props)
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [clearing, setClearing] = useState(false)
-  const [mode, setMode] = useState(initialMode || 'tencent')
+  const [mode, setMode] = useState(initialMode || 'ip9')
   const [endpoint, setEndpoint] = useState(initialEndpoint || '')
 
   const save = async () => {
@@ -85,9 +85,7 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint }: Props)
                 style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
               >
                 <option value="offline">离线数据库</option>
-                <option value="tencent">腾讯内置接口</option>
-                <option value="ipstack">IPStack 内置接口</option>
-                <option value="ipip">IPIP 内置接口</option>
+                <option value="ip9">IP9 公共接口</option>
                 <option value="custom">自定义接口</option>
               </select>
             </label>
@@ -105,9 +103,7 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint }: Props)
             </label>
 
             <p className="text-[11px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              腾讯接口直接请求 <span style={{ color: 'var(--text-primary)' }}>https://r.inews.qq.com/api/ip2city</span>，不需要参数。
-              IPStack 直接请求 <span style={{ color: 'var(--text-primary)' }}>https://iplark.com/ipstack</span>，不需要参数。
-              IPIP 直接请求 <span style={{ color: 'var(--text-primary)' }}>http://freeapi.ipip.net/{'{ip}'}</span>，不需要参数。
+              推荐使用 IP9：<span style={{ color: 'var(--text-primary)' }}>https://ip9.com.cn/get?ip=&#123;ip&#125;</span>（公共接口，免费限频约 60 次/分钟）。
               自定义接口支持 <span style={{ color: 'var(--text-primary)' }}>{'{ip}'}</span> 占位符；不填时会自动追加 <span style={{ color: 'var(--text-primary)' }}>ip</span> 参数。
             </p>
 
