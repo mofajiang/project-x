@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 
-type GeoMode = 'offline' | 'ip9' | 'custom' | string
+type GeoMode = 'offline' | 'ip9' | 'uapis' | 'custom' | string
 
 type VisitorGeo = {
   country?: string
@@ -17,18 +17,23 @@ type VisitorGeo = {
 type Props = {
   visitorGeoMode?: GeoMode
   visitorGeoEndpoint?: string
+  visitorGeoKey?: string
 }
 
-async function fetchJson<T>(url: string): Promise<T | null> {
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T | null> {
   try {
+    const headers = new Headers({ Accept: 'application/json' })
+    if (init?.headers) {
+      new Headers(init.headers).forEach((value, key) => headers.set(key, value))
+    }
+    const { headers: _ignoredHeaders, ...restInit } = init || {}
     const response = await fetch(url, {
       cache: 'no-store',
       signal: AbortSignal.timeout(5000),
       mode: 'cors',
       credentials: 'omit',
-      headers: {
-        'Accept': 'application/json',
-      },
+      headers,
+      ...restInit,
     })
     if (!response.ok) {
       console.debug('[VisitorTracker] fetch failed:', url, response.status, response.statusText)
@@ -53,7 +58,7 @@ async function fetchPublicIp() {
   }
 }
 
-async function resolveVisitorGeo(mode: GeoMode, endpoint: string) {
+async function resolveVisitorGeo(mode: GeoMode, endpoint: string, key: string) {
   if (!mode || mode === 'offline') return null
 
   if (mode === 'ip9') {
@@ -90,6 +95,45 @@ async function resolveVisitorGeo(mode: GeoMode, endpoint: string) {
     }
     console.debug('[VisitorTracker] ip9 response missing data field:', data)
     return null
+  }
+
+  if (mode === 'uapis') {
+    if (!key.trim()) {
+      console.debug('[VisitorTracker] uapis key missing')
+      return null
+    }
+    const data = await fetchJson<{
+      ip?: string
+      region?: string
+      isp?: string
+      llc?: string
+      asn?: string
+      latitude?: number
+      longitude?: number
+      beginip?: string
+      endip?: string
+      district?: string
+      time_zone?: string
+    }>('https://uapis.cn/api/v1/network/myip?source=commercial', {
+      headers: {
+        Authorization: `Bearer ${key.trim()}`,
+      },
+    })
+    if (!data) return null
+    const regionParts = (data.region || '').trim().split(/\s+/).filter(Boolean)
+    const country = regionParts[0] || ''
+    const province = regionParts[1] || ''
+    const city = regionParts[2] || ''
+    const result = {
+      country,
+      countryCode: '',
+      region: [province, city].filter(Boolean).join(' '),
+      city: data.district || city,
+      lat: typeof data.latitude === 'number' ? data.latitude : null,
+      lon: typeof data.longitude === 'number' ? data.longitude : null,
+    }
+    console.debug('[VisitorTracker] uapis resolved:', result, data)
+    return result
   }
 
   if (mode === 'custom' && endpoint.trim()) {
@@ -132,7 +176,7 @@ function normalizeGeoRecord(record: Record<string, unknown>): VisitorGeo | null 
   return null
 }
 
-export function VisitorTracker({ visitorGeoMode = 'offline', visitorGeoEndpoint = '' }: Props) {
+export function VisitorTracker({ visitorGeoMode = 'offline', visitorGeoEndpoint = '', visitorGeoKey = '' }: Props) {
   const pathname = usePathname()
 
   useEffect(() => {
@@ -143,7 +187,7 @@ export function VisitorTracker({ visitorGeoMode = 'offline', visitorGeoEndpoint 
     const send = async () => {
       const query = window.location.search.replace(/^\?/, '')
       const path = query ? `${pathname}?${query}` : pathname
-      const geo = await resolveVisitorGeo(visitorGeoMode, visitorGeoEndpoint)
+      const geo = await resolveVisitorGeo(visitorGeoMode, visitorGeoEndpoint, visitorGeoKey)
       if (cancelled) return
 
       const payload = JSON.stringify({

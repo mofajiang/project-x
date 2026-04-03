@@ -97,7 +97,7 @@ export type SiteConfig = {
   siteLogo: string
   siteIcon: string
   rightPanelWidgets: string
-  visitorGeoMode: 'offline' | 'ip9' | 'tencent' | 'ipstack' | 'ipip' | 'custom' | string
+  visitorGeoMode: 'offline' | 'ip9' | 'uapis' | 'tencent' | 'ipstack' | 'ipip' | 'custom' | string
   visitorGeoKey: string
   visitorGeoEndpoint: string
   copyright: string

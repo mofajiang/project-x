@@ -8,15 +8,17 @@ import toast from 'react-hot-toast'
 type Props = {
   initialMode: string
   initialEndpoint: string
+  initialKey: string
 }
 
-export function AdminVisitorMapSettings({ initialMode, initialEndpoint }: Props) {
+export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialKey }: Props) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [clearing, setClearing] = useState(false)
   const [mode, setMode] = useState(initialMode || 'ip9')
   const [endpoint, setEndpoint] = useState(initialEndpoint || '')
+  const [key, setKey] = useState(initialKey || '')
 
   const save = async () => {
     setSaving(true)
@@ -24,7 +26,7 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint }: Props)
       const res = await fetch('/api/admin/config', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ visitorGeoMode: mode, visitorGeoKey: '', visitorGeoEndpoint: endpoint }),
+        body: JSON.stringify({ visitorGeoMode: mode, visitorGeoKey: key, visitorGeoEndpoint: endpoint }),
       })
       if (!res.ok) throw new Error('保存失败')
       toast.success('访客地图接口已保存')
@@ -86,8 +88,21 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint }: Props)
               >
                 <option value="offline">离线数据库</option>
                 <option value="ip9">IP9 公共接口</option>
+                <option value="uapis">Uapis 查询我的 IP</option>
                 <option value="custom">自定义接口</option>
               </select>
+            </label>
+
+            <label className="flex flex-col gap-1.5 text-xs">
+              <span style={{ color: 'var(--text-secondary)' }}>Uapis API Key</span>
+              <input
+                value={key}
+                onChange={e => setKey(e.target.value)}
+                placeholder="Bearer 后的密钥"
+                className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                disabled={mode !== 'uapis'}
+                style={{ background: mode === 'uapis' ? 'var(--bg-hover)' : 'var(--bg)', color: 'var(--text-primary)', opacity: mode === 'uapis' ? 1 : 0.6 }}
+              />
             </label>
 
             <label className="flex flex-col gap-1.5 text-xs">
@@ -104,6 +119,7 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint }: Props)
 
             <p className="text-[11px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
               推荐使用 IP9：<span style={{ color: 'var(--text-primary)' }}>https://ip9.com.cn/get?ip=&#123;ip&#125;</span>（公共接口，免费限频约 60 次/分钟）。
+              Uapis 查询我的 IP 适合浏览器直连，需填写 API Key；它返回的是当前请求方自己的公网 IP 与地理信息。
               自定义接口支持 <span style={{ color: 'var(--text-primary)' }}>{'{ip}'}</span> 占位符；不填时会自动追加 <span style={{ color: 'var(--text-primary)' }}>ip</span> 参数。
             </p>
 
