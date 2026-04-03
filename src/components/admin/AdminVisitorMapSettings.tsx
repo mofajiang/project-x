@@ -8,18 +8,16 @@ import toast from 'react-hot-toast'
 type Props = {
   initialMode: string
   initialEndpoint: string
-  initialKey: string
 }
 
-export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialKey }: Props) {
+export function AdminVisitorMapSettings({ initialMode, initialEndpoint }: Props) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [clearing, setClearing] = useState(false)
   const [mode, setMode] = useState(initialMode || 'ip9')
-  const uapisDefaultEndpoint = 'https://uapis.cn/api/v1/network/myip?source=commercial'
-  const [endpoint, setEndpoint] = useState(initialEndpoint || (initialMode === 'uapis' ? uapisDefaultEndpoint : ''))
-  const [key, setKey] = useState(initialKey || '')
+  const tencentDefaultEndpoint = 'https://r.inews.qq.com/api/ip2city?ip={ip}'
+  const [endpoint, setEndpoint] = useState(initialEndpoint || (initialMode === 'tencent' ? tencentDefaultEndpoint : ''))
 
   const save = async () => {
     setSaving(true)
@@ -27,7 +25,7 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialK
       const res = await fetch('/api/admin/config', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ visitorGeoMode: mode, visitorGeoKey: key, visitorGeoEndpoint: endpoint }),
+        body: JSON.stringify({ visitorGeoMode: mode, visitorGeoKey: '', visitorGeoEndpoint: endpoint }),
       })
       if (!res.ok) throw new Error('保存失败')
       toast.success('访客地图接口已保存')
@@ -73,7 +71,7 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialK
           <div className="flex items-center justify-between gap-2 mb-3">
             <div>
               <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>访客地图设置</p>
-              <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>参考 IP9 的用法来配置内置接口，支持离线数据库、IP9、Uapis 或自定义接口</p>
+              <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>参考 IP9 的 GET 配置方式来配置内置接口，支持离线数据库、IP9、腾讯或自定义接口</p>
             </div>
             <button type="button" onClick={() => setOpen(false)} className="text-xs px-2 py-1 rounded-full" style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>关闭</button>
           </div>
@@ -89,39 +87,27 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialK
               >
                 <option value="offline">离线数据库</option>
                 <option value="ip9">IP9 公共接口</option>
-                <option value="uapis">Uapis</option>
+                <option value="tencent">腾讯内置接口</option>
                 <option value="custom">自定义接口</option>
               </select>
             </label>
 
             <label className="flex flex-col gap-1.5 text-xs">
-              <span style={{ color: 'var(--text-secondary)' }}>API Key（可选）</span>
-              <input
-                value={key}
-                onChange={e => setKey(e.target.value)}
-                placeholder="可留空；填写后会自动加上 Authorization: Bearer"
-                className="w-full px-3 py-2 rounded-xl text-sm outline-none"
-                disabled={mode !== 'uapis'}
-                style={{ background: mode === 'uapis' ? 'var(--bg-hover)' : 'var(--bg)', color: 'var(--text-primary)', opacity: mode === 'uapis' ? 1 : 0.6 }}
-              />
-            </label>
-
-            <label className="flex flex-col gap-1.5 text-xs">
-              <span style={{ color: 'var(--text-secondary)' }}>GET 地址</span>
+              <span style={{ color: 'var(--text-secondary)' }}>GET 地址（支持 {'{ip}'}）</span>
               <input
                 value={endpoint}
                 onChange={e => setEndpoint(e.target.value)}
-                placeholder={mode === 'uapis' ? uapisDefaultEndpoint : 'https://example.com/geo?ip={ip}'}
+                placeholder={mode === 'tencent' ? tencentDefaultEndpoint : 'https://example.com/geo?ip={ip}'}
                 className="w-full px-3 py-2 rounded-xl text-sm outline-none"
-                disabled={mode !== 'custom' && mode !== 'uapis'}
-                style={{ background: mode === 'custom' || mode === 'uapis' ? 'var(--bg-hover)' : 'var(--bg)', color: 'var(--text-primary)', opacity: mode === 'custom' || mode === 'uapis' ? 1 : 0.6 }}
+                disabled={mode !== 'custom' && mode !== 'tencent'}
+                style={{ background: mode === 'custom' || mode === 'tencent' ? 'var(--bg-hover)' : 'var(--bg)', color: 'var(--text-primary)', opacity: mode === 'custom' || mode === 'tencent' ? 1 : 0.6 }}
               />
             </label>
 
             <p className="text-[11px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
               推荐使用 IP9：<span style={{ color: 'var(--text-primary)' }}>https://ip9.com.cn/get?ip=&#123;ip&#125;</span>（公共接口，免费限频约 60 次/分钟）。
-              Uapis 查询我的 IP 也可用，API Key 可选；它返回的是当前请求方自己的公网 IP 与地理信息，GET 地址默认可直接用官方接口。
-              自定义接口支持 <span style={{ color: 'var(--text-primary)' }}>{'{ip}'}</span> 占位符；不填时会自动追加 <span style={{ color: 'var(--text-primary)' }}>ip</span> 参数。
+              腾讯内置接口和自定义接口都支持 GET 地址配置，地址里可以用 <span style={{ color: 'var(--text-primary)' }}>{'{ip}'}</span> 作为占位符。
+              自定义接口可直接填写任意 GET 地址，不写 <span style={{ color: 'var(--text-primary)' }}>{'{ip}'}</span> 时会直接请求原地址。
             </p>
 
             <button

@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 
-type GeoMode = 'offline' | 'ip9' | 'uapis' | 'custom' | string
+type GeoMode = 'offline' | 'ip9' | 'tencent' | 'custom' | string
 
 type VisitorGeo = {
   country?: string
@@ -17,7 +17,6 @@ type VisitorGeo = {
 type Props = {
   visitorGeoMode?: GeoMode
   visitorGeoEndpoint?: string
-  visitorGeoKey?: string
 }
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T | null> {
@@ -58,7 +57,22 @@ async function fetchPublicIp() {
   }
 }
 
-async function resolveVisitorGeo(mode: GeoMode, endpoint: string, key: string) {
+async function resolveGeoFromEndpoint(endpoint: string) {
+  const cleanEndpoint = endpoint.trim()
+  if (!cleanEndpoint) return null
+
+  let resolvedEndpoint = cleanEndpoint
+  if (cleanEndpoint.includes('{ip}')) {
+    const ip = await fetchPublicIp()
+    if (!ip) return null
+    resolvedEndpoint = cleanEndpoint.replaceAll('{ip}', encodeURIComponent(ip))
+  }
+
+  const text = await fetchJson<Record<string, unknown>>(resolvedEndpoint)
+  return text ? normalizeGeoRecord(text) : null
+}
+
+async function resolveVisitorGeo(mode: GeoMode, endpoint: string) {
   if (!mode || mode === 'offline') return null
 
   if (mode === 'ip9') {
@@ -97,66 +111,38 @@ async function resolveVisitorGeo(mode: GeoMode, endpoint: string, key: string) {
     return null
   }
 
-  if (mode === 'uapis') {
-    const trimmedKey = key.trim()
-    const authHeaders: HeadersInit | undefined = trimmedKey ? { Authorization: `Bearer ${trimmedKey}` } : undefined
-    const resolvedEndpoint = endpoint.trim() || 'https://uapis.cn/api/v1/network/myip?source=commercial'
-    const data = await fetchJson<{
-      ip?: string
-      region?: string
-      isp?: string
-      llc?: string
-      asn?: string
-      latitude?: number
-      longitude?: number
-      beginip?: string
-      endip?: string
-      district?: string
-      time_zone?: string
-    }>(resolvedEndpoint, {
-      headers: authHeaders,
-    })
-    if (!data) return null
-    const regionParts = (data.region || '').trim().split(/\s+/).filter(Boolean)
-    const country = regionParts[0] || ''
-    const province = regionParts[1] || ''
-    const city = regionParts[2] || ''
-    const result = {
-      country,
-      countryCode: '',
-      region: [province, city].filter(Boolean).join(' '),
-      city: data.district || city,
-      lat: typeof data.latitude === 'number' ? data.latitude : null,
-      lon: typeof data.longitude === 'number' ? data.longitude : null,
+  if (mode === 'tencent') {
+    const resolved = await resolveGeoFromEndpoint(endpoint.trim() || 'https://r.inews.qq.com/api/ip2city?ip={ip}')
+    if (resolved) {
+      console.debug('[VisitorTracker] tencent resolved:', resolved)
+      return resolved
     }
-    console.debug('[VisitorTracker] uapis resolved:', result, data)
-    return result
+    return null
   }
 
   if (mode === 'custom' && endpoint.trim()) {
-    const cleanEndpoint = endpoint.trim()
-    if (cleanEndpoint.includes('{ip}')) {
-      const ip = await fetchPublicIp()
-      if (!ip) return null
-      const text = await fetchJson<Record<string, unknown>>(cleanEndpoint.replaceAll('{ip}', encodeURIComponent(ip)))
-      return text ? normalizeGeoRecord(text) : null
+    const resolved = await resolveGeoFromEndpoint(endpoint)
+    if (resolved) {
+      console.debug('[VisitorTracker] custom resolved:', resolved)
+      return resolved
     }
-    const text = await fetchJson<Record<string, unknown>>(cleanEndpoint)
-    return text ? normalizeGeoRecord(text) : null
   }
 
   return null
 }
 
 function normalizeGeoRecord(record: Record<string, unknown>): VisitorGeo | null {
-  const country = String(record.country || record.country_name || record.countryCode || record.country_code || '').trim()
-  const region = String(record.region || record.region_name || record.regionName || record.prov || '').trim()
-  const city = String(record.city || record.city_name || '').trim()
-  const latValue = record.latitude ?? record.lat
-  const lonValue = record.longitude ?? record.lon ?? record.lng
+  const source = record && typeof record.data === 'object' && record.data !== null && !Array.isArray(record.data)
+    ? { ...record, ...(record.data as Record<string, unknown>) }
+    : record
+  const country = String(source.country || source.country_name || source.nation || source.countryCode || source.country_code || '').trim()
+  const region = String(source.region || source.region_name || source.regionName || source.prov || source.province || source.province_name || source.provinceName || '').trim()
+  const city = String(source.city || source.city_name || source.cityName || source.district || '').trim()
+  const latValue = source.latitude ?? source.lat
+  const lonValue = source.longitude ?? source.lon ?? source.lng
   const lat = typeof latValue === 'number' ? latValue : typeof latValue === 'string' ? Number(latValue) : null
   const lon = typeof lonValue === 'number' ? lonValue : typeof lonValue === 'string' ? Number(lonValue) : null
-  const countryCode = String(record.country_code || record.countryCode || '').trim().toUpperCase()
+  const countryCode = String(source.country_code || source.countryCode || source.nation_code || '').trim().toUpperCase()
 
   const normalized: VisitorGeo = {
     country: country,
@@ -173,7 +159,7 @@ function normalizeGeoRecord(record: Record<string, unknown>): VisitorGeo | null 
   return null
 }
 
-export function VisitorTracker({ visitorGeoMode = 'offline', visitorGeoEndpoint = '', visitorGeoKey = '' }: Props) {
+export function VisitorTracker({ visitorGeoMode = 'offline', visitorGeoEndpoint = '' }: Props) {
   const pathname = usePathname()
 
   useEffect(() => {
@@ -184,7 +170,7 @@ export function VisitorTracker({ visitorGeoMode = 'offline', visitorGeoEndpoint 
     const send = async () => {
       const query = window.location.search.replace(/^\?/, '')
       const path = query ? `${pathname}?${query}` : pathname
-      const geo = await resolveVisitorGeo(visitorGeoMode, visitorGeoEndpoint, visitorGeoKey)
+      const geo = await resolveVisitorGeo(visitorGeoMode, visitorGeoEndpoint)
       if (cancelled) return
 
       const payload = JSON.stringify({
