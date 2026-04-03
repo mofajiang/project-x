@@ -28,17 +28,6 @@ type TencentIpResult = {
   districtCode?: string
 }
 
-type IpstackResult = {
-  success?: boolean
-  error?: { info?: string }
-  country_code?: string
-  country_name?: string
-  region_name?: string
-  city?: string
-  latitude?: number
-  longitude?: number
-}
-
 type IpipLocationResult = {
   country_name?: string
   region_name?: string
@@ -137,6 +126,70 @@ function normalizeIpipLocation(data: IpipLocationResult): NormalizedGeo {
   }
 }
 
+function normalizeDirectLocation(text: string): NormalizedGeo | null {
+  const raw = text.trim()
+  if (!raw) return null
+
+  try {
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) {
+      return normalizeIpipArray(parsed)
+    }
+    if (parsed && typeof parsed === 'object') {
+      const record = parsed as Partial<GeoResult> & {
+        country?: string
+        country_name?: string
+        countryCode?: string
+        country_code?: string
+        region?: string
+        region_name?: string
+        regionName?: string
+        city?: string
+        city_name?: string
+        latitude?: number | string
+        longitude?: number | string
+      }
+      const normalized = normalizeGeo({
+        country: toCountryName(record.country || record.country_name || record.country_code || record.countryCode || ''),
+        country_code: (record.country_code || record.countryCode || '').toUpperCase(),
+        region: record.region || record.region_name || record.regionName,
+        city: record.city || record.city_name,
+        latitude: typeof record.latitude === 'string' ? Number(record.latitude) : record.latitude,
+        longitude: typeof record.longitude === 'string' ? Number(record.longitude) : record.longitude,
+      })
+      if (normalized.country || normalized.countryCode || normalized.region || normalized.city || normalized.lat !== null || normalized.lon !== null) {
+        return normalized
+      }
+    }
+  } catch {}
+
+  const parts = raw
+    .replace(/[|]/g, ' ')
+    .split(/\s+|,|，|\-|\/|\|/)
+    .map(item => item.trim())
+    .filter(Boolean)
+
+  if (parts.length > 1) {
+    return {
+      country: toCountryName(parts[0]),
+      countryCode: '',
+      region: parts[1] || '',
+      city: parts[2] || parts[1] || '',
+      lat: null,
+      lon: null,
+    }
+  }
+
+  return {
+    country: toCountryName(raw),
+    countryCode: '',
+    region: '',
+    city: '',
+    lat: null,
+    lon: null,
+  }
+}
+
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T | null> {
   try {
     const res = await fetch(url, { ...init, signal: AbortSignal.timeout(4000) })
@@ -152,7 +205,6 @@ async function geolocateIp(ip: string) {
 
   const config = await getSiteConfig().catch(() => null)
   const geoMode = config?.visitorGeoMode || 'tencent'
-  const geoKey = config?.visitorGeoKey?.trim() || ''
   const customEndpoint = config?.visitorGeoEndpoint?.trim() || ''
 
   if (geoMode === 'tencent') {
@@ -175,39 +227,22 @@ async function geolocateIp(ip: string) {
   }
 
   if (geoMode === 'ipstack') {
-    if (!geoKey) return lookupOfflineGeo(ip)
-    const endpoint = `https://api.ipstack.com/${encodeURIComponent(ip)}?access_key=${encodeURIComponent(geoKey)}&language=zh&output=json&fields=country_code,country_name,region_name,city,latitude,longitude`
-    const data = await fetchJson<IpstackResult>(endpoint)
-    if (data && data.success !== false && !data.error) {
-      const normalized = normalizeGeo({
-        country: toCountryName(data.country_name || data.country_code || ''),
-        country_code: data.country_code,
-        region: data.region_name,
-        city: data.city,
-        latitude: data.latitude,
-        longitude: data.longitude,
-      })
-      if (normalized.country || normalized.countryCode || normalized.region || normalized.city || normalized.lat !== null || normalized.lon !== null) {
-        return normalized
+    try {
+      const res = await fetch('https://iplark.com/ipstack', { signal: AbortSignal.timeout(4000) })
+      if (res.ok) {
+        const text = await res.text()
+        const normalized = normalizeDirectLocation(text)
+        if (normalized && (normalized.country || normalized.countryCode || normalized.region || normalized.city || normalized.lat !== null || normalized.lon !== null)) {
+          return normalized
+        }
       }
+    } catch {
+      return lookupOfflineGeo(ip)
     }
     return lookupOfflineGeo(ip)
   }
 
   if (geoMode === 'ipip') {
-    if (geoKey) {
-      const data = await fetchJson<{ ret?: string; data?: { location?: IpipLocationResult } }>(`https://ipapi.ipip.net/query/${encodeURIComponent(ip)}`, {
-        headers: { Token: geoKey },
-      })
-      const location = data?.data?.location
-      if (data?.ret === 'ok' && location) {
-        const normalized = normalizeIpipLocation(location)
-        if (normalized.country || normalized.countryCode || normalized.region || normalized.city || normalized.lat !== null || normalized.lon !== null) {
-          return normalized
-        }
-      }
-    }
-
     const freeData = await fetchJson<unknown[]>(`http://freeapi.ipip.net/${encodeURIComponent(ip)}`)
     if (Array.isArray(freeData)) {
       const normalized = normalizeIpipArray(freeData)
