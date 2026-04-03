@@ -14,7 +14,7 @@ type IP9Response = {
 }
 
 export async function GET(req: NextRequest) {
-  const ip = req.nextUrl.searchParams.get('ip')
+  const ip = req.nextUrl.searchParams.get('ip') || req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || req.headers.get('cf-connecting-ip') || ''
   if (!ip) {
     return NextResponse.json({ error: 'Missing ip parameter' }, { status: 400 })
   }

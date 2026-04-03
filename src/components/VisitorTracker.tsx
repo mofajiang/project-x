@@ -57,13 +57,8 @@ async function resolveVisitorGeo(mode: GeoMode, endpoint: string) {
   if (!mode || mode === 'offline') return null
 
   if (mode === 'ip9') {
-    const ip = await fetchPublicIp()
-    if (!ip) {
-      console.debug('[VisitorTracker] getPublicIp failed')
-      return null
-    }
-    // Use backend proxy to avoid CORS issues
-    const url = `/api/geo/ip9?ip=${encodeURIComponent(ip)}`
+    // Let the backend resolve the client IP from request headers and query IP9.
+    const url = '/api/geo/ip9'
     const data = await fetchJson<{
       ret?: number
       data?: {
@@ -146,7 +141,7 @@ export function VisitorTracker({ visitorGeoMode = 'offline', visitorGeoEndpoint 
     let cancelled = false
 
     const send = async () => {
-      const query = window.location.search.replace(/^\.?/, '')
+      const query = window.location.search.replace(/^\?/, '')
       const path = query ? `${pathname}?${query}` : pathname
       const geo = await resolveVisitorGeo(visitorGeoMode, visitorGeoEndpoint)
       if (cancelled) return
