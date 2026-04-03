@@ -33,6 +33,12 @@ type CountryGroup = {
   visitors: VisitorRow[]
 }
 
+type DailyStat = {
+  day: string
+  label: string
+  count: number
+}
+
 type MapMarker = {
   key: string
   label: string
@@ -213,6 +219,18 @@ function formatTime(value: string) {
   })
 }
 
+function formatDayLabel(value: string) {
+  const date = new Date(`${value}T00:00:00`)
+  if (Number.isNaN(date.getTime())) return value
+  return `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`
+}
+
+function getDateKey(offsetDays: number) {
+  const date = new Date()
+  date.setDate(date.getDate() - offsetDays)
+  return date.toISOString().slice(0, 10)
+}
+
 function toPoint(lat: number, lon: number) {
   return {
     left: `${((lon + 180) / 360) * 100}%`,
@@ -247,15 +265,38 @@ export async function AdminVisitorMap() {
     `),
     prisma.visitor.count(),
   ])
+  const dailyRows = await prisma.$queryRawUnsafe<Array<{ day: string; count: number }>>(`
+    SELECT day, COUNT(*) AS count
+    FROM (
+      SELECT date(CASE WHEN typeof(createdAt) = 'integer' THEN datetime(createdAt / 1000, 'unixepoch') ELSE createdAt END) AS day
+      FROM Visitor
+    )
+    GROUP BY day
+    ORDER BY day ASC
+    LIMIT 30
+  `)
   const config = await getSiteConfig()
   const sourceLabelMap: Record<string, string> = {
     offline: '离线数据库',
     ip9: 'IP9 公共接口',
-    xxapi: 'xxapi 内置接口',
     custom: '自定义接口',
   }
   const sourceLabel = sourceLabelMap[config.visitorGeoMode] || '自定义接口'
   const latestVisitorAt = visitors[0]?.createdAt || ''
+  const dailyMap = new Map(dailyRows.map(row => [row.day, Number(row.count) || 0]))
+  const dailyStats: DailyStat[] = Array.from({ length: 14 }, (_, index) => {
+    const offset = 13 - index
+    const day = getDateKey(offset)
+    return {
+      day,
+      label: formatDayLabel(day),
+      count: dailyMap.get(day) || 0,
+    }
+  })
+  const todayCount = dailyStats[dailyStats.length - 1]?.count || 0
+  const weekCount = dailyStats.slice(-7).reduce((sum, item) => sum + item.count, 0)
+  const monthCount = dailyStats.reduce((sum, item) => sum + item.count, 0)
+  const maxDailyCount = Math.max(1, ...dailyStats.map(item => item.count))
 
   const exactMarkers: MapMarker[] = visitors
     .filter(v => typeof v.lat === 'number' && typeof v.lon === 'number')
@@ -317,6 +358,9 @@ export async function AdminVisitorMap() {
 
   const stats = [
     { label: '总访问', value: total },
+    { label: '今日访问', value: todayCount },
+    { label: '7 日访问', value: weekCount },
+    { label: '14 日访问', value: monthCount },
     { label: '国家数', value: countryMap.size },
     { label: '精确坐标', value: exactMarkers.length },
     { label: '国家/省份落点', value: approxMarkers.length },
@@ -339,13 +383,48 @@ export async function AdminVisitorMap() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 mb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 mb-4">
         {stats.map(stat => (
           <div key={stat.label} className="rounded-2xl px-3 py-2.5" style={{ background: 'var(--bg-hover)' }}>
             <p className="text-[10px] uppercase tracking-[0.18em]" style={{ color: 'var(--text-secondary)' }}>{stat.label}</p>
             <p className="mt-1 text-sm font-bold truncate" style={{ color: 'var(--text-primary)' }}>{stat.value}</p>
           </div>
         ))}
+      </div>
+
+      <div className="rounded-3xl p-4 sm:p-5 mb-4" style={{ background: 'var(--bg-hover)', border: '1px solid var(--border)' }}>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs uppercase tracking-[0.18em]" style={{ color: 'var(--text-secondary)' }}>每日访问</p>
+            <p className="text-sm mt-1 font-medium" style={{ color: 'var(--text-primary)' }}>最近 14 天统计</p>
+          </div>
+          <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+            <span>今日 {todayCount}</span>
+            <span>·</span>
+            <span>7 天 {weekCount}</span>
+          </div>
+        </div>
+        <div className="mt-4 grid gap-2 items-end h-36" style={{ gridTemplateColumns: 'repeat(14, minmax(0, 1fr))' }}>
+          {dailyStats.map(item => {
+            const height = Math.max(8, Math.round((item.count / maxDailyCount) * 100))
+            return (
+              <div key={item.day} className="flex flex-col items-center gap-2 min-w-0" title={`${item.day} · ${item.count} 次访问`}>
+                <div className="w-full flex items-end h-28 rounded-2xl overflow-hidden" style={{ background: 'rgba(29,155,240,0.08)', border: '1px solid rgba(29,155,240,0.12)' }}>
+                  <div
+                    className="w-full rounded-t-2xl"
+                    style={{
+                      height: `${height}%`,
+                      background: 'linear-gradient(180deg, rgba(29,155,240,1) 0%, rgba(29,155,240,0.45) 100%)',
+                      boxShadow: '0 0 16px rgba(29,155,240,0.18)',
+                    }}
+                  />
+                </div>
+                <span className="text-[10px] whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>{item.label}</span>
+                <span className="text-[10px] font-mono" style={{ color: 'var(--text-primary)' }}>{item.count}</span>
+              </div>
+            )
+          })}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.6fr)_minmax(260px,0.9fr)] gap-4">

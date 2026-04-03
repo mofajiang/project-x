@@ -22,6 +22,16 @@ type IncomingGeo = {
   lon?: number | string | null
 }
 
+type IncomingPayload = {
+  path?: string
+  referrer?: string
+  userAgent?: string
+  geo?: IncomingGeo
+  geoMode?: string
+  geoEndpoint?: string
+  geoKey?: string
+}
+
 const EMPTY_GEO: NormalizedGeo = {
   country: '',
   countryCode: '',
@@ -81,23 +91,84 @@ function normalizeIncomingGeo(data: unknown): NormalizedGeo | null {
   return null
 }
 
+function normalizeRemoteGeo(data: unknown): NormalizedGeo | null {
+  if (!data || typeof data !== 'object') return null
+  const record = data as Record<string, unknown>
+  const source = record.data && typeof record.data === 'object' && !Array.isArray(record.data)
+    ? { ...record, ...(record.data as Record<string, unknown>) }
+    : record
+
+  const latValue = source.latitude ?? source.lat
+  const lonValue = source.longitude ?? source.lon ?? source.lng
+  const lat = typeof latValue === 'string' ? Number(latValue) : typeof latValue === 'number' ? latValue : null
+  const lon = typeof lonValue === 'string' ? Number(lonValue) : typeof lonValue === 'number' ? lonValue : null
+  const normalized: NormalizedGeo = {
+    country: toCountryName(String(source.country || source.country_name || source.countryCode || source.country_code || source.nation || '').trim()),
+    countryCode: String(source.country_code || source.countryCode || source.nation_code || '').trim().toUpperCase(),
+    region: String(source.region || source.region_name || source.regionName || source.prov || source.province || source.province_name || source.provinceName || source.address || '').trim(),
+    city: String(source.city || source.city_name || source.cityName || source.district || '').trim(),
+    lat: Number.isFinite(lat as number) ? lat : null,
+    lon: Number.isFinite(lon as number) ? lon : null,
+  }
+  if (normalized.country || normalized.countryCode || normalized.region || normalized.city || normalized.lat !== null || normalized.lon !== null) {
+    return normalized
+  }
+  return null
+}
+
+async function fetchRemoteGeo(endpoint: string, key: string, clientIp: string) {
+  const cleanEndpoint = endpoint.trim()
+  if (!cleanEndpoint) return null
+
+  let resolvedEndpoint = cleanEndpoint
+  if (cleanEndpoint.includes('{ip}')) {
+    resolvedEndpoint = cleanEndpoint.replaceAll('{ip}', encodeURIComponent(clientIp))
+  } else {
+    const joiner = cleanEndpoint.includes('?') ? '&' : '?'
+    resolvedEndpoint = `${cleanEndpoint}${joiner}ip=${encodeURIComponent(clientIp)}`
+  }
+
+  const headers = new Headers({ Accept: 'application/json' })
+  if (key.trim()) {
+    headers.set('Authorization', `Bearer ${key.trim()}`)
+  }
+
+  try {
+    const response = await fetch(resolvedEndpoint, { signal: AbortSignal.timeout(5000), headers })
+    if (!response.ok) {
+      console.warn('[track-visit] remote geo fetch failed:', response.status, response.statusText)
+      return null
+    }
+    const data = await response.json()
+    return normalizeRemoteGeo(data)
+  } catch (error) {
+    console.warn('[track-visit] remote geo fetch error:', error instanceof Error ? error.message : String(error))
+    return null
+  }
+}
+
 export async function POST(req: NextRequest) {
   await runMigrations()
 
-  let payload: { path?: string; referrer?: string; userAgent?: string; geo?: IncomingGeo } = {}
+  let payload: IncomingPayload = {}
   try {
     payload = await req.json()
   } catch {}
 
   const ip = getClientIp(req)
   const incomingGeo = normalizeIncomingGeo(payload.geo)
-  const geo = incomingGeo || (isPublicIp(ip) ? lookupOfflineGeo(ip) : EMPTY_GEO)
+  const resolvedCustomGeo = !incomingGeo && payload.geoMode === 'custom' && payload.geoEndpoint
+    ? await fetchRemoteGeo(payload.geoEndpoint, payload.geoKey || '', ip)
+    : null
+  const geo = incomingGeo || resolvedCustomGeo || (isPublicIp(ip) ? lookupOfflineGeo(ip) : EMPTY_GEO)
   const createdAt = new Date().toISOString()
   
   // Debug logging
   console.log('[track-visit] client_ip:', ip, 'is_public:', isPublicIp(ip))
   console.log('[track-visit] payload.geo:', JSON.stringify(payload.geo))
+  console.log('[track-visit] payload.geoMode:', payload.geoMode, 'payload.geoEndpoint:', payload.geoEndpoint)
   console.log('[track-visit] normalized_geo:', incomingGeo ? JSON.stringify(incomingGeo) : 'null')
+  console.log('[track-visit] resolved_custom_geo:', resolvedCustomGeo ? JSON.stringify(resolvedCustomGeo) : 'null')
   console.log('[track-visit] final_geo:', JSON.stringify(geo))
 
   try {

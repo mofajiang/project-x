@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 
-type GeoMode = 'offline' | 'ip9' | 'xxapi' | 'custom' | string
+type GeoMode = 'offline' | 'ip9' | 'custom' | string
 
 type VisitorGeo = {
   country?: string
@@ -47,34 +47,7 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T | null> 
   }
 }
 
-async function fetchPublicIp() {
-  try {
-    const response = await fetch('https://api64.ipify.org?format=json', { cache: 'no-store', signal: AbortSignal.timeout(4000) })
-    if (!response.ok) return ''
-    const data = await response.json() as { ip?: string }
-    return data.ip || ''
-  } catch {
-    return ''
-  }
-}
-
-async function resolveGeoFromEndpoint(endpoint: string, key: string) {
-  const cleanEndpoint = endpoint.trim()
-  if (!cleanEndpoint) return null
-
-  let resolvedEndpoint = cleanEndpoint
-  if (cleanEndpoint.includes('{ip}')) {
-    const ip = await fetchPublicIp()
-    if (!ip) return null
-    resolvedEndpoint = cleanEndpoint.replaceAll('{ip}', encodeURIComponent(ip))
-  }
-
-  const headers = key.trim() ? { Authorization: `Bearer ${key.trim()}` } : undefined
-  const text = await fetchJson<Record<string, unknown>>(resolvedEndpoint, headers ? { headers } : undefined)
-  return text ? normalizeGeoRecord(text) : null
-}
-
-async function resolveVisitorGeo(mode: GeoMode, endpoint: string, key: string) {
+async function resolveVisitorGeo(mode: GeoMode) {
   if (!mode || mode === 'offline') return null
 
   if (mode === 'ip9') {
@@ -111,23 +84,6 @@ async function resolveVisitorGeo(mode: GeoMode, endpoint: string, key: string) {
     }
     console.debug('[VisitorTracker] ip9 response missing data field:', data)
     return null
-  }
-
-  if (mode === 'xxapi') {
-    const resolved = await resolveGeoFromEndpoint(endpoint.trim() || 'https://v2.xxapi.cn/api/ipv2?ip={ip}', key)
-    if (resolved) {
-      console.debug('[VisitorTracker] xxapi resolved:', resolved)
-      return resolved
-    }
-    return null
-  }
-
-  if (mode === 'custom' && endpoint.trim()) {
-    const resolved = await resolveGeoFromEndpoint(endpoint, key)
-    if (resolved) {
-      console.debug('[VisitorTracker] custom resolved:', resolved)
-      return resolved
-    }
   }
 
   return null
@@ -172,7 +128,7 @@ export function VisitorTracker({ visitorGeoMode = 'offline', visitorGeoEndpoint 
     const send = async () => {
       const query = window.location.search.replace(/^\?/, '')
       const path = query ? `${pathname}?${query}` : pathname
-      const geo = await resolveVisitorGeo(visitorGeoMode, visitorGeoEndpoint, visitorGeoKey)
+      const geo = await resolveVisitorGeo(visitorGeoMode)
       if (cancelled) return
 
       const payload = JSON.stringify({
@@ -180,6 +136,9 @@ export function VisitorTracker({ visitorGeoMode = 'offline', visitorGeoEndpoint 
         referrer: document.referrer || '',
         userAgent: navigator.userAgent,
         geo,
+        geoMode: visitorGeoMode,
+        geoEndpoint: visitorGeoEndpoint,
+        geoKey: visitorGeoKey,
       })
       
       console.debug('[VisitorTracker] sending payload:', payload)
@@ -202,7 +161,7 @@ export function VisitorTracker({ visitorGeoMode = 'offline', visitorGeoEndpoint 
     return () => {
       cancelled = true
     }
-  }, [pathname, visitorGeoEndpoint, visitorGeoMode])
+  }, [pathname, visitorGeoEndpoint, visitorGeoKey, visitorGeoMode])
 
   return null
 }
