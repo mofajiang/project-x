@@ -95,7 +95,7 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialK
             </label>
 
             <label className="flex flex-col gap-1.5 text-xs">
-              <span style={{ color: 'var(--text-secondary)' }}>Uapis API Key（可选）</span>
+              <span style={{ color: 'var(--text-secondary)' }}>API Key（可选）</span>
               <input
                 value={key}
                 onChange={e => setKey(e.target.value)}
