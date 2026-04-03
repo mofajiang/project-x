@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 
-type GeoMode = 'offline' | 'tencent' | 'ipstack' | 'ipip' | 'custom' | string
+type GeoMode = 'offline' | 'ip9' | 'custom' | string
 
 type VisitorGeo = {
   country?: string
@@ -19,100 +19,11 @@ type Props = {
   visitorGeoEndpoint?: string
 }
 
-function toCountryName(value: string) {
-  const text = value.trim()
-  if (!text) return ''
-  if (/^[A-Z]{2}$/i.test(text)) {
-    const names = typeof Intl !== 'undefined' && typeof Intl.DisplayNames === 'function'
-      ? new Intl.DisplayNames(['zh-Hans'], { type: 'region' })
-      : null
-    return names?.of(text.toUpperCase()) || text.toUpperCase()
-  }
-  return text
-}
-
-function normalizeGeoRecord(record: Record<string, unknown>): VisitorGeo | null {
-  const country = String(record.country || record.country_name || record.countryCode || record.country_code || '').trim()
-  const region = String(record.region || record.region_name || record.regionName || '').trim()
-  const city = String(record.city || record.city_name || '').trim()
-  const latValue = record.latitude ?? record.lat
-  const lonValue = record.longitude ?? record.lon
-  const lat = typeof latValue === 'number' ? latValue : typeof latValue === 'string' ? Number(latValue) : null
-  const lon = typeof lonValue === 'number' ? lonValue : typeof lonValue === 'string' ? Number(lonValue) : null
-  const countryCode = String(record.country_code || record.countryCode || '').trim().toUpperCase()
-
-  const normalized: VisitorGeo = {
-    country: toCountryName(country || countryCode),
-    countryCode,
-    region,
-    city,
-    lat: Number.isFinite(lat as number) ? lat : null,
-    lon: Number.isFinite(lon as number) ? lon : null,
-  }
-
-  if (normalized.country || normalized.countryCode || normalized.region || normalized.city || normalized.lat !== null || normalized.lon !== null) {
-    return normalized
-  }
-  return null
-}
-
-function normalizeGeoText(text: string): VisitorGeo | null {
-  const raw = text.trim()
-  if (!raw) return null
-
+async function fetchJson<T>(url: string): Promise<T | null> {
   try {
-    const parsed = JSON.parse(raw)
-    if (Array.isArray(parsed)) {
-      const country = typeof parsed[0] === 'string' ? parsed[0].trim() : ''
-      const region = typeof parsed[1] === 'string' ? parsed[1].trim() : ''
-      const city = typeof parsed[2] === 'string' ? parsed[2].trim() : ''
-      const countryCode = typeof parsed[10] === 'string' ? parsed[10].trim().toUpperCase() : ''
-      return {
-        country: toCountryName(country || countryCode),
-        countryCode,
-        region,
-        city,
-        lat: null,
-        lon: null,
-      }
-    }
-    if (parsed && typeof parsed === 'object') {
-      return normalizeGeoRecord(parsed as Record<string, unknown>)
-    }
-  } catch {}
-
-  const parts = raw
-    .replace(/[|]/g, ' ')
-    .split(/\s+|,|，|\-|\/|\|/)
-    .map(item => item.trim())
-    .filter(Boolean)
-
-  if (parts.length > 1) {
-    return {
-      country: toCountryName(parts[0]),
-      countryCode: '',
-      region: parts[1] || '',
-      city: parts[2] || parts[1] || '',
-      lat: null,
-      lon: null,
-    }
-  }
-
-  return {
-    country: toCountryName(raw),
-    countryCode: '',
-    region: '',
-    city: '',
-    lat: null,
-    lon: null,
-  }
-}
-
-async function fetchText(url: string) {
-  try {
-    const response = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(4000) })
+    const response = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(5000) })
     if (!response.ok) return null
-    return await response.text()
+    return await response.json() as T
   } catch {
     return null
   }
@@ -132,21 +43,36 @@ async function fetchPublicIp() {
 async function resolveVisitorGeo(mode: GeoMode, endpoint: string) {
   if (!mode || mode === 'offline') return null
 
-  if (mode === 'tencent') {
-    const text = await fetchText('https://r.inews.qq.com/api/ip2city')
-    return text ? normalizeGeoText(text) : null
-  }
-
-  if (mode === 'ipstack') {
-    const text = await fetchText('https://iplark.com/ipstack')
-    return text ? normalizeGeoText(text) : null
-  }
-
-  if (mode === 'ipip') {
+  if (mode === 'ip9') {
     const ip = await fetchPublicIp()
     if (!ip) return null
-    const text = await fetchText(`https://freeapi.ipip.net/${encodeURIComponent(ip)}`)
-    return text ? normalizeGeoText(text) : null
+    const data = await fetchJson<{
+      ret?: number
+      data?: {
+        country?: string
+        country_code?: string
+        prov?: string
+        city?: string
+        area?: string
+        lat?: string
+        lng?: string
+      }
+    }>(`https://ip9.com.cn/get?ip=${encodeURIComponent(ip)}`)
+    if (data?.ret === 200 && data.data) {
+      const d = data.data
+      const lat = typeof d.lat === 'string' ? Number(d.lat) : null
+      const lon = typeof d.lng === 'string' ? Number(d.lng) : null
+      const region = [d.prov, d.city, d.area].filter(Boolean).join(' ')
+      return {
+        country: (d.country || '').trim(),
+        countryCode: (d.country_code || '').trim().toUpperCase(),
+        region,
+        city: (d.city || '').trim(),
+        lat: Number.isFinite(lat) ? lat : null,
+        lon: Number.isFinite(lon) ? lon : null,
+      }
+    }
+    return null
   }
 
   if (mode === 'custom' && endpoint.trim()) {
@@ -154,13 +80,38 @@ async function resolveVisitorGeo(mode: GeoMode, endpoint: string) {
     if (cleanEndpoint.includes('{ip}')) {
       const ip = await fetchPublicIp()
       if (!ip) return null
-      const text = await fetchText(cleanEndpoint.replaceAll('{ip}', encodeURIComponent(ip)))
-      return text ? normalizeGeoText(text) : null
+      const text = await fetchJson<Record<string, unknown>>(cleanEndpoint.replaceAll('{ip}', encodeURIComponent(ip)))
+      return text ? normalizeGeoRecord(text) : null
     }
-    const text = await fetchText(cleanEndpoint)
-    return text ? normalizeGeoText(text) : null
+    const text = await fetchJson<Record<string, unknown>>(cleanEndpoint)
+    return text ? normalizeGeoRecord(text) : null
   }
 
+  return null
+}
+
+function normalizeGeoRecord(record: Record<string, unknown>): VisitorGeo | null {
+  const country = String(record.country || record.country_name || record.countryCode || record.country_code || '').trim()
+  const region = String(record.region || record.region_name || record.regionName || record.prov || '').trim()
+  const city = String(record.city || record.city_name || '').trim()
+  const latValue = record.latitude ?? record.lat
+  const lonValue = record.longitude ?? record.lon ?? record.lng
+  const lat = typeof latValue === 'number' ? latValue : typeof latValue === 'string' ? Number(latValue) : null
+  const lon = typeof lonValue === 'number' ? lonValue : typeof lonValue === 'string' ? Number(lonValue) : null
+  const countryCode = String(record.country_code || record.countryCode || '').trim().toUpperCase()
+
+  const normalized: VisitorGeo = {
+    country: country,
+    countryCode,
+    region,
+    city,
+    lat: Number.isFinite(lat as number) ? lat : null,
+    lon: Number.isFinite(lon as number) ? lon : null,
+  }
+
+  if (normalized.country || normalized.countryCode || normalized.region || normalized.city || normalized.lat !== null || normalized.lon !== null) {
+    return normalized
+  }
   return null
 }
 
