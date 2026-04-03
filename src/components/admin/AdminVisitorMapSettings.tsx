@@ -17,7 +17,8 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialK
   const [saving, setSaving] = useState(false)
   const [clearing, setClearing] = useState(false)
   const [mode, setMode] = useState(initialMode || 'ip9')
-  const [endpoint, setEndpoint] = useState(initialEndpoint || '')
+  const uapisDefaultEndpoint = 'https://uapis.cn/api/v1/network/myip?source=commercial'
+  const [endpoint, setEndpoint] = useState(initialEndpoint || (initialMode === 'uapis' ? uapisDefaultEndpoint : ''))
   const [key, setKey] = useState(initialKey || '')
 
   const save = async () => {
@@ -88,7 +89,7 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialK
               >
                 <option value="offline">离线数据库</option>
                 <option value="ip9">IP9 公共接口</option>
-                <option value="uapis">Uapis 查询我的 IP</option>
+                <option value="uapis">Uapis</option>
                 <option value="custom">自定义接口</option>
               </select>
             </label>
@@ -106,20 +107,20 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialK
             </label>
 
             <label className="flex flex-col gap-1.5 text-xs">
-              <span style={{ color: 'var(--text-secondary)' }}>自定义接口</span>
+              <span style={{ color: 'var(--text-secondary)' }}>GET 地址</span>
               <input
                 value={endpoint}
                 onChange={e => setEndpoint(e.target.value)}
-                placeholder="https://example.com/geo?ip={ip}"
+                placeholder={mode === 'uapis' ? uapisDefaultEndpoint : 'https://example.com/geo?ip={ip}'}
                 className="w-full px-3 py-2 rounded-xl text-sm outline-none"
-                disabled={mode !== 'custom'}
-                style={{ background: mode === 'custom' ? 'var(--bg-hover)' : 'var(--bg)', color: 'var(--text-primary)', opacity: mode === 'custom' ? 1 : 0.6 }}
+                disabled={mode !== 'custom' && mode !== 'uapis'}
+                style={{ background: mode === 'custom' || mode === 'uapis' ? 'var(--bg-hover)' : 'var(--bg)', color: 'var(--text-primary)', opacity: mode === 'custom' || mode === 'uapis' ? 1 : 0.6 }}
               />
             </label>
 
             <p className="text-[11px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
               推荐使用 IP9：<span style={{ color: 'var(--text-primary)' }}>https://ip9.com.cn/get?ip=&#123;ip&#125;</span>（公共接口，免费限频约 60 次/分钟）。
-              Uapis 查询我的 IP 也可用，API Key 可选；它返回的是当前请求方自己的公网 IP 与地理信息，配置方式参考 IP9 的内置模式。
+              Uapis 查询我的 IP 也可用，API Key 可选；它返回的是当前请求方自己的公网 IP 与地理信息，GET 地址默认可直接用官方接口。
               自定义接口支持 <span style={{ color: 'var(--text-primary)' }}>{'{ip}'}</span> 占位符；不填时会自动追加 <span style={{ color: 'var(--text-primary)' }}>ip</span> 参数。
             </p>
 
