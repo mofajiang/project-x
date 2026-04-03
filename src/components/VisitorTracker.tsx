@@ -58,7 +58,8 @@ async function resolveVisitorGeo(mode: GeoMode, endpoint: string) {
         lng?: string
       }
     }>(`https://ip9.com.cn/get?ip=${encodeURIComponent(ip)}`)
-    if (data?.ret === 200 && data.data) {
+    // ip9 may return different 'ret' codes across versions; accept any response that contains `data`
+    if (data?.data) {
       const d = data.data
       const lat = typeof d.lat === 'string' ? Number(d.lat) : null
       const lon = typeof d.lng === 'string' ? Number(d.lng) : null
