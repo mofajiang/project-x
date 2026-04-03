@@ -94,11 +94,11 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialK
             </label>
 
             <label className="flex flex-col gap-1.5 text-xs">
-              <span style={{ color: 'var(--text-secondary)' }}>Uapis API Key</span>
+              <span style={{ color: 'var(--text-secondary)' }}>Uapis API Key（可选）</span>
               <input
                 value={key}
                 onChange={e => setKey(e.target.value)}
-                placeholder="Bearer 后的密钥"
+                placeholder="可留空；填写后会自动加上 Authorization: Bearer"
                 className="w-full px-3 py-2 rounded-xl text-sm outline-none"
                 disabled={mode !== 'uapis'}
                 style={{ background: mode === 'uapis' ? 'var(--bg-hover)' : 'var(--bg)', color: 'var(--text-primary)', opacity: mode === 'uapis' ? 1 : 0.6 }}
@@ -119,7 +119,7 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialK
 
             <p className="text-[11px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
               推荐使用 IP9：<span style={{ color: 'var(--text-primary)' }}>https://ip9.com.cn/get?ip=&#123;ip&#125;</span>（公共接口，免费限频约 60 次/分钟）。
-              Uapis 查询我的 IP 适合浏览器直连，需填写 API Key；它返回的是当前请求方自己的公网 IP 与地理信息。
+              Uapis 查询我的 IP 适合浏览器直连，API Key 可选；它返回的是当前请求方自己的公网 IP 与地理信息。
               自定义接口支持 <span style={{ color: 'var(--text-primary)' }}>{'{ip}'}</span> 占位符；不填时会自动追加 <span style={{ color: 'var(--text-primary)' }}>ip</span> 参数。
             </p>
 

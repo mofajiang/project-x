@@ -98,10 +98,8 @@ async function resolveVisitorGeo(mode: GeoMode, endpoint: string, key: string) {
   }
 
   if (mode === 'uapis') {
-    if (!key.trim()) {
-      console.debug('[VisitorTracker] uapis key missing')
-      return null
-    }
+    const trimmedKey = key.trim()
+    const authHeaders: HeadersInit | undefined = trimmedKey ? { Authorization: `Bearer ${trimmedKey}` } : undefined
     const data = await fetchJson<{
       ip?: string
       region?: string
@@ -115,9 +113,7 @@ async function resolveVisitorGeo(mode: GeoMode, endpoint: string, key: string) {
       district?: string
       time_zone?: string
     }>('https://uapis.cn/api/v1/network/myip?source=commercial', {
-      headers: {
-        Authorization: `Bearer ${key.trim()}`,
-      },
+      headers: authHeaders,
     })
     if (!data) return null
     const regionParts = (data.region || '').trim().split(/\s+/).filter(Boolean)
