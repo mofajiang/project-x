@@ -90,8 +90,15 @@ export async function POST(req: NextRequest) {
   } catch {}
 
   const ip = getClientIp(req)
-  const geo = normalizeIncomingGeo(payload.geo) || (isPublicIp(ip) ? lookupOfflineGeo(ip) : EMPTY_GEO)
+  const incomingGeo = normalizeIncomingGeo(payload.geo)
+  const geo = incomingGeo || (isPublicIp(ip) ? lookupOfflineGeo(ip) : EMPTY_GEO)
   const createdAt = new Date().toISOString()
+  
+  // Debug logging
+  console.log('[track-visit] client_ip:', ip, 'is_public:', isPublicIp(ip))
+  console.log('[track-visit] payload.geo:', JSON.stringify(payload.geo))
+  console.log('[track-visit] normalized_geo:', incomingGeo ? JSON.stringify(incomingGeo) : 'null')
+  console.log('[track-visit] final_geo:', JSON.stringify(geo))
 
   try {
     await prisma.$executeRaw`
@@ -113,8 +120,9 @@ export async function POST(req: NextRequest) {
         ${createdAt}
       )
     `
+    console.log('[track-visit] success: saved visitor record')
   } catch (e) {
-    console.warn('[track-visit]', e)
+    console.warn('[track-visit] db error:', e)
   }
 
   return NextResponse.json({ ok: true })
