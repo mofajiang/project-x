@@ -250,9 +250,7 @@ export async function AdminVisitorMap() {
   const config = await getSiteConfig()
   const sourceLabelMap: Record<string, string> = {
     offline: '离线数据库',
-    tencent: '腾讯内置接口',
-    ipstack: 'IPStack 内置接口',
-    ipip: 'IPIP 内置接口',
+    ip9: 'IP9 公共接口',
     custom: '自定义接口',
   }
   const sourceLabel = sourceLabelMap[config.visitorGeoMode] || '自定义接口'

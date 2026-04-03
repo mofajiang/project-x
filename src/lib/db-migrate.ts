@@ -49,7 +49,7 @@ export async function runMigrations() {
       await addColumn('SiteConfig', 'siteLogo', `TEXT NOT NULL DEFAULT '{"type":"text","value":"✕"}'`, 'siteLogo')
       await addColumn('SiteConfig', 'siteIcon', `TEXT NOT NULL DEFAULT ''`, 'siteIcon')
       await addColumn('SiteConfig', 'showCommentIp', `INTEGER NOT NULL DEFAULT 0`, 'showCommentIp')
-      await addColumn('SiteConfig', 'visitorGeoMode', `TEXT NOT NULL DEFAULT 'tencent'`, 'visitorGeoMode')
+      await addColumn('SiteConfig', 'visitorGeoMode', `TEXT NOT NULL DEFAULT 'ip9'`, 'visitorGeoMode')
       await addColumn('SiteConfig', 'visitorGeoKey', `TEXT NOT NULL DEFAULT ''`, 'visitorGeoKey')
       await addColumn('SiteConfig', 'visitorGeoEndpoint', `TEXT NOT NULL DEFAULT ''`, 'visitorGeoEndpoint')
       await addColumn('SiteConfig', 'rightPanelWidgets', `TEXT NOT NULL DEFAULT '[{"type":"search","enabled":true},{"type":"about","enabled":true},{"type":"tags","enabled":true},{"type":"hotPosts","enabled":true}]'`, 'rightPanelWidgets')
