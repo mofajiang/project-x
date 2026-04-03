@@ -8,16 +8,18 @@ import toast from 'react-hot-toast'
 type Props = {
   initialMode: string
   initialEndpoint: string
+  initialKey: string
 }
 
-export function AdminVisitorMapSettings({ initialMode, initialEndpoint }: Props) {
+export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialKey }: Props) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [clearing, setClearing] = useState(false)
   const [mode, setMode] = useState(initialMode || 'ip9')
-  const tencentDefaultEndpoint = 'https://r.inews.qq.com/api/ip2city?ip={ip}'
-  const [endpoint, setEndpoint] = useState(initialEndpoint || (initialMode === 'tencent' ? tencentDefaultEndpoint : ''))
+  const xxapiDefaultEndpoint = 'https://v2.xxapi.cn/api/ipv2?ip={ip}'
+  const [endpoint, setEndpoint] = useState(initialEndpoint || (initialMode === 'xxapi' ? xxapiDefaultEndpoint : ''))
+  const [key, setKey] = useState(initialKey || '')
 
   const save = async () => {
     setSaving(true)
@@ -25,7 +27,7 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint }: Props)
       const res = await fetch('/api/admin/config', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ visitorGeoMode: mode, visitorGeoKey: '', visitorGeoEndpoint: endpoint }),
+        body: JSON.stringify({ visitorGeoMode: mode, visitorGeoKey: key, visitorGeoEndpoint: endpoint }),
       })
       if (!res.ok) throw new Error('保存失败')
       toast.success('访客地图接口已保存')
@@ -71,7 +73,7 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint }: Props)
           <div className="flex items-center justify-between gap-2 mb-3">
             <div>
               <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>访客地图设置</p>
-              <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>参考 IP9 的 GET 配置方式来配置内置接口，支持离线数据库、IP9、腾讯或自定义接口</p>
+              <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>参考 IP9 的 GET 配置方式来配置内置接口，支持离线数据库、IP9、xxapi 或自定义接口</p>
             </div>
             <button type="button" onClick={() => setOpen(false)} className="text-xs px-2 py-1 rounded-full" style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>关闭</button>
           </div>
@@ -87,9 +89,21 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint }: Props)
               >
                 <option value="offline">离线数据库</option>
                 <option value="ip9">IP9 公共接口</option>
-                <option value="tencent">腾讯内置接口</option>
+                <option value="xxapi">xxapi 内置接口</option>
                 <option value="custom">自定义接口</option>
               </select>
+            </label>
+
+            <label className="flex flex-col gap-1.5 text-xs">
+              <span style={{ color: 'var(--text-secondary)' }}>API Key（可选）</span>
+              <input
+                value={key}
+                onChange={e => setKey(e.target.value)}
+                placeholder="可留空；填写后会自动加上 Authorization: Bearer"
+                className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                disabled={mode !== 'xxapi' && mode !== 'custom'}
+                style={{ background: mode === 'xxapi' || mode === 'custom' ? 'var(--bg-hover)' : 'var(--bg)', color: 'var(--text-primary)', opacity: mode === 'xxapi' || mode === 'custom' ? 1 : 0.6 }}
+              />
             </label>
 
             <label className="flex flex-col gap-1.5 text-xs">
@@ -97,17 +111,17 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint }: Props)
               <input
                 value={endpoint}
                 onChange={e => setEndpoint(e.target.value)}
-                placeholder={mode === 'tencent' ? tencentDefaultEndpoint : 'https://example.com/geo?ip={ip}'}
+                placeholder={mode === 'xxapi' ? xxapiDefaultEndpoint : 'https://example.com/geo?ip={ip}'}
                 className="w-full px-3 py-2 rounded-xl text-sm outline-none"
-                disabled={mode !== 'custom' && mode !== 'tencent'}
-                style={{ background: mode === 'custom' || mode === 'tencent' ? 'var(--bg-hover)' : 'var(--bg)', color: 'var(--text-primary)', opacity: mode === 'custom' || mode === 'tencent' ? 1 : 0.6 }}
+                disabled={mode !== 'custom' && mode !== 'xxapi'}
+                style={{ background: mode === 'custom' || mode === 'xxapi' ? 'var(--bg-hover)' : 'var(--bg)', color: 'var(--text-primary)', opacity: mode === 'custom' || mode === 'xxapi' ? 1 : 0.6 }}
               />
             </label>
 
             <p className="text-[11px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
               推荐使用 IP9：<span style={{ color: 'var(--text-primary)' }}>https://ip9.com.cn/get?ip=&#123;ip&#125;</span>（公共接口，免费限频约 60 次/分钟）。
-              腾讯内置接口和自定义接口都支持 GET 地址配置，地址里可以用 <span style={{ color: 'var(--text-primary)' }}>{'{ip}'}</span> 作为占位符。
-              自定义接口可直接填写任意 GET 地址，不写 <span style={{ color: 'var(--text-primary)' }}>{'{ip}'}</span> 时会直接请求原地址。
+              xxapi 内置接口和自定义接口都支持 GET 地址配置，地址里可以用 <span style={{ color: 'var(--text-primary)' }}>{'{ip}'}</span> 作为占位符，API Key 可选。
+              自定义接口可直接填写任意 GET 地址，默认也是 GET 方式请求。
             </p>
 
             <button

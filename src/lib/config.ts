@@ -97,7 +97,7 @@ export type SiteConfig = {
   siteLogo: string
   siteIcon: string
   rightPanelWidgets: string
-  visitorGeoMode: 'offline' | 'ip9' | 'tencent' | 'custom' | string
+  visitorGeoMode: 'offline' | 'ip9' | 'xxapi' | 'custom' | string
   visitorGeoKey: string
   visitorGeoEndpoint: string
   copyright: string
@@ -167,7 +167,7 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
   if (!config.siteLogo) config.siteLogo = JSON.stringify(DEFAULT_SITE_LOGO)
   if (!config.siteIcon) config.siteIcon = ''
   if (!config.visitorGeoMode) config.visitorGeoMode = 'ip9'
-  if (!['offline', 'ip9', 'tencent', 'custom'].includes(config.visitorGeoMode)) config.visitorGeoMode = 'ip9'
+  if (!['offline', 'ip9', 'xxapi', 'custom'].includes(config.visitorGeoMode)) config.visitorGeoMode = 'ip9'
   if (!config.visitorGeoKey) config.visitorGeoKey = ''
   if (!config.visitorGeoEndpoint) config.visitorGeoEndpoint = ''
   if (config.showCommentIp === undefined || config.showCommentIp === null) config.showCommentIp = false

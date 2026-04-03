@@ -251,7 +251,7 @@ export async function AdminVisitorMap() {
   const sourceLabelMap: Record<string, string> = {
     offline: '离线数据库',
     ip9: 'IP9 公共接口',
-    tencent: '腾讯内置接口',
+    xxapi: 'xxapi 内置接口',
     custom: '自定义接口',
   }
   const sourceLabel = sourceLabelMap[config.visitorGeoMode] || '自定义接口'
@@ -335,7 +335,7 @@ export async function AdminVisitorMap() {
           <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{total}</p>
           <p className="text-[10px] uppercase tracking-[0.18em]" style={{ color: 'var(--text-secondary)' }}>总访问</p>
           </div>
-          <AdminVisitorMapSettings initialMode={config.visitorGeoMode} initialEndpoint={config.visitorGeoEndpoint} />
+          <AdminVisitorMapSettings initialMode={config.visitorGeoMode} initialEndpoint={config.visitorGeoEndpoint} initialKey={config.visitorGeoKey} />
         </div>
       </div>
 
