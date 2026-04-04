@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  await runMigrations()
+  try { await runMigrations() } catch (e: any) { console.warn('[config PUT] runMigrations:', e?.message) }
   const data = await req.json()
   delete data.id
 
@@ -52,43 +52,36 @@ export async function PUT(req: NextRequest) {
   delete data.customDomain
 
   // 先 upsert Prisma 已知字段
-  const config = await prisma.siteConfig.upsert({
-    where: { id: 'singleton' },
-    update: data,
-    create: { id: 'singleton', ...data },
-  })
-
-  // 再用 raw SQL 更新动态列
+  let config: any
   try {
-    if (siteIcon !== null) {
-      await prisma.$executeRawUnsafe(`UPDATE SiteConfig SET siteIcon = ? WHERE id = 'singleton'`, siteIcon)
-    }
-    if (siteLogo !== null) {
-      await prisma.$executeRawUnsafe(`UPDATE SiteConfig SET siteLogo = ? WHERE id = 'singleton'`, siteLogo)
-    }
-    if (rightPanelWidgets !== null) {
-      await prisma.$executeRawUnsafe(`UPDATE SiteConfig SET rightPanelWidgets = ? WHERE id = 'singleton'`, rightPanelWidgets)
-    }
-    if (visitorGeoMode !== null) {
-      await prisma.$executeRawUnsafe(`UPDATE SiteConfig SET visitorGeoMode = ? WHERE id = 'singleton'`, visitorGeoMode)
-    }
-    if (visitorGeoKey !== null) {
-      await prisma.$executeRawUnsafe(`UPDATE SiteConfig SET visitorGeoKey = ? WHERE id = 'singleton'`, visitorGeoKey)
-    }
-    if (visitorGeoEndpoint !== null) {
-      await prisma.$executeRawUnsafe(`UPDATE SiteConfig SET visitorGeoEndpoint = ? WHERE id = 'singleton'`, visitorGeoEndpoint)
-    }
-    if (copyright !== null) {
-      await prisma.$executeRawUnsafe(`UPDATE SiteConfig SET copyright = ? WHERE id = 'singleton'`, copyright)
-    }
-    if (defaultTheme !== null) {
-      await prisma.$executeRawUnsafe(`UPDATE SiteConfig SET defaultTheme = ? WHERE id = 'singleton'`, defaultTheme)
-    }
-    if (customDomain !== null) {
-      await prisma.$executeRawUnsafe(`UPDATE SiteConfig SET customDomain = ? WHERE id = 'singleton'`, customDomain)
-    }
+    config = await prisma.siteConfig.upsert({
+      where: { id: 'singleton' },
+      update: data,
+      create: { id: 'singleton', ...data },
+    })
   } catch (e: any) {
-    console.warn('[config PUT] raw update:', e?.message)
+    console.error('[config PUT] upsert failed:', e?.message)
+    return NextResponse.json({ error: '保存失败', detail: e?.message }, { status: 500 })
+  }
+
+  // 再用 raw SQL 逐列更新动态列，每列独立 try/catch 互不影响
+  const rawUpdates: Array<{ col: string; val: string }> = []
+  if (siteIcon !== null) rawUpdates.push({ col: 'siteIcon', val: siteIcon })
+  if (siteLogo !== null) rawUpdates.push({ col: 'siteLogo', val: siteLogo })
+  if (rightPanelWidgets !== null) rawUpdates.push({ col: 'rightPanelWidgets', val: rightPanelWidgets })
+  if (visitorGeoMode !== null) rawUpdates.push({ col: 'visitorGeoMode', val: visitorGeoMode })
+  if (visitorGeoKey !== null) rawUpdates.push({ col: 'visitorGeoKey', val: visitorGeoKey })
+  if (visitorGeoEndpoint !== null) rawUpdates.push({ col: 'visitorGeoEndpoint', val: visitorGeoEndpoint })
+  if (copyright !== null) rawUpdates.push({ col: 'copyright', val: copyright })
+  if (defaultTheme !== null) rawUpdates.push({ col: 'defaultTheme', val: defaultTheme })
+  if (customDomain !== null) rawUpdates.push({ col: 'customDomain', val: customDomain })
+
+  for (const { col, val } of rawUpdates) {
+    try {
+      await prisma.$executeRawUnsafe(`UPDATE SiteConfig SET ${col} = ? WHERE id = 'singleton'`, val)
+    } catch (e: any) {
+      console.warn(`[config PUT] raw update ${col}:`, e?.message)
+    }
   }
 
   await revalidateSiteConfig()

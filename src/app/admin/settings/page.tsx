@@ -173,8 +173,17 @@ export default function SettingsPage() {
       body: JSON.stringify({ ...config, siteIcon, siteLogo: JSON.stringify(siteLogo), copyright: config.copyright, defaultTheme }),
     })
     setSaving(false)
-    if (res.ok) toast.success('站点设置已保存')
-    else toast.error('保存失败')
+    if (res.ok) {
+      toast.success('站点设置已保存')
+      return
+    }
+    let msg = '保存失败'
+    try {
+      const err = await res.json()
+      if (err?.detail) msg = `保存失败：${err.detail}`
+      else if (err?.error) msg = `保存失败：${err.error}`
+    } catch {}
+    toast.error(msg)
   }
 
   const uploadIcon = async (e: React.ChangeEvent<HTMLInputElement>) => {
