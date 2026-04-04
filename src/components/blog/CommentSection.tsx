@@ -113,7 +113,7 @@ function CommentInput({
           </div>
         )}
 
-        <div className="py-3 sm:py-4">
+        <div className="relative py-3 sm:py-4">
           <textarea
             value={text}
             onChange={e => setText(e.target.value)}
@@ -124,12 +124,7 @@ function CommentInput({
             style={{ color: 'var(--text-primary)', minHeight: 78, lineHeight: 1.45 }}
           />
 
-          <div className="relative mt-3 flex items-center justify-between gap-2 pt-2 sm:mt-4 sm:pt-2.5">
-            <div
-              aria-hidden="true"
-              className="absolute top-0 h-px bg-[var(--border)]"
-              style={{ left: '-3.5rem', width: 'calc(100% + 3.5rem)' }}
-            />
+          <div className="mt-3 flex items-center justify-between gap-2 sm:mt-4">
             <span className="text-[11px] tabular-nums sm:text-xs" style={{ color: text.length > 1800 ? '#f4212e' : 'var(--text-secondary)' }}>{text.length}/2000</span>
             <button
               onClick={submit}
@@ -141,6 +136,12 @@ function CommentInput({
               {loading ? '提交中...' : parentId ? '回复' : '发布'}
             </button>
           </div>
+
+          <div
+            aria-hidden="true"
+            className="absolute bottom-0 h-px bg-[var(--border)]"
+            style={{ left: '-3.5rem', width: 'calc(100% + 3.5rem)' }}
+          />
         </div>
       </div>
     </div>
