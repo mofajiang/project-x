@@ -31,13 +31,14 @@ export async function PUT(req: NextRequest) {
     data.siteLogo = JSON.stringify(data.siteLogo)
   }
 
-  // 动态迁移列（siteIcon / siteLogo / rightPanelWidgets / visitorGeoMode / visitorGeoKey / visitorGeoEndpoint / copyright / defaultTheme / customDomain）Prisma schema 不认识，需单独处理
+  // 动态迁移列（siteIcon / siteLogo / rightPanelWidgets / visitorGeoMode / visitorGeoKey / visitorGeoEndpoint / visitorMapSource / copyright / defaultTheme / customDomain）Prisma schema 不认识，需单独处理
   const siteIcon = data.siteIcon ?? null
   const siteLogo = data.siteLogo ?? null
   const rightPanelWidgets = data.rightPanelWidgets ?? null
   const visitorGeoMode = data.visitorGeoMode ?? null
   const visitorGeoKey = data.visitorGeoKey ?? null
   const visitorGeoEndpoint = data.visitorGeoEndpoint ?? null
+  const visitorMapSource = data.visitorMapSource ?? null
   const copyright = data.copyright ?? null
   const defaultTheme = data.defaultTheme ?? null
   const customDomain = data.customDomain !== undefined ? (data.customDomain ?? '') : null
@@ -47,6 +48,7 @@ export async function PUT(req: NextRequest) {
   delete data.visitorGeoMode
   delete data.visitorGeoKey
   delete data.visitorGeoEndpoint
+  delete data.visitorMapSource
   delete data.copyright
   delete data.defaultTheme
   delete data.customDomain
@@ -76,6 +78,7 @@ export async function PUT(req: NextRequest) {
   if (visitorGeoMode !== null) rawUpdates.push({ col: 'visitorGeoMode', val: visitorGeoMode })
   if (visitorGeoKey !== null) rawUpdates.push({ col: 'visitorGeoKey', val: visitorGeoKey })
   if (visitorGeoEndpoint !== null) rawUpdates.push({ col: 'visitorGeoEndpoint', val: visitorGeoEndpoint })
+  if (visitorMapSource !== null) rawUpdates.push({ col: 'visitorMapSource', val: visitorMapSource })
   if (copyright !== null) rawUpdates.push({ col: 'copyright', val: copyright })
   if (defaultTheme !== null) rawUpdates.push({ col: 'defaultTheme', val: defaultTheme })
   if (customDomain !== null) rawUpdates.push({ col: 'customDomain', val: customDomain })

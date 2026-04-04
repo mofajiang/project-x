@@ -61,6 +61,7 @@ export async function runMigrations() {
       await addColumn('SiteConfig', 'visitorGeoMode', `TEXT NOT NULL DEFAULT 'ip9'`, 'visitorGeoMode')
       await addColumn('SiteConfig', 'visitorGeoKey', `TEXT NOT NULL DEFAULT ''`, 'visitorGeoKey')
       await addColumn('SiteConfig', 'visitorGeoEndpoint', `TEXT NOT NULL DEFAULT ''`, 'visitorGeoEndpoint')
+      await addColumn('SiteConfig', 'visitorMapSource', `TEXT NOT NULL DEFAULT 'carto_positron'`, 'visitorMapSource')
       await addColumn('SiteConfig', 'rightPanelWidgets', `TEXT NOT NULL DEFAULT '[{"type":"search","enabled":true},{"type":"about","enabled":true},{"type":"tags","enabled":true},{"type":"hotPosts","enabled":true}]'`, 'rightPanelWidgets')
       await addColumn('Comment', 'ip', `TEXT NOT NULL DEFAULT ''`, 'comment ip')
       await addColumn('Comment', 'guestName', 'TEXT', 'guestName')

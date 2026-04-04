@@ -100,6 +100,7 @@ export type SiteConfig = {
   visitorGeoMode: 'offline' | 'ip9' | 'ipwho' | 'ipapi' | 'ipinfo' | 'ip-api' | 'geolocation-db' | 'custom' | string
   visitorGeoKey: string
   visitorGeoEndpoint: string
+  visitorMapSource: string
   copyright: string
   defaultTheme: string
   customDomain: string
@@ -146,6 +147,7 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
        COALESCE(siteLogo,'') as siteLogo,
        COALESCE(navItems,'') as navItems, COALESCE(rightPanelWidgets,'') as rightPanelWidgets,
        COALESCE(visitorGeoMode,'offline') as visitorGeoMode, COALESCE(visitorGeoKey,'') as visitorGeoKey, COALESCE(visitorGeoEndpoint,'') as visitorGeoEndpoint,
+       COALESCE(visitorMapSource,'carto_positron') as visitorMapSource,
        COALESCE(defaultTheme,'dark') as defaultTheme
        FROM SiteConfig WHERE id = 'singleton'`
     )
@@ -158,6 +160,7 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
          COALESCE(siteLogo,'') as siteLogo,
          COALESCE(navItems,'') as navItems, COALESCE(rightPanelWidgets,'') as rightPanelWidgets,
          COALESCE(visitorGeoMode,'offline') as visitorGeoMode, COALESCE(visitorGeoKey,'') as visitorGeoKey, COALESCE(visitorGeoEndpoint,'') as visitorGeoEndpoint,
+         COALESCE(visitorMapSource,'carto_positron') as visitorMapSource,
          COALESCE(defaultTheme,'dark') as defaultTheme
          FROM SiteConfig WHERE id = 'singleton'`
       )

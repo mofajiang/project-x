@@ -407,7 +407,7 @@ export async function AdminVisitorMap() {
           <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{total}</p>
           <p className="text-[10px] uppercase tracking-[0.18em]" style={{ color: 'var(--text-secondary)' }}>总访问</p>
           </div>
-          <AdminVisitorMapSettings initialMode={config.visitorGeoMode} initialEndpoint={config.visitorGeoEndpoint} initialKey={config.visitorGeoKey} />
+          <AdminVisitorMapSettings initialMode={config.visitorGeoMode} initialEndpoint={config.visitorGeoEndpoint} initialKey={config.visitorGeoKey} initialMapSource={config.visitorMapSource} />
         </div>
       </div>
 
@@ -432,6 +432,7 @@ export async function AdminVisitorMap() {
                   count: m.count,
                   time: formatTime(m.latestAt),
                 }))}
+                mapSource={config.visitorMapSource}
               />
             </div>
           ) : (

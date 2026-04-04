@@ -9,15 +9,17 @@ type Props = {
   initialMode: string
   initialEndpoint: string
   initialKey: string
+  initialMapSource?: string
 }
 
-export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialKey }: Props) {
+export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialKey, initialMapSource }: Props) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [clearing, setClearing] = useState(false)
   const [updatingDb, setUpdatingDb] = useState(false)
   const [mode, setMode] = useState(initialMode || 'ip9')
+  const [mapSource, setMapSource] = useState(initialMapSource || 'carto_positron')
   const customDefaultEndpoint = 'https://example.com/api/geo?ip={ip}'
   const [endpoint, setEndpoint] = useState(initialEndpoint || (initialMode === 'custom' ? customDefaultEndpoint : ''))
   const [key, setKey] = useState(initialKey || '')
@@ -31,10 +33,15 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialK
       const res = await fetch('/api/admin/config', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ visitorGeoMode: mode, visitorGeoKey: saveKey, visitorGeoEndpoint: saveEndpoint }),
+        body: JSON.stringify({ 
+          visitorGeoMode: mode, 
+          visitorGeoKey: saveKey, 
+          visitorGeoEndpoint: saveEndpoint,
+          visitorMapSource: mapSource,
+        }),
       })
       if (!res.ok) throw new Error('保存失败')
-      toast.success('访客地图接口已保存')
+      toast.success('访客地图设置已保存')
       setOpen(false)
       router.refresh()
     } catch {
@@ -132,6 +139,22 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialK
                 />
               </label>
             )}
+
+            <label className="flex flex-col gap-1.5 text-xs">
+              <span style={{ color: 'var(--text-secondary)' }}>地图样式</span>
+              <select
+                value={mapSource}
+                onChange={e => setMapSource(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+              >
+                <option value="carto_positron">CARTO Positron（浅色）</option>
+                <option value="carto_voyager">CARTO Voyager（详细）</option>
+                <option value="arcgis_street">ArcGIS Street（街道）</option>
+                <option value="arcgis_satellite">ArcGIS Satellite（卫星）</option>
+                <option value="osm">OpenStreetMap（开放）</option>
+              </select>
+            </label>
 
             <label className="flex flex-col gap-1.5 text-xs">
               <span style={{ color: 'var(--text-secondary)' }}>GET 地址（支持 {'{ip}'}）</span>

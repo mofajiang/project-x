@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import dynamic from 'next/dynamic'
 
 const MapContainer = dynamic(() => import('react-leaflet').then(m => m.MapContainer), { ssr: false })
@@ -30,6 +29,7 @@ type Marker = {
 
 type Props = {
   markers: Marker[]
+  mapSource?: string
 }
 
 const MAP_SOURCES: Record<string, { url: string; attribution: string }> = {
@@ -49,60 +49,17 @@ const MAP_SOURCES: Record<string, { url: string; attribution: string }> = {
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     attribution: '&copy; <a href="https://www.esri.com/">Esri</a>',
   },
-  tianditu: {
-    url: 'https://t{s}.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&LAYER=vec&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
-    attribution: '&copy; <a href="https://www.tianditu.gov.cn/">天地图</a>',
-  },
-  tiandituImage: {
-    url: 'https://t{s}.tianditu.gov.cn/img_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&LAYER=img&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
-    attribution: '&copy; <a href="https://www.tianditu.gov.cn/">天地图</a>',
-  },
   osm: {
     url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
   },
 }
 
-const MAP_LABELS: Record<string, string> = {
-  carto_positron: 'CARTO亮色',
-  carto_voyager: 'CARTO详细',
-  arcgis_street: 'ArcGIS街道',
-  arcgis_satellite: 'ArcGIS影像',
-  tianditu: '天地图',
-  tiandituImage: '天地图影像',
-  osm: 'OSM',
-}
-
-export function ClientVisitorMap({ markers }: Props) {
-  const [mapSource, setMapSource] = useState('carto_positron')
-  const source = MAP_SOURCES[mapSource]
+export function ClientVisitorMap({ markers, mapSource = 'carto_positron' }: Props) {
+  const source = MAP_SOURCES[mapSource] || MAP_SOURCES.carto_positron
 
   return (
     <div style={{ width: '100%', height: '100%', minHeight: '400px', position: 'relative', borderRadius: '24px', overflow: 'hidden' }}>
-      {/* 地图源切换按钮 */}
-      <div style={{ position: 'absolute', top: '10px', left: '50px', zIndex: 1000, display: 'flex', gap: '6px', flexWrap: 'wrap', maxWidth: '320px' }}>
-        {Object.entries(MAP_SOURCES).map(([key]) => (
-          <button
-            key={key}
-            onClick={() => setMapSource(key)}
-            style={{
-              padding: '6px 10px',
-              borderRadius: '4px',
-              border: mapSource === key ? '2px solid var(--accent)' : '1px solid var(--border)',
-              background: mapSource === key ? 'rgba(29,155,240,0.2)' : 'rgba(0,0,0,0.5)',
-              color: mapSource === key ? 'var(--accent)' : 'var(--text-primary)',
-              fontSize: '11px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {MAP_LABELS[key]}
-          </button>
-        ))}
-      </div>
-      
       <MapContainer center={[20, 0]} zoom={2} scrollWheelZoom={true} style={{ width: '100%', height: '100%' }} zoomControl={false}>
         <ZoomControl position="topright" />
         <TileLayer url={source.url} attribution={source.attribution} maxZoom={18} />
@@ -118,8 +75,6 @@ export function ClientVisitorMap({ markers }: Props) {
           </Marker>
         ))}
       </MapContainer>
-      {/* Leaflet attribution spacer */}
-      <div style={{ pointerEvents: 'none' }} />
     </div>
   )
 }
