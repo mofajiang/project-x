@@ -92,7 +92,7 @@ function CommentInput({
       <Avatar name={session?.username || (guestName || '?')} url={null} size={32} />
       <div className="flex-1 min-w-0 overflow-hidden">
         {!session && (
-          <div className="mb-2.5 grid gap-2 border-b pb-2.5 sm:grid-cols-[1fr_auto_1fr] sm:gap-3" style={{ borderColor: 'var(--border)' }}>
+          <div className="mb-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
             <input
               type="text"
               placeholder="昵称（必填）"
@@ -102,7 +102,6 @@ function CommentInput({
               className="w-full min-w-0 bg-transparent outline-none text-sm py-1"
               style={{ color: 'var(--text-primary)' }}
             />
-            <div className="hidden sm:block" style={{ width: '1px', background: 'var(--border)', flexShrink: 0, minHeight: 18 }} />
             <input
               type="email"
               placeholder="邮箱（选填）"
@@ -155,7 +154,7 @@ function CommentItem({ comment, postId, session, depth = 0, showCommentIp = fals
   const avatar = comment.author?.avatar || null
 
   return (
-    <div className="flex gap-2 border-b py-3 sm:gap-2.5 sm:py-4" style={{ borderColor: 'var(--border)' }}>
+    <div className="flex gap-2 py-2.5 sm:gap-2.5 sm:py-3">
       <div className="flex flex-col items-center flex-shrink-0" style={{ width: 32 }}>
         <Avatar name={name} url={avatar} size={32} />
         {(comment.replies.length > 0 || replying) && (
@@ -177,7 +176,7 @@ function CommentItem({ comment, postId, session, depth = 0, showCommentIp = fals
           <span className="text-[10px] leading-4 sm:text-xs" style={{ color: 'var(--text-secondary)' }}>· {relativeTime(comment.createdAt)}</span>
         </div>
 
-        <p className="mb-2.5 text-[13px] sm:text-[14px]" style={{ color: 'var(--text-primary)', lineHeight: '1.58' }}>{comment.content}</p>
+        <p className="mb-2 text-[13px] sm:text-[14px]" style={{ color: 'var(--text-primary)', lineHeight: '1.55' }}>{comment.content}</p>
 
         {depth < 2 && (
           <button
@@ -191,7 +190,7 @@ function CommentItem({ comment, postId, session, depth = 0, showCommentIp = fals
         )}
 
         {replying && (
-          <div className="mt-3 border-y py-3 sm:mt-4 sm:py-4" style={{ borderColor: 'var(--border)' }}>
+          <div className="mt-3 sm:mt-4">
             <CommentInput
               session={session}
               postId={postId}
@@ -204,7 +203,7 @@ function CommentItem({ comment, postId, session, depth = 0, showCommentIp = fals
         )}
 
         {comment.replies.length > 0 && (
-          <div className="mt-3 space-y-2.5 border-l pl-2.5 sm:pl-3" style={{ borderColor: 'var(--comment-thread-line)' }}>
+          <div className="mt-2.5 space-y-2 border-l pl-2.5 sm:mt-3 sm:pl-3" style={{ borderColor: 'var(--comment-thread-line)' }}>
             {comment.replies.map(reply => (
               <CommentItem
                 key={reply.id}
