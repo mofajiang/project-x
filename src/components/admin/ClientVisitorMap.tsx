@@ -69,6 +69,8 @@ export function ClientVisitorMap({ markers }: Props) {
           </Marker>
         ))}
       </MapContainer>
+      {/* Leaflet attribution spacer */}
+      <div style={{ pointerEvents: 'none' }} />
     </div>
   )
 }
