@@ -32,6 +32,15 @@ async function createTable(sql: string, label: string) {
   }
 }
 
+async function createIndex(table: string, index: string, columns: string, label: string) {
+  try {
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS ${index} ON ${table}(${columns})`)
+    console.log(`[migrate] ${label} 创建成功`)
+  } catch (e: any) {
+    console.warn(`[migrate] ${label}:`, e?.message)
+  }
+}
+
 export async function runMigrations() {
   if (migrated) return
   if (!migratePromise) {
@@ -60,6 +69,7 @@ export async function runMigrations() {
       await addColumn('SiteConfig', 'copyright', `TEXT NOT NULL DEFAULT ''`, 'copyright')
       await addColumn('SiteConfig', 'defaultTheme', `TEXT NOT NULL DEFAULT 'dark'`, 'defaultTheme')
       await addColumn('SiteConfig', 'customDomain', `TEXT NOT NULL DEFAULT ''`, 'customDomain')
+      await addColumn('Visitor', 'visitDay', `TEXT NOT NULL DEFAULT ''`, 'visitor visitDay')
       await createTable(
         `CREATE TABLE IF NOT EXISTS Visitor (
           id TEXT PRIMARY KEY,
@@ -73,9 +83,26 @@ export async function runMigrations() {
           city TEXT NOT NULL DEFAULT '',
           lat REAL,
           lon REAL,
+          visitDay TEXT NOT NULL DEFAULT '',
           createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )`,
         'Visitor'
+      )
+      await createIndex('Visitor', 'idx_visitor_visitDay_createdAt', 'visitDay, createdAt', 'Visitor visitDay index')
+      await createIndex('Visitor', 'idx_visitor_ip_createdAt', 'ip, createdAt', 'Visitor ip/createdAt index')
+      await createIndex('Visitor', 'idx_visitor_countryCode_createdAt', 'countryCode, createdAt', 'Visitor countryCode/createdAt index')
+      await createTable(
+        `CREATE TABLE IF NOT EXISTS VisitorGeoCache (
+          ip TEXT PRIMARY KEY,
+          country TEXT NOT NULL DEFAULT '',
+          countryCode TEXT NOT NULL DEFAULT '',
+          region TEXT NOT NULL DEFAULT '',
+          city TEXT NOT NULL DEFAULT '',
+          lat REAL,
+          lon REAL,
+          updatedAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )`,
+        'VisitorGeoCache'
       )
       // authorId 改为可空（访客评论）— SQLite 不支持 ALTER COLUMN，新数据已可为 null
 

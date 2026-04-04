@@ -106,9 +106,22 @@ model Visitor {
   city       String?  @default("")
   lat        Float?
   lon        Float?
+  visitDay   String   @default("")
   createdAt  DateTime @default(now())
 
   @@index([createdAt])
-  @@index([countryCode])
-  @@index([ip])
+  @@index([visitDay, createdAt])
+  @@index([ip, createdAt])
+  @@index([countryCode, createdAt])
+}
+
+model VisitorGeoCache {
+  ip          String   @id
+  country     String   @default("")
+  countryCode String   @default("")
+  region      String   @default("")
+  city        String   @default("")
+  lat         Float?
+  lon         Float?
+  updatedAt   DateTime @default(now())
 }

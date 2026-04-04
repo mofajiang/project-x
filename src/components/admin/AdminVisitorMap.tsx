@@ -23,6 +23,7 @@ type VisitorRow = {
   city: string | null
   lat: number | null
   lon: number | null
+  visitDay?: string | null
   createdAt: string
 }
 
@@ -240,7 +241,7 @@ function toPoint(lat: number, lon: number) {
 
 export async function AdminVisitorMap() {
   await runMigrations()
-  const [visitors, total] = await Promise.all([
+  const [visitors, total, exactCountRows, approxCountRows, countryCountRows] = await Promise.all([
     prisma.$queryRawUnsafe<VisitorRow[]>(`
       SELECT
         id,
@@ -251,6 +252,7 @@ export async function AdminVisitorMap() {
         city,
         lat,
         lon,
+        visitDay,
         CASE
           WHEN typeof(createdAt) = 'integer' THEN datetime(createdAt / 1000, 'unixepoch')
           ELSE createdAt
@@ -264,17 +266,21 @@ export async function AdminVisitorMap() {
       LIMIT 180
     `),
     prisma.visitor.count(),
+    prisma.$queryRawUnsafe<Array<{ count: number }>>(`SELECT COUNT(*) AS count FROM Visitor WHERE lat IS NOT NULL AND lon IS NOT NULL`),
+    prisma.$queryRawUnsafe<Array<{ count: number }>>(`SELECT COUNT(*) AS count FROM Visitor WHERE lat IS NULL OR lon IS NULL`),
+    prisma.$queryRawUnsafe<Array<{ count: number }>>(`SELECT COUNT(DISTINCT countryCode) AS count FROM Visitor WHERE countryCode != ''`),
   ])
   const dailyRows = await prisma.$queryRawUnsafe<Array<{ day: string; count: number }>>(`
-    SELECT day, COUNT(*) AS count
-    FROM (
-      SELECT date(CASE WHEN typeof(createdAt) = 'integer' THEN datetime(createdAt / 1000, 'unixepoch') ELSE createdAt END) AS day
-      FROM Visitor
-    )
-    GROUP BY day
-    ORDER BY day ASC
+    SELECT visitDay AS day, COUNT(*) AS count
+    FROM Visitor
+    WHERE visitDay != ''
+    GROUP BY visitDay
+    ORDER BY visitDay ASC
     LIMIT 30
   `)
+  const exactCount = Number(exactCountRows?.[0]?.count || 0)
+  const approxCount = Number(approxCountRows?.[0]?.count || 0)
+  const countryCount = Number(countryCountRows?.[0]?.count || 0)
   const config = await getSiteConfig()
   const sourceLabelMap: Record<string, string> = {
     offline: '离线数据库',
@@ -361,9 +367,9 @@ export async function AdminVisitorMap() {
     { label: '今日访问', value: todayCount },
     { label: '7 日访问', value: weekCount },
     { label: '14 日访问', value: monthCount },
-    { label: '国家数', value: countryMap.size },
-    { label: '精确坐标', value: exactMarkers.length },
-    { label: '国家/省份落点', value: approxMarkers.length },
+    { label: '国家数', value: countryCount },
+    { label: '精确坐标', value: exactCount },
+    { label: '国家/省份落点', value: approxCount },
     { label: '最近时间', value: latestVisitorAt ? formatTime(latestVisitorAt) : '暂无' },
   ]
 

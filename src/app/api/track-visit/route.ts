@@ -116,6 +116,56 @@ function normalizeRemoteGeo(data: unknown): NormalizedGeo | null {
   return null
 }
 
+async function lookupGeoCache(ip: string): Promise<NormalizedGeo | null> {
+  if (!ip || !isPublicIp(ip)) return null
+  try {
+    const rows = await prisma.$queryRawUnsafe<any[]>(
+      `SELECT country, countryCode, region, city, lat, lon FROM VisitorGeoCache WHERE ip = ?`,
+      ip,
+    )
+    const row = rows?.[0]
+    if (!row) return null
+    return {
+      country: String(row.country || '').trim(),
+      countryCode: String(row.countryCode || '').trim().toUpperCase(),
+      region: String(row.region || '').trim(),
+      city: String(row.city || '').trim(),
+      lat: Number.isFinite(row.lat) ? Number(row.lat) : null,
+      lon: Number.isFinite(row.lon) ? Number(row.lon) : null,
+    }
+  } catch {
+    return null
+  }
+}
+
+async function upsertGeoCache(ip: string, geo: NormalizedGeo) {
+  if (!ip) return
+  try {
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO VisitorGeoCache (ip, country, countryCode, region, city, lat, lon, updatedAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(ip) DO UPDATE SET
+         country = excluded.country,
+         countryCode = excluded.countryCode,
+         region = excluded.region,
+         city = excluded.city,
+         lat = excluded.lat,
+         lon = excluded.lon,
+         updatedAt = excluded.updatedAt`,
+      ip,
+      geo.country || '',
+      geo.countryCode || '',
+      geo.region || '',
+      geo.city || '',
+      geo.lat,
+      geo.lon,
+      new Date().toISOString(),
+    )
+  } catch {
+    // ignore cache failures
+  }
+}
+
 async function fetchRemoteGeo(endpoint: string, key: string, clientIp: string) {
   const cleanEndpoint = endpoint.trim()
   if (!cleanEndpoint) return null
@@ -157,25 +207,50 @@ export async function POST(req: NextRequest) {
 
   const ip = getClientIp(req)
   const incomingGeo = normalizeIncomingGeo(payload.geo)
-  const resolvedCustomGeo = !incomingGeo && payload.geoMode === 'custom' && payload.geoEndpoint
-    ? await fetchRemoteGeo(payload.geoEndpoint, payload.geoKey || '', ip)
-    : null
-  const geo = incomingGeo || resolvedCustomGeo || (isPublicIp(ip) ? lookupOfflineGeo(ip) : EMPTY_GEO)
+  let geo: NormalizedGeo | null = incomingGeo || null
+  let resolvedCustomGeo: NormalizedGeo | null = null
+  let cacheGeo: NormalizedGeo | null = null
+
+  if (!geo) {
+    if (payload.geoMode === 'custom' && payload.geoEndpoint) {
+      resolvedCustomGeo = await fetchRemoteGeo(payload.geoEndpoint, payload.geoKey || '', ip)
+      if (resolvedCustomGeo) {
+        geo = resolvedCustomGeo
+        await upsertGeoCache(ip, resolvedCustomGeo)
+      }
+    }
+
+    if (!geo && isPublicIp(ip)) {
+      cacheGeo = await lookupGeoCache(ip)
+      if (cacheGeo) {
+        geo = cacheGeo
+      } else {
+        geo = lookupOfflineGeo(ip)
+        if (geo && (geo.country || geo.countryCode || geo.region || geo.city || geo.lat !== null || geo.lon !== null)) {
+          await upsertGeoCache(ip, geo)
+        }
+      }
+    }
+  }
+
+  if (!geo) geo = EMPTY_GEO
   const createdAt = new Date().toISOString()
-  
+  const visitDay = createdAt.slice(0, 10)
+
   // Debug logging
   console.log('[track-visit] client_ip:', ip, 'is_public:', isPublicIp(ip))
   console.log('[track-visit] payload.geo:', JSON.stringify(payload.geo))
   console.log('[track-visit] payload.geoMode:', payload.geoMode, 'payload.geoEndpoint:', payload.geoEndpoint)
   console.log('[track-visit] normalized_geo:', incomingGeo ? JSON.stringify(incomingGeo) : 'null')
   console.log('[track-visit] resolved_custom_geo:', resolvedCustomGeo ? JSON.stringify(resolvedCustomGeo) : 'null')
+  console.log('[track-visit] cached_geo:', cacheGeo ? JSON.stringify(cacheGeo) : 'null')
   console.log('[track-visit] final_geo:', JSON.stringify(geo))
 
   try {
     await prisma.$executeRaw`
       INSERT INTO Visitor (
         id, ip, path, userAgent, referrer,
-        country, countryCode, region, city, lat, lon, createdAt
+        country, countryCode, region, city, lat, lon, visitDay, createdAt
       ) VALUES (
         ${randomUUID()},
         ${ip},
@@ -188,6 +263,7 @@ export async function POST(req: NextRequest) {
         ${(geo.city || '').slice(0, 100)},
         ${geo.lat},
         ${geo.lon},
+        ${visitDay},
         ${createdAt}
       )
     `
