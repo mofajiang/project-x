@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { runMigrations } from '@/lib/db-migrate'
 import { getSiteConfig } from '@/lib/config'
 import { AdminVisitorMapSettings } from './AdminVisitorMapSettings'
+import { ClientVisitorMap } from './ClientVisitorMap'
 import { geoEquirectangular, geoGraticule10, geoPath } from 'd3-geo'
 import { feature } from 'topojson-client'
 
@@ -420,68 +421,25 @@ export async function AdminVisitorMap() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.6fr)_minmax(260px,0.9fr)] gap-4">
-        <div className="relative min-h-[260px] sm:min-h-[320px] overflow-hidden rounded-3xl" style={{ background: 'linear-gradient(180deg, var(--visitor-map-frame-start), var(--visitor-map-frame-end))', border: '1px solid var(--border)' }}>
-          <div className="absolute inset-0 opacity-100" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, var(--visitor-map-grid) 1px, transparent 0)', backgroundSize: '24px 24px' }} />
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.02) 42%, transparent 100%)' }} />
-          <div className="absolute inset-0 p-4 sm:p-5">
-            <svg
-              viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`}
-              preserveAspectRatio="none"
-              className="visitor-world-map absolute inset-4 w-[calc(100%-2rem)] h-[calc(100%-2rem)]"
-              aria-hidden="true"
-            >
-              <defs>
-                <linearGradient id="world-map-ocean" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--visitor-map-ocean-top)" />
-                  <stop offset="100%" stopColor="var(--visitor-map-ocean-bottom)" />
-                </linearGradient>
-              </defs>
-              <rect width={MAP_WIDTH} height={MAP_HEIGHT} rx={32} fill="url(#world-map-ocean)" />
-              <path d={worldGraticule} fill="none" stroke="var(--visitor-map-grid)" strokeWidth={1} />
-              {worldCountries.features.map((country: any) => (
-                <path
-                  key={country.id}
-                  d={worldPath(country) || undefined}
-                  fill="var(--visitor-map-land-fill)"
-                  stroke="var(--visitor-map-land-stroke)"
-                  strokeWidth={0.8}
-                />
-              ))}
-            </svg>
-            {mapMarkers.map(marker => {
-              const point = toPoint(marker.lat, marker.lon)
-              return (
-                <div
-                  key={marker.key}
-                  className="absolute"
-                  style={{ left: point.left, top: point.top, transform: 'translate(-50%, -50%)' }}
-                  title={`${marker.label} · ${marker.count} 条访问 · ${formatTime(marker.latestAt)}`}
-                >
-                  {marker.kind === 'exact' ? (
-                    <div className="relative flex items-center justify-center">
-                      <span className="absolute w-6 h-6 rounded-full animate-ping" style={{ background: 'rgba(29,155,240,0.18)' }} />
-                      <span className="absolute w-3 h-3 rounded-full" style={{ background: 'rgba(29,155,240,0.35)' }} />
-                      <span className="relative w-1.5 h-1.5 rounded-full" style={{ background: 'var(--accent)' }} />
-                    </div>
-                  ) : (
-                    <div className="relative flex items-center justify-center">
-                      <span className="absolute w-8 h-8 rounded-full border animate-pulse" style={{ borderColor: 'rgba(29,155,240,0.28)', background: 'rgba(29,155,240,0.08)' }} />
-                      <span className="absolute w-5 h-5 rounded-full" style={{ background: 'rgba(29,155,240,0.24)' }} />
-                      <span className="relative px-1.5 py-0.5 rounded-full text-[10px] font-bold text-white" style={{ background: 'var(--accent)' }}>{marker.count}</span>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-            {mapMarkers.length === 0 && (
-              <div className="absolute inset-0 flex items-center justify-center text-center px-6" style={{ color: 'var(--text-secondary)' }}>
-                <div>
-                  <p className="text-sm font-medium">暂无可显示的访问点位</p>
-                  <p className="text-xs mt-1">新访问记录会在这里显示为地图标记</p>
-                </div>
+        <div className="relative min-h-[260px] sm:min-h-[320px] overflow-hidden rounded-3xl" style={{ background: 'var(--bg-hover)', border: '1px solid var(--border)' }}>
+          {mapMarkers.length > 0 ? (
+            <ClientVisitorMap
+              markers={mapMarkers.map(m => ({
+                name: m.label,
+                lat: m.lat,
+                lon: m.lon,
+                count: m.count,
+                time: formatTime(m.latestAt),
+              }))}
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-center px-6" style={{ color: 'var(--text-secondary)' }}>
+              <div>
+                <p className="text-sm font-medium">暂无可显示的访问点位</p>
+                <p className="text-xs mt-1">新访问记录会在这里显示为地图标记</p>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-3">

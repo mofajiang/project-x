@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import 'leaflet/dist/leaflet.css'
 import { ToasterProvider } from '@/components/ToasterProvider'
 import { getSiteConfig } from '@/lib/config'
 import { VisitorTracker } from '@/components/VisitorTracker'
