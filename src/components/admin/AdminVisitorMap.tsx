@@ -457,7 +457,7 @@ export async function AdminVisitorMap() {
                     </span>
                     <span className="text-sm font-mono shrink-0" style={{ color: 'var(--accent)' }}>{group.count}</span>
                   </summary>
-                  <div className="mt-3 flex flex-col gap-2 border-t pt-2" style={{ borderColor: 'var(--border)' }}>
+                  <div className="mt-3 flex flex-col gap-2 border-t pt-2 max-h-[180px] overflow-y-auto pr-2" style={{ borderColor: 'var(--border)' }}>
                     {group.visitors.map(visitor => (
                       <div key={visitor.id} className="flex items-center justify-between gap-3 text-[11px]">
                         <span className="truncate" style={{ color: 'var(--text-primary)' }}>{visitor.ip}</span>
