@@ -387,7 +387,9 @@ export async function AdminVisitorMap() {
   // 解析显示配置
   let displayStats: string[] = []
   try {
-    displayStats = JSON.parse(config.visitorStatsDisplay || '[]')
+    const parsed = JSON.parse(config.visitorStatsDisplay || '[]')
+    // 如果配置为空或无效，显示全部
+    displayStats = Array.isArray(parsed) && parsed.length > 0 ? parsed : ['总访问', '今日访问', '7 日访问', '14 日访问', '国家数', '精确坐标', '国家/省份落点', '最近时间']
   } catch {
     displayStats = ['总访问', '今日访问', '7 日访问', '14 日访问', '国家数', '精确坐标', '国家/省份落点', '最近时间']
   }

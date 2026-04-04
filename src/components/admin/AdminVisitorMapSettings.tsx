@@ -22,10 +22,13 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialK
   const [mode, setMode] = useState(initialMode || 'ip9')
   const [mapSource, setMapSource] = useState(initialMapSource || 'carto_positron')
   const [statsDisplay, setStatsDisplay] = useState<string[]>(() => {
+    const statsOptions = ['总访问', '今日访问', '7 日访问', '14 日访问', '国家数', '精确坐标', '国家/省份落点', '最近时间']
     try {
-      return JSON.parse(initialStatsDisplay || '[]')
+      const parsed = JSON.parse(initialStatsDisplay || '[]')
+      // 如果解析后为空或不是数组，返回所有项
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed : statsOptions
     } catch {
-      return ['总访问', '今日访问', '7 日访问', '14 日访问', '国家数', '精确坐标', '国家/省份落点', '最近时间']
+      return statsOptions
     }
   })
   const customDefaultEndpoint = 'https://example.com/api/geo?ip={ip}'
@@ -33,7 +36,6 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialK
   const [key, setKey] = useState(initialKey || '')
 
   const statsOptions = ['总访问', '今日访问', '7 日访问', '14 日访问', '国家数', '精确坐标', '国家/省份落点', '最近时间']
-
   const saveEndpoint = mode === 'custom' ? endpoint : ''
   const saveKey = mode === 'custom' ? key : ''
 
@@ -109,7 +111,7 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialK
       </button>
 
       {open && (
-        <div className="fixed w-[320px] max-w-[calc(100vw-1rem)] rounded-2xl shadow-2xl p-4 z-[9999]" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', right: '1rem', top: 'calc(3.5rem + 1rem)' }}>
+        <div className="absolute right-0 mt-2 w-[320px] max-w-[calc(100vw-1rem)] rounded-2xl shadow-2xl p-4 z-[9999]" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
           <div className="flex items-center justify-between gap-2 mb-3">
             <div>
               <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>访客地图设置</p>
