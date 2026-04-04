@@ -10,9 +10,10 @@ type Props = {
   initialEndpoint: string
   initialKey: string
   initialMapSource?: string
+  initialStatsDisplay?: string
 }
 
-export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialKey, initialMapSource }: Props) {
+export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialKey, initialMapSource, initialStatsDisplay }: Props) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -20,9 +21,18 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialK
   const [updatingDb, setUpdatingDb] = useState(false)
   const [mode, setMode] = useState(initialMode || 'ip9')
   const [mapSource, setMapSource] = useState(initialMapSource || 'carto_positron')
+  const [statsDisplay, setStatsDisplay] = useState<string[]>(() => {
+    try {
+      return JSON.parse(initialStatsDisplay || '[]')
+    } catch {
+      return ['总访问', '今日访问', '7 日访问', '14 日访问', '国家数', '精确坐标', '国家/省份落点', '最近时间']
+    }
+  })
   const customDefaultEndpoint = 'https://example.com/api/geo?ip={ip}'
   const [endpoint, setEndpoint] = useState(initialEndpoint || (initialMode === 'custom' ? customDefaultEndpoint : ''))
   const [key, setKey] = useState(initialKey || '')
+
+  const statsOptions = ['总访问', '今日访问', '7 日访问', '14 日访问', '国家数', '精确坐标', '国家/省份落点', '最近时间']
 
   const saveEndpoint = mode === 'custom' ? endpoint : ''
   const saveKey = mode === 'custom' ? key : ''
@@ -38,6 +48,7 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialK
           visitorGeoKey: saveKey, 
           visitorGeoEndpoint: saveEndpoint,
           visitorMapSource: mapSource,
+          visitorStatsDisplay: JSON.stringify(statsDisplay),
         }),
       })
       if (!res.ok) throw new Error('保存失败')
@@ -154,6 +165,30 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialK
                 <option value="arcgis_satellite">ArcGIS Satellite（卫星）</option>
                 <option value="osm">OpenStreetMap（开放）</option>
               </select>
+            </label>
+
+            <label className="flex flex-col gap-1.5 text-xs">
+              <span style={{ color: 'var(--text-secondary)' }}>统计数据框显示</span>
+              <div className="flex flex-col gap-2 p-3 rounded-xl" style={{ background: 'var(--bg-hover)' }}>
+                {statsOptions.map(option => (
+                  <label key={option} className="flex items-center gap-2 cursor-pointer text-xs">
+                    <input
+                      type="checkbox"
+                      checked={statsDisplay.includes(option)}
+                      onChange={e => {
+                        if (e.target.checked) {
+                          setStatsDisplay([...statsDisplay, option])
+                        } else {
+                          setStatsDisplay(statsDisplay.filter(item => item !== option))
+                        }
+                      }}
+                      className="w-4 h-4 rounded"
+                      style={{ accentColor: 'var(--accent)' }}
+                    />
+                    <span>{option}</span>
+                  </label>
+                ))}
+              </div>
             </label>
 
             <label className="flex flex-col gap-1.5 text-xs">

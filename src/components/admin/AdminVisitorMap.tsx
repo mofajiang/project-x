@@ -384,6 +384,14 @@ export async function AdminVisitorMap() {
     .sort((a, b) => new Date(b.latestAt).getTime() - new Date(a.latestAt).getTime())
     .slice(0, 4)
 
+  // 解析显示配置
+  let displayStats: string[] = []
+  try {
+    displayStats = JSON.parse(config.visitorStatsDisplay || '[]')
+  } catch {
+    displayStats = ['总访问', '今日访问', '7 日访问', '14 日访问', '国家数', '精确坐标', '国家/省份落点', '最近时间']
+  }
+
   const stats = [
     { label: '总访问', value: total },
     { label: '今日访问', value: todayCount },
@@ -393,7 +401,7 @@ export async function AdminVisitorMap() {
     { label: '精确坐标', value: exactCount },
     { label: '国家/省份落点', value: approxCount },
     { label: '最近时间', value: latestVisitorAt ? formatTime(latestVisitorAt) : '暂无' },
-  ]
+  ].filter(stat => displayStats.includes(stat.label))
 
   return (
     <div className="rounded-2xl p-4 sm:p-5" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
@@ -407,7 +415,7 @@ export async function AdminVisitorMap() {
           <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{total}</p>
           <p className="text-[10px] uppercase tracking-[0.18em]" style={{ color: 'var(--text-secondary)' }}>总访问</p>
           </div>
-          <AdminVisitorMapSettings initialMode={config.visitorGeoMode} initialEndpoint={config.visitorGeoEndpoint} initialKey={config.visitorGeoKey} initialMapSource={config.visitorMapSource} />
+          <AdminVisitorMapSettings initialMode={config.visitorGeoMode} initialEndpoint={config.visitorGeoEndpoint} initialKey={config.visitorGeoKey} initialMapSource={config.visitorMapSource} initialStatsDisplay={config.visitorStatsDisplay} />
         </div>
       </div>
 
