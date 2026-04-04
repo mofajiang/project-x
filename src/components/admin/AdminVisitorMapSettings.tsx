@@ -98,7 +98,7 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialK
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-[320px] max-w-[calc(100vw-1rem)] rounded-2xl shadow-2xl p-4 z-20" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+        <div className="absolute right-0 mt-2 w-[320px] max-w-[calc(100vw-1rem)] rounded-2xl shadow-2xl p-4 z-[9999]" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
           <div className="flex items-center justify-between gap-2 mb-3">
             <div>
               <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>访客地图设置</p>
