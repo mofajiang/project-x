@@ -233,6 +233,39 @@ img { background: var(--bg-secondary); }
   color: #abb2bf;
   font-size: 0.9em;
 }
+
+/* Leaflet 地图样式 */
+.leaflet-container {
+  font-family: inherit;
+  background-color: var(--bg-hover);
+}
+
+.leaflet-attribution {
+  background: rgba(0, 0, 0, 0.5) !important;
+  font-size: 11px !important;
+}
+
+.leaflet-attribution a {
+  color: var(--accent) !important;
+}
+
+.leaflet-control {
+  background: rgba(0, 0, 0, 0.6) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 4px !important;
+}
+
+.leaflet-control button {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border) !important;
+  width: 32px !important;
+  height: 32px !important;
+}
+
+.leaflet-control button:hover {
+  background: var(--bg-hover) !important;
+}
 .markdown-body blockquote {
   border-left: 4px solid var(--accent);
   padding-left: 1em;
