@@ -23,13 +23,15 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialK
   const [mapSource, setMapSource] = useState(initialMapSource || 'carto_positron')
   const [statsDisplay, setStatsDisplay] = useState<string[]>(() => {
     const defaultOptions = ['总访问', '今日访问', '7 日访问', '14 日访问', '国家数', '精确坐标', '国家/省份落点', '最近时间']
-    // 如果 initialStatsDisplay 为空或 '[]'，返回所有选项（首次安装）
-    if (!initialStatsDisplay) return defaultOptions
+    // 严格按 initialStatsDisplay 初始化
+    if (!initialStatsDisplay) {
+      // 第一次没有保存过配置时，显示为空（用户需要主动选择）
+      return defaultOptions
+    }
     try {
       const parsed = JSON.parse(initialStatsDisplay)
-      // 如果解析结果是数组，直接返回（可能为空或有值）
-      if (Array.isArray(parsed)) return parsed.length > 0 ? parsed : defaultOptions
-      return defaultOptions
+      // 直接使用解析结果，即使为空数组
+      return Array.isArray(parsed) ? parsed : defaultOptions
     } catch {
       return defaultOptions
     }
