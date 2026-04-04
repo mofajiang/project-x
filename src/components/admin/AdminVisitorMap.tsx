@@ -421,17 +421,19 @@ export async function AdminVisitorMap() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.6fr)_minmax(260px,0.9fr)] gap-4">
-        <div className="relative min-h-[260px] sm:min-h-[320px] overflow-hidden rounded-3xl" style={{ background: 'var(--bg-hover)', border: '1px solid var(--border)' }}>
+        <div className="relative min-h-[260px] sm:min-h-[320px] overflow-hidden rounded-3xl flex items-stretch" style={{ background: 'var(--bg-hover)', border: '1px solid var(--border)' }}>
           {mapMarkers.length > 0 ? (
-            <ClientVisitorMap
-              markers={mapMarkers.map(m => ({
-                name: m.label,
-                lat: m.lat,
-                lon: m.lon,
-                count: m.count,
-                time: formatTime(m.latestAt),
-              }))}
-            />
+            <div className="flex-1 w-full">
+              <ClientVisitorMap
+                markers={mapMarkers.map(m => ({
+                  name: m.label,
+                  lat: m.lat,
+                  lon: m.lon,
+                  count: m.count,
+                  time: formatTime(m.latestAt),
+                }))}
+              />
+            </div>
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-center px-6" style={{ color: 'var(--text-secondary)' }}>
               <div>

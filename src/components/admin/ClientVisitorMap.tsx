@@ -42,8 +42,8 @@ export function ClientVisitorMap({ markers }: Props) {
   const source = MAP_SOURCES[mapSource]
 
   return (
-    <div className="w-full h-full">
-      <MapContainer center={[20, 0]} zoom={2} scrollWheelZoom className="w-full h-full">
+    <div style={{ width: '100%', height: '100%', minHeight: '400px' }}>
+      <MapContainer center={[20, 0]} zoom={2} scrollWheelZoom={true} style={{ width: '100%', height: '100%' }}>
         <ZoomControl position="topright" />
         <TileLayer url={source.url} attribution={source.attribution} maxZoom={18} />
         {markers.map((m, idx) => (
