@@ -134,11 +134,11 @@ export function MobileNav({ username, pendingCount }: { username: string; pendin
         <div className="p-4 border-t mt-auto" style={{ borderColor: 'var(--border)' }}>
           <button
             onClick={toggleTheme}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors mb-2"
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors mb-2"
             style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
           >
-            <span>{THEME_LABELS[theme].split(' ')[0]}</span>
-            <span className="flex-1 text-left">{THEME_LABELS[theme]}</span>
+            <span className="text-base">{THEME_LABELS[theme].split(' ')[0]}</span>
+            <span className="flex-1 text-left">{THEME_LABELS[theme].split(' ')[1]}</span>
           </button>
           <button
             onClick={logout}
