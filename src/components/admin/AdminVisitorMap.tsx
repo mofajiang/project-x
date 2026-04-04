@@ -388,8 +388,13 @@ export async function AdminVisitorMap() {
   let displayStats: string[] = []
   try {
     const parsed = JSON.parse(config.visitorStatsDisplay || '[]')
-    // 如果配置为空或无效，显示全部
-    displayStats = Array.isArray(parsed) && parsed.length > 0 ? parsed : ['总访问', '今日访问', '7 日访问', '14 日访问', '国家数', '精确坐标', '国家/省份落点', '最近时间']
+    // 如果配置为空，显示全部；否则只显示配置中的
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      displayStats = parsed
+    } else {
+      // 首次安装时显示所有
+      displayStats = ['总访问', '今日访问', '7 日访问', '14 日访问', '国家数', '精确坐标', '国家/省份落点', '最近时间']
+    }
   } catch {
     displayStats = ['总访问', '今日访问', '7 日访问', '14 日访问', '国家数', '精确坐标', '国家/省份落点', '最近时间']
   }
@@ -431,7 +436,7 @@ export async function AdminVisitorMap() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.6fr)_minmax(260px,0.9fr)] gap-4">
-        <div className="relative min-h-[240px] sm:min-h-[280px] overflow-hidden rounded-3xl flex items-stretch" style={{ background: 'var(--bg-hover)', border: '1px solid var(--border)' }}>
+        <div className="relative min-h-[240px] sm:min-h-[280px] overflow-hidden rounded-3xl flex items-stretch" style={{ background: 'var(--bg-hover)', border: '1px solid var(--border)', isolation: 'isolate' }}>
           {mapMarkers.length > 0 ? (
             <div className="flex-1 w-full">
               <ClientVisitorMap

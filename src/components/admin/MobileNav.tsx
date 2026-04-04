@@ -85,13 +85,13 @@ export function MobileNav({ username, pendingCount }: { username: string; pendin
 
       {/* 抽屉菜单 */}
       <nav
-        className={`md:hidden fixed left-0 w-72 z-40 transform transition-transform duration-300 overflow-y-auto ${
+        className={`md:hidden fixed left-0 w-72 z-40 transform transition-transform duration-300 flex flex-col ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
         style={{ background: 'var(--bg-secondary)', borderRight: '1px solid var(--border)', top: '3.5rem', bottom: 0 }}
       >
         {/* 菜单顶部 - 用户信息 */}
-        <div className="p-4 border-b" style={{ borderColor: 'var(--border)' }}>
+        <div className="p-4 border-b shrink-0" style={{ borderColor: 'var(--border)' }}>
           <p className="font-bold text-base" style={{ color: 'var(--text-primary)' }}>
             ⚙ 后台管理
           </p>
@@ -100,8 +100,8 @@ export function MobileNav({ username, pendingCount }: { username: string; pendin
           </p>
         </div>
 
-        {/* 导航菜单 */}
-        <div className="flex flex-col gap-1 p-4">
+        {/* 导航菜单 - 可滚动 */}
+        <div className="flex flex-col gap-1 p-4 overflow-y-auto flex-1">
           {navItems.map((item) => {
             const active = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))
             return (
@@ -132,7 +132,7 @@ export function MobileNav({ username, pendingCount }: { username: string; pendin
         </div>
 
         {/* 菜单底部 - 设置 */}
-        <div className="p-4 border-t mt-auto" style={{ borderColor: 'var(--border)' }}>
+        <div className="p-4 border-t shrink-0" style={{ borderColor: 'var(--border)' }}>
           <div className="mb-2">
             <AdminUpdateChecker compact={true} />
           </div>

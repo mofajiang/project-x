@@ -22,13 +22,16 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialK
   const [mode, setMode] = useState(initialMode || 'ip9')
   const [mapSource, setMapSource] = useState(initialMapSource || 'carto_positron')
   const [statsDisplay, setStatsDisplay] = useState<string[]>(() => {
-    const statsOptions = ['总访问', '今日访问', '7 日访问', '14 日访问', '国家数', '精确坐标', '国家/省份落点', '最近时间']
+    const defaultOptions = ['总访问', '今日访问', '7 日访问', '14 日访问', '国家数', '精确坐标', '国家/省份落点', '最近时间']
+    // 如果 initialStatsDisplay 为空或 '[]'，返回所有选项（首次安装）
+    if (!initialStatsDisplay) return defaultOptions
     try {
-      const parsed = JSON.parse(initialStatsDisplay || '[]')
-      // 如果解析后为空或不是数组，返回所有项
-      return Array.isArray(parsed) && parsed.length > 0 ? parsed : statsOptions
+      const parsed = JSON.parse(initialStatsDisplay)
+      // 如果解析结果是数组，直接返回（可能为空或有值）
+      if (Array.isArray(parsed)) return parsed.length > 0 ? parsed : defaultOptions
+      return defaultOptions
     } catch {
-      return statsOptions
+      return defaultOptions
     }
   })
   const customDefaultEndpoint = 'https://example.com/api/geo?ip={ip}'
