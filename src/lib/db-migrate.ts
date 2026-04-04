@@ -9,9 +9,9 @@ let migratePromise: Promise<void> | null = null
 
 async function addColumn(table: string, column: string, definition: string, label: string) {
   try {
-    // 先检查列是否已存在
+    // 先检查列是否已存在。SQLite pragma_table_info 不支持参数绑定，需用字面量表名。
     const rows = await prisma.$queryRawUnsafe<any[]>(
-      `SELECT name FROM pragma_table_info(?) WHERE name = ?`, table, column
+      `SELECT name FROM pragma_table_info('${table}') WHERE name = ?`, column
     )
     if (rows.length > 0) return // 列已存在，跳过
     await prisma.$executeRawUnsafe(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`)

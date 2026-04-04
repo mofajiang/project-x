@@ -151,15 +151,22 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
     )
   } catch {}
   if (!rows.length) {
-    await prisma.$executeRawUnsafe(`INSERT OR IGNORE INTO SiteConfig (id) VALUES ('singleton')`)
-    rows = await prisma.$queryRawUnsafe<any[]>(
-      `SELECT *, COALESCE(copyright,'') as copyright, COALESCE(siteIcon,'') as siteIcon,
-       COALESCE(siteLogo,'') as siteLogo,
-       COALESCE(navItems,'') as navItems, COALESCE(rightPanelWidgets,'') as rightPanelWidgets,
-       COALESCE(visitorGeoMode,'offline') as visitorGeoMode, COALESCE(visitorGeoKey,'') as visitorGeoKey, COALESCE(visitorGeoEndpoint,'') as visitorGeoEndpoint,
-       COALESCE(defaultTheme,'dark') as defaultTheme
-       FROM SiteConfig WHERE id = 'singleton'`
-    )
+    try {
+      await prisma.$executeRawUnsafe(`INSERT OR IGNORE INTO SiteConfig (id) VALUES ('singleton')`)
+      rows = await prisma.$queryRawUnsafe<any[]>(
+        `SELECT *, COALESCE(copyright,'') as copyright, COALESCE(siteIcon,'') as siteIcon,
+         COALESCE(siteLogo,'') as siteLogo,
+         COALESCE(navItems,'') as navItems, COALESCE(rightPanelWidgets,'') as rightPanelWidgets,
+         COALESCE(visitorGeoMode,'offline') as visitorGeoMode, COALESCE(visitorGeoKey,'') as visitorGeoKey, COALESCE(visitorGeoEndpoint,'') as visitorGeoEndpoint,
+         COALESCE(defaultTheme,'dark') as defaultTheme
+         FROM SiteConfig WHERE id = 'singleton'`
+      )
+    } catch (e: any) {
+      console.warn('[config] fetchSiteConfig fallback select:', e?.message)
+      try {
+        rows = await prisma.$queryRawUnsafe<any[]>(`SELECT * FROM SiteConfig WHERE id = 'singleton'`)
+      } catch {}
+    }
   }
   const config: any = rows[0] || {}
   if (!config.navItems) config.navItems = JSON.stringify(DEFAULT_NAV)

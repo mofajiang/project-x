@@ -240,47 +240,63 @@ function toPoint(lat: number, lon: number) {
 }
 
 export async function AdminVisitorMap() {
-  await runMigrations()
-  const [visitors, total, exactCountRows, approxCountRows, countryCountRows] = await Promise.all([
-    prisma.$queryRawUnsafe<VisitorRow[]>(`
-      SELECT
-        id,
-        ip,
-        country,
-        countryCode,
-        region,
-        city,
-        lat,
-        lon,
-        visitDay,
-        CASE
-          WHEN typeof(createdAt) = 'integer' THEN datetime(createdAt / 1000, 'unixepoch')
-          ELSE createdAt
-        END AS createdAt
+  try { await runMigrations() } catch (e: any) { console.warn('[AdminVisitorMap] runMigrations:', e?.message) }
+  let visitors: VisitorRow[] = []
+  let total = 0
+  let exactCount = 0
+  let approxCount = 0
+  let countryCount = 0
+  let dailyRows: Array<{ day: string; count: number }> = []
+  try {
+    const [v, t, exactCountRows, approxCountRows, countryCountRows] = await Promise.all([
+      prisma.$queryRawUnsafe<VisitorRow[]>(`
+        SELECT
+          id,
+          ip,
+          country,
+          countryCode,
+          region,
+          city,
+          lat,
+          lon,
+          visitDay,
+          CASE
+            WHEN typeof(createdAt) = 'integer' THEN datetime(createdAt / 1000, 'unixepoch')
+            ELSE createdAt
+          END AS createdAt
+        FROM Visitor
+        ORDER BY
+          CASE
+            WHEN typeof(createdAt) = 'integer' THEN createdAt
+            ELSE CAST(strftime('%s', createdAt) AS INTEGER) * 1000
+          END DESC
+        LIMIT 180
+      `),
+      prisma.visitor.count(),
+      prisma.$queryRawUnsafe<Array<{ count: number }>>(`SELECT COUNT(*) AS count FROM Visitor WHERE lat IS NOT NULL AND lon IS NOT NULL`),
+      prisma.$queryRawUnsafe<Array<{ count: number }>>(`SELECT COUNT(*) AS count FROM Visitor WHERE lat IS NULL OR lon IS NULL`),
+      prisma.$queryRawUnsafe<Array<{ count: number }>>(`SELECT COUNT(DISTINCT countryCode) AS count FROM Visitor WHERE countryCode != ''`),
+    ])
+    visitors = v
+    total = t
+    exactCount = Number(exactCountRows?.[0]?.count || 0)
+    approxCount = Number(approxCountRows?.[0]?.count || 0)
+    countryCount = Number(countryCountRows?.[0]?.count || 0)
+  } catch (e: any) {
+    console.warn('[AdminVisitorMap] visitor queries failed:', e?.message)
+  }
+  try {
+    dailyRows = await prisma.$queryRawUnsafe<Array<{ day: string; count: number }>>(`
+      SELECT visitDay AS day, COUNT(*) AS count
       FROM Visitor
-      ORDER BY
-        CASE
-          WHEN typeof(createdAt) = 'integer' THEN createdAt
-          ELSE CAST(strftime('%s', createdAt) AS INTEGER) * 1000
-        END DESC
-      LIMIT 180
-    `),
-    prisma.visitor.count(),
-    prisma.$queryRawUnsafe<Array<{ count: number }>>(`SELECT COUNT(*) AS count FROM Visitor WHERE lat IS NOT NULL AND lon IS NOT NULL`),
-    prisma.$queryRawUnsafe<Array<{ count: number }>>(`SELECT COUNT(*) AS count FROM Visitor WHERE lat IS NULL OR lon IS NULL`),
-    prisma.$queryRawUnsafe<Array<{ count: number }>>(`SELECT COUNT(DISTINCT countryCode) AS count FROM Visitor WHERE countryCode != ''`),
-  ])
-  const dailyRows = await prisma.$queryRawUnsafe<Array<{ day: string; count: number }>>(`
-    SELECT visitDay AS day, COUNT(*) AS count
-    FROM Visitor
-    WHERE visitDay != ''
-    GROUP BY visitDay
-    ORDER BY visitDay ASC
-    LIMIT 30
-  `)
-  const exactCount = Number(exactCountRows?.[0]?.count || 0)
-  const approxCount = Number(approxCountRows?.[0]?.count || 0)
-  const countryCount = Number(countryCountRows?.[0]?.count || 0)
+      WHERE visitDay != ''
+      GROUP BY visitDay
+      ORDER BY visitDay ASC
+      LIMIT 30
+    `)
+  } catch (e: any) {
+    console.warn('[AdminVisitorMap] dailyRows failed:', e?.message)
+  }
   const config = await getSiteConfig()
   const sourceLabelMap: Record<string, string> = {
     offline: '离线数据库',
