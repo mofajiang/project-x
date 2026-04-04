@@ -19,7 +19,7 @@ export function PostActions({ postId, likes, commentCount }: { postId: string; l
   }
 
   return (
-    <div className="flex items-center justify-between py-2">
+    <div className="flex items-center justify-between pt-2 pb-3" style={{ borderBottom: '1px solid var(--border)' }}>
       <button className="flex items-center gap-2 px-4 py-2 rounded-full transition-colors hover:bg-blue-500/10 hover:text-blue-400 text-sm"
         style={{ color: 'var(--text-secondary)' }}>
         💬 {commentCount}

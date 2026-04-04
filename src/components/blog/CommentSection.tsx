@@ -238,8 +238,8 @@ export function CommentSection({
   })
 
   return (
-    <section className="px-4 py-4 sm:px-5 sm:py-5">
-      <div className="mb-4 py-3 sm:mb-5 sm:py-4">
+    <section className="px-4 pt-2 pb-4 sm:px-5 sm:pt-2 sm:pb-5">
+      <div className="mb-3 pt-2 pb-3 sm:mb-4 sm:pt-2 sm:pb-4">
         <CommentInput session={session} postId={postId} placeholder="说点什么..." onDone={() => {}} />
       </div>
 
