@@ -114,8 +114,8 @@ function normalizeGeoRecord(record: Record<string, unknown>): VisitorGeo | null 
   const country = String(source.country || source.country_name || source.nation || source.countryCode || source.country_code || '').trim()
   const region = String(source.region || source.region_name || source.regionName || source.prov || source.province || source.province_name || source.provinceName || source.address || '').trim()
   const city = String(source.city || source.city_name || source.cityName || source.district || '').trim()
-  const latValue = source.latitude ?? source.lat
-  const lonValue = source.longitude ?? source.lon ?? source.lng
+  const latValue = source.latitude ?? source.lat ?? source.loc?.toString().split(',')[0]
+  const lonValue = source.longitude ?? source.lon ?? source.lng ?? source.loc?.toString().split(',')[1]
   const lat = typeof latValue === 'number' ? latValue : typeof latValue === 'string' ? Number(latValue) : null
   const lon = typeof lonValue === 'number' ? lonValue : typeof lonValue === 'string' ? Number(lonValue) : null
   const countryCode = String(source.country_code || source.countryCode || source.nation_code || '').trim().toUpperCase()

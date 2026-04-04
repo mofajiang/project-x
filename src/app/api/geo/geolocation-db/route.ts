@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const response = await fetch(`https://geolocation-db.com/json/${encodeURIComponent(ip)}&position=true`, {
+    const response = await fetch(`https://geolocation-db.com/json/${encodeURIComponent(ip)}?position=true`, {
       signal: AbortSignal.timeout(5000),
       headers: {
         Accept: 'application/json',
