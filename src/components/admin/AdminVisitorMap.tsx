@@ -137,10 +137,10 @@ function hashToOffset(seed: string) {
   for (const char of seed) {
     hash = (hash * 31 + char.charCodeAt(0)) >>> 0
   }
-
+  // 减小偏移范围：从 ±4 度改为 ±0.5 度，避免落点过度分散
   return {
-    latDelta: ((hash % 2000) / 2000) * 8 - 4,
-    lonDelta: (((hash / 2000) % 2000) / 2000) * 8 - 4,
+    latDelta: ((hash % 1000) / 1000) * 1 - 0.5,
+    lonDelta: (((hash / 1000) % 1000) / 1000) * 1 - 0.5,
   }
 }
 
@@ -158,8 +158,8 @@ function getRegionPoint(region: WorldRegion, seed: string): Point {
   const base = WORLD_REGION_POINTS[region]
   const offset = hashToOffset(seed)
   return {
-    lat: Math.max(-60, Math.min(75, base.lat + offset.latDelta)),
-    lon: Math.max(-180, Math.min(180, base.lon + offset.lonDelta)),
+    lat: Math.max(-60, Math.min(75, base.lat + offset.latDelta * 2)),
+    lon: Math.max(-180, Math.min(180, base.lon + offset.lonDelta * 2)),
   }
 }
 
