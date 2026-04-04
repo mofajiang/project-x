@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
+import { AdminUpdateChecker } from './AdminUpdateChecker'
 
 type ThemeMode = 'dark' | 'light'
 const THEME_CYCLE: ThemeMode[] = ['dark', 'light']
@@ -132,6 +133,9 @@ export function MobileNav({ username, pendingCount }: { username: string; pendin
 
         {/* 菜单底部 - 设置 */}
         <div className="p-4 border-t mt-auto" style={{ borderColor: 'var(--border)' }}>
+          <div className="mb-2">
+            <AdminUpdateChecker compact={true} />
+          </div>
           <button
             onClick={toggleTheme}
             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors mb-2"
