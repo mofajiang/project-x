@@ -155,7 +155,7 @@ function CommentItem({ comment, postId, session, depth = 0, showCommentIp = fals
   const avatar = comment.author?.avatar || null
 
   return (
-    <div className="flex gap-2 rounded-[22px] border px-3 py-3 sm:gap-2.5 sm:rounded-[24px] sm:px-4 sm:py-4" style={{ background: 'var(--comment-surface-soft)', borderColor: 'var(--border)' }}>
+    <div className="flex gap-2 border-b py-3 sm:gap-2.5 sm:py-4" style={{ borderColor: 'var(--border)' }}>
       <div className="flex flex-col items-center flex-shrink-0" style={{ width: 32 }}>
         <Avatar name={name} url={avatar} size={32} />
         {(comment.replies.length > 0 || replying) && (
@@ -240,7 +240,7 @@ export function CommentSection({
 
   return (
     <section className="px-4 py-4 sm:px-5 sm:py-5">
-      <div className="mb-4 rounded-[24px] border p-3 sm:mb-5 sm:rounded-[26px] sm:p-4" style={{ background: 'var(--comment-surface-strong)', borderColor: 'var(--border)' }}>
+      <div className="mb-4 border-y py-3 sm:mb-5 sm:py-4" style={{ borderColor: 'var(--border)' }}>
         <CommentInput session={session} postId={postId} placeholder="说点什么..." onDone={() => {}} />
       </div>
 
