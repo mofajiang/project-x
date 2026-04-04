@@ -28,85 +28,6 @@ function Avatar({ name, url, size = 36 }: { name: string; url: string | null; si
   )
 }
 
-function ComposerIcon({ children }: { children: React.ReactNode }) {
-  return (
-    <button
-      type="button"
-      className="inline-flex h-6 w-6 items-center justify-center rounded-full transition-colors hover:bg-[var(--bg-hover)] sm:h-7 sm:w-7"
-      style={{ color: 'var(--accent)' }}
-      aria-hidden="true"
-      tabIndex={-1}
-    >
-      {children}
-    </button>
-  )
-}
-
-function MediaIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="18" height="18" rx="3" />
-      <path d="m8 14 2.6-2.6a1.2 1.2 0 0 1 1.7 0L16 15" />
-      <path d="m14.5 9.5.2-.2a1.2 1.2 0 0 1 1.7 0L21 14" />
-      <circle cx="9" cy="8" r="1.4" />
-    </svg>
-  )
-}
-
-function GifIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="6" width="18" height="12" rx="3" />
-      <path d="M8 10a2 2 0 0 0-2 2v0a2 2 0 0 0 2 2h1" />
-      <path d="M13 10v4" />
-      <path d="M17 10h-2v4" />
-    </svg>
-  )
-}
-
-function ChartIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 19h16" />
-      <path d="M7 16v-5" />
-      <path d="M12 16V8" />
-      <path d="M17 16v-3" />
-    </svg>
-  )
-}
-
-function EmojiIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M9 14.5c.9.8 1.9 1.2 3 1.2s2.1-.4 3-1.2" />
-      <path d="M9 10h.01" />
-      <path d="M15 10h.01" />
-    </svg>
-  )
-}
-
-function ScheduleIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="4" width="18" height="17" rx="3" />
-      <path d="M8 2v4" />
-      <path d="M16 2v4" />
-      <path d="M3 10h18" />
-      <path d="M12 13v3l2 1" />
-    </svg>
-  )
-}
-
-function LocationIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 21s6-5.2 6-10a6 6 0 0 0-12 0c0 4.8 6 10 6 10z" />
-      <circle cx="12" cy="11" r="2" />
-    </svg>
-  )
-}
-
 function ReplyIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -171,64 +92,42 @@ function CommentInput({
       <Avatar name={session?.username || (guestName || '?')} url={null} size={32} />
       <div className="flex-1 min-w-0 overflow-hidden">
         {!session && (
-          <div className="mb-2.5 grid gap-2 rounded-[20px] border px-3 py-2 sm:grid-cols-[1fr_auto_1fr] sm:px-3.5 sm:py-2.5" style={{ borderColor: 'var(--border)', background: 'var(--comment-surface-soft)' }}>
+          <div className="mb-2.5 flex items-center gap-2 border-b pb-2.5" style={{ borderColor: 'var(--border)' }}>
+            <span className="shrink-0 text-[11px] sm:text-xs" style={{ color: 'var(--text-secondary)' }}>游客</span>
             <input
               type="text"
               placeholder="昵称（必填）"
               value={guestName}
               onChange={e => setGuestName(e.target.value)}
               maxLength={20}
-              className="w-full bg-transparent outline-none text-sm py-1"
-              style={{ color: 'var(--text-primary)', minWidth: 0 }}
-            />
-            <div className="hidden sm:block" style={{ width: '1px', background: 'var(--border)', flexShrink: 0, minHeight: 18 }} />
-            <input
-              type="email"
-              placeholder="邮箱（选填，回复提醒）"
-              value={guestEmail}
-              onChange={e => setGuestEmail(e.target.value)}
-              className="w-full bg-transparent outline-none text-sm py-1"
-              style={{ color: 'var(--text-primary)', minWidth: 0 }}
+              className="min-w-0 flex-1 bg-transparent outline-none text-sm py-1"
+              style={{ color: 'var(--text-primary)' }}
             />
           </div>
         )}
 
-        <div className="rounded-[22px] border px-3 py-3 shadow-[var(--comment-shadow)] sm:rounded-[24px] sm:px-4 sm:py-4" style={{ background: 'var(--comment-surface)', borderColor: 'var(--border)' }}>
+        <div className="border-y py-3 sm:py-4" style={{ borderColor: 'var(--border)' }}>
           <textarea
             value={text}
             onChange={e => setText(e.target.value)}
             placeholder={placeholder || '有什么新鲜事？'}
             rows={3}
             autoFocus
-            className="w-full resize-none bg-transparent text-[13px] outline-none sm:text-[14px]"
-            style={{ color: 'var(--text-primary)', minHeight: 84, lineHeight: 1.55 }}
+            className="w-full resize-none bg-transparent px-0 text-[13px] outline-none sm:text-[14px]"
+            style={{ color: 'var(--text-primary)', minHeight: 78, lineHeight: 1.45 }}
           />
 
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-2.5 sm:mt-3.5 sm:gap-2.5 sm:pt-3" style={{ borderColor: 'var(--border)' }}>
-            <div className="flex flex-wrap items-center gap-px sm:gap-0.5">
-              <ComposerIcon><MediaIcon /></ComposerIcon>
-              <ComposerIcon><GifIcon /></ComposerIcon>
-              <ComposerIcon><ChartIcon /></ComposerIcon>
-              <ComposerIcon><EmojiIcon /></ComposerIcon>
-              <ComposerIcon><ScheduleIcon /></ComposerIcon>
-              <ComposerIcon><LocationIcon /></ComposerIcon>
-            </div>
-
-            <div className="flex items-center gap-1 sm:gap-2.5">
-              <span className="text-[11px] tabular-nums sm:text-xs" style={{ color: text.length > 1800 ? '#f4212e' : 'var(--text-secondary)' }}>{text.length}/2000</span>
-              {onCancel && (
-                <button onClick={onCancel} className="rounded-full px-2 py-1.5 text-[11px] sm:px-3 sm:text-sm" style={{ color: 'var(--text-secondary)' }}>取消</button>
-              )}
-              <button
-                onClick={submit}
-                disabled={loading || !text.trim()}
-                className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50 sm:gap-2 sm:px-4 sm:py-2 sm:text-sm"
-                style={{ background: 'var(--accent)' }}
-              >
-                <ReplyIcon />
-                {loading ? '提交中...' : parentId ? '回复' : '发布'}
-              </button>
-            </div>
+          <div className="mt-3 flex items-center justify-between gap-2 sm:mt-4">
+            <span className="text-[11px] tabular-nums sm:text-xs" style={{ color: text.length > 1800 ? '#f4212e' : 'var(--text-secondary)' }}>{text.length}/2000</span>
+            <button
+              onClick={submit}
+              disabled={loading || !text.trim()}
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50 sm:gap-2 sm:px-4 sm:py-2 sm:text-sm"
+              style={{ background: 'var(--accent)' }}
+            >
+              <ReplyIcon />
+              {loading ? '提交中...' : parentId ? '回复' : '发布'}
+            </button>
           </div>
         </div>
       </div>
@@ -284,7 +183,7 @@ function CommentItem({ comment, postId, session, depth = 0, showCommentIp = fals
         )}
 
         {replying && (
-          <div className="mt-3 overflow-hidden rounded-[22px] border p-3 sm:mt-4 sm:rounded-[24px] sm:p-4" style={{ background: 'var(--comment-surface)', borderColor: 'var(--border)' }}>
+          <div className="mt-3 border-y py-3 sm:mt-4 sm:py-4" style={{ borderColor: 'var(--border)' }}>
             <CommentInput
               session={session}
               postId={postId}
