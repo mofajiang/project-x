@@ -421,7 +421,7 @@ export async function AdminVisitorMap() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.6fr)_minmax(260px,0.9fr)] gap-4">
-        <div className="relative min-h-[260px] sm:min-h-[320px] overflow-hidden rounded-3xl flex items-stretch" style={{ background: 'var(--bg-hover)', border: '1px solid var(--border)' }}>
+        <div className="relative min-h-[240px] sm:min-h-[280px] overflow-hidden rounded-3xl flex items-stretch" style={{ background: 'var(--bg-hover)', border: '1px solid var(--border)' }}>
           {mapMarkers.length > 0 ? (
             <div className="flex-1 w-full">
               <ClientVisitorMap
@@ -433,6 +433,7 @@ export async function AdminVisitorMap() {
                   time: formatTime(m.latestAt),
                 }))}
                 mapSource={config.visitorMapSource}
+                compact={true}
               />
             </div>
           ) : (

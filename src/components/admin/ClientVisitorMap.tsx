@@ -30,6 +30,7 @@ type Marker = {
 type Props = {
   markers: Marker[]
   mapSource?: string
+  compact?: boolean // 移动端紧凑模式
 }
 
 const MAP_SOURCES: Record<string, { url: string; attribution: string }> = {
@@ -55,12 +56,27 @@ const MAP_SOURCES: Record<string, { url: string; attribution: string }> = {
   },
 }
 
-export function ClientVisitorMap({ markers, mapSource = 'carto_positron' }: Props) {
+export function ClientVisitorMap({ markers, mapSource = 'carto_positron', compact = false }: Props) {
   const source = MAP_SOURCES[mapSource] || MAP_SOURCES.carto_positron
 
   return (
-    <div style={{ width: '100%', height: '100%', minHeight: '400px', position: 'relative', borderRadius: '24px', overflow: 'hidden' }}>
-      <MapContainer center={[20, 0]} zoom={2} scrollWheelZoom={true} style={{ width: '100%', height: '100%' }} zoomControl={false}>
+    <div style={{ 
+      width: '100%', 
+      height: '100%', 
+      minHeight: compact ? '240px' : '400px',  // 移动端 240px，桌面端 400px
+      position: 'relative', 
+      borderRadius: '24px', 
+      overflow: 'hidden' 
+    }}>
+      <MapContainer 
+        center={[20, 0]} 
+        zoom={2} 
+        scrollWheelZoom={!compact}  // 移动端禁用滚轮缩放，避免与页面滚动冲突
+        style={{ width: '100%', height: '100%' }} 
+        zoomControl={false}
+        touchZoom={true}  // 保留触摸缩放
+        dragging={true}
+      >
         <ZoomControl position="topright" />
         <TileLayer url={source.url} attribution={source.attribution} maxZoom={18} />
         {markers.map((m, idx) => (
