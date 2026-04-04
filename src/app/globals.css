@@ -115,7 +115,7 @@ body {
 /* 滚动条样式 */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-  --comment-shadow: 0 14px 28px rgba(0,0,0,0.14);
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
 
 /* 文字选中颜色 */
@@ -141,7 +141,7 @@ img { background: var(--bg-secondary); }
   margin-bottom: 0.5em;
 }
 .prose-x h1 { font-size: 1.8em; }
-  --comment-shadow: 0 14px 24px rgba(15,20,25,0.06);
+.prose-x h2 { font-size: 1.4em; }
 .prose-x h3 { font-size: 1.2em; }
 .prose-x p {
   color: var(--text-primary);
@@ -167,7 +167,7 @@ img { background: var(--bg-secondary); }
   padding: 16px;
   overflow-x: auto;
   margin: 1em 0;
-  --comment-shadow: 0 14px 24px rgba(50,28,18,0.07);
+}
 .prose-x pre code {
   background: transparent;
   padding: 0;
