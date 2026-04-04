@@ -118,16 +118,16 @@ function normalizeRemoteGeo(data: unknown): NormalizedGeo | null {
   return null
 }
 
-async function resolveProviderGeo(mode: string | undefined, clientIp: string, req: NextRequest): Promise<NormalizedGeo | null> {
+async function resolveProviderGeo(mode: string | undefined, clientIp: string): Promise<NormalizedGeo | null> {
   if (!mode || mode === 'offline') return null
 
   const builtins: Record<string, string> = {
-    ip9: '/api/geo/ip9',
-    ipwho: '/api/geo/ipwho',
-    ipapi: '/api/geo/ipapi',
-    ipinfo: '/api/geo/ipinfo',
-    'ip-api': '/api/geo/ip-api',
-    'geolocation-db': '/api/geo/geolocation-db',
+    ip9: `https://ip9.com.cn/get?ip=${encodeURIComponent(clientIp)}`,
+    ipwho: `https://ipwho.is/${encodeURIComponent(clientIp)}`,
+    ipapi: `https://ipapi.co/${encodeURIComponent(clientIp)}/json/`,
+    ipinfo: `https://ipinfo.io/${encodeURIComponent(clientIp)}/json`,
+    'ip-api': `http://ip-api.com/json/${encodeURIComponent(clientIp)}?fields=status,message,country,countryCode,region,regionName,city,lat,lon`,
+    'geolocation-db': `https://geolocation-db.com/json/${encodeURIComponent(clientIp)}?position=true`,
   }
 
   const fallbackOrder: Record<string, string[]> = {
@@ -142,10 +142,9 @@ async function resolveProviderGeo(mode: string | undefined, clientIp: string, re
   const providers = fallbackOrder[mode] || [mode]
   for (const provider of providers) {
     if (!(provider in builtins)) continue
+    const providerUrl = builtins[provider]
     try {
-      const url = new URL(builtins[provider], req.url)
-      url.searchParams.set('ip', clientIp)
-      const response = await fetch(url.toString(), { signal: AbortSignal.timeout(5000), headers: { Accept: 'application/json' } })
+      const response = await fetch(providerUrl, { signal: AbortSignal.timeout(5000), headers: { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0 (compatible; VisitorTracker/1.0)' } })
       if (!response.ok) {
         console.warn('[track-visit] provider geo fetch failed:', provider, response.status, response.statusText)
         continue
@@ -272,7 +271,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!geo) {
-      const providerGeo = await resolveProviderGeo(payload.geoMode, ip, req)
+      const providerGeo = await resolveProviderGeo(payload.geoMode, ip)
       if (providerGeo) {
         geo = providerGeo
         await upsertGeoCache(ip, providerGeo)
