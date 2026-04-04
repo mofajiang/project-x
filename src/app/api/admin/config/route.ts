@@ -51,6 +51,10 @@ export async function PUT(req: NextRequest) {
   delete data.defaultTheme
   delete data.customDomain
 
+  // SQLite 存的是 0/1 整数，Prisma schema 要求 Boolean，需显式转换
+  if (data.showCommentIp !== undefined) data.showCommentIp = Boolean(data.showCommentIp)
+  if (data.commentApproval !== undefined) data.commentApproval = Boolean(data.commentApproval)
+
   // 先 upsert Prisma 已知字段
   let config: any
   try {
