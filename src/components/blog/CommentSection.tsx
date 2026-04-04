@@ -92,15 +92,23 @@ function CommentInput({
       <Avatar name={session?.username || (guestName || '?')} url={null} size={32} />
       <div className="flex-1 min-w-0 overflow-hidden">
         {!session && (
-          <div className="mb-2.5 flex items-center gap-2 border-b pb-2.5" style={{ borderColor: 'var(--border)' }}>
-            <span className="shrink-0 text-[11px] sm:text-xs" style={{ color: 'var(--text-secondary)' }}>游客</span>
+          <div className="mb-2.5 grid gap-2 border-b pb-2.5 sm:grid-cols-[1fr_auto_1fr] sm:gap-3" style={{ borderColor: 'var(--border)' }}>
             <input
               type="text"
               placeholder="昵称（必填）"
               value={guestName}
               onChange={e => setGuestName(e.target.value)}
               maxLength={20}
-              className="min-w-0 flex-1 bg-transparent outline-none text-sm py-1"
+              className="w-full min-w-0 bg-transparent outline-none text-sm py-1"
+              style={{ color: 'var(--text-primary)' }}
+            />
+            <div className="hidden sm:block" style={{ width: '1px', background: 'var(--border)', flexShrink: 0, minHeight: 18 }} />
+            <input
+              type="email"
+              placeholder="邮箱（选填）"
+              value={guestEmail}
+              onChange={e => setGuestEmail(e.target.value)}
+              className="w-full min-w-0 bg-transparent outline-none text-sm py-1"
               style={{ color: 'var(--text-primary)' }}
             />
           </div>
