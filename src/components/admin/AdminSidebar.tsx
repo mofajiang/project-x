@@ -175,8 +175,8 @@ function AdminUpdateChecker({ compact = false }: { compact?: boolean }) {
       {open && (
         <div
           className={compact
-            ? 'fixed z-50 rounded-2xl shadow-2xl overflow-hidden'
-            : 'absolute left-0 bottom-full mb-2 z-50 w-[360px] max-w-[calc(100vw-16px)] rounded-2xl shadow-2xl overflow-hidden'}
+            ? 'fixed z-[9999] rounded-2xl shadow-2xl overflow-hidden'
+            : 'absolute left-0 bottom-full mb-2 z-[9999] w-[360px] max-w-[calc(100vw-16px)] rounded-2xl shadow-2xl overflow-hidden'}
           style={compact
             ? {
                 background: 'var(--bg-secondary)',
