@@ -113,7 +113,7 @@ function CommentInput({
           </div>
         )}
 
-        <div className="border-y py-3 sm:py-4" style={{ borderColor: 'var(--border)' }}>
+        <div className="py-3 sm:py-4">
           <textarea
             value={text}
             onChange={e => setText(e.target.value)}
@@ -239,7 +239,7 @@ export function CommentSection({
 
   return (
     <section className="px-4 py-4 sm:px-5 sm:py-5">
-      <div className="mb-4 border-y py-3 sm:mb-5 sm:py-4" style={{ borderColor: 'var(--border)' }}>
+      <div className="mb-4 py-3 sm:mb-5 sm:py-4">
         <CommentInput session={session} postId={postId} placeholder="说点什么..." onDone={() => {}} />
       </div>
 
