@@ -339,44 +339,7 @@ export function AdminSidebar({ username }: { username: string }) {
         </div>
       </aside>
 
-      {/* 移动端顶部 header */}
-      <header className="md:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 h-14"
-        style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border)' }}>
-        <p className="font-bold text-base" style={{ color: 'var(--text-primary)' }}>⚙ 后台管理</p>
-        <div className="flex items-center gap-2">
-          <AdminUpdateChecker compact />
-          <AdminThemeToggle compact />
-          <a href="/" target="_blank" className="text-xs px-3 py-1 rounded-full" style={{ color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>前台 ↗</a>
-          <button onClick={logout} className="text-xs px-3 py-1 rounded-full" style={{ color: 'var(--red)', border: '1px solid var(--border)' }}>退出</button>
-        </div>
-      </header>
-
-      {/* 移动端底部 tab bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex items-stretch overflow-x-auto overscroll-x-contain"
-        style={{ background: 'var(--bg-secondary)', borderTop: '0.5px solid var(--border)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
-        {navItems.map(item => {
-          const active = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))
-          return (
-            <Link key={item.href} href={item.href}
-              className="flex flex-col items-center justify-center gap-0.5 flex-1 min-w-[52px] py-2.5 px-1 text-[9px] relative transition-colors"
-              style={{
-                color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
-                fontWeight: active ? 700 : 400,
-                background: active ? 'var(--bg-hover)' : 'transparent',
-              }}>
-              <span className="text-[17px] leading-none relative inline-block">
-                {item.icon}
-                {item.badge && pendingCount > 0 && (
-                  <span className="absolute -top-1 -right-2 text-[8px] font-bold px-1 rounded-full leading-tight" style={{ background: 'var(--red,#F4212E)', color: '#fff', minWidth: '14px', textAlign: 'center' }}>
-                    {pendingCount > 99 ? '99+' : pendingCount}
-                  </span>
-                )}
-              </span>
-              <span className="truncate w-full text-center px-0.5">{item.label.replace('管理','').replace('设置','').replace('通知','')}</span>
-            </Link>
-          )
-        })}
-      </nav>
+      {/* 移动端导航已移至 MobileNav 组件 */}
     </>
   )
 }
