@@ -137,7 +137,7 @@ export function parseSiteLogo(raw: string | undefined | null): SiteLogo {
 }
 
 async function fetchSiteConfig(): Promise<SiteConfig> {
-  await runMigrations()
+  try { await runMigrations() } catch (e: any) { console.warn('[config] runMigrations:', e?.message) }
   // 一次 raw SQL 读取所有字段（含动态迁移列）
   let rows: any[] = []
   try {

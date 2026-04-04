@@ -9,19 +9,26 @@ import { runMigrations } from '@/lib/db-migrate'
 export const dynamic = 'force-dynamic'
 
 export default async function AdminDashboard() {
-  await runMigrations()
-  const [postCount, commentCount, pendingComments, totalViews] = await Promise.all([
-    prisma.post.count({ where: { published: true } }),
-    prisma.comment.count(),
-    prisma.comment.count({ where: { approved: false } }),
-    prisma.post.aggregate({ _sum: { views: true } }),
-  ])
-
-  const recentPosts = await prisma.post.findMany({
-    take: 5,
-    orderBy: { createdAt: 'desc' },
-    select: { id: true, title: true, published: true, views: true, createdAt: true },
-  })
+  try { await runMigrations() } catch (e: any) { console.warn('[admin] runMigrations:', e?.message) }
+  let postCount = 0, commentCount = 0, pendingComments = 0
+  let totalViews: { _sum: { views: number | null } } = { _sum: { views: null } }
+  let recentPosts: Array<{ id: string; title: string; published: boolean; views: number; createdAt: Date }> = []
+  try {
+    const [pc, cc, pending, tv] = await Promise.all([
+      prisma.post.count({ where: { published: true } }),
+      prisma.comment.count(),
+      prisma.comment.count({ where: { approved: false } }),
+      prisma.post.aggregate({ _sum: { views: true } }),
+    ])
+    postCount = pc; commentCount = cc; pendingComments = pending; totalViews = tv
+  } catch (e: any) { console.warn('[admin] stats query:', e?.message) }
+  try {
+    recentPosts = await prisma.post.findMany({
+      take: 5,
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, title: true, published: true, views: true, createdAt: true },
+    })
+  } catch (e: any) { console.warn('[admin] recentPosts query:', e?.message) }
 
   const stats = [
     { label: '已发布文章', value: postCount, icon: '📝' },
