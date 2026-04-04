@@ -85,10 +85,10 @@ export function MobileNav({ username, pendingCount }: { username: string; pendin
 
       {/* 抽屉菜单 */}
       <nav
-        className={`md:hidden fixed left-0 top-0 bottom-0 w-72 z-50 transform transition-transform duration-300 overflow-y-auto ${
+        className={`md:hidden fixed left-0 w-72 z-50 transform transition-transform duration-300 overflow-y-auto ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
-        style={{ background: 'var(--bg-secondary)', borderRight: '1px solid var(--border)' }}
+        style={{ background: 'var(--bg-secondary)', borderRight: '1px solid var(--border)', top: '3.5rem', bottom: 0 }}
       >
         {/* 菜单顶部 - 用户信息 */}
         <div className="p-4 border-b" style={{ borderColor: 'var(--border)' }}>
