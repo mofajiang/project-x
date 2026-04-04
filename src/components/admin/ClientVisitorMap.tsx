@@ -11,22 +11,21 @@ const ZoomControl = dynamic(() => import('react-leaflet').then(m => m.ZoomContro
 
 import L, { LatLngExpression } from 'leaflet'
 
-// 自定义较小的标记图标
+// 自定义较小的标记图标（无阴影）
 const customIcon = new L.Icon({
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
   iconSize: [20, 32],
   iconAnchor: [10, 32],
   popupAnchor: [0, -32],
-  shadowSize: [41, 41],
+  shadowSize: [0, 0],
 })
 
 delete (L.Icon.Default.prototype as any)._getIconUrl
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  shadowSize: [0, 0],
 })
 
 type Marker = {
