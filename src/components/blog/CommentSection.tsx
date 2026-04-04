@@ -113,7 +113,7 @@ function CommentInput({
           </div>
         )}
 
-        <div className="relative py-3 sm:py-4">
+        <div className="py-3 sm:py-4">
           <textarea
             value={text}
             onChange={e => setText(e.target.value)}
@@ -136,12 +136,6 @@ function CommentInput({
               {loading ? '提交中...' : parentId ? '回复' : '发布'}
             </button>
           </div>
-
-          <div
-            aria-hidden="true"
-            className="absolute bottom-0 h-px bg-[var(--border)]"
-            style={{ left: '-3.5rem', width: 'calc(100% + 3.5rem)' }}
-          />
         </div>
       </div>
     </div>
@@ -245,9 +239,11 @@ export function CommentSection({
 
   return (
     <section className="px-4 pt-2 pb-4 sm:px-5 sm:pt-2 sm:pb-5">
-      <div className="mb-3 pt-2 pb-3 sm:mb-4 sm:pt-2 sm:pb-4">
+      <div className="pt-2 pb-3 sm:pt-2 sm:pb-4">
         <CommentInput session={session} postId={postId} placeholder="说点什么..." onDone={() => {}} />
       </div>
+
+      <div aria-hidden="true" className="-mx-4 sm:-mx-5 h-px mb-3 sm:mb-4" style={{ background: 'var(--border)' }} />
 
       {comments.length === 0 ? (
         <p className="py-8 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>暂无评论，来说点什么吧</p>
