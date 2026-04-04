@@ -37,7 +37,7 @@ function ReplyIcon() {
 }
 
 function CommentInput({
-  session, postId, parentId, placeholder, onDone, onCancel,
+  session, postId, parentId, placeholder, onDone, onCancel, defaultExpanded,
 }: {
   session: JWTPayload | null
   postId: string
@@ -45,11 +45,20 @@ function CommentInput({
   placeholder?: string
   onDone: () => void
   onCancel?: () => void
+  defaultExpanded?: boolean
 }) {
   const [text, setText] = useState('')
   const [guestName, setGuestName] = useState('')
   const [guestEmail, setGuestEmail] = useState('')
   const [loading, setLoading] = useState(false)
+  const [expanded, setExpanded] = useState(defaultExpanded ?? false)
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setText(e.target.value)
+    const el = e.target
+    el.style.height = 'auto'
+    el.style.height = el.scrollHeight + 'px'
+  }
 
   const submit = async () => {
     const content = text.trim()
@@ -88,11 +97,13 @@ function CommentInput({
   }
 
   return (
-    <div className="flex gap-2 min-w-0 overflow-hidden sm:gap-2.5">
-      <Avatar name={session?.username || (guestName || '?')} url={null} size={32} />
-      <div className="flex-1 min-w-0 overflow-hidden">
-        {!session && (
-          <div className="mb-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+    <div className="flex gap-2.5 min-w-0 overflow-hidden sm:gap-3">
+      <div className="flex-shrink-0 pt-2">
+        <Avatar name={session?.username || (guestName || '?')} url={null} size={36} />
+      </div>
+      <div className="flex-1 min-w-0 overflow-hidden pt-1.5">
+        {!session && expanded && (
+          <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
             <input
               type="text"
               placeholder="昵称（必填）"
@@ -113,18 +124,18 @@ function CommentInput({
           </div>
         )}
 
-        <div className="py-3 sm:py-4">
-          <textarea
-            value={text}
-            onChange={e => setText(e.target.value)}
-            placeholder={placeholder || '有什么新鲜事？'}
-            rows={3}
-            autoFocus
-            className="w-full resize-none bg-transparent px-0 text-[13px] outline-none sm:text-[14px]"
-            style={{ color: 'var(--text-primary)', minHeight: 78, lineHeight: 1.45 }}
-          />
+        <textarea
+          value={text}
+          onChange={handleTextChange}
+          onFocus={() => setExpanded(true)}
+          placeholder={placeholder || '有什么新鲜事？'}
+          rows={1}
+          className="w-full resize-none bg-transparent px-0 text-[15px] outline-none"
+          style={{ color: 'var(--text-primary)', lineHeight: 1.5, overflow: 'hidden' }}
+        />
 
-          <div className="mt-3 flex items-center justify-between gap-2 sm:mt-4">
+        {expanded && (
+          <div className="mt-3 flex items-center justify-between gap-2">
             <span className="text-[11px] tabular-nums sm:text-xs" style={{ color: text.length > 1800 ? '#f4212e' : 'var(--text-secondary)' }}>{text.length}/2000</span>
             <button
               onClick={submit}
@@ -136,7 +147,7 @@ function CommentInput({
               {loading ? '提交中...' : parentId ? '回复' : '发布'}
             </button>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )
@@ -198,6 +209,7 @@ function CommentItem({ comment, postId, session, depth = 0, showCommentIp = fals
               placeholder={`回复 @${name}...`}
               onDone={() => setReplying(false)}
               onCancel={() => setReplying(false)}
+              defaultExpanded
             />
           </div>
         )}
@@ -239,7 +251,7 @@ export function CommentSection({
 
   return (
     <section className="px-4 pt-2 pb-4 sm:px-5 sm:pt-2 sm:pb-5">
-      <div className="pt-2 pb-3 sm:pt-2 sm:pb-4">
+      <div className="py-3 sm:py-4">
         <CommentInput session={session} postId={postId} placeholder="说点什么..." onDone={() => {}} />
       </div>
 
