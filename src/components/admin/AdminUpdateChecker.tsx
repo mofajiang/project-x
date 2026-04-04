@@ -137,10 +137,11 @@ export function AdminUpdateChecker({ compact = false }: { compact?: boolean }) {
                 background: 'var(--bg-secondary)',
                 border: '1px solid var(--border)',
                 left: '50%',
-                top: 'calc(3.5rem + env(safe-area-inset-top))',
+                bottom: 'auto',
+                top: 'calc(3.5rem + 0.5rem)',
                 transform: 'translateX(-50%)',
                 width: 'min(calc(100vw - 1rem), 360px)',
-                maxHeight: 'calc(100vh - 5rem)',
+                maxHeight: 'calc(100vh - 4rem - 0.5rem)',
               }
             : { background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
         >
