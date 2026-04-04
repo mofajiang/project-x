@@ -11,20 +11,12 @@ const ZoomControl = dynamic(() => import('react-leaflet').then(m => m.ZoomContro
 
 import L, { LatLngExpression } from 'leaflet'
 
-// 自定义较小的标记图标（无阴影）
-const customIcon = new L.Icon({
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconSize: [20, 32],
-  iconAnchor: [10, 32],
-  popupAnchor: [0, -32],
-  shadowSize: [0, 0],
-})
-
+// 使用Leaflet官方默认指针，仅移除阴影
 delete (L.Icon.Default.prototype as any)._getIconUrl
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
   shadowSize: [0, 0],
 })
 
@@ -57,7 +49,7 @@ export function ClientVisitorMap({ markers }: Props) {
         <ZoomControl position="topright" />
         <TileLayer url={source.url} attribution={source.attribution} maxZoom={18} />
         {markers.map((m, idx) => (
-          <Marker key={idx} position={[m.lat, m.lon] as LatLngExpression} icon={customIcon}>
+          <Marker key={idx} position={[m.lat, m.lon] as LatLngExpression}>
             <Popup>
               <div className="text-xs" style={{ minWidth: '150px' }}>
                 <p className="font-bold">{m.name}</p>
