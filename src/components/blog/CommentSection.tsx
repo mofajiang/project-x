@@ -193,12 +193,6 @@ function CommentInput({
           </div>
         )}
 
-        {session && (
-          <div className="mb-2 text-[11px] leading-4 sm:text-xs" style={{ color: 'var(--text-secondary)' }}>
-            以 <span style={{ color: 'var(--accent)' }}>@{session.username}</span> 身份回复
-          </div>
-        )}
-
         <div className="rounded-[22px] border px-3 py-3 shadow-[var(--comment-shadow)] sm:rounded-[24px] sm:px-4 sm:py-4" style={{ background: 'var(--comment-surface)', borderColor: 'var(--border)' }}>
           <textarea
             value={text}
@@ -339,11 +333,6 @@ export function CommentSection({
 
   return (
     <section className="px-4 py-4 sm:px-5 sm:py-5">
-      <div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
-        <h3 className="text-base font-bold sm:text-lg" style={{ color: 'var(--text-primary)' }}>评论 {comments.length}</h3>
-        <span className="rounded-full px-2.5 py-1 text-[10px] sm:text-xs" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>X 风格</span>
-      </div>
-
       <div className="mb-4 rounded-[24px] border p-3 sm:mb-5 sm:rounded-[26px] sm:p-4" style={{ background: 'var(--comment-surface-strong)', borderColor: 'var(--border)' }}>
         <CommentInput session={session} postId={postId} placeholder="说点什么..." onDone={() => {}} />
       </div>
