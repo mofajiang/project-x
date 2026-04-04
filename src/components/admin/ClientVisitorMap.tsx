@@ -11,6 +11,17 @@ const ZoomControl = dynamic(() => import('react-leaflet').then(m => m.ZoomContro
 
 import L, { LatLngExpression } from 'leaflet'
 
+// 自定义较小的标记图标
+const customIcon = new L.Icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconSize: [20, 32],
+  iconAnchor: [10, 32],
+  popupAnchor: [0, -32],
+  shadowSize: [41, 41],
+})
+
 delete (L.Icon.Default.prototype as any)._getIconUrl
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -42,12 +53,12 @@ export function ClientVisitorMap({ markers }: Props) {
   const source = MAP_SOURCES[mapSource]
 
   return (
-    <div style={{ width: '100%', height: '100%', minHeight: '400px' }}>
-      <MapContainer center={[20, 0]} zoom={2} scrollWheelZoom={true} style={{ width: '100%', height: '100%' }}>
+    <div style={{ width: '100%', height: '100%', minHeight: '400px', position: 'relative', borderRadius: '24px', overflow: 'hidden' }}>
+      <MapContainer center={[20, 0]} zoom={2} scrollWheelZoom={true} style={{ width: '100%', height: '100%' }} zoomControl={false}>
         <ZoomControl position="topright" />
         <TileLayer url={source.url} attribution={source.attribution} maxZoom={18} />
         {markers.map((m, idx) => (
-          <Marker key={idx} position={[m.lat, m.lon] as LatLngExpression}>
+          <Marker key={idx} position={[m.lat, m.lon] as LatLngExpression} icon={customIcon}>
             <Popup>
               <div className="text-xs" style={{ minWidth: '150px' }}>
                 <p className="font-bold">{m.name}</p>
