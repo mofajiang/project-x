@@ -33,6 +33,22 @@ type Props = {
 }
 
 const MAP_SOURCES: Record<string, { url: string; attribution: string }> = {
+  carto_positron: {
+    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  },
+  carto_voyager: {
+    url: 'https://{s}.basemaps.cartocdn.com/full_all/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  },
+  arcgis_street: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    attribution: '&copy; <a href="https://www.esri.com/">Esri</a>',
+  },
+  arcgis_satellite: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: '&copy; <a href="https://www.esri.com/">Esri</a>',
+  },
   tianditu: {
     url: 'https://t{s}.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&LAYER=vec&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
     attribution: '&copy; <a href="https://www.tianditu.gov.cn/">天地图</a>',
@@ -47,36 +63,44 @@ const MAP_SOURCES: Record<string, { url: string; attribution: string }> = {
   },
 }
 
+const MAP_LABELS: Record<string, string> = {
+  carto_positron: 'CARTO亮色',
+  carto_voyager: 'CARTO详细',
+  arcgis_street: 'ArcGIS街道',
+  arcgis_satellite: 'ArcGIS影像',
+  tianditu: '天地图',
+  tiandituImage: '天地图影像',
+  osm: 'OSM',
+}
+
 export function ClientVisitorMap({ markers }: Props) {
-  const [mapSource, setMapSource] = useState('tianditu')
+  const [mapSource, setMapSource] = useState('carto_positron')
   const source = MAP_SOURCES[mapSource]
 
   return (
     <div style={{ width: '100%', height: '100%', minHeight: '400px', position: 'relative', borderRadius: '24px', overflow: 'hidden' }}>
       {/* 地图源切换按钮 */}
-      <div style={{ position: 'absolute', top: '10px', left: '50px', zIndex: 1000, display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-        {Object.entries(MAP_SOURCES).map(([key, source]) => {
-          const label = key === 'tianditu' ? '地图' : key === 'tiandituImage' ? '影像' : 'OSM'
-          return (
-            <button
-              key={key}
-              onClick={() => setMapSource(key)}
-              style={{
-                padding: '6px 12px',
-                borderRadius: '4px',
-                border: mapSource === key ? '2px solid var(--accent)' : '1px solid var(--border)',
-                background: mapSource === key ? 'rgba(29,155,240,0.2)' : 'rgba(0,0,0,0.5)',
-                color: mapSource === key ? 'var(--accent)' : 'var(--text-primary)',
-                fontSize: '12px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-            >
-              {label}
-            </button>
-          )
-        })}
+      <div style={{ position: 'absolute', top: '10px', left: '50px', zIndex: 1000, display: 'flex', gap: '6px', flexWrap: 'wrap', maxWidth: '320px' }}>
+        {Object.entries(MAP_SOURCES).map(([key]) => (
+          <button
+            key={key}
+            onClick={() => setMapSource(key)}
+            style={{
+              padding: '6px 10px',
+              borderRadius: '4px',
+              border: mapSource === key ? '2px solid var(--accent)' : '1px solid var(--border)',
+              background: mapSource === key ? 'rgba(29,155,240,0.2)' : 'rgba(0,0,0,0.5)',
+              color: mapSource === key ? 'var(--accent)' : 'var(--text-primary)',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {MAP_LABELS[key]}
+          </button>
+        ))}
       </div>
       
       <MapContainer center={[20, 0]} zoom={2} scrollWheelZoom={true} style={{ width: '100%', height: '100%' }} zoomControl={false}>
