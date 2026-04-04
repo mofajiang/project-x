@@ -147,7 +147,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
         </div>
 
         {/* 时间 & 浏览 */}
-        <div className="flex items-center gap-4 py-3 border-y text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
+        <div className="flex items-center gap-4 py-3 border-y text-sm -mx-4 px-4" style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
           <span>{post.publishedAt ? formatDate(post.publishedAt) : ''}</span>
           <span className="flex items-center gap-1">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
