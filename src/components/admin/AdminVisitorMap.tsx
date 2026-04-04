@@ -456,7 +456,7 @@ export async function AdminVisitorMap() {
           )}
         </div>
 
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 max-h-[calc(240px+2rem)] sm:max-h-[calc(280px+2rem)] overflow-y-auto pr-2">
           <div className="rounded-2xl p-4" style={{ background: 'var(--bg-hover)' }}>
             <p className="text-xs uppercase tracking-[0.18em]" style={{ color: 'var(--text-secondary)' }}>最近访问国家</p>
             <div className="mt-3 flex flex-col gap-2">
