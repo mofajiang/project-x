@@ -21,6 +21,11 @@
   --visitor-map-land-fill: rgba(231,233,234,0.18);
   --visitor-map-land-stroke: rgba(231,233,234,0.34);
   --visitor-map-grid: rgba(231,233,234,0.12);
+  --comment-surface: rgba(255,255,255,0.03);
+  --comment-surface-strong: rgba(255,255,255,0.05);
+  --comment-surface-soft: rgba(255,255,255,0.02);
+  --comment-shadow: 0 20px 50px rgba(0,0,0,0.18);
+  --comment-thread-line: rgba(231,233,234,0.18);
 }
 
 html.light {
@@ -42,6 +47,11 @@ html.light {
   --visitor-map-land-fill: rgba(15,20,25,0.16);
   --visitor-map-land-stroke: rgba(15,20,25,0.28);
   --visitor-map-grid: rgba(15,20,25,0.08);
+  --comment-surface: rgba(15,20,25,0.03);
+  --comment-surface-strong: rgba(15,20,25,0.05);
+  --comment-surface-soft: rgba(15,20,25,0.02);
+  --comment-shadow: 0 20px 40px rgba(15,20,25,0.08);
+  --comment-thread-line: rgba(15,20,25,0.14);
 }
 
 html.sepia {
@@ -63,6 +73,11 @@ html.sepia {
   --visitor-map-land-fill: rgba(90,55,40,0.16);
   --visitor-map-land-stroke: rgba(90,55,40,0.28);
   --visitor-map-grid: rgba(90,55,40,0.09);
+  --comment-surface: rgba(90,55,40,0.05);
+  --comment-surface-strong: rgba(90,55,40,0.08);
+  --comment-surface-soft: rgba(90,55,40,0.03);
+  --comment-shadow: 0 20px 40px rgba(50,28,18,0.10);
+  --comment-thread-line: rgba(90,55,40,0.14);
 }
 
 body.admin-layout-1 .admin-content-grid {
@@ -100,7 +115,7 @@ body {
 /* 滚动条样式 */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+  --comment-shadow: 0 14px 28px rgba(0,0,0,0.14);
 ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
 
 /* 文字选中颜色 */
@@ -126,7 +141,7 @@ img { background: var(--bg-secondary); }
   margin-bottom: 0.5em;
 }
 .prose-x h1 { font-size: 1.8em; }
-.prose-x h2 { font-size: 1.4em; }
+  --comment-shadow: 0 14px 24px rgba(15,20,25,0.06);
 .prose-x h3 { font-size: 1.2em; }
 .prose-x p {
   color: var(--text-primary);
@@ -152,7 +167,7 @@ img { background: var(--bg-secondary); }
   padding: 16px;
   overflow-x: auto;
   margin: 1em 0;
-}
+  --comment-shadow: 0 14px 24px rgba(50,28,18,0.07);
 .prose-x pre code {
   background: transparent;
   padding: 0;
