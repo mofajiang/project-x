@@ -98,8 +98,10 @@ function normalizeRemoteGeo(data: unknown): NormalizedGeo | null {
     ? { ...record, ...(record.data as Record<string, unknown>) }
     : record
 
-  const latValue = source.latitude ?? source.lat
-  const lonValue = source.longitude ?? source.lon ?? source.lng
+  const locValue = source.loc ?? source.Loc ?? source.LOC
+  const locParts = typeof locValue === 'string' ? locValue.split(',').map(part => part.trim()) : []
+  const latValue = source.latitude ?? source.lat ?? (locParts[0] || undefined)
+  const lonValue = source.longitude ?? source.lon ?? source.lng ?? (locParts[1] || undefined)
   const lat = typeof latValue === 'string' ? Number(latValue) : typeof latValue === 'number' ? latValue : null
   const lon = typeof lonValue === 'string' ? Number(lonValue) : typeof lonValue === 'number' ? lonValue : null
   const normalized: NormalizedGeo = {
@@ -113,6 +115,38 @@ function normalizeRemoteGeo(data: unknown): NormalizedGeo | null {
   if (normalized.country || normalized.countryCode || normalized.region || normalized.city || normalized.lat !== null || normalized.lon !== null) {
     return normalized
   }
+  return null
+}
+
+async function resolveProviderGeo(mode: string | undefined, clientIp: string, req: NextRequest): Promise<NormalizedGeo | null> {
+  if (!mode || mode === 'offline') return null
+
+  const builtins: Record<string, string> = {
+    ip9: '/api/geo/ip9',
+    ipwho: '/api/geo/ipwho',
+    ipapi: '/api/geo/ipapi',
+    ipinfo: '/api/geo/ipinfo',
+    'ip-api': '/api/geo/ip-api',
+    'geolocation-db': '/api/geo/geolocation-db',
+  }
+
+  if (mode in builtins) {
+    try {
+      const url = new URL(builtins[mode], req.url)
+      url.searchParams.set('ip', clientIp)
+      const response = await fetch(url.toString(), { signal: AbortSignal.timeout(5000), headers: { Accept: 'application/json' } })
+      if (!response.ok) {
+        console.warn('[track-visit] provider geo fetch failed:', mode, response.status, response.statusText)
+        return null
+      }
+      const data = await response.json()
+      return normalizeRemoteGeo(data)
+    } catch (error) {
+      console.warn('[track-visit] provider geo fetch error:', mode, error instanceof Error ? error.message : String(error))
+      return null
+    }
+  }
+
   return null
 }
 
@@ -217,6 +251,14 @@ export async function POST(req: NextRequest) {
       if (resolvedCustomGeo) {
         geo = resolvedCustomGeo
         await upsertGeoCache(ip, resolvedCustomGeo)
+      }
+    }
+
+    if (!geo) {
+      const providerGeo = await resolveProviderGeo(payload.geoMode, ip, req)
+      if (providerGeo) {
+        geo = providerGeo
+        await upsertGeoCache(ip, providerGeo)
       }
     }
 

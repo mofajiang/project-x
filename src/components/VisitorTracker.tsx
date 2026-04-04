@@ -47,94 +47,6 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T | null> 
   }
 }
 
-async function resolveVisitorGeo(mode: GeoMode) {
-  if (!mode || mode === 'offline') return null
-
-  const providerUrlMap: Record<string, string> = {
-    ip9: '/api/geo/ip9',
-    ipwho: '/api/geo/ipwho',
-    ipapi: '/api/geo/ipapi',
-    ipinfo: '/api/geo/ipinfo',
-    'ip-api': '/api/geo/ip-api',
-    'geolocation-db': '/api/geo/geolocation-db',
-  }
-
-  if (mode === 'ip9') {
-    const url = providerUrlMap[mode]
-    const data = await fetchJson<{
-      ret?: number
-      data?: {
-        country?: string
-        country_code?: string
-        prov?: string
-        city?: string
-        area?: string
-        lat?: string
-        lng?: string
-      }
-    }>(`${url}`)
-    if (data?.data) {
-      const d = data.data
-      const lat = typeof d.lat === 'string' ? Number(d.lat) : null
-      const lon = typeof d.lng === 'string' ? Number(d.lng) : null
-      const region = [d.prov, d.city, d.area].filter(Boolean).join(' ')
-      const result = {
-        country: (d.country || '').trim(),
-        countryCode: (d.country_code || '').trim().toUpperCase(),
-        region,
-        city: (d.city || '').trim(),
-        lat: Number.isFinite(lat) ? lat : null,
-        lon: Number.isFinite(lon) ? lon : null,
-      }
-      console.debug('[VisitorTracker] ip9 resolved:', result)
-      return result
-    }
-    console.debug('[VisitorTracker] ip9 response missing data field:', data)
-    return null
-  }
-
-  if (mode in providerUrlMap) {
-    const url = providerUrlMap[mode]
-    const data = await fetchJson<Record<string, unknown>>(`${url}`)
-    const normalized = normalizeGeoRecord(data || {})
-    if (normalized) {
-      console.debug(`[VisitorTracker] ${mode} resolved:`, normalized)
-      return normalized
-    }
-    console.debug(`[VisitorTracker] ${mode} response not normalized:`, data)
-  }
-
-  return null
-}
-
-function normalizeGeoRecord(record: Record<string, unknown>): VisitorGeo | null {
-  const source = record && typeof record.data === 'object' && record.data !== null && !Array.isArray(record.data)
-    ? { ...record, ...(record.data as Record<string, unknown>) }
-    : record
-  const country = String(source.country || source.country_name || source.nation || source.countryCode || source.country_code || '').trim()
-  const region = String(source.region || source.region_name || source.regionName || source.prov || source.province || source.province_name || source.provinceName || source.address || '').trim()
-  const city = String(source.city || source.city_name || source.cityName || source.district || '').trim()
-  const latValue = source.latitude ?? source.lat ?? source.loc?.toString().split(',')[0]
-  const lonValue = source.longitude ?? source.lon ?? source.lng ?? source.loc?.toString().split(',')[1]
-  const lat = typeof latValue === 'number' ? latValue : typeof latValue === 'string' ? Number(latValue) : null
-  const lon = typeof lonValue === 'number' ? lonValue : typeof lonValue === 'string' ? Number(lonValue) : null
-  const countryCode = String(source.country_code || source.countryCode || source.nation_code || '').trim().toUpperCase()
-
-  const normalized: VisitorGeo = {
-    country: country,
-    countryCode,
-    region,
-    city,
-    lat: Number.isFinite(lat as number) ? lat : null,
-    lon: Number.isFinite(lon as number) ? lon : null,
-  }
-
-  if (normalized.country || normalized.countryCode || normalized.region || normalized.city || normalized.lat !== null || normalized.lon !== null) {
-    return normalized
-  }
-  return null
-}
-
 export function VisitorTracker({ visitorGeoMode = 'offline', visitorGeoEndpoint = '', visitorGeoKey = '' }: Props) {
   const pathname = usePathname()
 
@@ -146,14 +58,12 @@ export function VisitorTracker({ visitorGeoMode = 'offline', visitorGeoEndpoint 
     const send = async () => {
       const query = window.location.search.replace(/^\?/, '')
       const path = query ? `${pathname}?${query}` : pathname
-      const geo = await resolveVisitorGeo(visitorGeoMode)
-      if (cancelled) return
 
       const payload = JSON.stringify({
         path,
         referrer: document.referrer || '',
         userAgent: navigator.userAgent,
-        geo,
+        geo: null,
         geoMode: visitorGeoMode,
         geoEndpoint: visitorGeoEndpoint,
         geoKey: visitorGeoKey,
