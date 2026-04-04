@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 
-type GeoMode = 'offline' | 'ip9' | 'custom' | string
+type GeoMode = 'offline' | 'ip9' | 'ipwho' | 'ipapi' | 'ipinfo' | 'ip-api' | 'geolocation-db' | 'custom' | string
 
 type VisitorGeo = {
   country?: string
@@ -50,9 +50,17 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T | null> 
 async function resolveVisitorGeo(mode: GeoMode) {
   if (!mode || mode === 'offline') return null
 
+  const providerUrlMap: Record<string, string> = {
+    ip9: '/api/geo/ip9',
+    ipwho: '/api/geo/ipwho',
+    ipapi: '/api/geo/ipapi',
+    ipinfo: '/api/geo/ipinfo',
+    'ip-api': '/api/geo/ip-api',
+    'geolocation-db': '/api/geo/geolocation-db',
+  }
+
   if (mode === 'ip9') {
-    // Let the backend resolve the client IP from request headers and query IP9.
-    const url = '/api/geo/ip9'
+    const url = providerUrlMap[mode]
     const data = await fetchJson<{
       ret?: number
       data?: {
@@ -64,8 +72,7 @@ async function resolveVisitorGeo(mode: GeoMode) {
         lat?: string
         lng?: string
       }
-    }>(url)
-    // ip9 may return different 'ret' codes across versions; accept any response that contains `data`
+    }>(`${url}`)
     if (data?.data) {
       const d = data.data
       const lat = typeof d.lat === 'string' ? Number(d.lat) : null
@@ -84,6 +91,17 @@ async function resolveVisitorGeo(mode: GeoMode) {
     }
     console.debug('[VisitorTracker] ip9 response missing data field:', data)
     return null
+  }
+
+  if (mode in providerUrlMap) {
+    const url = providerUrlMap[mode]
+    const data = await fetchJson<Record<string, unknown>>(`${url}`)
+    const normalized = normalizeGeoRecord(data || {})
+    if (normalized) {
+      console.debug(`[VisitorTracker] ${mode} resolved:`, normalized)
+      return normalized
+    }
+    console.debug(`[VisitorTracker] ${mode} response not normalized:`, data)
   }
 
   return null

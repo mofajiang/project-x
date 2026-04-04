@@ -285,6 +285,11 @@ export async function AdminVisitorMap() {
   const sourceLabelMap: Record<string, string> = {
     offline: '离线数据库',
     ip9: 'IP9 公共接口',
+    ipwho: 'ipwho.is',
+    ipapi: 'ipapi.co',
+    ipinfo: 'ipinfo.io',
+    'ip-api': 'ip-api.com',
+    'geolocation-db': 'geolocation-db.com',
     custom: '自定义接口',
   }
   const sourceLabel = sourceLabelMap[config.visitorGeoMode] || '自定义接口'

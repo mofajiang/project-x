@@ -111,6 +111,11 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialK
               >
                 <option value="offline">离线数据库</option>
                 <option value="ip9">IP9 公共接口</option>
+                <option value="ipwho">ipwho.is</option>
+                <option value="ipapi">ipapi.co</option>
+                <option value="ipinfo">ipinfo.io</option>
+                <option value="ip-api">ip-api.com</option>
+                <option value="geolocation-db">geolocation-db.com</option>
                 <option value="custom">自定义接口</option>
               </select>
             </label>
@@ -141,8 +146,7 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialK
             </label>
 
             <p className="text-[11px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              推荐使用 IP9：<span style={{ color: 'var(--text-primary)' }}>https://ip9.com.cn/get?ip=&#123;ip&#125;</span>（公共接口，免费限频约 60 次/分钟）。
-              自定义接口支持 GET 地址与 <span style={{ color: 'var(--text-primary)' }}>{'{ip}'}</span> 占位符，接口如果需要鉴权，可额外填写 API Key。
+              内置接口支持：IP9、ipwho.is、ipapi.co、ipinfo.io、ip-api.com、geolocation-db.com。自定义接口则支持 GET 地址与 <span style={{ color: 'var(--text-primary)' }}>{'{ip}'}</span> 占位符，接口如果需要鉴权，可额外填写 API Key。
             </p>
 
             <div className="rounded-2xl p-3" style={{ background: 'var(--bg-hover)', border: '1px solid var(--border)' }}>
