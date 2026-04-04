@@ -130,20 +130,37 @@ async function resolveProviderGeo(mode: string | undefined, clientIp: string, re
     'geolocation-db': '/api/geo/geolocation-db',
   }
 
-  if (mode in builtins) {
+  const fallbackOrder: Record<string, string[]> = {
+    ip9: ['ip9', 'ipinfo', 'ip-api', 'geolocation-db'],
+    ipwho: ['ipwho', 'ipinfo', 'ip-api', 'geolocation-db'],
+    ipapi: ['ipapi', 'ipinfo', 'ip-api', 'geolocation-db'],
+    ipinfo: ['ipinfo', 'ip-api', 'geolocation-db', 'ip9'],
+    'ip-api': ['ip-api', 'ipinfo', 'geolocation-db', 'ip9'],
+    'geolocation-db': ['geolocation-db', 'ipinfo', 'ip-api', 'ip9'],
+  }
+
+  const providers = fallbackOrder[mode] || [mode]
+  for (const provider of providers) {
+    if (!(provider in builtins)) continue
     try {
-      const url = new URL(builtins[mode], req.url)
+      const url = new URL(builtins[provider], req.url)
       url.searchParams.set('ip', clientIp)
       const response = await fetch(url.toString(), { signal: AbortSignal.timeout(5000), headers: { Accept: 'application/json' } })
       if (!response.ok) {
-        console.warn('[track-visit] provider geo fetch failed:', mode, response.status, response.statusText)
-        return null
+        console.warn('[track-visit] provider geo fetch failed:', provider, response.status, response.statusText)
+        continue
       }
       const data = await response.json()
-      return normalizeRemoteGeo(data)
+      const normalized = normalizeRemoteGeo(data)
+      if (normalized) {
+        if (provider !== mode) {
+          console.warn(`[track-visit] provider ${mode} failed, fallback to ${provider}`)
+        }
+        return normalized
+      }
+      console.warn('[track-visit] provider geo response not normalized:', provider, data)
     } catch (error) {
-      console.warn('[track-visit] provider geo fetch error:', mode, error instanceof Error ? error.message : String(error))
-      return null
+      console.warn('[track-visit] provider geo fetch error:', provider, error instanceof Error ? error.message : String(error))
     }
   }
 
