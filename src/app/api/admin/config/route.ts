@@ -41,6 +41,7 @@ export async function PUT(req: NextRequest) {
   try { await runMigrations() } catch (e: any) { console.warn('[config PUT] runMigrations:', e?.message) }
   const requestIp = getRequestIp(req)
   const data = await req.json()
+  console.log('[config PUT] 收到数据:', { openrouterApiKey: data.openrouterApiKey, openrouterModel: data.openrouterModel, enableAiDetection: data.enableAiDetection })
   delete data.id
   const changedKeys = Object.keys(data)
   const auditPayload = getConfigAuditPayload(changedKeys)
@@ -91,11 +92,13 @@ export async function PUT(req: NextRequest) {
   // 先 upsert Prisma 已知字段
   let config: any
   try {
+    console.log('[config PUT] Prisma upsert 前的 data:', { openrouterApiKey: data.openrouterApiKey?.substring(0, 20) || '(empty)', openrouterModel: data.openrouterModel, enableAiDetection: data.enableAiDetection })
     config = await prisma.siteConfig.upsert({
       where: { id: 'singleton' },
       update: data,
       create: { id: 'singleton', ...data },
     })
+    console.log('[config PUT] Prisma upsert 后的结果:', { openrouterApiKey: config.openrouterApiKey?.substring(0, 20) || '(empty)', openrouterModel: config.openrouterModel, enableAiDetection: config.enableAiDetection })
   } catch (e: any) {
     console.error('[config PUT] upsert failed:', e?.message)
     await logAdminAudit({

@@ -129,7 +129,8 @@ ${authorWebsite ? `- 网站: ${authorWebsite}` : ''}
       }
     }
     
-    console.log('[openrouter] ✅ 收到响应内容 (前200字):', responseContent.substring(0, 200))
+    console.log('[openrouter] ✅ 收到响应内容长度:', responseContent.length, '字')
+    console.log('[openrouter] 完整响应内容:', responseContent)
 
     // 尝试解析 JSON（可能被包裹在 markdown ``` 中）
     let jsonStr = responseContent
