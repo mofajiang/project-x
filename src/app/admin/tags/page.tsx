@@ -7,6 +7,8 @@ interface Tag { id: string; name: string; slug: string; _count: { posts: number 
 
 export default function AdminTagsPage() {
   const [tags, setTags] = useState<Tag[]>([])
+  const [name, setName] = useState('')
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     fetch('/api/admin/tags')
@@ -20,6 +22,34 @@ export default function AdminTagsPage() {
     await fetch('/api/admin/tags', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
     setTags(t => t.filter(x => x.id !== id))
     toast.success('已删除')
+  }
+
+  const createTag = async () => {
+    const trimmedName = name.trim()
+    if (!trimmedName) {
+      toast.error('请输入标签名')
+      return
+    }
+    setSaving(true)
+    try {
+      const res = await fetch('/api/admin/tags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmedName }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || '创建失败')
+      setTags(prev => {
+        const next = prev.filter(tag => tag.id !== data.id)
+        return [data, ...next]
+      })
+      setName('')
+      toast.success('标签已创建')
+    } catch (error: any) {
+      toast.error(error?.message || '创建失败')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const renderTagCard = (tag: Tag) => (
@@ -37,7 +67,33 @@ export default function AdminTagsPage() {
 
   return (
     <div>
-      <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)' }}>🏷 标签管理</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)' }}>🏷 标签管理</h1>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <input
+            value={name}
+            onChange={e => setName(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                createTag()
+              }
+            }}
+            placeholder="输入新标签名"
+            className="flex-1 sm:w-64 px-4 py-2 rounded-full text-sm outline-none"
+            style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
+          />
+          <button
+            type="button"
+            onClick={createTag}
+            disabled={saving}
+            className="px-4 py-2 rounded-full text-sm font-bold text-white disabled:opacity-50"
+            style={{ background: 'var(--accent)' }}
+          >
+            {saving ? '创建中...' : '新增标签'}
+          </button>
+        </div>
+      </div>
       <div className="sm:hidden flex flex-col gap-3">
         {tags.map(renderTagCard)}
       </div>
