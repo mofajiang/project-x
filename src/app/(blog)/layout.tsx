@@ -22,7 +22,7 @@ export default async function BlogLayout({ children }: { children: React.ReactNo
     }),
     prisma.post.findMany({
       where: { published: true },
-      orderBy: { views: 'desc' },
+      orderBy: [{ pinned: 'desc' }, { views: 'desc' }],
       take: 5,
       select: { id: true, title: true, slug: true, views: true },
     }),

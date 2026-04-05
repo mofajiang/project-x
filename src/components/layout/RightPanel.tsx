@@ -17,7 +17,7 @@ const getTopTags = unstable_cache(
 const getHotPosts = unstable_cache(
   () => prisma.post.findMany({
     where: { published: true },
-    orderBy: { views: 'desc' },
+    orderBy: [{ pinned: 'desc' }, { views: 'desc' }],
     take: 5,
     select: { id: true, title: true, slug: true, views: true },
   }),
