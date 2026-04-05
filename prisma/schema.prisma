@@ -65,8 +65,9 @@ model Comment {
   approved    Boolean  @default(false)
   authorId    String?
   author      User?    @relation(fields: [authorId], references: [id])
-  guestName   String?  // 访客昵称（未登录时使用）
-  ip          String?  @default("")
+  guestName    String?  // 访客昵称（未登录时使用）
+  guestWebsite String?  // 访客网站（选填）
+  ip           String?  @default("")
   postId      String
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   parentId  String?

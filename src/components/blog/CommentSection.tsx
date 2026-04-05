@@ -11,6 +11,7 @@ interface Comment {
   createdAt: Date
   author: { username: string; avatar: string | null } | null
   guestName: string | null
+  guestWebsite: string | null
   ip?: string | null
   replies: Comment[]
 }
@@ -50,6 +51,7 @@ function CommentInput({
   const [text, setText] = useState('')
   const [guestName, setGuestName] = useState('')
   const [guestEmail, setGuestEmail] = useState('')
+  const [guestWebsite, setGuestWebsite] = useState('')
   const [loading, setLoading] = useState(false)
   const [expanded, setExpanded] = useState(defaultExpanded ?? false)
 
@@ -79,6 +81,7 @@ function CommentInput({
           parentId,
           guestName: guestName.trim() || undefined,
           guestEmail: guestEmail.trim() || undefined,
+          guestWebsite: guestWebsite.trim() || undefined,
         }),
       })
       const data = await res.json()
@@ -118,6 +121,14 @@ function CommentInput({
               placeholder="邮箱（选填）"
               value={guestEmail}
               onChange={e => setGuestEmail(e.target.value)}
+              className="w-full min-w-0 bg-transparent outline-none text-sm py-1"
+              style={{ color: 'var(--text-primary)' }}
+            />
+            <input
+              type="url"
+              placeholder="网站（选填）"
+              value={guestWebsite}
+              onChange={e => setGuestWebsite(e.target.value)}
               className="w-full min-w-0 bg-transparent outline-none text-sm py-1"
               style={{ color: 'var(--text-primary)' }}
             />
@@ -175,7 +186,11 @@ function CommentItem({ comment, postId, session, depth = 0, showCommentIp = fals
 
       <div className="flex-1 min-w-0 pb-0.5 sm:pb-1">
         <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-          <span className="text-[12px] font-bold sm:text-sm" style={{ color: 'var(--text-primary)' }}>{name}</span>
+          <span className="text-[12px] font-bold sm:text-sm" style={{ color: 'var(--text-primary)' }}>
+            {comment.guestWebsite ? (
+              <a href={comment.guestWebsite} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>{name}</a>
+            ) : name}
+          </span>
           {!comment.author && (
             <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>访客</span>
           )}

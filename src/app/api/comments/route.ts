@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
   await runMigrations()
   const session = await getSessionFromRequest(req)
 
-  const { postId, content, parentId, guestName, guestEmail } = await req.json()
+  const { postId, content, parentId, guestName, guestEmail, guestWebsite } = await req.json()
   if (!postId || !content?.trim()) return NextResponse.json({ error: '内容不能为空' }, { status: 400 })
   if (content.trim().length > 2000) return NextResponse.json({ error: '评论不能超过2000字' }, { status: 400 })
 
@@ -22,6 +22,11 @@ export async function POST(req: NextRequest) {
     if (guestEmail?.trim()) {
       const emailReg = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
       if (!emailReg.test(guestEmail.trim())) return NextResponse.json({ error: '邮箱格式不正确' }, { status: 400 })
+    }
+    if (guestWebsite?.trim()) {
+      try { new URL(guestWebsite.trim()) } catch {
+        return NextResponse.json({ error: '网站地址格式不正确' }, { status: 400 })
+      }
     }
   }
 
@@ -44,15 +49,19 @@ export async function POST(req: NextRequest) {
   if (!session && guestEmail?.trim()) {
     commentData.guestEmail = guestEmail.trim()
   }
+  if (!session && guestWebsite?.trim()) {
+    commentData.guestWebsite = guestWebsite.trim()
+  }
 
   let comment
   try {
     comment = await prisma.comment.create({ data: commentData })
   } catch (e: any) {
     // guestName 列可能尚未迁移，降级去掉该字段重试
-    if (e?.message?.includes('guestName') || e?.message?.includes('guestEmail') || e?.message?.includes('ip') || e?.message?.includes('no such column')) {
+    if (e?.message?.includes('guestName') || e?.message?.includes('guestEmail') || e?.message?.includes('guestWebsite') || e?.message?.includes('ip') || e?.message?.includes('no such column')) {
       delete commentData.guestName
       delete commentData.guestEmail
+      delete commentData.guestWebsite
       delete commentData.ip
       comment = await prisma.comment.create({ data: commentData })
     } else {
