@@ -21,6 +21,7 @@ export function AdminUpdateChecker({ compact = false }: { compact?: boolean }) {
   const [updateLogs, setUpdateLogs] = useState<{ msg: string; error?: boolean }[]>([])
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
+  const portalRef = useRef<HTMLDivElement>(null)
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -49,7 +50,8 @@ export function AdminUpdateChecker({ compact = false }: { compact?: boolean }) {
   useEffect(() => {
     if (!open) return
     const handlePointerDown = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) {
+      const target = event.target as Node
+      if (!rootRef.current?.contains(target) && !portalRef.current?.contains(target)) {
         setOpen(false)
       }
     }
@@ -141,7 +143,8 @@ export function AdminUpdateChecker({ compact = false }: { compact?: boolean }) {
             onClick={() => setOpen(false)}
           >
             <div
-              className="rounded-2xl shadow-2xl overflow-hidden"
+              ref={portalRef}
+            className="rounded-2xl shadow-2xl overflow-hidden"
               style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', width: 'min(calc(100vw - 2rem), 360px)', maxHeight: 'min(70vh, 600px)' }}
               onClick={e => e.stopPropagation()}
             >
