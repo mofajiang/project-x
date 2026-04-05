@@ -18,7 +18,8 @@ export function slugify(text: string) {
   return text
     .trim()
     .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s-]/gu, '')  // 保留 Unicode 字母/数字（含中文），移除其余标点
+    // 保留 ASCII 字母/数字、中日韩字符、空格和连字符，移除其余字符
+    .replace(/[^\w\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/^-+|-+$/g, '')
 }
