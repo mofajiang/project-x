@@ -29,6 +29,7 @@ export default async function HomePage({
       content: true,
       coverImage: true,
       publishedAt: true,
+      pinned: true,
       views: true,
       likes: true,
       author: { select: { username: true, avatar: true } },

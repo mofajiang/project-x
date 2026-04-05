@@ -14,6 +14,7 @@ interface Post {
   content: string
   coverImage: string | null
   publishedAt: Date | null
+  pinned?: boolean
   views: number
   likes: number
   author: { username: string; displayName?: string | null; avatar: string | null }
@@ -102,10 +103,19 @@ export function PostCard({ post }: { post: Post }) {
           </div>
         </div>
 
-        {/* 标题 */}
-        <h2 className="font-bold text-[15px] mb-1.5 leading-snug" style={{ color: 'var(--text-primary)' }}>
-          {post.title}
-        </h2>
+        {/* 标题 + 置顶图标 */}
+        <div className="flex items-center gap-2 mb-1.5">
+          {post.pinned && (
+            <span title="置顶" style={{ color: 'var(--accent)' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+              </svg>
+            </span>
+          )}
+          <h2 className="font-bold text-[15px] leading-snug" style={{ color: 'var(--text-primary)' }}>
+            {post.title}
+          </h2>
+        </div>
 
         {/* 正文内容预览（类 X 推文直接展示） */}
         {post.content && (() => {

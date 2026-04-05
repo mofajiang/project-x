@@ -20,7 +20,7 @@ export default async function TagPage({ params }: { params: { slug: string } }) 
             },
           },
         },
-        orderBy: { post: { publishedAt: 'desc' } },
+        orderBy: [{ post: { pinned: 'desc' } }, { post: { publishedAt: 'desc' } }],
       },
     },
   })
