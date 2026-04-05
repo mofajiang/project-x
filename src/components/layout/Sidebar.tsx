@@ -170,6 +170,13 @@ export function Sidebar({ siteName, siteLogo, loginMode, secretClicks, loginPath
         )}
       </nav>
 
+      {/* 未登录时底部显示主题切换 */}
+      {!session && (
+        <div className="mt-auto flex items-center justify-center xl:justify-start xl:px-3 py-2">
+          <ThemeToggle className="w-10 h-10" />
+        </div>
+      )}
+
       {/* 底部用户卡片（X 风格） */}
       {session && (
         <div ref={menuRef} className="mt-auto relative">
