@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
   const ip = getClientIp(req)
 
   // 进行本地快速垃圾检测（同步，<50ms）
-  const quickCheck = quickSpamCheck(content.trim(), guestEmail || commentData?.guestEmail)
+  const quickCheck = quickSpamCheck(content.trim(), guestEmail)
 
   // 构建评论数据，兼容 guestName 列不存在的情况
   // 直接包含本地检测结果，避免额外的数据库更新
@@ -134,10 +134,25 @@ async function analyzeAndUpdateComment(
     
     console.log('[ai-analysis-async] AI 分析完成:', { commentId, riskScore: aiResult.riskScore })
     
-    // 确定是否需要隐藏
+    // 根据强度等级和 AI 风险评分决定是否自动通过/隐藏
     let approved: boolean | undefined = undefined
-    if (aiResult.riskScore >= 70 && !session) {
-      approved = false  // 高风险访客评论自动隐藏
+    const reviewStrength = (config.aiReviewStrength || 'balanced') as 'lenient' | 'balanced' | 'strict'
+    const thresholdMap: Record<'lenient' | 'balanced' | 'strict', number> = {
+      'lenient': 30,    // 宽松：风险分 < 30 自动通过
+      'balanced': 20,   // 平衡：风险分 < 20 自动通过
+      'strict': 10,     // 严格：风险分 < 10 自动通过
+    }
+    const autoApproveThreshold = thresholdMap[reviewStrength] || 20
+    
+    if (!session) {
+      // 访客评论：支持自动通过和自动隐藏
+      if (aiResult.riskScore >= 70) {
+        approved = false  // 高风险自动隐藏
+        console.log('[ai-analysis-async] ⚠️ 高风险评论自动隐藏')
+      } else if (config.aiAutoApprove && aiResult.riskScore < autoApproveThreshold) {
+        approved = true   // 低风险且启用自动通过，则自动通过
+        console.log('[ai-analysis-async] ✅ 安全评论自动通过 (评审强度:', reviewStrength, ', 阈值:', autoApproveThreshold, ')')
+      }
     }
     
     // 更新数据库

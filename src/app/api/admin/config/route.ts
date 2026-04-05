@@ -86,6 +86,7 @@ export async function PUT(req: NextRequest) {
   if (data.showCommentIp !== undefined) data.showCommentIp = Boolean(data.showCommentIp)
   if (data.commentApproval !== undefined) data.commentApproval = Boolean(data.commentApproval)
   if (data.enableAiDetection !== undefined) data.enableAiDetection = Boolean(data.enableAiDetection)
+  if (data.aiAutoApprove !== undefined) data.aiAutoApprove = Boolean(data.aiAutoApprove)
 
   // 先 upsert Prisma 已知字段
   let config: any

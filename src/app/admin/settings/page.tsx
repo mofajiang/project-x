@@ -78,7 +78,7 @@ function Field({
 
 export default function SettingsPage() {
   const [config, setConfig] = useState({
-    siteName: '', siteDesc: '', socialX: '', socialGithub: '', socialEmail: '', commentApproval: true, showCommentIp: false, enableAiDetection: true, openrouterApiKey: '', openrouterModel: 'claude-3.5-sonnet', copyright: '',
+    siteName: '', siteDesc: '', socialX: '', socialGithub: '', socialEmail: '', commentApproval: true, showCommentIp: false, enableAiDetection: true, openrouterApiKey: '', openrouterModel: 'claude-3.5-sonnet', aiReviewStrength: 'balanced', aiAutoApprove: true, copyright: '',
   })
   const [defaultTheme, setDefaultTheme] = useState<'dark' | 'light'>('dark')
   const [navItems, setNavItems] = useState<NavItem[]>(DEFAULT_NAV)
@@ -121,6 +121,8 @@ export default function SettingsPage() {
           enableAiDetection: data.enableAiDetection ?? true,
           openrouterApiKey: data.openrouterApiKey || '',
           openrouterModel: data.openrouterModel || 'claude-3.5-sonnet',
+          aiReviewStrength: data.aiReviewStrength || 'balanced',
+          aiAutoApprove: data.aiAutoApprove ?? true,
           copyright: data.copyright || '',
         })
         try {
@@ -441,6 +443,24 @@ export default function SettingsPage() {
                       查看所有可用模型: https://openrouter.ai/docs/models | 示例: <code style={{background: 'rgba(0,0,0,0.2)', padding: '2px 4px', borderRadius: '4px'}}>qwen/qwen3.6-plus:free</code>, <code style={{background: 'rgba(0,0,0,0.2)', padding: '2px 4px', borderRadius: '4px'}}>claude-3.5-sonnet</code>, <code style={{background: 'rgba(0,0,0,0.2)', padding: '2px 4px', borderRadius: '4px'}}>gpt-4o</code>
                     </p>
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>🔍 AI 评审强度</label>
+                    <select 
+                      value={config.aiReviewStrength || 'balanced'} 
+                      onChange={e => setConfig(c => ({ ...c, aiReviewStrength: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-2xl text-sm outline-none"
+                      style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}
+                    >
+                      <option value="lenient">宽松 - 风险分 &lt; 30 自动通过</option>
+                      <option value="balanced">平衡 - 风险分 &lt; 20 自动通过（推荐）</option>
+                      <option value="strict">严格 - 风险分 &lt; 10 自动通过</option>
+                    </select>
+                    <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>越严格的设置，越少评论会被自动通过</p>
+                  </div>
+                  <label className="flex items-start sm:items-center gap-3 cursor-pointer">
+                    <input type="checkbox" checked={config.aiAutoApprove ?? true} onChange={e => setConfig(c => ({ ...c, aiAutoApprove: e.target.checked }))} className="w-4 h-4" />
+                    <div className="min-w-0"><p className="text-sm font-medium leading-tight" style={{ color: 'var(--text-primary)' }}>✅ AI 检测通过则自动显示</p><p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>启用后低风险评论会根据上方强度设置自动通过，用户立即可见（仅对访客评论）</p></div>
+                  </label>
                 </div>
               </div>
             )}

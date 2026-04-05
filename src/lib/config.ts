@@ -94,6 +94,8 @@ export type SiteConfig = {
   commentApproval: boolean
   showCommentIp: boolean
   enableAiDetection: boolean
+  aiReviewStrength: 'lenient' | 'balanced' | 'strict'
+  aiAutoApprove: boolean
   openrouterApiKey: string
   openrouterModel: string
   socialX: string
@@ -194,11 +196,14 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
   if (config.showCommentIp === undefined || config.showCommentIp === null) config.showCommentIp = false
   if (config.commentApproval === undefined || config.commentApproval === null) config.commentApproval = true
   if (config.enableAiDetection === undefined || config.enableAiDetection === null) config.enableAiDetection = true
+  if (config.aiAutoApprove === undefined || config.aiAutoApprove === null) config.aiAutoApprove = true
+  if (!config.aiReviewStrength) config.aiReviewStrength = 'balanced'
   
   // SQLite 存的是 0/1 整数，需转换为布尔值
   if (typeof config.showCommentIp === 'number') config.showCommentIp = Boolean(config.showCommentIp)
   if (typeof config.commentApproval === 'number') config.commentApproval = Boolean(config.commentApproval)
   if (typeof config.enableAiDetection === 'number') config.enableAiDetection = Boolean(config.enableAiDetection)
+  if (typeof config.aiAutoApprove === 'number') config.aiAutoApprove = Boolean(config.aiAutoApprove)
 
   if (!config.copyright) config.copyright = ''
   if (!config.defaultTheme) config.defaultTheme = 'dark'

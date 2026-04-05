@@ -94,6 +94,8 @@ model SiteConfig {
   commentApproval Boolean @default(true)
   showCommentIp Boolean @default(false)
   enableAiDetection Boolean @default(true)  // 启用 AI 垃圾评论检测
+  aiReviewStrength String @default("balanced")  // 评审强度：lenient|balanced|strict
+  aiAutoApprove Boolean @default(true)  // AI 判断安全时自动通过
   openrouterApiKey String @default("")  // OpenRouter API 密钥
   openrouterModel String @default("claude-3.5-sonnet")  // 使用的 AI 模型
   socialX      String @default("")
