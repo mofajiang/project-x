@@ -176,7 +176,7 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialK
               </select>
             </label>
 
-            <label className="flex flex-col gap-1.5 text-xs">
+            <div className="flex flex-col gap-1.5 text-xs">
               <span style={{ color: 'var(--text-secondary)' }}>统计数据框显示</span>
               <div className="flex flex-col gap-2 p-3 rounded-xl" style={{ background: 'var(--bg-hover)' }}>
                 {statsOptions.map(option => (
@@ -201,7 +201,7 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialK
                   </label>
                 ))}
               </div>
-            </label>
+            </div>
 
             <label className="flex flex-col gap-1.5 text-xs">
               <span style={{ color: 'var(--text-secondary)' }}>GET 地址（支持 {'{ip}'}）</span>
