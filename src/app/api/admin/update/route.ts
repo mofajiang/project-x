@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSessionFromRequest } from '@/lib/auth'
 import { execSync, spawnSync } from 'child_process'
 import { revalidatePath } from 'next/cache'
-import { rmSync } from 'fs'
+import { getRequestIp, logAdminAudit } from '@/lib/admin-audit'
+
 
 const REPO = 'mofajiang/project-x'
 const GH = `https://api.github.com/repos/${REPO}`
@@ -78,9 +79,11 @@ export async function POST(req: NextRequest) {
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const requestIp = getRequestIp(req)
   const encoder = new TextEncoder()
   const stream = new ReadableStream({
     async start(controller) {
+      let auditLogged = false
       const send = (msg: string) => {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ msg })}\n\n`))
       }
@@ -90,6 +93,21 @@ export async function POST(req: NextRequest) {
       const sendDone = (success: boolean) => {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, success })}\n\n`))
         controller.close()
+      }
+      const recordAudit = async (status: 'success' | 'failed', summary: string, metadata?: Record<string, unknown>) => {
+        if (auditLogged) return
+        auditLogged = true
+        await logAdminAudit({
+          action: 'system.updated',
+          summary,
+          riskLevel: 'critical',
+          status,
+          targetType: 'branch',
+          targetId: 'main',
+          actor: session,
+          ip: requestIp,
+          metadata,
+        })
       }
 
       try {
@@ -106,6 +124,7 @@ export async function POST(req: NextRequest) {
           const pullOut = execSync(`git pull origin ${branch}`, { cwd, encoding: 'utf8', stdio: 'pipe', timeout: 60000 })
           send(`✅ git pull 完成\n${pullOut.trim()}`)
         } catch (e: any) {
+          await recordAudit('failed', '执行系统更新失败：git pull 未完成', { stage: 'git-pull', error: e?.message || 'git pull failed' })
           sendError(`❌ git pull 失败：${e.message}`)
           sendDone(false)
           return
@@ -116,6 +135,7 @@ export async function POST(req: NextRequest) {
         const buildResult = spawnSync('npm', ['run', 'build'], { cwd, encoding: 'utf8', timeout: 300000 })
         if (buildResult.status !== 0) {
           const errMsg = (buildResult.stderr || buildResult.stdout || '').slice(-2000)
+          await recordAudit('failed', '执行系统更新失败：构建未通过', { stage: 'build', exitCode: buildResult.status, error: errMsg })
           sendError(`❌ 构建失败（exit ${buildResult.status}）：\n${errMsg}`)
           sendDone(false)
           return
@@ -135,9 +155,11 @@ export async function POST(req: NextRequest) {
 
         // 重新验证页面缓存
         revalidatePath('/', 'layout')
+        await recordAudit('success', '执行系统更新完成', { branch })
         send('✅ 更新全部完成！页面将自动刷新。')
         sendDone(true)
       } catch (e: any) {
+        await recordAudit('failed', '执行系统更新失败：出现未知错误', { stage: 'unknown', error: e?.message || 'unknown error' })
         sendError(`❌ 未知错误：${e.message}`)
         sendDone(false)
       }

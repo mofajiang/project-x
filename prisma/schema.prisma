@@ -125,3 +125,22 @@ model VisitorGeoCache {
   lon         Float?
   updatedAt   DateTime @default(now())
 }
+
+model AdminAuditLog {
+  id            String   @id
+  action        String
+  summary       String   @default("")
+  targetType    String?
+  targetId      String?
+  riskLevel     String   @default("high")
+  status        String   @default("success")
+  actorId       String   @default("")
+  actorUsername String   @default("")
+  ip            String   @default("")
+  metadata      String   @default("")
+  createdAt     DateTime @default(now())
+
+  @@index([createdAt(sort: Desc)])
+  @@index([riskLevel, status, createdAt(sort: Desc)])
+}
+

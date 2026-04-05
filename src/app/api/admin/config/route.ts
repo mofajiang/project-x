@@ -3,6 +3,29 @@ import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
 import { getSiteConfig, revalidateSiteConfig } from '@/lib/config'
 import { runMigrations } from '@/lib/db-migrate'
+import { getRequestIp, logAdminAudit } from '@/lib/admin-audit'
+
+const SECURITY_CONFIG_KEYS = new Set(['loginPath', 'loginMode', 'secretClicks', 'customDomain'])
+
+function getConfigAuditPayload(changedKeys: string[]) {
+  const preview = changedKeys.slice(0, 4)
+  const suffix = changedKeys.length > 4 ? ` 等 ${changedKeys.length} 项` : ''
+
+  if (changedKeys.some(key => SECURITY_CONFIG_KEYS.has(key))) {
+    return {
+      action: 'security.config.updated' as const,
+      riskLevel: 'critical' as const,
+      summary: preview.length ? `更新安全配置：${preview.join('、')}${suffix}` : '更新安全配置',
+    }
+  }
+
+  return {
+    action: 'config.updated' as const,
+    riskLevel: 'high' as const,
+    summary: preview.length ? `更新站点配置：${preview.join('、')}${suffix}` : '更新站点配置',
+  }
+}
+
 
 export async function GET(req: NextRequest) {
   const session = await getSessionFromRequest(req)
@@ -16,8 +39,12 @@ export async function PUT(req: NextRequest) {
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try { await runMigrations() } catch (e: any) { console.warn('[config PUT] runMigrations:', e?.message) }
+  const requestIp = getRequestIp(req)
   const data = await req.json()
   delete data.id
+  const changedKeys = Object.keys(data)
+  const auditPayload = getConfigAuditPayload(changedKeys)
+
 
   // navItems 若为数组则序列化为 JSON 字符串
   if (Array.isArray(data.navItems)) {
@@ -69,8 +96,18 @@ export async function PUT(req: NextRequest) {
     })
   } catch (e: any) {
     console.error('[config PUT] upsert failed:', e?.message)
+    await logAdminAudit({
+      ...auditPayload,
+      status: 'failed',
+      targetType: 'siteConfig',
+      targetId: 'singleton',
+      actor: session,
+      ip: requestIp,
+      metadata: { changedKeys, error: e?.message || 'upsert failed' },
+    })
     return NextResponse.json({ error: '保存失败', detail: e?.message }, { status: 500 })
   }
+
 
   // 再用 raw SQL 逐列更新动态列，每列独立 try/catch 互不影响
   const rawUpdates: Array<{ col: string; val: string }> = []
@@ -95,5 +132,14 @@ export async function PUT(req: NextRequest) {
   }
 
   await revalidateSiteConfig()
+  await logAdminAudit({
+    ...auditPayload,
+    targetType: 'siteConfig',
+    targetId: 'singleton',
+    actor: session,
+    ip: requestIp,
+    metadata: { changedKeys },
+  })
   return NextResponse.json(config)
 }
+

@@ -119,7 +119,27 @@ export async function runMigrations() {
         )`,
         'LoginFailure'
       )
+      await createTable(
+        `CREATE TABLE IF NOT EXISTS AdminAuditLog (
+          id TEXT PRIMARY KEY,
+          action TEXT NOT NULL,
+          summary TEXT NOT NULL DEFAULT '',
+          targetType TEXT,
+          targetId TEXT,
+          riskLevel TEXT NOT NULL DEFAULT 'high',
+          status TEXT NOT NULL DEFAULT 'success',
+          actorId TEXT NOT NULL DEFAULT '',
+          actorUsername TEXT NOT NULL DEFAULT '',
+          ip TEXT NOT NULL DEFAULT '',
+          metadata TEXT NOT NULL DEFAULT '',
+          createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )`,
+        'AdminAuditLog'
+      )
+      await createIndex('AdminAuditLog', 'idx_admin_audit_createdAt', 'createdAt', 'AdminAuditLog createdAt index')
+      await createIndex('AdminAuditLog', 'idx_admin_audit_risk_status_createdAt', 'riskLevel, status, createdAt', 'AdminAuditLog risk/status/createdAt index')
       migrated = true
+
     })().finally(() => {
       migratePromise = null
     })

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionFromRequest } from '@/lib/auth'
+import { getRequestIp, logAdminAudit } from '@/lib/admin-audit'
 import fs from 'fs'
 import path from 'path'
+
 
 const ENV_PATH = path.join(process.cwd(), '.env')
 
@@ -54,6 +56,7 @@ export async function PUT(req: NextRequest) {
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const requestIp = getRequestIp(req)
   const body = await req.json()
   const toWrite: Record<string, string> = {}
 
@@ -62,13 +65,38 @@ export async function PUT(req: NextRequest) {
     if (body[key] !== undefined) toWrite[key] = body[key]
   }
 
+  const changedKeys = Object.keys(toWrite)
+  const summary = changedKeys.length ? `更新 SMTP 配置：${changedKeys.join('、')}` : '更新 SMTP 配置'
+
   try {
     writeEnv(toWrite)
+    await logAdminAudit({
+      action: 'smtp.updated',
+      summary,
+      riskLevel: 'high',
+      targetType: 'env',
+      targetId: 'smtp',
+      actor: session,
+      ip: requestIp,
+      metadata: { changedKeys },
+    })
     return NextResponse.json({ ok: true })
   } catch (e: any) {
+    await logAdminAudit({
+      action: 'smtp.updated',
+      summary: `${summary} 失败`,
+      riskLevel: 'high',
+      status: 'failed',
+      targetType: 'env',
+      targetId: 'smtp',
+      actor: session,
+      ip: requestIp,
+      metadata: { changedKeys, error: e?.message || 'write env failed' },
+    })
     return NextResponse.json({ error: e.message }, { status: 500 })
   }
 }
+
 
 export async function POST(req: NextRequest) {
   // 发送测试邮件
