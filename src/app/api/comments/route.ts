@@ -11,7 +11,8 @@ export async function POST(req: NextRequest) {
   await runMigrations()
   const session = await getSessionFromRequest(req)
 
-  const { postId, content, parentId, guestName, guestEmail, guestWebsite } = await req.json()
+  let { postId, content, parentId, guestName, guestEmail, guestWebsite } = await req.json()
+  postId = String(postId)  // 确保 postId 是字符串
   if (!postId || !content?.trim()) return NextResponse.json({ error: '内容不能为空' }, { status: 400 })
   if (content.trim().length > 2000) return NextResponse.json({ error: '评论不能超过2000字' }, { status: 400 })
 
@@ -34,7 +35,11 @@ export async function POST(req: NextRequest) {
   const config = await getSiteConfig()
   const ip = getClientIp(req)
 
+  // 进行本地快速垃圾检测（同步，<50ms）
+  const quickCheck = quickSpamCheck(content.trim(), guestEmail || commentData?.guestEmail)
+
   // 构建评论数据，兼容 guestName 列不存在的情况
+  // 直接包含本地检测结果，避免额外的数据库更新
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const commentData: any = {
     content: content.trim(),
@@ -43,6 +48,8 @@ export async function POST(req: NextRequest) {
     parentId: parentId || null,
     approved: !config.commentApproval,
     ip,
+    riskScore: quickCheck.localRiskScore,
+    riskReasons: JSON.stringify(quickCheck.localRiskScore > 0 ? ['本地检查中...'] : []),
   }
   if (!session && guestName?.trim()) {
     commentData.guestName = guestName.trim()
@@ -71,68 +78,91 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // AI 垃圾评论检测
-  const quickCheck = quickSpamCheck(content.trim(), commentData.guestEmail)
-  let riskScore = quickCheck.localRiskScore
-  let riskReasons: string[] = []
-
-  // 如果本地检查风险 >= 20 或配置启用AI检测，则调用 OpenRouter AI
+  // 立即返回响应（用户感受极快）⚡
+  const responseData = { ok: true, comment }
+  
+  // 后台异步执行：AI 检测 + 邮件通知
   if (quickCheck.shouldAnalyze || config.enableAiDetection) {
-    try {
-      const aiResult = await analyzeCommentWithAI(
-        content.trim(),
-        config.openrouterApiKey,
-        config.openrouterModel,
-        commentData.guestName,
-        commentData.guestEmail,
-        commentData.guestWebsite
-      )
-      riskScore = aiResult.riskScore
-      riskReasons = aiResult.riskReasons
-      
-      // 高风险评论自动隐藏（保存但不显示）
-      if (aiResult.riskScore >= 70 && !session) {
-        comment = await prisma.comment.update({
-          where: { id: comment.id },
-          data: {
-            approved: false,
-            riskScore: aiResult.riskScore,
-            riskReasons: JSON.stringify(aiResult.riskReasons),
-          },
-        })
-      } else {
-        comment = await prisma.comment.update({
-          where: { id: comment.id },
-          data: {
-            riskScore: aiResult.riskScore,
-            riskReasons: JSON.stringify(aiResult.riskReasons),
-          },
-        })
-      }
-    } catch (e: any) {
-      console.error('[ai-detection] 分析失败:', e?.message)
-      // AI 检测失败不阻断评论提交，只记录本地检查结果
-      if (quickCheck.localRiskScore > 0) {
-        comment = await prisma.comment.update({
-          where: { id: comment.id },
-          data: {
-            riskScore: quickCheck.localRiskScore,
-            riskReasons: JSON.stringify(['本地检查 - AI 连接失败']),
-          },
-        })
-      }
-    }
+    // 使用 Promise 不等待，后台异步处理
+    analyzeAndUpdateComment(comment.id, content.trim(), config, commentData, session).catch((err: any) => 
+      console.error('[ai-detection-async] 后台处理失败:', err?.message)
+    )
   }
 
-  // 需要审核时给管理员发邮件提醒
+  // 需要审核时给管理员发邮件提醒（后台异步发送）
   if (config.commentApproval) {
-    const post = await prisma.post.findUnique({ where: { id: postId }, select: { title: true, slug: true } })
-    if (post) {
-      const commenterName = session?.username || commentData.guestName || '匿名访客'
-      const postUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000') + '/post/' + post.slug
-      sendNewCommentNotification({ postTitle: post.title, postUrl, commenterName, content: content.trim() }).catch(() => {})
-    }
+    // 异步发送通知，不阻塞响应
+    (async () => {
+      try {
+        const post = await prisma.post.findUnique({ where: { id: postId }, select: { title: true, slug: true } })
+        if (post) {
+          const commenterName = session?.username || commentData.guestName || '匿名访客'
+          const postUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000') + '/post/' + post.slug
+          await sendNewCommentNotification({ postTitle: post.title, postUrl, commenterName, content: content.trim() })
+        }
+      } catch (err) {
+        console.error('[email-notification] 邮件发送失败:', err)
+      }
+    })()
   }
 
-  return NextResponse.json({ ok: true, comment })
+  return NextResponse.json(responseData)
+}
+
+/**
+ * 后台异步执行 AI 检测和评论更新
+ * 不阻塞主响应
+ */
+async function analyzeAndUpdateComment(
+  commentId: string,
+  content: string,
+  config: any,
+  commentData: any,
+  session: any
+) {
+  try {
+    console.log('[ai-analysis-async] 开始后台 AI 分析:', { commentId, contentLength: content.length })
+    
+    const aiResult = await analyzeCommentWithAI(
+      content,
+      config.openrouterApiKey,
+      config.openrouterModel,
+      commentData.guestName,
+      commentData.guestEmail,
+      commentData.guestWebsite
+    )
+    
+    console.log('[ai-analysis-async] AI 分析完成:', { commentId, riskScore: aiResult.riskScore })
+    
+    // 确定是否需要隐藏
+    let approved: boolean | undefined = undefined
+    if (aiResult.riskScore >= 70 && !session) {
+      approved = false  // 高风险访客评论自动隐藏
+    }
+    
+    // 更新数据库
+    await prisma.comment.update({
+      where: { id: commentId },
+      data: {
+        riskScore: aiResult.riskScore,
+        riskReasons: JSON.stringify(aiResult.riskReasons),
+        ...(approved !== undefined && { approved }),
+      },
+    })
+    
+    console.log('[ai-analysis-async] ✅ 评论已更新:', { commentId, riskScore: aiResult.riskScore, approved })
+  } catch (error: any) {
+    console.error('[ai-analysis-async] ❌ 后台分析失败:', error?.message)
+    // 失败时只更新错误状态，不影响已保存的评论
+    try {
+      await prisma.comment.update({
+        where: { id: commentId },
+        data: {
+          riskReasons: JSON.stringify(['AI 分析异常，已保存为待审']),
+        },
+      })
+    } catch (updateError) {
+      console.error('[ai-analysis-async] 更新失败:', updateError)
+    }
+  }
 }
