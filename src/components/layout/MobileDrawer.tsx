@@ -185,48 +185,69 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
             </div>
           </section>
 
-          {/* 右侧栏轻信息流 */}
+          {/* Widget 信息流 — 独立卡片 + 折叠 */}
           {enabledWidgets.length > 0 && (
-            <section className="px-1 pb-1 space-y-3">
-              <div className="space-y-3">
-                {enabledWidgets.map((widget, index) => {
-                  const title = widget.title?.trim() || ({ search: '搜索', about: '关于我', tags: '热门标签', hotPosts: '热门文章', custom: '自定义文本', links: '友情链接', carousel: '轮播图' } as Record<string, string>)[widget.type]
+            <section className="px-1 pb-1 space-y-2">
+              {enabledWidgets.map((widget, index) => {
+                const title = widget.title?.trim() || ({ search: '搜索', about: '关于我', tags: '热门标签', hotPosts: '热门文章', custom: '自定义文本', links: '友情链接', carousel: '轮播图' } as Record<string, string>)[widget.type]
+                const cardCls = 'group rounded-2xl overflow-hidden'
+                const cardStyle = { border: '1px solid var(--border)' }
+                const summaryCls = 'flex cursor-pointer list-none items-center justify-between px-4 py-3'
+                const chevron = (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="transition-transform duration-200 group-open:rotate-180 shrink-0" style={{ color: 'var(--text-secondary)' }}>
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                )
 
-                  if (widget.type === 'search') {
-                    return (
-                      <Link key={`search-${index}`} href="/search" className="flex items-center justify-between gap-3 px-1 py-2.5 border-t" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}>
-                        <span className="flex items-center gap-2 min-w-0">
-                          <span>🔎</span>
-                          <span className="text-sm font-medium truncate">站内搜索</span>
-                        </span>
-                        <span className="text-[10px]" style={{ color: 'var(--accent)' }}>打开</span>
-                      </Link>
-                    )
-                  }
+                if (widget.type === 'search') {
+                  return (
+                    <Link key={`search-${index}`} href="/search"
+                      className="flex items-center justify-between gap-3 px-4 py-3 rounded-2xl transition-colors"
+                      style={{ border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--text-secondary)' }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                        <span className="text-sm font-medium">站内搜索</span>
+                      </span>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: 'var(--accent)' }}><path d="M9 18l6-6-6-6"/></svg>
+                    </Link>
+                  )
+                }
 
-                  if (widget.type === 'about') {
-                    if (!siteDesc && !social.x && !social.github && !social.email) return null
-                    return (
-                      <div key={`about-${index}`} className="pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
-                        <h3 className="px-1 text-[10px] uppercase tracking-[0.18em] mb-1" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
-                        {siteDesc && <p className="px-1 text-xs leading-relaxed line-clamp-2" style={{ color: 'var(--text-primary)' }}>{siteDesc}</p>}
+                if (widget.type === 'about') {
+                  if (!siteDesc && !social.x && !social.github && !social.email) return null
+                  return (
+                    <details key={`about-${index}`} className={cardCls} style={cardStyle}>
+                      <summary className={summaryCls}>
+                        <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{title}</span>
+                        {chevron}
+                      </summary>
+                      <div className="px-4 pb-3 pt-2.5" style={{ borderTop: '1px solid var(--border)' }}>
+                        {siteDesc && <p className="text-xs leading-relaxed mb-2" style={{ color: 'var(--text-primary)' }}>{siteDesc}</p>}
                         {(social.x || social.github || social.email) && (
-                          <div className="flex flex-wrap gap-2 px-1 pt-2">
+                          <div className="flex flex-wrap gap-2">
                             {social.x && <a href={`https://x.com/${social.x}`} target="_blank" className="text-[10px] px-2 py-1 rounded-full font-bold" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>𝕏 @{social.x}</a>}
                             {social.github && <a href={`https://github.com/${social.github}`} target="_blank" className="text-[10px] px-2 py-1 rounded-full font-bold" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>GitHub</a>}
                             {social.email && <a href={`mailto:${social.email}`} className="text-[10px] px-2 py-1 rounded-full font-bold" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>邮件</a>}
                           </div>
                         )}
                       </div>
-                    )
-                  }
+                    </details>
+                  )
+                }
 
-                  if (widget.type === 'tags') {
-                    if (!topTags.length) return null
-                    return (
-                      <div key={`tags-${index}`} className="pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
-                        <h3 className="px-1 text-[10px] uppercase tracking-[0.18em] mb-2" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
-                        <div className="flex flex-wrap gap-1.5 px-1">
+                if (widget.type === 'tags') {
+                  if (!topTags.length) return null
+                  return (
+                    <details key={`tags-${index}`} className={cardCls} style={cardStyle}>
+                      <summary className={summaryCls}>
+                        <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{title}</span>
+                        {chevron}
+                      </summary>
+                      <div className="px-4 pb-3 pt-2.5" style={{ borderTop: '1px solid var(--border)' }}>
+                        <div className="flex flex-wrap gap-1.5">
                           {topTags.slice(0, 8).map(tag => (
                             <Link key={tag.id} href={`/tag/${tag.slug}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
                               <span className="truncate max-w-[8.5rem]">#{tag.name}</span>
@@ -235,87 +256,106 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
                           ))}
                         </div>
                       </div>
-                    )
-                  }
+                    </details>
+                  )
+                }
 
-                  if (widget.type === 'hotPosts') {
-                    if (!hotPosts.length) return null
-                    return (
-                      <div key={`hot-${index}`} className="pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
-                        <h3 className="px-1 text-[10px] uppercase tracking-[0.18em] mb-1" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
-                        <div className="flex flex-col">
-                          {hotPosts.slice(0, 5).map((post, idx) => (
-                            <Link key={post.id} href={`/post/${post.slug}`} className="flex items-center justify-between gap-3 px-1 py-1.5" style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--border)' }}>
-                              <span className="text-xs font-medium truncate leading-5" style={{ color: 'var(--text-primary)' }}>{post.title}</span>
-                              <span className="text-[10px] shrink-0" style={{ color: 'var(--text-secondary)' }}>{post.views}阅</span>
-                            </Link>
-                          ))}
+                if (widget.type === 'hotPosts') {
+                  if (!hotPosts.length) return null
+                  return (
+                    <details key={`hot-${index}`} className={cardCls} style={cardStyle}>
+                      <summary className={summaryCls}>
+                        <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{title}</span>
+                        {chevron}
+                      </summary>
+                      <div style={{ borderTop: '1px solid var(--border)' }}>
+                        {hotPosts.slice(0, 5).map((post, idx) => (
+                          <Link key={post.id} href={`/post/${post.slug}`}
+                            className="flex items-center justify-between gap-3 px-4 py-2.5 transition-colors"
+                            style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--border)', color: 'var(--text-primary)' }}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                          >
+                            <span className="text-xs font-medium truncate leading-5">{post.title}</span>
+                            <span className="text-[10px] shrink-0" style={{ color: 'var(--text-secondary)' }}>{post.views}阅</span>
+                          </Link>
+                        ))}
+                      </div>
+                    </details>
+                  )
+                }
+
+                if (widget.type === 'custom') {
+                  if (!widget.content) return null
+                  return (
+                    <details key={`custom-${index}`} className={cardCls} style={cardStyle}>
+                      <summary className={summaryCls}>
+                        <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{title || '自定义'}</span>
+                        {chevron}
+                      </summary>
+                      <div className="px-4 pb-3 pt-2.5 text-xs leading-relaxed whitespace-pre-wrap" style={{ borderTop: '1px solid var(--border)', color: 'var(--text-primary)' }}>{widget.content}</div>
+                    </details>
+                  )
+                }
+
+                if (widget.type === 'links') {
+                  const links: FriendLink[] = widget.links || []
+                  if (!links.length) return null
+                  return (
+                    <details key={`links-${index}`} className={cardCls} style={cardStyle}>
+                      <summary className={summaryCls}>
+                        <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{title}</span>
+                        {chevron}
+                      </summary>
+                      <div style={{ borderTop: '1px solid var(--border)' }}>
+                        {links.slice(0, 6).map((link, idx) => (
+                          <a key={idx} href={link.url} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center gap-3 px-4 py-2.5 transition-colors"
+                            style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--border)' }}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                          >
+                            <div className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center shrink-0" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
+                              {link.avatar ? <img src={link.avatar} alt={link.label} className="w-full h-full object-cover" /> : <span className="text-xs font-bold">{link.label[0]?.toUpperCase()}</span>}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>{link.label}</p>
+                              {link.desc && <p className="text-[10px] truncate" style={{ color: 'var(--text-secondary)' }}>{link.desc}</p>}
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    </details>
+                  )
+                }
+
+                if (widget.type === 'carousel') {
+                  const slides = widget.slides || []
+                  if (!slides.length) return null
+                  const first = slides[0]
+                  return (
+                    <details key={`carousel-${index}`} className={cardCls} style={cardStyle}>
+                      <summary className={summaryCls}>
+                        <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{title}</span>
+                        {chevron}
+                      </summary>
+                      <div className="px-4 pb-3 pt-2.5 flex items-start gap-3" style={{ borderTop: '1px solid var(--border)' }}>
+                        {first.image && <img src={first.image} alt={first.title || title} className="w-14 h-14 object-cover rounded-xl shrink-0" />}
+                        <div className="min-w-0 flex-1">
+                          {first.title && <p className="text-xs font-medium leading-5 truncate" style={{ color: 'var(--text-primary)' }}>{first.title}</p>}
+                          {(first.desc || first.markdown) && <p className="text-[10px] leading-relaxed line-clamp-2" style={{ color: 'var(--text-secondary)' }}>{first.desc || first.markdown}</p>}
                         </div>
                       </div>
-                    )
-                  }
+                    </details>
+                  )
+                }
 
-                  if (widget.type === 'custom') {
-                    if (!widget.content) return null
-                    return (
-                      <div key={`custom-${index}`} className="pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
-                        {title && <h3 className="px-1 text-[10px] uppercase tracking-[0.18em] mb-1" style={{ color: 'var(--text-secondary)' }}>{title}</h3>}
-                        <div className="px-1 text-xs leading-relaxed whitespace-pre-wrap line-clamp-4" style={{ color: 'var(--text-primary)' }}>{widget.content}</div>
-                      </div>
-                    )
-                  }
+                return null
+              })}
 
-                  if (widget.type === 'links') {
-                    const links: FriendLink[] = widget.links || []
-                    if (!links.length) return null
-                    return (
-                      <details key={`links-${index}`} className="pt-2 border-t group" style={{ borderColor: 'var(--border)' }}>
-                        <summary className="flex cursor-pointer list-none items-center justify-between px-1 py-1.5">
-                          <h3 className="text-[10px] uppercase tracking-[0.18em]" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
-                          <span className="text-[10px] transition-transform duration-150 group-open:rotate-180" style={{ color: 'var(--text-secondary)' }}>⌄</span>
-                        </summary>
-                        <div className="flex flex-col">
-                          {links.slice(0, 6).map((link, idx) => (
-                            <a key={idx} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-1 py-1.5" style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--border)' }}>
-                              <div className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center shrink-0" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
-                                {link.avatar ? <img src={link.avatar} alt={link.label} className="w-full h-full object-cover" /> : <span className="text-xs font-bold">{link.label[0]?.toUpperCase()}</span>}
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <p className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>{link.label}</p>
-                                {link.desc && <p className="text-[10px] truncate" style={{ color: 'var(--text-secondary)' }}>{link.desc}</p>}
-                              </div>
-                            </a>
-                          ))}
-                        </div>
-                      </details>
-                    )
-                  }
-
-                  if (widget.type === 'carousel') {
-                    const slides = widget.slides || []
-                    if (!slides.length) return null
-                    const first = slides[0]
-                    return (
-                      <div key={`carousel-${index}`} className="pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
-                        <h3 className="px-1 text-[10px] uppercase tracking-[0.18em] mb-1" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
-                        <div className="px-1 flex items-start gap-3">
-                          {first.image && <img src={first.image} alt={first.title || title} className="w-14 h-14 object-cover rounded-xl shrink-0" />}
-                          <div className="min-w-0 flex-1">
-                            {first.title && <p className="text-xs font-medium leading-5 truncate" style={{ color: 'var(--text-primary)' }}>{first.title}</p>}
-                            {(first.desc || first.markdown) && <p className="text-[10px] leading-relaxed line-clamp-2" style={{ color: 'var(--text-secondary)' }}>{first.desc || first.markdown}</p>}
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  }
-
-                  return null
-                })}
-
-                {copyright && (
-                  <div className="pt-2 border-t px-1 text-[10px] leading-relaxed opacity-90" style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }} dangerouslySetInnerHTML={{ __html: copyright }} />
-                )}
-              </div>
+              {copyright && (
+                <div className="px-2 text-[10px] leading-relaxed opacity-75" style={{ color: 'var(--text-secondary)' }} dangerouslySetInnerHTML={{ __html: copyright }} />
+              )}
             </section>
           )}
         </div>
