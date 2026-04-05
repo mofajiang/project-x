@@ -7,7 +7,6 @@
 [![License](https://img.shields.io/github/license/mofajiang/project-x)](https://github.com/mofajiang/project-x/blob/main/LICENSE)
 [![Stars](https://img.shields.io/github/stars/mofajiang/project-x?style=social)](https://github.com/mofajiang/project-x)
 [![Last Commit](https://img.shields.io/github/last-commit/mofajiang/project-x)](https://github.com/mofajiang/project-x/commits/main)
-[![Deploy](https://img.shields.io/badge/deploy-宝塔%20%2F%20PM2-green?logo=linux&logoColor=white)](#服务器部署)
 
 基于 Next.js 14 + Tailwind CSS + SQLite（Prisma）构建的 X(Twitter) 风格个人博客。
 
@@ -131,69 +130,6 @@ npx tsx scripts/init-admin.ts
 ```bash
 pm2 start npm --name x-blog -- start
 pm2 save && pm2 startup
-```
-
-**6. Nginx 反向代理配置**
-
-宝塔面板 → **网站** → 域名 → **设置** → **配置文件**，替换为：
-
-```nginx
-server
-{
-    listen 80;
-    listen 443 ssl;
-    http2 on;
-    server_name yourdomain.com;
-    root /www/wwwroot/yourdomain.com;
-
-    #CERT-APPLY-CHECK--START
-    include /www/server/panel/vhost/nginx/well-known/yourdomain.com.conf;
-    #CERT-APPLY-CHECK--END
-    include /www/server/panel/vhost/nginx/extension/yourdomain.com/*.conf;
-
-    set $isRedcert 1;
-    if ($server_port != 443) { set $isRedcert 2; }
-    if ( $uri ~ /\.well-known/ ) { set $isRedcert 1; }
-    if ($isRedcert != 1) { rewrite ^(/.*)$ https://$host$1 permanent; }
-
-    ssl_certificate     /www/server/panel/vhost/cert/yourdomain.com/fullchain.pem;
-    ssl_certificate_key /www/server/panel/vhost/cert/yourdomain.com/privkey.pem;
-    ssl_protocols TLSv1.1 TLSv1.2 TLSv1.3;
-    ssl_ciphers EECDH+CHACHA20:EECDH+CHACHA20-draft:EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5;
-    ssl_prefer_server_ciphers on;
-    ssl_session_cache shared:SSL:10m;
-    ssl_session_timeout 10m;
-    add_header Strict-Transport-Security "max-age=31536000";
-    error_page 497 https://$host$request_uri;
-    error_page 404 /404.html;
-
-    # ⚠️ 必须包含 X-Forwarded-Proto，否则 HTTPS 下会出现重定向循环
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_read_timeout 300;
-        proxy_connect_timeout 300;
-    }
-
-    location ~* /(\.git|\.next|node_modules)/ { return 404; }
-    location ~ \.well-known { allow all; }
-
-    include /www/server/panel/vhost/rewrite/yourdomain.com.conf;
-    access_log  /www/wwwlogs/yourdomain.com.log;
-    error_log   /www/wwwlogs/yourdomain.com.error.log;
-}
-```
-
-> ⚠️ 不要使用宝塔「反向代理」图形化功能，直接在配置文件写 `location /` 块，避免缺少 `X-Forwarded-Proto` 导致 HTTPS 重定向循环。
-
-```bash
-nginx -t && nginx -s reload
 ```
 
 ### 更新与卸载
