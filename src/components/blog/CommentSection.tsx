@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import Image from 'next/image'
 import { relativeTime } from '@/lib/utils'
 import toast from 'react-hot-toast'
@@ -38,15 +38,6 @@ function ReplyIcon() {
   )
 }
 
-const EMOJI_LIST = [
-  '😀','😂','😊','😍','🥹','😅','😎','🤣',
-  '❤️','🧡','💛','💚','💙','💜','🖤','💕',
-  '🔥','💯','✅','🎉','🌟','✨','🌈','🍀',
-  '👍','👏','🙏','💪','🤝','👋','✌️','🫶',
-  '😢','😔','😤','😠','🤯','😱','🥺','🤗',
-  '🎵','🎮','📚','💻','🍕','☕','🌙','🌸',
-]
-
 function CommentInput({
   session, postId, parentId, placeholder, onDone, onCancel, defaultExpanded,
 }: {
@@ -64,36 +55,6 @@ function CommentInput({
   const [guestWebsite, setGuestWebsite] = useState('')
   const [loading, setLoading] = useState(false)
   const [expanded, setExpanded] = useState(defaultExpanded ?? false)
-  const [showEmoji, setShowEmoji] = useState(false)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const emojiPickerRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!showEmoji) return
-    const handler = (e: MouseEvent) => {
-      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node)) {
-        setShowEmoji(false)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [showEmoji])
-
-  const insertEmoji = (emoji: string) => {
-    const el = textareaRef.current
-    const start = el?.selectionStart ?? text.length
-    const end = el?.selectionEnd ?? text.length
-    const newText = text.slice(0, start) + emoji + text.slice(end)
-    setText(newText)
-    setShowEmoji(false)
-    requestAnimationFrame(() => {
-      if (!el) return
-      el.focus()
-      el.setSelectionRange(start + emoji.length, start + emoji.length)
-      el.style.height = 'auto'
-      el.style.height = el.scrollHeight + 'px'
-    })
-  }
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setText(e.target.value)
@@ -176,7 +137,6 @@ function CommentInput({
         )}
 
         <textarea
-          ref={textareaRef}
           value={text}
           onChange={handleTextChange}
           onFocus={() => setExpanded(true)}
@@ -188,42 +148,7 @@ function CommentInput({
 
         {expanded && (
           <div className="mt-3 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <div className="relative" ref={emojiPickerRef}>
-                <button
-                  type="button"
-                  onClick={() => setShowEmoji(v => !v)}
-                  title="插入表情"
-                  className="flex items-center justify-center w-7 h-7 rounded-full text-base leading-none transition-colors"
-                  style={{ color: showEmoji ? 'var(--accent)' : 'var(--text-secondary)', background: showEmoji ? 'rgba(29,155,240,0.1)' : 'transparent' }}
-                >
-                  😊
-                </button>
-                {showEmoji && (
-                  <div
-                    className="absolute bottom-9 left-0 z-50 rounded-2xl p-2 shadow-xl"
-                    style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', width: 272 }}
-                  >
-                    <div className="grid grid-cols-8 gap-0.5" style={{ maxHeight: 240, overflowY: 'auto' }}>
-                      {EMOJI_LIST.map(emoji => (
-                        <button
-                          key={emoji}
-                          type="button"
-                          onClick={() => insertEmoji(emoji)}
-                          className="flex items-center justify-center rounded-lg p-1.5 text-xl leading-none transition-colors hover:scale-110 flex-shrink-0"
-                          style={{ background: 'transparent' }}
-                          onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
-                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                        >
-                          {emoji}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-              <span className="text-[11px] tabular-nums sm:text-xs" style={{ color: text.length > 1800 ? '#f4212e' : 'var(--text-secondary)' }}>{text.length}/2000</span>
-            </div>
+            <span className="text-[11px] tabular-nums sm:text-xs" style={{ color: text.length > 1800 ? '#f4212e' : 'var(--text-secondary)' }}>{text.length}/2000</span>
             <button
               onClick={submit}
               disabled={loading || !text.trim()}
