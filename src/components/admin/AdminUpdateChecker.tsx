@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import toast from 'react-hot-toast'
 
 type UpdateInfo = {
@@ -20,6 +21,11 @@ export function AdminUpdateChecker({ compact = false }: { compact?: boolean }) {
   const [updateLogs, setUpdateLogs] = useState<{ msg: string; error?: boolean }[]>([])
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const check = async () => {
     setLoading(true)
@@ -128,22 +134,17 @@ export function AdminUpdateChecker({ compact = false }: { compact?: boolean }) {
       </button>
 
       {open && (
-        <div
-          className={compact
-            ? 'fixed z-[9999] rounded-2xl shadow-2xl overflow-hidden'
-            : 'absolute left-0 bottom-full mb-2 z-[9999] w-[360px] max-w-[calc(100vw-16px)] rounded-2xl shadow-2xl overflow-hidden'}
-          style={compact
-            ? {
-                background: 'var(--bg-secondary)',
-                border: '1px solid var(--border)',
-                left: '50%',
-                top: '50%',
-                transform: 'translate(-50%, -50%)',
-                width: 'min(calc(100vw - 2rem), 360px)',
-                maxHeight: 'min(70vh, 600px)',
-              }
-            : { background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
-        >
+        compact && mounted ? createPortal(
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center"
+            style={{ background: 'rgba(0,0,0,0.5)' }}
+            onClick={() => setOpen(false)}
+          >
+            <div
+              className="rounded-2xl shadow-2xl overflow-hidden"
+              style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', width: 'min(calc(100vw - 2rem), 360px)', maxHeight: 'min(70vh, 600px)' }}
+              onClick={e => e.stopPropagation()}
+            >
           <div className={compact ? 'p-3 flex flex-col gap-2 max-h-[70vh] overflow-y-auto' : 'p-4 flex flex-col gap-3 max-h-96 overflow-y-auto'}>
             <div className="flex items-center justify-between gap-2">
               <span className={compact ? 'font-bold text-xs' : 'font-bold text-sm'} style={{ color: 'var(--text-primary)' }}>🔄 版本更新</span>
@@ -214,8 +215,87 @@ export function AdminUpdateChecker({ compact = false }: { compact?: boolean }) {
               <p className="text-[10px] text-center" style={{ color: 'var(--text-secondary)' }}>上次检查：{new Date(info.checkedAt).toLocaleTimeString('zh-CN')}</p>
             )}
           </div>
-        </div>
-      )}
+            </div>
+            </div>,
+            document.body
+          ) : (
+          <div
+            className="absolute left-0 bottom-full mb-2 z-[9999] w-[360px] max-w-[calc(100vw-16px)] rounded-2xl shadow-2xl overflow-hidden"
+            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
+          >
+            <div className="p-4 flex flex-col gap-3 max-h-96 overflow-y-auto">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>🔄 版本更新</span>
+                <button
+                  onClick={() => setOpen(false)}
+                  className="text-xs"
+                  style={{ color: 'var(--text-secondary)', background: 'transparent' }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="flex gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                <span className="flex items-center gap-2 rounded-xl px-2 py-1.5" style={{ background: 'var(--bg-hover)' }}>
+                  <span className="shrink-0">本地</span>
+                  <code className="px-1 rounded bg-transparent">{info?.localCommit || '—'}</code>
+                </span>
+                <span className="flex items-center gap-2 rounded-xl px-2 py-1.5" style={{ background: 'var(--bg-hover)' }}>
+                  <span className="shrink-0">远程</span>
+                  <code className="px-1 rounded bg-transparent">{info?.remoteCommit || '—'}</code>
+                </span>
+              </div>
+
+              {info?.error && <p className="text-xs" style={{ color: '#F4212E' }}>⚠️ {info.error}</p>}
+
+              {info?.hasUpdate && info.commits.length > 0 && (
+                <div className="flex flex-col gap-1 max-h-44 overflow-y-auto">
+                  <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>更新内容：</p>
+                  {info.commits.map(c => (
+                    <div key={c.sha} className="flex flex-col gap-1 px-3 py-2 rounded-xl" style={{ background: 'var(--bg-hover)' }}>
+                      <p className="text-xs" style={{ color: 'var(--text-primary)' }}>{c.message}</p>
+                      <p className="text-[10px] leading-none" style={{ color: 'var(--text-secondary)' }}>{c.sha} · {c.author} · {c.date ? new Date(c.date).toLocaleDateString('zh-CN') : ''}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {!info?.hasUpdate && !info?.error && (
+                <p className="text-xs text-center py-2" style={{ color: 'var(--text-secondary)' }}>✅ 当前已是最新版本</p>
+              )}
+
+              {updateLogs.length > 0 && (
+                <div className="flex flex-col gap-0.5 max-h-40 overflow-y-auto rounded-xl p-2" style={{ background: 'var(--bg)', fontFamily: 'monospace' }}>
+                  {updateLogs.map((log, i) => (
+                    <p key={i} className="text-[11px] whitespace-pre-wrap" style={{ color: log.error ? '#F4212E' : 'var(--text-primary)' }}>{log.msg}</p>
+                  ))}
+                  {updating && <p className="text-[11px] animate-pulse" style={{ color: 'var(--accent)' }}>▋</p>}
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <button onClick={check} disabled={loading || updating} className="flex-1 px-3 py-2 rounded-xl text-xs disabled:opacity-50" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
+                  {loading ? '检查中...' : '重新检查'}
+                </button>
+                {info?.hasUpdate && (
+                  <button
+                    onClick={doUpdate}
+                    disabled={updating}
+                    className="flex-1 px-3 py-2 rounded-xl text-xs font-bold text-white disabled:opacity-50 transition-all"
+                    style={{ background: confirmUpdate ? '#F4212E' : 'var(--accent)' }}
+                  >
+                    {updating ? '更新中...' : confirmUpdate ? '⚠️ 再次点击确认' : '立即更新'}
+                  </button>
+                )}
+              </div>
+
+              {info?.checkedAt && (
+                <p className="text-[10px] text-center" style={{ color: 'var(--text-secondary)' }}>上次检查：{new Date(info.checkedAt).toLocaleTimeString('zh-CN')}</p>
+              )}
+            </div>
+          </div>
+          )
+        )}
     </div>
   )
 }

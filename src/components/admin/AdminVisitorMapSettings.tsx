@@ -178,7 +178,7 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialK
               <span style={{ color: 'var(--text-secondary)' }}>统计数据框显示</span>
               <div className="flex flex-col gap-2 p-3 rounded-xl" style={{ background: 'var(--bg-hover)' }}>
                 {statsOptions.map(option => (
-                  <label key={option} className="flex items-center gap-2 cursor-pointer text-xs">
+                  <label key={option} className="flex items-center gap-2 cursor-pointer text-xs relative">
                     <input
                       type="checkbox"
                       checked={statsDisplay.includes(option)}
@@ -189,9 +189,16 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialK
                           setStatsDisplay(statsDisplay.filter(item => item !== option))
                         }
                       }}
-                      className="w-4 h-4 rounded"
-                      style={{ accentColor: 'var(--accent)' }}
+                      className="w-4 h-4 rounded appearance-none cursor-pointer transition-colors flex-shrink-0"
+                      style={{
+                        background: statsDisplay.includes(option) ? 'var(--accent)' : 'var(--bg-secondary)',
+                        border: `2px solid ${statsDisplay.includes(option) ? 'var(--accent)' : 'var(--border)'}`,
+                        boxSizing: 'border-box',
+                      }}
                     />
+                    {statsDisplay.includes(option) && (
+                      <span className="absolute left-0.5 top-0 text-white pointer-events-none select-none leading-4" style={{ fontSize: '11px', fontWeight: 'bold' }}>✓</span>
+                    )}
                     <span>{option}</span>
                   </label>
                 ))}
