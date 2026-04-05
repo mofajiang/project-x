@@ -192,6 +192,13 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
   if (!config.visitorGeoEndpoint) config.visitorGeoEndpoint = ''
   if (!config.visitorStatsDisplay) config.visitorStatsDisplay = DEFAULT_VISITOR_STATS_DISPLAY
   if (config.showCommentIp === undefined || config.showCommentIp === null) config.showCommentIp = false
+  if (config.commentApproval === undefined || config.commentApproval === null) config.commentApproval = true
+  if (config.enableAiDetection === undefined || config.enableAiDetection === null) config.enableAiDetection = true
+  
+  // SQLite 存的是 0/1 整数，需转换为布尔值
+  if (typeof config.showCommentIp === 'number') config.showCommentIp = Boolean(config.showCommentIp)
+  if (typeof config.commentApproval === 'number') config.commentApproval = Boolean(config.commentApproval)
+  if (typeof config.enableAiDetection === 'number') config.enableAiDetection = Boolean(config.enableAiDetection)
 
   if (!config.copyright) config.copyright = ''
   if (!config.defaultTheme) config.defaultTheme = 'dark'

@@ -85,6 +85,7 @@ export async function PUT(req: NextRequest) {
   // SQLite 存的是 0/1 整数，Prisma schema 要求 Boolean，需显式转换
   if (data.showCommentIp !== undefined) data.showCommentIp = Boolean(data.showCommentIp)
   if (data.commentApproval !== undefined) data.commentApproval = Boolean(data.commentApproval)
+  if (data.enableAiDetection !== undefined) data.enableAiDetection = Boolean(data.enableAiDetection)
 
   // 先 upsert Prisma 已知字段
   let config: any
