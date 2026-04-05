@@ -5,6 +5,7 @@ import { getSiteConfig } from '@/lib/config'
 import { runMigrations } from '@/lib/db-migrate'
 import { sendNewCommentNotification } from '@/lib/mailer'
 import { getClientIp } from '@/lib/request-ip'
+import { analyzeCommentWithAI, quickSpamCheck } from '@/lib/openrouter-spam-filter'
 
 export async function POST(req: NextRequest) {
   await runMigrations()
@@ -69,6 +70,58 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '评论提交失败，请重试' }, { status: 500 })
     }
   }
+
+  // AI 垃圾评论检测
+  const quickCheck = quickSpamCheck(content.trim(), commentData.guestEmail)
+  let riskScore = quickCheck.localRiskScore
+  let riskReasons: string[] = []
+
+  // 如果本地检查风险 >= 20 或配置启用AI检测，则调用 OpenRouter AI
+  if (quickCheck.shouldAnalyze || config.enableAiDetection) {
+    try {
+      const aiResult = await analyzeCommentWithAI(
+        content.trim(),
+        commentData.guestName,
+        commentData.guestEmail,
+        commentData.guestWebsite
+      )
+      riskScore = aiResult.riskScore
+      riskReasons = aiResult.riskReasons
+      
+      // 高风险评论自动隐藏（保存但不显示）
+      if (aiResult.riskScore >= 70 && !session) {
+        comment = await prisma.comment.update({
+          where: { id: comment.id },
+          data: {
+            approved: false,
+            riskScore: aiResult.riskScore,
+            riskReasons: JSON.stringify(aiResult.riskReasons),
+          },
+        })
+      } else {
+        comment = await prisma.comment.update({
+          where: { id: comment.id },
+          data: {
+            riskScore: aiResult.riskScore,
+            riskReasons: JSON.stringify(aiResult.riskReasons),
+          },
+        })
+      }
+    } catch (e: any) {
+      console.error('[ai-detection] 分析失败:', e?.message)
+      // AI 检测失败不阻断评论提交，只记录本地检查结果
+      if (quickCheck.localRiskScore > 0) {
+        comment = await prisma.comment.update({
+          where: { id: comment.id },
+          data: {
+            riskScore: quickCheck.localRiskScore,
+            riskReasons: JSON.stringify(['本地检查 - AI 连接失败']),
+          },
+        })
+      }
+    }
+  }
+
   // 需要审核时给管理员发邮件提醒
   if (config.commentApproval) {
     const post = await prisma.post.findUnique({ where: { id: postId }, select: { title: true, slug: true } })

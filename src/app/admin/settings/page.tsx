@@ -78,7 +78,7 @@ function Field({
 
 export default function SettingsPage() {
   const [config, setConfig] = useState({
-    siteName: '', siteDesc: '', socialX: '', socialGithub: '', socialEmail: '', commentApproval: true, showCommentIp: false, copyright: '',
+    siteName: '', siteDesc: '', socialX: '', socialGithub: '', socialEmail: '', commentApproval: true, showCommentIp: false, enableAiDetection: true, copyright: '',
   })
   const [defaultTheme, setDefaultTheme] = useState<'dark' | 'light'>('dark')
   const [navItems, setNavItems] = useState<NavItem[]>(DEFAULT_NAV)
@@ -118,6 +118,7 @@ export default function SettingsPage() {
           socialEmail: data.socialEmail || '',
           commentApproval: data.commentApproval ?? true,
           showCommentIp: data.showCommentIp ?? false,
+          enableAiDetection: data.enableAiDetection ?? true,
           copyright: data.copyright || '',
         })
         try {
@@ -404,6 +405,10 @@ export default function SettingsPage() {
             <label className="flex items-start sm:items-center gap-3 cursor-pointer mt-3 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
               <input type="checkbox" checked={config.showCommentIp} onChange={e => setConfig(c => ({ ...c, showCommentIp: e.target.checked }))} className="w-4 h-4" />
               <div className="min-w-0"><p className="text-sm font-medium leading-tight" style={{ color: 'var(--text-primary)' }}>前台显示评论 IP</p><p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>默认只在后台可见，开启后前台也会显示</p></div>
+            </label>
+            <label className="flex items-start sm:items-center gap-3 cursor-pointer mt-3 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
+              <input type="checkbox" checked={config.enableAiDetection} onChange={e => setConfig(c => ({ ...c, enableAiDetection: e.target.checked }))} className="w-4 h-4" />
+              <div className="min-w-0"><p className="text-sm font-medium leading-tight" style={{ color: 'var(--text-primary)' }}>🤖 启用 AI 垃圾评论检测</p><p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>使用 OpenRouter AI 自动识别垃圾和骚扰评论（需配置 OPENROUTER_API_KEY）</p></div>
             </label>
           </div>
 

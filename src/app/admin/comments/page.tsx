@@ -3,11 +3,14 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { relativeTime } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { ADMIN_PAGE_TITLE_CLASS, ADMIN_CARD_CLASS } from '@/components/admin/adminUi'
+import { getRiskLevel, getRiskLevelColor } from '@/lib/openrouter-spam-filter'
 
 interface Comment {
   id: string
   content: string
   approved: boolean
+  riskScore: number
+  riskReasons: string
   createdAt: string
   author: { username: string } | null
   guestName: string | null
@@ -170,6 +173,22 @@ export default function AdminCommentsPage() {
                   {comment.ip && <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(29,155,240,0.08)', color: 'var(--accent)' }}>IP {comment.ip}</span>}
                   <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>{relativeTime(comment.createdAt)}</span>
                   {!comment.approved && <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: '#F9188022', color: 'var(--red)' }}>待审</span>}
+                  {comment.riskScore > 0 && (
+                    <span 
+                      title={`风险原因: ${
+                        Array.isArray(comment.riskReasons) 
+                          ? comment.riskReasons.join(', ') 
+                          : (() => {
+                              try { return JSON.parse(comment.riskReasons).join(', ') } 
+                              catch { return comment.riskReasons }
+                            })()
+                      }`}
+                      className="text-[11px] px-2 py-0.5 rounded-full font-medium" 
+                      style={{ background: `${getRiskLevelColor(comment.riskScore)}22`, color: getRiskLevelColor(comment.riskScore) }}
+                    >
+                      🤖 {comment.riskScore} 分
+                    </span>
+                  )}
                 </div>
                 <div className="flex gap-2 flex-wrap sm:flex-nowrap">
                   {!comment.approved && (

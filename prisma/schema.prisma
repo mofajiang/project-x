@@ -70,6 +70,8 @@ model Comment {
   guestEmail   String?  // 访客邮箱（选填）
   guestWebsite String?  // 访客网站（选填）
   ip           String?  @default("")
+  riskScore    Int      @default(0)  // AI 评论风险评分 0-100
+  riskReasons  String   @default("[]")  // JSON 数组，风险原因列表
   postId      String
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   parentId  String?
@@ -79,6 +81,7 @@ model Comment {
 
   @@index([postId, approved])
   @@index([authorId])
+  @@index([riskScore])
 }
 
 model SiteConfig {
@@ -90,6 +93,7 @@ model SiteConfig {
   secretClicks Int   @default(5)
   commentApproval Boolean @default(true)
   showCommentIp Boolean @default(false)
+  enableAiDetection Boolean @default(true)  // 启用 AI 垃圾评论检测
   socialX      String @default("")
   socialGithub String @default("")
   socialEmail  String @default("")

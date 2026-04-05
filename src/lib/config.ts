@@ -93,6 +93,7 @@ export type SiteConfig = {
   secretClicks: number
   commentApproval: boolean
   showCommentIp: boolean
+  enableAiDetection: boolean
   socialX: string
   socialGithub: string
   socialEmail: string
