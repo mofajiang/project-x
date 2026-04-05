@@ -418,10 +418,6 @@ export async function AdminVisitorMap() {
           <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>按访问 IP 记录地理位置，当前来源：{sourceLabel}，无精确坐标时会按国家或省份生成落点</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="text-right">
-          <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{total}</p>
-          <p className="text-[10px] uppercase tracking-[0.18em]" style={{ color: 'var(--text-secondary)' }}>总访问</p>
-          </div>
           <AdminVisitorMapSettings initialMode={config.visitorGeoMode} initialEndpoint={config.visitorGeoEndpoint} initialKey={config.visitorGeoKey} initialMapSource={config.visitorMapSource} initialStatsDisplay={config.visitorStatsDisplay} />
         </div>
       </div>
