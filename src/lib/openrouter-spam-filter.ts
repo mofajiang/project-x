@@ -24,17 +24,32 @@ export async function analyzeCommentWithAI(
   authorEmail?: string,
   authorWebsite?: string,
 ): Promise<SpamAnalysisResult> {
+  console.log('[analyzeCommentWithAI] 开始调用，参数检查:', { hasApiKey: !!apiKey, model, contentLength: content.length })
+  
   if (!apiKey) {
-    console.warn('[spam-filter] OpenRouter API 密钥未配置，跳过 AI 检测')
+    console.error('[spam-filter] ❌ OpenRouter API 密钥未配置（为空），跳过 AI 检测')
     return {
       isSpam: false,
       riskScore: 0,
-      riskReasons: [],
+      riskReasons: ['API 密钥未配置'],
+      confidence: 0,
+    }
+  }
+  
+  if (!model) {
+    console.error('[spam-filter] ❌ AI 模型 ID 未配置（为空）')
+    return {
+      isSpam: false,
+      riskScore: 0,
+      riskReasons: ['模型未配置'],
       confidence: 0,
     }
   }
 
   try {
+    console.log('[openrouter] 准备发送请求到:', OPENROUTER_API_URL)
+    console.log('[openrouter] 使用模型:', model)
+    
     const prompt: string = `你是一个评论垃圾检测系统。请分析以下博客评论内容，判断其是否为垃圾评论或低质量评论。
 
 评论信息：
@@ -74,41 +89,47 @@ ${authorWebsite ? `- 网站: ${authorWebsite}` : ''}
         'X-Title': 'Blog Comment Spam Filter',
       },
       body: JSON.stringify({
-        model: model || 'claude-3.5-sonnet',
+        model: model,
         messages: [
           {
             role: 'user',
             content: prompt,
           },
         ],
-        temperature: 0.3, // 低温度保证结果稳定
+        temperature: 0.3,
         max_tokens: 500,
       }),
     })
 
+    console.log('[openrouter] API 响应状态:', response.status, response.statusText)
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
-      console.error('[openrouter] API 错误:', errorData)
+      console.error('[openrouter] ❌ API 错误状态 ' + response.status + ':', JSON.stringify(errorData))
       return {
         isSpam: false,
         riskScore: 0,
-        riskReasons: ['API 调用失败'],
+        riskReasons: [`API 错误: ${response.status} ${response.statusText}`],
         confidence: 0,
       }
     }
 
     const data = await response.json()
+    console.log('[openrouter] 原始响应体 (前300字):', JSON.stringify(data).substring(0, 300))
+    
     const responseContent = data.choices?.[0]?.message?.content?.trim()
 
     if (!responseContent) {
-      console.error('[openrouter] 响应为空')
+      console.error('[openrouter] ❌ 响应内容为空，完整响应:', JSON.stringify(data))
       return {
         isSpam: false,
         riskScore: 0,
-        riskReasons: ['响应为空'],
+        riskReasons: ['API 响应为空'],
         confidence: 0,
       }
     }
+    
+    console.log('[openrouter] ✅ 收到响应内容 (前200字):', responseContent.substring(0, 200))
 
     // 尝试解析 JSON（可能被包裹在 markdown ``` 中）
     let jsonStr = responseContent
@@ -118,20 +139,23 @@ ${authorWebsite ? `- 网站: ${authorWebsite}` : ''}
     }
 
     const result = JSON.parse(jsonStr.trim()) as SpamAnalysisResult
+    console.log('[openrouter] ✅ JSON 解析成功:', { riskScore: result.riskScore, isSpam: result.isSpam })
 
     // 验证和归一化结果
-    return {
+    const normalized = {
       isSpam: Boolean(result.isSpam),
       riskScore: Math.min(100, Math.max(0, Number(result.riskScore) || 0)),
       riskReasons: Array.isArray(result.riskReasons) ? result.riskReasons : [],
       confidence: Math.min(1, Math.max(0, Number(result.confidence) || 0)),
     }
+    console.log('[openrouter] ✅ 最终返回结果:', normalized)
+    return normalized
   } catch (error: any) {
-    console.error('[spam-filter] 分析失败:', error?.message)
+    console.error('[spam-filter] ❌ AI 分析异常:', error?.message || error)
     return {
       isSpam: false,
       riskScore: 0,
-      riskReasons: [error?.message || '分析失败'],
+      riskReasons: [error?.message || 'AI 分析异常'],
       confidence: 0,
     }
   }
