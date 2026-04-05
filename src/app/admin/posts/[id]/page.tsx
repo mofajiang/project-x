@@ -81,7 +81,10 @@ export default function EditPostPage() {
 
   const save = async (publish?: boolean) => {
     setSaving(true)
-    const tagsArr = form.tags.split(',').map(t => t.trim()).filter(Boolean)
+    const tagsArr = form.tags
+      .split(/[，,]+/)
+      .map(t => t.trim())
+      .filter(Boolean)
     const body = { ...form, published: publish !== undefined ? publish : form.published, tags: tagsArr }
     const url = isNew ? '/api/admin/posts' : `/api/admin/posts/${params.id}`
     const method = isNew ? 'POST' : 'PUT'
@@ -170,7 +173,7 @@ export default function EditPostPage() {
             标签
           </label>
           <IMEInput
-            type="text" placeholder="逗号分隔（如：Rust, 后端, 教程）"
+            type="text" placeholder="逗号分隔（支持 , 或 ，，如：Rust, 后端, 教程）"
             value={form.tags} onValueChange={v => updateForm(f => ({ ...f, tags: v }))}
             className="w-full bg-transparent outline-none py-2 text-sm border rounded-lg px-3"
             style={{ color: 'var(--text-primary)', borderColor: 'var(--border)' }}
