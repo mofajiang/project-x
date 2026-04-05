@@ -97,7 +97,7 @@ ${authorWebsite ? `- 网站: ${authorWebsite}` : ''}
           },
         ],
         temperature: 0.3,
-        max_tokens: 2048,
+        max_tokens: 128000,
       }),
     })
 
