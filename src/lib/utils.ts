@@ -16,9 +16,10 @@ export function formatDate(date: Date | string) {
 
 export function slugify(text: string) {
   return text
-    .toLowerCase()
     .trim()
-    .replace(/[\s\W-]+/g, '-')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s-]/gu, '')  // 保留 Unicode 字母/数字（含中文），移除其余标点
+    .replace(/\s+/g, '-')
     .replace(/^-+|-+$/g, '')
 }
 
