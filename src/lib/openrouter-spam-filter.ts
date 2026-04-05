@@ -10,7 +10,6 @@ interface SpamAnalysisResult {
   confidence: number // 置信度 0-1
 }
 
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions'
 
 /**
@@ -19,12 +18,14 @@ const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions'
  */
 export async function analyzeCommentWithAI(
   content: string,
+  apiKey: string,
+  model: string,
   authorName?: string,
   authorEmail?: string,
   authorWebsite?: string,
 ): Promise<SpamAnalysisResult> {
-  if (!OPENROUTER_API_KEY) {
-    console.warn('[spam-filter] OPENROUTER_API_KEY 未配置，跳过 AI 检测')
+  if (!apiKey) {
+    console.warn('[spam-filter] OpenRouter API 密钥未配置，跳过 AI 检测')
     return {
       isSpam: false,
       riskScore: 0,
@@ -67,13 +68,13 @@ ${authorWebsite ? `- 网站: ${authorWebsite}` : ''}
     const response = await fetch(OPENROUTER_API_URL, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
         'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
         'X-Title': 'Blog Comment Spam Filter',
       },
       body: JSON.stringify({
-        model: 'claude-3.5-sonnet',
+        model: model || 'claude-3.5-sonnet',
         messages: [
           {
             role: 'user',

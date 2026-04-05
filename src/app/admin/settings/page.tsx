@@ -78,7 +78,7 @@ function Field({
 
 export default function SettingsPage() {
   const [config, setConfig] = useState({
-    siteName: '', siteDesc: '', socialX: '', socialGithub: '', socialEmail: '', commentApproval: true, showCommentIp: false, enableAiDetection: true, copyright: '',
+    siteName: '', siteDesc: '', socialX: '', socialGithub: '', socialEmail: '', commentApproval: true, showCommentIp: false, enableAiDetection: true, openrouterApiKey: '', openrouterModel: 'claude-3.5-sonnet', copyright: '',
   })
   const [defaultTheme, setDefaultTheme] = useState<'dark' | 'light'>('dark')
   const [navItems, setNavItems] = useState<NavItem[]>(DEFAULT_NAV)
@@ -119,6 +119,8 @@ export default function SettingsPage() {
           commentApproval: data.commentApproval ?? true,
           showCommentIp: data.showCommentIp ?? false,
           enableAiDetection: data.enableAiDetection ?? true,
+          openrouterApiKey: data.openrouterApiKey || '',
+          openrouterModel: data.openrouterModel || 'claude-3.5-sonnet',
           copyright: data.copyright || '',
         })
         try {
@@ -408,8 +410,51 @@ export default function SettingsPage() {
             </label>
             <label className="flex items-start sm:items-center gap-3 cursor-pointer mt-3 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
               <input type="checkbox" checked={config.enableAiDetection} onChange={e => setConfig(c => ({ ...c, enableAiDetection: e.target.checked }))} className="w-4 h-4" />
-              <div className="min-w-0"><p className="text-sm font-medium leading-tight" style={{ color: 'var(--text-primary)' }}>🤖 启用 AI 垃圾评论检测</p><p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>使用 OpenRouter AI 自动识别垃圾和骚扰评论（需配置 OPENROUTER_API_KEY）</p></div>
+              <div className="min-w-0"><p className="text-sm font-medium leading-tight" style={{ color: 'var(--text-primary)' }}>🤖 启用 AI 垃圾评论检测</p><p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>使用 OpenRouter AI 自动识别垃圾和骚扰评论</p></div>
             </label>
+            
+            {config.enableAiDetection && (
+              <div className="mt-3 pt-3 pl-10 border-l-2" style={{ borderColor: 'var(--border)' }}>
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>OpenRouter API 密钥</label>
+                    <input 
+                      type="password" 
+                      value={config.openrouterApiKey} 
+                      onChange={e => setConfig(c => ({ ...c, openrouterApiKey: e.target.value }))}
+                      placeholder="输入你的 OpenRouter API Key（获取: https://openrouter.ai）"
+                      className="w-full px-3 py-2 rounded-2xl text-sm outline-none"
+                      style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium block mb-1" style={{ color: 'var(--text-primary)' }}>使用的 AI 模型</label>
+                    <select 
+                      value={config.openrouterModel} 
+                      onChange={e => setConfig(c => ({ ...c, openrouterModel: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-2xl text-sm outline-none"
+                      style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}
+                    >
+                      <optgroup label="Claude">
+                        <option value="claude-3.5-sonnet">Claude 3.5 Sonnet（推荐，平衡）</option>
+                        <option value="claude-3.5-haiku">Claude 3.5 Haiku（快速便宜）</option>
+                      </optgroup>
+                      <optgroup label="OpenAI">
+                        <option value="gpt-4o">GPT-4o（最强）</option>
+                        <option value="gpt-4o-mini">GPT-4o Mini（便宜快速）</option>
+                      </optgroup>
+                      <optgroup label="其他">
+                        <option value="llama-2-70b">Llama 2 70B（开源便宜）</option>
+                        <option value="mistral-medium">Mistral Medium</option>
+                      </optgroup>
+                    </select>
+                    <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>
+                      Sonnet/GPT-4o 精准但贵 | Haiku/Mini 快速便宜 | 更多: https://openrouter.ai/docs/models
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* 版权信息 */}

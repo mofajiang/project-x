@@ -81,6 +81,8 @@ export async function POST(req: NextRequest) {
     try {
       const aiResult = await analyzeCommentWithAI(
         content.trim(),
+        config.openrouterApiKey,
+        config.openrouterModel,
         commentData.guestName,
         commentData.guestEmail,
         commentData.guestWebsite

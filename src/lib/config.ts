@@ -94,6 +94,8 @@ export type SiteConfig = {
   commentApproval: boolean
   showCommentIp: boolean
   enableAiDetection: boolean
+  openrouterApiKey: string
+  openrouterModel: string
   socialX: string
   socialGithub: string
   socialEmail: string
