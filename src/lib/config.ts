@@ -2,6 +2,9 @@ import { unstable_cache } from 'next/cache'
 import { prisma } from './prisma'
 import { runMigrations } from './db-migrate'
 
+const DEFAULT_VISITOR_STATS_DISPLAY = '["总访问","今日访问","7 日访问","14 日访问","国家数","精确坐标","国家/省份落点","最近时间"]'
+
+
 export type NavItem = {
   label: string
   href: string
@@ -184,7 +187,9 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
   if (!['offline', 'ip9', 'ipwho', 'ipapi', 'ipinfo', 'ip-api', 'geolocation-db', 'custom'].includes(config.visitorGeoMode)) config.visitorGeoMode = 'ip9'
   if (!config.visitorGeoKey) config.visitorGeoKey = ''
   if (!config.visitorGeoEndpoint) config.visitorGeoEndpoint = ''
+  if (!config.visitorStatsDisplay) config.visitorStatsDisplay = DEFAULT_VISITOR_STATS_DISPLAY
   if (config.showCommentIp === undefined || config.showCommentIp === null) config.showCommentIp = false
+
   if (!config.copyright) config.copyright = ''
   if (!config.defaultTheme) config.defaultTheme = 'dark'
   return config as SiteConfig

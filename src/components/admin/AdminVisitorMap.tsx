@@ -389,7 +389,7 @@ export async function AdminVisitorMap() {
   // 解析显示配置：空数组表示全部隐藏；只有解析失败才回退到默认值
   let displayStats: string[] = []
   try {
-    const parsed = JSON.parse(config.visitorStatsDisplay || '[]')
+    const parsed = JSON.parse(config.visitorStatsDisplay || JSON.stringify(defaultStatsDisplay))
     if (Array.isArray(parsed)) {
       displayStats = parsed.map((item: string) => item === '7日访问' ? '7 日访问' : item)
     } else {
@@ -398,6 +398,7 @@ export async function AdminVisitorMap() {
   } catch {
     displayStats = defaultStatsDisplay
   }
+
 
   const stats = [
     { label: '总访问', value: total },
