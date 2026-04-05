@@ -74,15 +74,15 @@ export function MobileTabBar({ navItems, session }: Props) {
   // 已登录：搜索、首页、后台、写文章
   // 未登录：搜索、首页、归档、标签
   const loggedInTabs: TabItem[] = [
-    { href: '/search', icon: <IconSearch />, label: '搜索', exact: false, isSearch: true },
     { href: '/', icon: <IconHome filled={pathname === '/'} />, label: '首页', exact: true },
+    { href: '/search', icon: <IconSearch />, label: '搜索', exact: false, isSearch: true },
     { href: '/admin', icon: <IconAdmin />, label: '后台', exact: false },
     { href: '#compose', icon: <IconWrite />, label: '写文章', exact: false, isSearch: false, accent: true },
   ]
 
   const guestTabs: TabItem[] = [
-    { href: '/search', icon: <IconSearch />, label: '搜索', exact: false, isSearch: true },
     { href: '/', icon: <IconHome filled={pathname === '/'} />, label: '首页', exact: true },
+    { href: '/search', icon: <IconSearch />, label: '搜索', exact: false, isSearch: true },
     { href: '/archive', icon: <IconArchive filled={pathname.startsWith('/archive')} />, label: '归档', exact: false },
     { href: '/tags', icon: <IconTag filled={pathname.startsWith('/tags')} />, label: '标签', exact: false },
   ]
