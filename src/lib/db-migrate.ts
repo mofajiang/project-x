@@ -69,6 +69,7 @@ export async function runMigrations() {
       await addColumn('Comment', 'guestName', 'TEXT', 'guestName')
       await addColumn('Comment', 'guestEmail', 'TEXT', 'guestEmail')
       await addColumn('Comment', 'guestWebsite', 'TEXT', 'guestWebsite')
+      await addColumn('Post', 'pinned', 'INTEGER NOT NULL DEFAULT 0', 'post pinned')
       await addColumn('User', 'displayName', `TEXT NOT NULL DEFAULT ''`, 'displayName')
       await addColumn('SiteConfig', 'copyright', `TEXT NOT NULL DEFAULT ''`, 'copyright')
       await addColumn('SiteConfig', 'defaultTheme', `TEXT NOT NULL DEFAULT 'dark'`, 'defaultTheme')

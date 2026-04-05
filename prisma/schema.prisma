@@ -30,6 +30,7 @@ model Post {
   coverImage  String?
   published   Boolean   @default(false)
   publishedAt DateTime?
+  pinned      Boolean   @default(false)  // 置顶
   views       Int       @default(0)
   likes       Int       @default(0)
   authorId    String

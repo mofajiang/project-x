@@ -18,7 +18,9 @@ export default async function HomePage({
 
   const posts = await prisma.post.findMany({
     where: { published: true },
-    orderBy: tab === 'hot' ? { views: 'desc' } : { publishedAt: 'desc' },
+    orderBy: tab === 'hot'
+      ? [{ pinned: 'desc' }, { views: 'desc' }]
+      : [{ pinned: 'desc' }, { publishedAt: 'desc' }],
     select: {
       id: true,
       title: true,

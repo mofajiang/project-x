@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 export default async function ArchivePage() {
   const posts = await prisma.post.findMany({
     where: { published: true },
-    orderBy: { publishedAt: 'desc' },
+    orderBy: [{ pinned: 'desc' }, { publishedAt: 'desc' }],
     select: { id: true, title: true, slug: true, publishedAt: true },
   })
 

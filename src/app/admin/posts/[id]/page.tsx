@@ -13,7 +13,7 @@ export default function EditPostPage() {
   const DRAFT_KEY = `post-draft-${params.id}`
 
   const [form, setForm] = useState({
-    title: '', content: '', excerpt: '', coverImage: '', published: false, tags: '',
+    title: '', content: '', excerpt: '', coverImage: '', published: false, tags: '', pinned: false,
   })
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -48,6 +48,7 @@ export default function EditPostPage() {
             coverImage: data.coverImage || '',
             published: data.published || false,
             tags: (data.tags || []).map((t: { tag: { name: string } }) => t.tag.name).join(', '),
+            pinned: data.pinned || false,
           }
           // 检查是否有未保存的草稿
           const saved = localStorage.getItem(DRAFT_KEY)
@@ -178,6 +179,22 @@ export default function EditPostPage() {
             className="w-full bg-transparent outline-none py-2 text-sm border rounded-lg px-3"
             style={{ color: 'var(--text-primary)', borderColor: 'var(--border)' }}
           />
+        </div>
+
+        {/* 置顶 */}
+        <div>
+          <label className="flex items-center gap-3 cursor-pointer" style={{ color: 'var(--text-primary)' }}>
+            <input
+              type="checkbox"
+              checked={form.pinned}
+              onChange={e => updateForm(f => ({ ...f, pinned: e.target.checked }))}
+              className="w-4 h-4 rounded cursor-pointer"
+              style={{ accentColor: 'var(--accent)' }}
+            />
+            <span className="text-xs sm:text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+              置顶此文章
+            </span>
+          </label>
         </div>
 
         {/* 封面图 */}

@@ -19,7 +19,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { title, content, excerpt, coverImage, published, tags, publishedAt } = await req.json()
+  const { title, content, excerpt, coverImage, published, tags, publishedAt, pinned } = await req.json()
 
   // 先删旧标签关联
   await prisma.tagsOnPosts.deleteMany({ where: { postId: params.id } })
@@ -33,6 +33,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       coverImage,
       published,
       publishedAt: published ? (publishedAt ? new Date(publishedAt) : new Date()) : null,
+      pinned: pinned ?? false,
       tags: {
         create: (tags || []).map((tagName: string) => ({
           tag: {
@@ -44,6 +45,20 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         })),
       },
     },
+  })
+  return NextResponse.json(post)
+}
+
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  const session = await getSessionFromRequest(req)
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { pinned } = await req.json()
+
+  const post = await prisma.post.update({
+    where: { id: params.id },
+    data: { pinned: typeof pinned === 'boolean' ? pinned : undefined },
+    include: { tags: { include: { tag: true } } },
   })
   return NextResponse.json(post)
 }
