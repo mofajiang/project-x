@@ -35,6 +35,7 @@ export async function sendReplyNotification({
   postUrl,
   replyContent,
   customSubject,
+  senderName,
 }: {
   toEmail: string
   toName: string
@@ -85,6 +86,7 @@ export async function sendNewCommentNotification({
   commenterName,
   content,
   customSubject,
+  senderName,
 }: {
   postTitle: string
   postUrl: string
@@ -137,6 +139,7 @@ export async function sendCommentApprovedNotification({
   postUrl,
   content,
   customSubject,
+  senderName,
 }: {
   toEmail: string
   toName: string
