@@ -428,28 +428,17 @@ export default function SettingsPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium block mb-1" style={{ color: 'var(--text-primary)' }}>使用的 AI 模型</label>
-                    <select 
+                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>AI 模型 ID</label>
+                    <input 
+                      type="text" 
                       value={config.openrouterModel} 
                       onChange={e => setConfig(c => ({ ...c, openrouterModel: e.target.value }))}
+                      placeholder="例如: qwen/qwen3.6-plus:free 或 claude-3.5-sonnet"
                       className="w-full px-3 py-2 rounded-2xl text-sm outline-none"
                       style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}
-                    >
-                      <optgroup label="Claude">
-                        <option value="claude-3.5-sonnet">Claude 3.5 Sonnet（推荐，平衡）</option>
-                        <option value="claude-3.5-haiku">Claude 3.5 Haiku（快速便宜）</option>
-                      </optgroup>
-                      <optgroup label="OpenAI">
-                        <option value="gpt-4o">GPT-4o（最强）</option>
-                        <option value="gpt-4o-mini">GPT-4o Mini（便宜快速）</option>
-                      </optgroup>
-                      <optgroup label="其他">
-                        <option value="llama-2-70b">Llama 2 70B（开源便宜）</option>
-                        <option value="mistral-medium">Mistral Medium</option>
-                      </optgroup>
-                    </select>
+                    />
                     <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>
-                      Sonnet/GPT-4o 精准但贵 | Haiku/Mini 快速便宜 | 更多: https://openrouter.ai/docs/models
+                      查看所有可用模型: https://openrouter.ai/docs/models | 示例: <code style={{background: 'rgba(0,0,0,0.2)', padding: '2px 4px', borderRadius: '4px'}}>qwen/qwen3.6-plus:free</code>, <code style={{background: 'rgba(0,0,0,0.2)', padding: '2px 4px', borderRadius: '4px'}}>claude-3.5-sonnet</code>, <code style={{background: 'rgba(0,0,0,0.2)', padding: '2px 4px', borderRadius: '4px'}}>gpt-4o</code>
                     </p>
                   </div>
                 </div>
