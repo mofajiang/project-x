@@ -149,7 +149,7 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
        COALESCE(navItems,'') as navItems, COALESCE(rightPanelWidgets,'') as rightPanelWidgets,
        COALESCE(visitorGeoMode,'offline') as visitorGeoMode, COALESCE(visitorGeoKey,'') as visitorGeoKey, COALESCE(visitorGeoEndpoint,'') as visitorGeoEndpoint,
        COALESCE(visitorMapSource,'carto_positron') as visitorMapSource,
-       COALESCE(visitorStatsDisplay,'["总访问","今日访问","7日访问","14日访问","国家数","精确坐标","国家/省份落点","最近时间"]') as visitorStatsDisplay,
+      COALESCE(visitorStatsDisplay,'["总访问","今日访问","7 日访问","14 日访问","国家数","精确坐标","国家/省份落点","最近时间"]') as visitorStatsDisplay,
        COALESCE(defaultTheme,'dark') as defaultTheme
        FROM SiteConfig WHERE id = 'singleton'`
     )
@@ -163,7 +163,7 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
          COALESCE(navItems,'') as navItems, COALESCE(rightPanelWidgets,'') as rightPanelWidgets,
          COALESCE(visitorGeoMode,'offline') as visitorGeoMode, COALESCE(visitorGeoKey,'') as visitorGeoKey, COALESCE(visitorGeoEndpoint,'') as visitorGeoEndpoint,
          COALESCE(visitorMapSource,'carto_positron') as visitorMapSource,
-         COALESCE(visitorStatsDisplay,'["总访问","今日访问","7日访问","14日访问","国家数","精确坐标","国家/省份落点","最近时间"]') as visitorStatsDisplay,
+         COALESCE(visitorStatsDisplay,'["总访问","今日访问","7 日访问","14 日访问","国家数","精确坐标","国家/省份落点","最近时间"]') as visitorStatsDisplay,
          COALESCE(defaultTheme,'dark') as defaultTheme
          FROM SiteConfig WHERE id = 'singleton'`
       )

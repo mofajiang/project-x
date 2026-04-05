@@ -21,26 +21,28 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialK
   const [updatingDb, setUpdatingDb] = useState(false)
   const [mode, setMode] = useState(initialMode || 'ip9')
   const [mapSource, setMapSource] = useState(initialMapSource || 'carto_positron')
+  const defaultStatsOptions = ['总访问', '今日访问', '7 日访问', '14 日访问', '国家数', '精确坐标', '国家/省份落点', '最近时间']
   const [statsDisplay, setStatsDisplay] = useState<string[]>(() => {
-    const defaultOptions = ['总访问', '今日访问', '7 日访问', '14 日访问', '国家数', '精确坐标', '国家/省份落点', '最近时间']
     // 严格按 initialStatsDisplay 初始化
     if (!initialStatsDisplay) {
       // 第一次没有保存过配置时，显示为空（用户需要主动选择）
-      return defaultOptions
+      return defaultStatsOptions
     }
     try {
       const parsed = JSON.parse(initialStatsDisplay)
-      // 直接使用解析结果，即使为空数组
-      return Array.isArray(parsed) ? parsed : defaultOptions
+      // 直接使用解析结果，即使为空数组；同时兼容旧的“7日访问”写法
+      return Array.isArray(parsed)
+        ? parsed.map((item: string) => item === '7日访问' ? '7 日访问' : item)
+        : defaultStatsOptions
     } catch {
-      return defaultOptions
+      return defaultStatsOptions
     }
   })
   const customDefaultEndpoint = 'https://example.com/api/geo?ip={ip}'
   const [endpoint, setEndpoint] = useState(initialEndpoint || (initialMode === 'custom' ? customDefaultEndpoint : ''))
   const [key, setKey] = useState(initialKey || '')
 
-  const statsOptions = ['总访问', '今日访问', '7 日访问', '14 日访问', '国家数', '精确坐标', '国家/省份落点', '最近时间']
+  const statsOptions = defaultStatsOptions
   const saveEndpoint = mode === 'custom' ? endpoint : ''
   const saveKey = mode === 'custom' ? key : ''
 
@@ -182,13 +184,9 @@ export function AdminVisitorMapSettings({ initialMode, initialEndpoint, initialK
                     <input
                       type="checkbox"
                       checked={statsDisplay.includes(option)}
-                      onChange={e => {
-                        if (e.target.checked) {
-                          setStatsDisplay([...statsDisplay, option])
-                        } else {
-                          setStatsDisplay(statsDisplay.filter(item => item !== option))
-                        }
-                      }}
+                      onChange={e => setStatsDisplay(prev => e.target.checked
+                        ? (prev.includes(option) ? prev : [...prev, option])
+                        : prev.filter(item => item !== option))}
                       className="w-4 h-4 rounded appearance-none cursor-pointer transition-colors flex-shrink-0"
                       style={{
                         background: statsDisplay.includes(option) ? 'var(--accent)' : 'var(--bg-secondary)',

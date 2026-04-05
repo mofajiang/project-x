@@ -384,19 +384,19 @@ export async function AdminVisitorMap() {
     .sort((a, b) => new Date(b.latestAt).getTime() - new Date(a.latestAt).getTime())
     .slice(0, 4)
 
-  // 解析显示配置
+  const defaultStatsDisplay = ['总访问', '今日访问', '7 日访问', '14 日访问', '国家数', '精确坐标', '国家/省份落点', '最近时间']
+
+  // 解析显示配置：空数组表示全部隐藏；只有解析失败才回退到默认值
   let displayStats: string[] = []
   try {
     const parsed = JSON.parse(config.visitorStatsDisplay || '[]')
-    // 如果配置为空，显示全部；否则只显示配置中的
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      displayStats = parsed
+    if (Array.isArray(parsed)) {
+      displayStats = parsed.map((item: string) => item === '7日访问' ? '7 日访问' : item)
     } else {
-      // 首次安装时显示所有
-      displayStats = ['总访问', '今日访问', '7 日访问', '14 日访问', '国家数', '精确坐标', '国家/省份落点', '最近时间']
+      displayStats = defaultStatsDisplay
     }
   } catch {
-    displayStats = ['总访问', '今日访问', '7 日访问', '14 日访问', '国家数', '精确坐标', '国家/省份落点', '最近时间']
+    displayStats = defaultStatsDisplay
   }
 
   const stats = [
