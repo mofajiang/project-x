@@ -98,6 +98,9 @@ model SiteConfig {
   aiAutoApprove Boolean @default(true)  // AI 判断安全时自动通过
   openrouterApiKey String @default("")  // OpenRouter API 密钥
   openrouterModel String @default("claude-3.5-sonnet")  // 使用的 AI 模型
+  emailSubjectNewComment String @default("")  // 新评论通知邮件标题
+  emailSubjectReply String @default("")  // 回复通知邮件标题
+  emailSubjectApproved String @default("")  // 审核通过通知邮件标题
   socialX      String @default("")
   socialGithub String @default("")
   socialEmail  String @default("")

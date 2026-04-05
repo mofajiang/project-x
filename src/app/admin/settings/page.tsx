@@ -78,7 +78,7 @@ function Field({
 
 export default function SettingsPage() {
   const [config, setConfig] = useState({
-    siteName: '', siteDesc: '', socialX: '', socialGithub: '', socialEmail: '', commentApproval: true, showCommentIp: false, enableAiDetection: true, openrouterApiKey: '', openrouterModel: 'claude-3.5-sonnet', aiReviewStrength: 'balanced', aiAutoApprove: true, copyright: '',
+    siteName: '', siteDesc: '', socialX: '', socialGithub: '', socialEmail: '', commentApproval: true, showCommentIp: false, enableAiDetection: true, openrouterApiKey: '', openrouterModel: 'claude-3.5-sonnet', aiReviewStrength: 'balanced', aiAutoApprove: true, copyright: '', emailSubjectNewComment: '', emailSubjectReply: '', emailSubjectApproved: '',
   })
   const [defaultTheme, setDefaultTheme] = useState<'dark' | 'light'>('dark')
   const [navItems, setNavItems] = useState<NavItem[]>(DEFAULT_NAV)
@@ -124,6 +124,9 @@ export default function SettingsPage() {
           aiReviewStrength: data.aiReviewStrength || 'balanced',
           aiAutoApprove: data.aiAutoApprove ?? true,
           copyright: data.copyright || '',
+          emailSubjectNewComment: data.emailSubjectNewComment || '',
+          emailSubjectReply: data.emailSubjectReply || '',
+          emailSubjectApproved: data.emailSubjectApproved || '',
         })
         try {
           const nav = JSON.parse(data.navItems || '[]')
@@ -654,7 +657,24 @@ export default function SettingsPage() {
                 </div>
               </div>
             )}
-          </div>
+            <div className="pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
+              <h3 className="font-bold text-sm mb-1" style={{ color: 'var(--text-primary)' }}>自定义邮件标题</h3>
+              <p className="text-xs mb-3" style={{ color: 'var(--text-secondary)' }}>可用变量：<code style={{background:'rgba(0,0,0,0.15)',padding:'1px 4px',borderRadius:'4px'}}>{'{postTitle}'}</code>&nbsp;<code style={{background:'rgba(0,0,0,0.15)',padding:'1px 4px',borderRadius:'4px'}}>{'{commenterName}'}</code>&nbsp;<code style={{background:'rgba(0,0,0,0.15)',padding:'1px 4px',borderRadius:'4px'}}>{'{replierName}'}</code>&nbsp;<code style={{background:'rgba(0,0,0,0.15)',padding:'1px 4px',borderRadius:'4px'}}>{'{toName}'}</code>，留空为默认</p>
+              <div className="flex flex-col gap-3">
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>📬 新评论待审核（管理员收到）— 默认: 📬 新评论待审核 — {'{postTitle}'}</label>
+                  <IMEInput value={config.emailSubjectNewComment} onValueChange={v => setConfig(c => ({ ...c, emailSubjectNewComment: v }))} placeholder="📬 新评论待审核 — {postTitle}" className="w-full px-3 py-2 rounded-2xl text-sm outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>&#128172; 回复通知（被回复者收到）— 默认: {'{replierName}'} 回复了你的评论 — {'{postTitle}'}</label>
+                  <IMEInput value={config.emailSubjectReply} onValueChange={v => setConfig(c => ({ ...c, emailSubjectReply: v }))} placeholder="{replierName} 回复了你的评论 — {postTitle}" className="w-full px-3 py-2 rounded-2xl text-sm outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>&#9989; 审核通过（评论者收到）— 默认: 你在《{'{postTitle}'}》的评论已通过审核</label>
+                  <IMEInput value={config.emailSubjectApproved} onValueChange={v => setConfig(c => ({ ...c, emailSubjectApproved: v }))} placeholder="你在《{postTitle}》的评论已通过审核" className="w-full px-3 py-2 rounded-2xl text-sm outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+                </div>
+              </div>
+            </div>          </div>
 
           {/* 导航与组件（已移至独立页面） */}
           <div className={`${mobileCardClass} hidden flex-col gap-3 sm:gap-4`} style={{ background: 'var(--bg-secondary)' }}>

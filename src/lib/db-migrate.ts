@@ -69,6 +69,9 @@ export async function runMigrations() {
       await addColumn('SiteConfig', 'openrouterModel', `TEXT NOT NULL DEFAULT 'claude-3.5-sonnet'`, 'openrouterModel')
       await addColumn('SiteConfig', 'aiReviewStrength', `TEXT NOT NULL DEFAULT 'balanced'`, 'aiReviewStrength (AI 评审强度)')
       await addColumn('SiteConfig', 'aiAutoApprove', `INTEGER NOT NULL DEFAULT 1`, 'aiAutoApprove (AI 自动通过)')
+      await addColumn('SiteConfig', 'emailSubjectNewComment', `TEXT NOT NULL DEFAULT ''`, 'emailSubjectNewComment (新评论通知标题)')
+      await addColumn('SiteConfig', 'emailSubjectReply', `TEXT NOT NULL DEFAULT ''`, 'emailSubjectReply (回复通知标题)')
+      await addColumn('SiteConfig', 'emailSubjectApproved', `TEXT NOT NULL DEFAULT ''`, 'emailSubjectApproved (审核通过通知标题)')
 
       await addColumn('Comment', 'ip', `TEXT NOT NULL DEFAULT ''`, 'comment ip')
       await addColumn('Comment', 'guestName', 'TEXT', 'guestName')

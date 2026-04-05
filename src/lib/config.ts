@@ -98,6 +98,9 @@ export type SiteConfig = {
   aiAutoApprove: boolean
   openrouterApiKey: string
   openrouterModel: string
+  emailSubjectNewComment: string
+  emailSubjectReply: string
+  emailSubjectApproved: string
   socialX: string
   socialGithub: string
   socialEmail: string
@@ -198,6 +201,9 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
   if (config.enableAiDetection === undefined || config.enableAiDetection === null) config.enableAiDetection = true
   if (config.aiAutoApprove === undefined || config.aiAutoApprove === null) config.aiAutoApprove = true
   if (!config.aiReviewStrength) config.aiReviewStrength = 'balanced'
+  if (config.emailSubjectNewComment === undefined || config.emailSubjectNewComment === null) config.emailSubjectNewComment = ''
+  if (config.emailSubjectReply === undefined || config.emailSubjectReply === null) config.emailSubjectReply = ''
+  if (config.emailSubjectApproved === undefined || config.emailSubjectApproved === null) config.emailSubjectApproved = ''
   
   // SQLite 存的是 0/1 整数，需转换为布尔值
   if (typeof config.showCommentIp === 'number') config.showCommentIp = Boolean(config.showCommentIp)

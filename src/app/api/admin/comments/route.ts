@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
 import { sendCommentApprovedNotification, sendReplyNotification } from '@/lib/mailer'
 import { runMigrations } from '@/lib/db-migrate'
+import { getSiteConfig } from '@/lib/config'
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
@@ -90,12 +91,13 @@ export async function PUT(req: NextRequest) {
   if (approved && before) {
     const postUrl = `${baseUrl}/post/${before.post.slug}`
     const postTitle = before.post.title
+    const emailConfig = await getSiteConfig().catch(() => null)
 
     // 1. 通知评论者本人（访客有邮箱时）
     const guestEmail = (before as any).guestEmail
     const guestName = (before as any).guestName || '访客'
     if (guestEmail) {
-      sendCommentApprovedNotification({ toEmail: guestEmail, toName: guestName, postTitle, postUrl, content: before.content }).catch(() => {})
+      sendCommentApprovedNotification({ toEmail: guestEmail, toName: guestName, postTitle, postUrl, content: before.content, customSubject: emailConfig?.emailSubjectApproved || undefined }).catch(() => {})
     }
 
     // 2. 如果是回复，通知被回复者
@@ -104,7 +106,7 @@ export async function PUT(req: NextRequest) {
       const parentName = before.parent.guestName || before.parent.author?.username || '用户'
       const replierName = (before as any).guestName || '用户'
       if (parentEmail && parentEmail !== guestEmail) {
-        sendReplyNotification({ toEmail: parentEmail, toName: parentName, replierName, postTitle, postUrl, replyContent: before.content }).catch(() => {})
+        sendReplyNotification({ toEmail: parentEmail, toName: parentName, replierName, postTitle, postUrl, replyContent: before.content, customSubject: emailConfig?.emailSubjectReply || undefined }).catch(() => {})
       }
     }
   }

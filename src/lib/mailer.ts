@@ -16,6 +16,11 @@ function getTransporter() {
   })
 }
 
+/** 替换标题中的变量，支持 {postTitle} {replierName} {commenterName} {toName} */
+function renderSubject(template: string, vars: Record<string, string>): string {
+  return template.replace(/\{(\w+)\}/g, (_, key) => vars[key] ?? `{${key}}`)
+}
+
 export async function sendReplyNotification({
   toEmail,
   toName,
@@ -23,6 +28,7 @@ export async function sendReplyNotification({
   postTitle,
   postUrl,
   replyContent,
+  customSubject,
 }: {
   toEmail: string
   toName: string
@@ -30,6 +36,7 @@ export async function sendReplyNotification({
   postTitle: string
   postUrl: string
   replyContent: string
+  customSubject?: string
 }) {
   const transporter = getTransporter()
   if (!transporter) {
@@ -39,11 +46,15 @@ export async function sendReplyNotification({
 
   const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@blog.com'
   const siteName = process.env.NEXT_PUBLIC_SITE_URL ? new URL(process.env.NEXT_PUBLIC_SITE_URL).hostname : '博客'
+  const defaultSubject = `${replierName} 回复了你的评论 — ${postTitle}`
+  const subject = customSubject
+    ? renderSubject(customSubject, { postTitle, replierName, toName })
+    : defaultSubject
 
   await transporter.sendMail({
     from: `"${siteName}" <${from}>`,
     to: toEmail,
-    subject: `${replierName} 回复了你的评论 — ${postTitle}`,
+    subject,
     html: `
 <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#0f1419">
   <div style="border-bottom:1px solid #eff3f4;padding-bottom:16px;margin-bottom:20px">
@@ -66,11 +77,13 @@ export async function sendNewCommentNotification({
   postUrl,
   commenterName,
   content,
+  customSubject,
 }: {
   postTitle: string
   postUrl: string
   commenterName: string
   content: string
+  customSubject?: string
 }) {
   const transporter = getTransporter()
   if (!transporter) return
@@ -81,11 +94,15 @@ export async function sendNewCommentNotification({
   const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@blog.com'
   const siteName = process.env.NEXT_PUBLIC_SITE_URL ? new URL(process.env.NEXT_PUBLIC_SITE_URL).hostname : '博客'
   const adminUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000') + '/admin/comments'
+  const defaultSubject = `📬 新评论待审核 — ${postTitle}`
+  const subject = customSubject
+    ? renderSubject(customSubject, { postTitle, commenterName })
+    : defaultSubject
 
   await transporter.sendMail({
     from: `"${siteName}" <${from}>`,
     to: adminEmail,
-    subject: `📬 新评论待审核 — ${postTitle}`,
+    subject,
     html: `
 <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#0f1419">
   <div style="border-bottom:1px solid #eff3f4;padding-bottom:16px;margin-bottom:20px">
@@ -111,23 +128,29 @@ export async function sendCommentApprovedNotification({
   postTitle,
   postUrl,
   content,
+  customSubject,
 }: {
   toEmail: string
   toName: string
   postTitle: string
   postUrl: string
   content: string
+  customSubject?: string
 }) {
   const transporter = getTransporter()
   if (!transporter) return
 
   const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@blog.com'
   const siteName = process.env.NEXT_PUBLIC_SITE_URL ? new URL(process.env.NEXT_PUBLIC_SITE_URL).hostname : '博客'
+  const defaultSubject = `你在《${postTitle}》的评论已通过审核`
+  const subject = customSubject
+    ? renderSubject(customSubject, { postTitle, toName })
+    : defaultSubject
 
   await transporter.sendMail({
     from: `"${siteName}" <${from}>`,
     to: toEmail,
-    subject: `你在《${postTitle}》的评论已通过审核`,
+    subject,
     html: `
 <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#0f1419">
   <div style="border-bottom:1px solid #eff3f4;padding-bottom:16px;margin-bottom:20px">
