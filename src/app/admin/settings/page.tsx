@@ -78,7 +78,7 @@ function Field({
 
 export default function SettingsPage() {
   const [config, setConfig] = useState({
-    siteName: '', siteDesc: '', socialX: '', socialGithub: '', socialEmail: '', commentApproval: true, showCommentIp: false, enableAiDetection: true, openrouterApiKey: '', openrouterModel: 'claude-3.5-sonnet', aiReviewStrength: 'balanced', aiAutoApprove: true, copyright: '', emailSubjectNewComment: '', emailSubjectReply: '', emailSubjectApproved: '',
+    siteName: '', siteDesc: '', socialX: '', socialGithub: '', socialEmail: '', commentApproval: true, showCommentIp: false, enableAiDetection: true, openrouterApiKey: '', openrouterModel: 'claude-3.5-sonnet', aiReviewStrength: 'balanced', aiAutoApprove: true, copyright: '', emailSubjectNewComment: '', emailSubjectReply: '', emailSubjectApproved: '', emailSenderName: '',
   })
   const [defaultTheme, setDefaultTheme] = useState<'dark' | 'light'>('dark')
   const [navItems, setNavItems] = useState<NavItem[]>(DEFAULT_NAV)
@@ -127,6 +127,7 @@ export default function SettingsPage() {
           emailSubjectNewComment: data.emailSubjectNewComment || '',
           emailSubjectReply: data.emailSubjectReply || '',
           emailSubjectApproved: data.emailSubjectApproved || '',
+          emailSenderName: data.emailSenderName || '',
         })
         try {
           const nav = JSON.parse(data.navItems || '[]')
@@ -640,8 +641,11 @@ export default function SettingsPage() {
               <div className="sm:col-span-2">
                 <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>发件人邮箱</label>
                 <IMEInput type="text" value={smtp.SMTP_FROM} onValueChange={v => setSmtp(s => ({ ...s, SMTP_FROM: v }))} placeholder="noreply@example.com" className="w-full px-3 py-2 rounded-2xl text-sm outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
-              </div>
-            </div>
+              </div>              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>发件人名称</label>
+                <IMEInput type="text" value={config.emailSenderName} onValueChange={v => setConfig(c => ({ ...c, emailSenderName: v }))} placeholder="不填则使用站点域名，如：我的博客" className="w-full px-3 py-2 rounded-2xl text-sm outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+                <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>收件人看到的发件人显示名称，不填则自动使用域名</p>
+              </div>            </div>
 
             <div className="flex flex-col sm:flex-row gap-3">
               <button onClick={saveSmtp} disabled={smtpSaving} className="px-6 py-3 rounded-full text-sm font-bold text-white disabled:opacity-50 w-full sm:w-auto" style={{ background: 'var(--accent)' }}>{smtpSaving ? '保存中...' : '保存配置'}</button>

@@ -72,6 +72,7 @@ export async function runMigrations() {
       await addColumn('SiteConfig', 'emailSubjectNewComment', `TEXT NOT NULL DEFAULT ''`, 'emailSubjectNewComment (新评论通知标题)')
       await addColumn('SiteConfig', 'emailSubjectReply', `TEXT NOT NULL DEFAULT ''`, 'emailSubjectReply (回复通知标题)')
       await addColumn('SiteConfig', 'emailSubjectApproved', `TEXT NOT NULL DEFAULT ''`, 'emailSubjectApproved (审核通过通知标题)')
+      await addColumn('SiteConfig', 'emailSenderName', `TEXT NOT NULL DEFAULT ''`, 'emailSenderName (邮件发件人名称)')
 
       await addColumn('Comment', 'ip', `TEXT NOT NULL DEFAULT ''`, 'comment ip')
       await addColumn('Comment', 'guestName', 'TEXT', 'guestName')

@@ -101,6 +101,7 @@ export type SiteConfig = {
   emailSubjectNewComment: string
   emailSubjectReply: string
   emailSubjectApproved: string
+  emailSenderName: string
   socialX: string
   socialGithub: string
   socialEmail: string
@@ -204,6 +205,7 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
   if (config.emailSubjectNewComment === undefined || config.emailSubjectNewComment === null) config.emailSubjectNewComment = ''
   if (config.emailSubjectReply === undefined || config.emailSubjectReply === null) config.emailSubjectReply = ''
   if (config.emailSubjectApproved === undefined || config.emailSubjectApproved === null) config.emailSubjectApproved = ''
+  if (config.emailSenderName === undefined || config.emailSenderName === null) config.emailSenderName = ''
   
   // SQLite 存的是 0/1 整数，需转换为布尔值
   if (typeof config.showCommentIp === 'number') config.showCommentIp = Boolean(config.showCommentIp)

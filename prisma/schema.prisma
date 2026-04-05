@@ -101,6 +101,7 @@ model SiteConfig {
   emailSubjectNewComment String @default("")  // 新评论通知邮件标题
   emailSubjectReply String @default("")  // 回复通知邮件标题
   emailSubjectApproved String @default("")  // 审核通过通知邮件标题
+  emailSenderName String @default("")  // 邮件发件人名称
   socialX      String @default("")
   socialGithub String @default("")
   socialEmail  String @default("")

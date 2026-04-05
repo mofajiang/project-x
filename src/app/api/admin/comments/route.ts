@@ -97,7 +97,7 @@ export async function PUT(req: NextRequest) {
     const guestEmail = (before as any).guestEmail
     const guestName = (before as any).guestName || '访客'
     if (guestEmail) {
-      sendCommentApprovedNotification({ toEmail: guestEmail, toName: guestName, postTitle, postUrl, content: before.content, customSubject: emailConfig?.emailSubjectApproved || undefined }).catch(() => {})
+      sendCommentApprovedNotification({ toEmail: guestEmail, toName: guestName, postTitle, postUrl, content: before.content, customSubject: emailConfig?.emailSubjectApproved || undefined, senderName: emailConfig?.emailSenderName || undefined }).catch(() => {})
     }
 
     // 2. 如果是回复，通知被回复者
@@ -106,7 +106,7 @@ export async function PUT(req: NextRequest) {
       const parentName = before.parent.guestName || before.parent.author?.username || '用户'
       const replierName = (before as any).guestName || '用户'
       if (parentEmail && parentEmail !== guestEmail) {
-        sendReplyNotification({ toEmail: parentEmail, toName: parentName, replierName, postTitle, postUrl, replyContent: before.content, customSubject: emailConfig?.emailSubjectReply || undefined }).catch(() => {})
+        sendReplyNotification({ toEmail: parentEmail, toName: parentName, replierName, postTitle, postUrl, replyContent: before.content, customSubject: emailConfig?.emailSubjectReply || undefined, senderName: emailConfig?.emailSenderName || undefined }).catch(() => {})
       }
     }
   }

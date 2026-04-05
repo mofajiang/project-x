@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
         if (post) {
           const commenterName = session?.username || commentData.guestName || '匿名访客'
           const postUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000') + '/post/' + post.slug
-          await sendNewCommentNotification({ postTitle: post.title, postUrl, commenterName, content: content.trim(), customSubject: config.emailSubjectNewComment || undefined })
+          await sendNewCommentNotification({ postTitle: post.title, postUrl, commenterName, content: content.trim(), customSubject: config.emailSubjectNewComment || undefined, senderName: config.emailSenderName || undefined })
         }
       } catch (err) {
         console.error('[email-notification] 邮件发送失败:', err)
