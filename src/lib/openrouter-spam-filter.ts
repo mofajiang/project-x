@@ -117,7 +117,13 @@ ${authorWebsite ? `- 网站: ${authorWebsite}` : ''}
     const data = await response.json()
     console.log('[openrouter] 原始响应体 (前300字):', JSON.stringify(data).substring(0, 300))
     
-    const responseContent = data.choices?.[0]?.message?.content?.trim()
+    let responseContent = data.choices?.[0]?.message?.content?.trim()
+    
+    // 如果 content 为空，尝试从 reasoning 字段提取（某些模型如 reasoning 会用这个格式）
+    if (!responseContent && data.choices?.[0]?.message?.reasoning) {
+      console.log('[openrouter] ⚠️  content 为空，尝试从 reasoning 字段提取...')
+      responseContent = data.choices[0].message.reasoning?.trim()
+    }
 
     if (!responseContent) {
       console.error('[openrouter] ❌ 响应内容为空，完整响应:', JSON.stringify(data))
