@@ -17,13 +17,14 @@ interface Comment {
 }
 
 function Avatar({ name, url, size = 36 }: { name: string; url: string | null; size?: number }) {
+  const [err, setErr] = useState(false)
   return (
     <div
       className="rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center font-bold"
       style={{ width: size, height: size, background: 'var(--bg-secondary)', border: '1px solid var(--border)', fontSize: size * 0.4, color: 'var(--accent)' }}
     >
-      {url
-        ? <Image src={url} alt={name} width={size} height={size} className="object-cover w-full h-full" />
+      {url && !err
+        ? <Image src={url} alt={name} width={size} height={size} className="object-cover w-full h-full" onError={() => setErr(true)} />
         : name.charAt(0).toUpperCase()}
     </div>
   )
@@ -173,7 +174,10 @@ function CommentItem({ comment, postId, session, depth = 0, showCommentIp = fals
 }) {
   const [replying, setReplying] = useState(false)
   const name = comment.author?.username || comment.guestName || '匿名'
-  const avatar = comment.author?.avatar || null
+  const faviconUrl = !comment.author && comment.guestWebsite
+    ? (() => { try { return new URL(comment.guestWebsite).origin + '/favicon.ico' } catch { return null } })()
+    : null
+  const avatar = comment.author?.avatar || faviconUrl
 
   return (
     <div className="flex gap-2 py-2.5 sm:gap-2.5 sm:py-3">
