@@ -204,13 +204,13 @@ function CommentInput({
                     className="absolute bottom-9 left-0 z-50 rounded-2xl p-2 shadow-xl"
                     style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', width: 272 }}
                   >
-                    <div className="grid grid-cols-8 gap-0.5">
+                    <div className="grid grid-cols-8 gap-0.5" style={{ maxHeight: 240, overflowY: 'auto' }}>
                       {EMOJI_LIST.map(emoji => (
                         <button
                           key={emoji}
                           type="button"
                           onClick={() => insertEmoji(emoji)}
-                          className="flex items-center justify-center rounded-lg p-1.5 text-xl leading-none transition-colors hover:scale-110"
+                          className="flex items-center justify-center rounded-lg p-1.5 text-xl leading-none transition-colors hover:scale-110 flex-shrink-0"
                           style={{ background: 'transparent' }}
                           onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
                           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
