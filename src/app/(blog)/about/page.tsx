@@ -1,4 +1,5 @@
 import { getSiteConfig } from '@/lib/config'
+import { MarkdownRenderer } from '@/components/blog/MarkdownRenderer'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,7 +14,11 @@ export default async function AboutPage() {
         <div className="flex flex-col items-center text-center mb-8">
           <div className="w-20 h-20 rounded-full bg-gray-700 mb-4 flex items-center justify-center text-4xl">✕</div>
           <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>{config.siteName}</h2>
-          {config.siteDesc && <p className="text-base" style={{ color: 'var(--text-secondary)' }}>{config.siteDesc}</p>}
+          {config.siteDesc && (
+            <div style={{ textAlign: 'center', maxWidth: '600px' }}>
+              <MarkdownRenderer content={config.siteDesc} />
+            </div>
+          )}
         </div>
         <div className="flex justify-center gap-4">
           {config.socialX && (
