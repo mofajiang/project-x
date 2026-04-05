@@ -132,14 +132,43 @@ ${authorWebsite ? `- 网站: ${authorWebsite}` : ''}
     console.log('[openrouter] ✅ 收到响应内容长度:', responseContent.length, '字')
     console.log('[openrouter] 完整响应内容:', responseContent)
 
-    // 尝试解析 JSON（可能被包裹在 markdown ``` 中）
-    let jsonStr = responseContent
-    const jsonMatch = responseContent.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
-    if (jsonMatch) {
-      jsonStr = jsonMatch[1]
+    // 解析 JSON（可能被包裹在 markdown ``` 中）
+    let jsonStr = responseContent.trim()
+    
+    // 首先尝试移除 markdown 代码块标记
+    if (jsonStr.startsWith('```')) {
+      // 移除开头的 ```json 或 ```
+      jsonStr = jsonStr.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '')
+    }
+    
+    // 如果仍然失败，尝试提取第一个 { 到最后一个 }
+    let result: any = null
+    try {
+      console.log('[openrouter] 尝试直接解析 JSON...')
+      result = JSON.parse(jsonStr.trim())
+    } catch (parseErr: any) {
+      console.log('[openrouter] 直接解析失败，尝试提取 JSON 对象...')
+      const start = jsonStr.indexOf('{')
+      const end = jsonStr.lastIndexOf('}')
+      if (start !== -1 && end !== -1 && end > start) {
+        try {
+          jsonStr = jsonStr.substring(start, end + 1)
+          console.log('[openrouter] 提取的 JSON:', jsonStr.substring(0, 100), '...')
+          result = JSON.parse(jsonStr)
+        } catch (extractErr: any) {
+          console.error('[openrouter] ❌ JSON 提取和解析都失败:', {
+            originalError: parseErr.message,
+            extractError: extractErr.message,
+            failedContent: jsonStr.substring(0, 200)
+          })
+          throw new Error(`JSON 解析失败: ${extractErr.message}`)
+        }
+      } else {
+        console.error('[openrouter] ❌ 未找到有效的 JSON 对象')
+        throw parseErr
+      }
     }
 
-    const result = JSON.parse(jsonStr.trim()) as SpamAnalysisResult
     console.log('[openrouter] ✅ JSON 解析成功:', { riskScore: result.riskScore, isSpam: result.isSpam })
 
     // 验证和归一化结果
