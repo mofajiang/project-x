@@ -152,13 +152,12 @@ export function ComposeModal({ avatar, username }: Props) {
 
       <div
         ref={sheetRef}
-        className="w-full flex flex-col overflow-hidden md:rounded-2xl md:mx-4"
+        className="w-full flex flex-col overflow-hidden rounded-t-2xl md:rounded-2xl md:mx-4"
         style={{
           maxWidth: 600,
           background: 'var(--bg)',
           border: '0.5px solid var(--border)',
           boxShadow: '0 -4px 40px rgba(0,0,0,0.4)',
-          borderRadius: '20px 20px 0 0',
           transform: visible ? 'translateY(0)' : 'translateY(100%)',
           transition: 'transform 0.28s cubic-bezier(0.32,0.72,0,1)',
           maxHeight: '92dvh',
