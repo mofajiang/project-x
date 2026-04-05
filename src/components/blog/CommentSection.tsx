@@ -175,7 +175,7 @@ function CommentItem({ comment, postId, session, depth = 0, showCommentIp = fals
   const [replying, setReplying] = useState(false)
   const name = comment.author?.username || comment.guestName || '匿名'
   const faviconUrl = !comment.author && comment.guestWebsite
-    ? (() => { try { return new URL(comment.guestWebsite).origin + '/favicon.ico' } catch { return null } })()
+    ? (() => { try { const host = new URL(comment.guestWebsite).hostname; return `https://www.google.com/s2/favicons?domain=${host}&sz=64` } catch { return null } })()
     : null
   const avatar = comment.author?.avatar || faviconUrl
 
