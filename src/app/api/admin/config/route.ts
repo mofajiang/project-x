@@ -22,6 +22,18 @@ function normalizeConfigValue(col: string, val: any) {
   return val
 }
 
+function toJsonSafe<T>(value: T): T {
+  return JSON.parse(
+    JSON.stringify(value, (_key, v) => {
+      if (typeof v === 'bigint') {
+        const n = Number(v)
+        return Number.isSafeInteger(n) ? n : v.toString()
+      }
+      return v
+    })
+  ) as T
+}
+
 function getConfigAuditPayload(changedKeys: string[]) {
   const preview = changedKeys.slice(0, 4)
   const suffix = changedKeys.length > 4 ? ` 等 ${changedKeys.length} 项` : ''
@@ -47,7 +59,7 @@ export async function GET(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   await runMigrations()
   const config = await getSiteConfig()
-  return NextResponse.json(config, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } })
+  return NextResponse.json(toJsonSafe(config), { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } })
 }
 
 export async function PUT(req: NextRequest) {
@@ -168,6 +180,6 @@ export async function PUT(req: NextRequest) {
     metadata: { changedKeys },
   })
   const freshConfig = await getSiteConfig()
-  return NextResponse.json(freshConfig, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } })
+  return NextResponse.json(toJsonSafe(freshConfig), { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } })
 }
 
