@@ -205,7 +205,14 @@ export async function POST(request: NextRequest) {
         aiScore: reviewResult.score,
         aiReview: JSON.stringify(reviewResult),
         // 根据建议自动处理状态
-        status: reviewResult.recommendation === 'reject' ? 'rejected' : link.status,
+        status: reviewResult.recommendation === 'reject' 
+          ? 'rejected' 
+          : (reviewResult.recommendation === 'approve' && config.aiAutoApprove 
+            ? 'approved' 
+            : link.status),
+        approvedAt: reviewResult.recommendation === 'approve' && config.aiAutoApprove 
+          ? new Date() 
+          : link.approvedAt,
         rejectionReason:
           reviewResult.recommendation === 'reject'
             ? `AI 安全检测不通过（风险评分：${reviewResult.score}/100）`

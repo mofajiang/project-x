@@ -353,7 +353,7 @@ export default function AdminAiModelPage() {
                     style={{ accentColor: 'var(--accent)' }}
                   />
                   <span style={{ color: 'var(--text-primary)' }}>
-                    AI 判断安全时自动批准（仅评论；友链始终需人工审核）
+                    AI 判断安全时自动批准（评论和友链）
                   </span>
                 </label>
               </>
