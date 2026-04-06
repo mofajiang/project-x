@@ -9,7 +9,7 @@
 
 示例网站：https://thisblog.me/
 
-基于 Next.js 14 + Tailwind CSS + SQLite（Prisma）构建的 X 风格个人博客系统，支持文章发布、Markdown 编辑、评论审核、邮件提醒、后台管理以及站点个性化配置。
+基于 Next.js 14 + Tailwind CSS + SQLite（Prisma）构建的 X 风格个人博客系统，支持文章发布、Markdown 编辑、评论审核、邮件提醒、后台管理、站点个性化配置，以及 RSS 订阅、Sitemap/Robots 和文章级 SEO 元数据。
 
 ---
 
@@ -43,7 +43,9 @@
 - 🔗 友情链接：右侧栏友链卡片展示
 - 🌙 主题切换：深色 / 浅色模式支持
 - 🔍 全站搜索：标题、摘要、正文模糊搜索
-- 📱 响应式：手机端底部导航与适配样式
+- � RSS 订阅：自动生成 /feed.xml
+- 🧭 Sitemap / Robots：/sitemap.xml 与 /robots.txt
+- �📱 响应式：手机端底部导航与适配样式
 
 ---
 
