@@ -159,3 +159,30 @@ model AdminAuditLog {
   @@index([riskLevel, status, createdAt(sort: Desc)])
 }
 
+model FriendLink {
+  id          String    @id @default(cuid())
+  name        String    // 网站名称
+  url         String    // 网站URL
+  description String?   // 网站描述
+  favicon     String?   // 网站图标URL
+  email       String?   // 提交者邮箱
+  
+  // 审核相关
+  status      String    @default("pending")  // pending | approved | rejected
+  rejectionReason String? // 拒绝原因
+  aiScore     Int       @default(0)  // AI 风险评分 0-100（分数越低越安全）
+  aiReview    String    @default("{}")  // AI 审核结论 JSON
+  
+  // 互链检查
+  reciprocalChecked Boolean @default(false)  // 是否检查过互链
+  hasReciprocal     Boolean @default(false)  // 是否已返向链接
+  reciprocalCheckTime DateTime?              // 最后检查时间
+  
+  createdAt   DateTime  @default(now())
+  approvedAt  DateTime?
+  updatedAt   DateTime  @updatedAt
+  
+  @@index([status, createdAt(sort: Desc)])
+  @@index([hasReciprocal, status])
+}
+
