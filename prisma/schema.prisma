@@ -96,8 +96,20 @@ model SiteConfig {
   enableAiDetection Boolean @default(true)  // 启用 AI 垃圾评论检测
   aiReviewStrength String @default("balanced")  // 评审强度：lenient|balanced|strict
   aiAutoApprove Boolean @default(true)  // AI 判断安全时自动通过
-  openrouterApiKey String @default("")  // OpenRouter API 密钥
-  openrouterModel String @default("claude-3.5-sonnet")  // 使用的 AI 模型
+  
+  // AI 模型配置（新增：支持自定义模型接口）
+  enableCustomAiModel Boolean @default(false)  // 是否使用自定义 AI 模型
+  aiModelName     String @default("")  // 当前使用的模型名称
+  aiModelProvider String @default("openrouter")  // 模型提供商：openrouter|custom|others
+  aiModelBaseUrl  String @default("")  // 自定义模型基础 URL（如使用自定义接口）
+  aiModelApiKey   String @default("")  // AI 模型 API 密钥
+  aiModelMaxTokens Int @default(2000)  // 最大上下文 token 数
+  aiModelTimeout  Int @default(30)  // 超时时间（秒）
+  
+  // 保留原有字段（向后兼容）
+  openrouterApiKey String @default("")  // OpenRouter API 密钥（已弃用，使用 aiModelApiKey）
+  openrouterModel String @default("claude-3.5-sonnet")  // 使用的 AI 模型（已弃用，使用 aiModelName）
+  
   emailSubjectNewComment String @default("")  // 新评论通知邮件标题
   emailSubjectReply String @default("")  // 回复通知邮件标题
   emailSubjectApproved String @default("")  // 审核通过通知邮件标题
@@ -105,7 +117,7 @@ model SiteConfig {
   socialX      String @default("")
   socialGithub String @default("")
   socialEmail  String @default("")
-  navItems     String @default("[{\"label\":\"首页\",\"href\":\"/\",\"icon\":\"home\"},{\"label\":\"归档\",\"href\":\"/archive\",\"icon\":\"archive\"},{\"label\":\"标签\",\"href\":\"/tags\",\"icon\":\"tag\"},{\"label\":\"关于\",\"href\":\"/about\",\"icon\":\"user\"}]")
+  navItems     String @default("[{\"label\":\"首页\",\"href\":\"/\",\"icon\":\"home\"},{\"label\":\"归档\",\"href\":\"/archive\",\"icon\":\"archive\"},{\"label\":\"标签\",\"href\":\"/tags\",\"icon\":\"tag\"},{\"label\":\"友链\",\"href\":\"/links\",\"icon\":\"link\"},{\"label\":\"关于\",\"href\":\"/about\",\"icon\":\"user\"}]")
   copyright    String @default("")
 }
 
