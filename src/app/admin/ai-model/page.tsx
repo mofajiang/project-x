@@ -279,8 +279,11 @@ export default function AdminAiModelPage() {
                 type="number"
                 min="100"
                 max="10000"
-                value={config.aiModelMaxTokens}
-                onChange={e => handleChange('aiModelMaxTokens', parseInt(e.target.value))}
+                value={isNaN(config.aiModelMaxTokens) ? '' : config.aiModelMaxTokens}
+                onChange={e => {
+                  const v = parseInt(e.target.value)
+                  handleChange('aiModelMaxTokens', isNaN(v) ? 2000 : v)
+                }}
                 className="w-full px-4 py-2 rounded-lg bg-transparent outline-none border"
                 style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
               />
@@ -297,8 +300,11 @@ export default function AdminAiModelPage() {
                 type="number"
                 min="5"
                 max="300"
-                value={config.aiModelTimeout}
-                onChange={e => handleChange('aiModelTimeout', parseInt(e.target.value))}
+                value={isNaN(config.aiModelTimeout) ? '' : config.aiModelTimeout}
+                onChange={e => {
+                  const v = parseInt(e.target.value)
+                  handleChange('aiModelTimeout', isNaN(v) ? 30 : v)
+                }}
                 className="w-full px-4 py-2 rounded-lg bg-transparent outline-none border"
                 style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
               />

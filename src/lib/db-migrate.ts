@@ -69,6 +69,13 @@ export async function runMigrations() {
       await addColumn('SiteConfig', 'openrouterModel', `TEXT NOT NULL DEFAULT 'claude-3.5-sonnet'`, 'openrouterModel')
       await addColumn('SiteConfig', 'aiReviewStrength', `TEXT NOT NULL DEFAULT 'balanced'`, 'aiReviewStrength (AI 评审强度)')
       await addColumn('SiteConfig', 'aiAutoApprove', `INTEGER NOT NULL DEFAULT 1`, 'aiAutoApprove (AI 自动通过)')
+      await addColumn('SiteConfig', 'enableCustomAiModel', `INTEGER NOT NULL DEFAULT 0`, 'enableCustomAiModel (自定义AI模型开关)')
+      await addColumn('SiteConfig', 'aiModelProvider', `TEXT NOT NULL DEFAULT 'openrouter'`, 'aiModelProvider (AI模型提供商)')
+      await addColumn('SiteConfig', 'aiModelName', `TEXT NOT NULL DEFAULT ''`, 'aiModelName (AI模型名称)')
+      await addColumn('SiteConfig', 'aiModelBaseUrl', `TEXT NOT NULL DEFAULT ''`, 'aiModelBaseUrl (AI模型接口地址)')
+      await addColumn('SiteConfig', 'aiModelApiKey', `TEXT NOT NULL DEFAULT ''`, 'aiModelApiKey (AI模型API密钥)')
+      await addColumn('SiteConfig', 'aiModelMaxTokens', `INTEGER NOT NULL DEFAULT 2000`, 'aiModelMaxTokens (AI最大Token数)')
+      await addColumn('SiteConfig', 'aiModelTimeout', `INTEGER NOT NULL DEFAULT 30`, 'aiModelTimeout (AI请求超时秒数)')
       await addColumn('SiteConfig', 'emailSubjectNewComment', `TEXT NOT NULL DEFAULT ''`, 'emailSubjectNewComment (新评论通知标题)')
       await addColumn('SiteConfig', 'emailSubjectReply', `TEXT NOT NULL DEFAULT ''`, 'emailSubjectReply (回复通知标题)')
       await addColumn('SiteConfig', 'emailSubjectApproved', `TEXT NOT NULL DEFAULT ''`, 'emailSubjectApproved (审核通过通知标题)')
@@ -86,6 +93,12 @@ export async function runMigrations() {
       await addColumn('SiteConfig', 'defaultTheme', `TEXT NOT NULL DEFAULT 'dark'`, 'defaultTheme')
       await addColumn('SiteConfig', 'customDomain', `TEXT NOT NULL DEFAULT ''`, 'customDomain')
       await addColumn('Visitor', 'visitDay', `TEXT NOT NULL DEFAULT ''`, 'visitor visitDay')
+      // FriendLink AI 审核字段
+      await addColumn('FriendLink', 'aiScore', `INTEGER`, 'friendLink aiScore (AI风险分)')
+      await addColumn('FriendLink', 'aiReview', `TEXT`, 'friendLink aiReview (AI审核结果)')
+      await addColumn('FriendLink', 'approvedAt', `TEXT`, 'friendLink approvedAt (通过时间)')
+      await addColumn('FriendLink', 'hasReciprocal', `INTEGER NOT NULL DEFAULT 0`, 'friendLink hasReciprocal (是否回链)')
+      await addColumn('FriendLink', 'rejectionReason', `TEXT`, 'friendLink rejectionReason (拒绝原因)')
       await createTable(
         `CREATE TABLE IF NOT EXISTS Visitor (
           id TEXT PRIMARY KEY,

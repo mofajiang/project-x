@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { runMigrations } from '@/lib/db-migrate'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,6 +14,8 @@ async function ensureSiteConfigExists() {
 
 export async function GET() {
   try {
+    // 确保列存在（服务器可能未运行 db:push）
+    await runMigrations()
     // 确保配置记录存在
     await ensureSiteConfigExists()
 
@@ -59,6 +62,8 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    // 确保列存在（服务器可能未运行 db:push）
+    await runMigrations()
     // 确保配置记录存在
     await ensureSiteConfigExists()
 
@@ -87,8 +92,8 @@ export async function POST(request: NextRequest) {
       aiModelName: String(data.aiModelName || ''),
       aiModelBaseUrl: String(data.aiModelBaseUrl || ''),
       aiModelApiKey: String(apiKey),
-      aiModelMaxTokens: Math.max(100, Math.min(10000, parseInt(data.aiModelMaxTokens) || 2000)),
-      aiModelTimeout: Math.max(5, Math.min(300, parseInt(data.aiModelTimeout) || 30)),
+      aiModelMaxTokens: Math.max(100, Math.min(10000, (Number.isFinite(Number(data.aiModelMaxTokens)) ? Number(data.aiModelMaxTokens) : 2000))),
+      aiModelTimeout: Math.max(5, Math.min(300, (Number.isFinite(Number(data.aiModelTimeout)) ? Number(data.aiModelTimeout) : 30))),
       enableAiDetection: Boolean(data.enableAiDetection),
       aiReviewStrength: String(data.aiReviewStrength || 'balanced'),
       aiAutoApprove: Boolean(data.aiAutoApprove),
