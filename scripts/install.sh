@@ -272,9 +272,24 @@ build_app() {
 
 # ── 仅构建并重启（用于更新） ───────────────────────────────
 update_app() {
-  step "构建生产版本"
   cd "$INSTALL_DIR"
+
+  step "安装/更新 npm 依赖"
+  npm install --production=false
+
+  step "构建生产版本"
   npm run build
+
+  step "备份数据库"
+  if [ -f "${INSTALL_DIR}/data/db.sqlite" ]; then
+    BACKUP_FILE="${INSTALL_DIR}/data/db.sqlite.backup.$(date +%Y%m%d%H%M%S)"
+    cp "${INSTALL_DIR}/data/db.sqlite" "$BACKUP_FILE"
+    info "数据库已备份到：${BACKUP_FILE}"
+  fi
+
+  step "同步数据库结构（新增字段）"
+  npm run db:push -- --accept-data-loss
+  info "数据库结构已同步"
 
   step "重启 PM2 进程"
   if command -v pm2 &>/dev/null; then
@@ -505,7 +520,7 @@ print_menu() {
   print_banner
   echo "请选择操作："
   echo "  1) install   安装到生产目录"
-  echo "  2) update    升级生产目录"
+  echo "  2) update    升级（拉取代码+安装依赖+迁移数据库+重建+重启）"
   echo "  3) uninstall 卸载并删除目录"
   echo "  4) status    查看 PM2 状态"
   echo "  5) restart   重启 PM2 进程"
@@ -549,11 +564,36 @@ main() {
     update)
       print_banner
       check_deps
+
+      prompt "项目安装目录 [默认: ${INSTALL_DIR}]:"
+      read UPDATE_DIR || true
+      INSTALL_DIR=${UPDATE_DIR:-$INSTALL_DIR}
+
+      if [ ! -d "$INSTALL_DIR/.git" ]; then
+        error "目录 ${INSTALL_DIR} 不存在或不是 Git 仓库，请使用 install 命令"
+      fi
+
       load_existing_config "$INSTALL_DIR/.env"
-      collect_config
-      install_code
+
+      prompt "PM2 进程名 [默认: ${PM2_NAME}]:"
+      read PM2_INPUT || true
+      PM2_NAME=${PM2_INPUT:-$PM2_NAME}
+
+      step "拉取最新代码"
+      cd "$INSTALL_DIR"
+      git pull origin main
+
       update_app
-      print_done
+
+      echo ''
+      echo -e "${GREEN}╔══════════════════════════════════════════╗${NC}"
+      echo -e "${GREEN}║         🎉 更新完成！                    ║${NC}"
+      echo -e "${GREEN}╚══════════════════════════════════════════╝${NC}"
+      echo ''
+      echo -e "  站点 URL：  ${CYAN}${SITE_URL}${NC}"
+      echo -e "  PM2 状态："
+      pm2 show "$PM2_NAME" 2>/dev/null | head -20 || true
+      echo ''
       ;;
     uninstall)
       print_banner
