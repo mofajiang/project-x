@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
       apiKey = rows[0]?.aiModelApiKey || ''
     }
 
-    const maxTokens = Math.max(100, Math.min(10000, Number.isFinite(Number(data.aiModelMaxTokens)) ? Number(data.aiModelMaxTokens) : 2000))
+    const maxTokens = Math.max(100, Math.min(1000000, Number.isFinite(Number(data.aiModelMaxTokens)) ? Number(data.aiModelMaxTokens) : 2000))
     const timeout = Math.max(5, Math.min(300, Number.isFinite(Number(data.aiModelTimeout)) ? Number(data.aiModelTimeout) : 30))
 
     // 使用 raw SQL 更新，避免 Prisma 客户端版本不匹配时静默忽略字段
