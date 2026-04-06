@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     postId,
     authorId: session?.userId || null,
     parentId: parentId || null,
-    approved: !config.commentApproval,
+    approved: session ? true : !config.commentApproval,
     ip,
     riskScore: quickCheck.localRiskScore,
     riskReasons: JSON.stringify(quickCheck.localRiskScore > 0 ? ['本地检查中...'] : []),
