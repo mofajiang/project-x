@@ -4,20 +4,11 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { AdminUpdateChecker } from './AdminUpdateChecker'
+import { ADMIN_NAV_ITEMS } from './navItems'
 
 type ThemeMode = 'dark' | 'light'
 const THEME_CYCLE: ThemeMode[] = ['dark', 'light']
 const THEME_LABELS: Record<ThemeMode, string> = { dark: '🌙 暗黑', light: '☀️ 浅色' }
-
-const navItems = [
-  { label: '仪表盘', href: '/admin', icon: '📊' },
-  { label: '文章管理', href: '/admin/posts', icon: '📝' },
-  { label: '评论管理', href: '/admin/comments', icon: '💬' },
-  { label: '标签管理', href: '/admin/tags', icon: '🏷' },
-  { label: '安全设置', href: '/admin/security', icon: '🔒' },
-  { label: '站点设置', href: '/admin/settings', icon: '⚙️' },
-  { label: '导航与组件', href: '/admin/navigation', icon: '🧭' },
-]
 
 export function MobileNav({ username, pendingCount }: { username: string; pendingCount: number }) {
   const pathname = usePathname()
@@ -102,7 +93,7 @@ export function MobileNav({ username, pendingCount }: { username: string; pendin
 
         {/* 导航菜单 - 可滚动 */}
         <div className="flex flex-col gap-1 p-4 overflow-y-auto flex-1">
-          {navItems.map((item) => {
+          {ADMIN_NAV_ITEMS.map((item) => {
             const active = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))
             return (
               <Link
@@ -118,7 +109,7 @@ export function MobileNav({ username, pendingCount }: { username: string; pendin
               >
                 <span className="text-lg">{item.icon}</span>
                 <span>{item.label}</span>
-                {item.label === '评论管理' && pendingCount > 0 && (
+                {item.badge && pendingCount > 0 && (
                   <span
                     className="ml-auto text-xs font-bold px-2 py-1 rounded-full text-white"
                     style={{ background: 'var(--red,#F4212E)' }}

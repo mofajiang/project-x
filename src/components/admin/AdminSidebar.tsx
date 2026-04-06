@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { AdminUpdateChecker } from './AdminUpdateChecker'
+import { ADMIN_NAV_ITEMS } from './navItems'
 
 type ThemeMode = 'dark' | 'light'
 const THEME_CYCLE: ThemeMode[] = ['dark', 'light']
@@ -48,20 +49,6 @@ function AdminThemeToggle({ compact = false }: { compact?: boolean }) {
   )
 }
 
-
-
-const navItems = [
-  { label: '仪表盘', href: '/admin', icon: '📊' },
-  { label: '文章管理', href: '/admin/posts', icon: '📝' },
-  { label: '评论管理', href: '/admin/comments', icon: '💬', badge: true },
-  { label: '标签管理', href: '/admin/tags', icon: '🏷' },
-  { label: '友链管理', href: '/admin/friend-links', icon: '🔗' },
-  { label: 'AI 模型管理', href: '/admin/ai-model', icon: '🤖' },
-  { label: '安全设置', href: '/admin/security', icon: '🔒' },
-  { label: '站点设置', href: '/admin/settings', icon: '⚙️' },
-  { label: '导航与组件', href: '/admin/navigation', icon: '🧭' },
-]
-
 export function AdminSidebar({ username }: { username: string }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -94,7 +81,7 @@ export function AdminSidebar({ username }: { username: string }) {
         </div>
 
         <nav className="flex flex-col gap-1 flex-1">
-          {navItems.map(item => (
+          {ADMIN_NAV_ITEMS.map(item => (
             <Link
               key={item.href}
               href={item.href}
