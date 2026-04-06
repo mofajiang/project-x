@@ -21,16 +21,6 @@ const PROVIDERS = [
   { value: 'custom', label: '自定义接口', desc: '运行自己部署的 AI 服务（如 Ollama、LocalAI 等）' },
 ]
 
-const MODELS: Record<string, string[]> = {
-  openrouter: [
-    'claude-3.5-sonnet',
-    'claude-3-opus',
-    'gpt-4-turbo',
-    'gpt-4',
-  ],
-  custom: [],
-}
-
 export default function AdminAiModelPage() {
   const [config, setConfig] = useState<AiConfig | null>(null)
   const [saving, setSaving] = useState(false)
@@ -199,18 +189,17 @@ export default function AdminAiModelPage() {
                 <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
                   模型名称
                 </label>
-                <select
+                <IMEInput
+                  type="text"
+                  placeholder="例如 claude-3.5-sonnet, gpt-4-turbo"
                   value={config.aiModelName}
-                  onChange={e => handleChange('aiModelName', e.target.value)}
+                  onValueChange={v => handleChange('aiModelName', v)}
                   className="w-full px-4 py-2 rounded-lg bg-transparent outline-none border"
                   style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-                >
-                  {MODELS.openrouter.map(model => (
-                    <option key={model} value={model}>
-                      {model}
-                    </option>
-                  ))}
-                </select>
+                />
+                <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+                  填写 OpenRouter 支持的模型全名，如 claude-3.5-sonnet、gpt-4-turbo 等
+                </p>
               </div>
             </div>
           </div>
