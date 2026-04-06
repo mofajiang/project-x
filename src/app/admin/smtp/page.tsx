@@ -26,8 +26,17 @@ export default function SmtpPage() {
     const res = await fetch('/api/admin/smtp', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(smtp) })
     setSaving(false)
     if (res.ok) {
+      const data = await res.json()
+      setSmtp({
+        SMTP_HOST: data.SMTP_HOST || '',
+        SMTP_PORT: data.SMTP_PORT || '465',
+        SMTP_USER: data.SMTP_USER || '',
+        SMTP_PASS: data.SMTP_PASS || '',
+        SMTP_FROM: data.SMTP_FROM || '',
+      })
+      setConfigured(!!data.configured)
+      setTestEmail(data.SMTP_USER || '')
       toast.success('SMTP 配置已保存，重启服务后生效')
-      setConfigured(!!(smtp.SMTP_HOST && smtp.SMTP_USER && smtp.SMTP_PASS))
     } else {
       const d = await res.json()
       toast.error(d.error || '保存失败')

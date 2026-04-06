@@ -37,19 +37,23 @@ function writeEnv(vars: Record<string, string>) {
 
 const SMTP_KEYS = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM']
 
+function readSmtpConfig() {
+  const env = readEnv()
+  return {
+    SMTP_HOST: env.SMTP_HOST || '',
+    SMTP_PORT: env.SMTP_PORT || '465',
+    SMTP_USER: env.SMTP_USER || '',
+    SMTP_PASS: env.SMTP_PASS ? '••••••••' : '',
+    SMTP_FROM: env.SMTP_FROM || '',
+    configured: !!(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS),
+  }
+}
+
 export async function GET(req: NextRequest) {
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const env = readEnv()
-  return NextResponse.json({
-    SMTP_HOST: env.SMTP_HOST || '',
-    SMTP_PORT: env.SMTP_PORT || '465',
-    SMTP_USER: env.SMTP_USER || '',
-    SMTP_PASS: env.SMTP_PASS ? '••••••••' : '',  // 密码打码回显
-    SMTP_FROM: env.SMTP_FROM || '',
-    configured: !!(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS),
-  })
+  return NextResponse.json(readSmtpConfig())
 }
 
 export async function PUT(req: NextRequest) {
@@ -80,7 +84,7 @@ export async function PUT(req: NextRequest) {
       ip: requestIp,
       metadata: { changedKeys },
     })
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ ok: true, ...readSmtpConfig() })
   } catch (e: any) {
     await logAdminAudit({
       action: 'smtp.updated',

@@ -13,9 +13,17 @@ export default function SecurityPage() {
   const [oldPassword, setOldPassword] = useState('')
   const [saving, setSaving] = useState(false)
 
+  const applyConfigData = (data: any) => {
+    setConfig({
+      loginPath: data.loginPath || '/admin-login',
+      loginMode: data.loginMode || 'path',
+      secretClicks: data.secretClicks ?? 5,
+    })
+  }
+
   useEffect(() => {
     fetch('/api/admin/config').then(r => r.json()).then(data => {
-      if (data) setConfig({ loginPath: data.loginPath, loginMode: data.loginMode, secretClicks: data.secretClicks })
+      if (data) applyConfigData(data)
     })
   }, [])
 
@@ -27,8 +35,13 @@ export default function SecurityPage() {
       body: JSON.stringify(config),
     })
     setSaving(false)
-    if (res.ok) toast.success('安全设置已保存')
-    else toast.error('保存失败')
+    if (res.ok) {
+      const data = await res.json()
+      applyConfigData(data)
+      toast.success('安全设置已保存')
+    } else {
+      toast.error('保存失败')
+    }
   }
 
   const changePassword = async () => {

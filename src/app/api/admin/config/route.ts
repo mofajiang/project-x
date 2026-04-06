@@ -145,6 +145,7 @@ export async function PUT(req: NextRequest) {
     ip: requestIp,
     metadata: { changedKeys },
   })
-  return NextResponse.json(config)
+  const freshConfig = await getSiteConfig()
+  return NextResponse.json(freshConfig)
 }
 

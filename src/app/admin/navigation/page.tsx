@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { IMEInput, IMETextarea } from '@/components/ui/IMEInput'
 import { ADMIN_PAGE_TITLE_CLASS } from '@/components/admin/adminUi'
-import { DEFAULT_NAV, DEFAULT_WIDGETS, type NavItem, type RightPanelWidget as Widget } from '@/lib/config'
+import { DEFAULT_NAV, DEFAULT_WIDGETS, parseNavItems, parseWidgets, type NavItem, type RightPanelWidget as Widget } from '@/lib/config'
 
 type WidgetType = 'search' | 'about' | 'tags' | 'hotPosts' | 'custom' | 'links' | 'carousel'
 type FriendLink = { label: string; url: string; desc?: string; avatar?: string }
@@ -42,16 +42,14 @@ export default function AdminNavigationPage() {
   const [widgets, setWidgets] = useState<Widget[]>(DEFAULT_WIDGETS.map(normalizeWidget))
   const [saving, setSaving] = useState(false)
 
+  const applyConfigData = (data: any) => {
+    setNavItems(parseNavItems(data.navItems || '[]'))
+    setWidgets(parseWidgets(data.rightPanelWidgets || '[]').map(item => normalizeWidget(item)))
+  }
+
   useEffect(() => {
     fetch('/api/admin/config').then(r => r.json()).then(data => {
-      try {
-        const nav = JSON.parse(data.navItems || '[]')
-        if (Array.isArray(nav)) setNavItems(nav)
-      } catch {}
-      try {
-        const w = JSON.parse(data.rightPanelWidgets || '[]')
-        if (Array.isArray(w)) setWidgets(w.map((item: Widget) => normalizeWidget(item)))
-      } catch {}
+      if (data) applyConfigData(data)
     })
   }, [])
 
@@ -63,8 +61,13 @@ export default function AdminNavigationPage() {
       body: JSON.stringify({ navItems, rightPanelWidgets: widgets }),
     })
     setSaving(false)
-    if (res.ok) toast.success('导航与组件已保存')
-    else toast.error('保存失败')
+    if (res.ok) {
+      const data = await res.json()
+      applyConfigData(data)
+      toast.success('导航与组件已保存')
+    } else {
+      toast.error('保存失败')
+    }
   }
 
   const addNavItem = () => setNavItems(v => [...v, { label: '新菜单', href: '/', icon: 'home' }])
