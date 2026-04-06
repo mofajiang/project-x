@@ -6,6 +6,21 @@ import { runMigrations } from '@/lib/db-migrate'
 import { getRequestIp, logAdminAudit } from '@/lib/admin-audit'
 
 const SECURITY_CONFIG_KEYS = new Set(['loginPath', 'loginMode', 'secretClicks', 'customDomain'])
+const RAW_CONFIG_COLUMNS = new Set([
+  'siteName', 'siteDesc', 'loginPath', 'loginMode', 'secretClicks',
+  'commentApproval', 'showCommentIp', 'enableAiDetection', 'aiReviewStrength', 'aiAutoApprove',
+  'openrouterApiKey', 'openrouterModel',
+  'emailSubjectNewComment', 'emailSubjectReply', 'emailSubjectApproved', 'emailSenderName',
+  'socialX', 'socialGithub', 'socialEmail',
+])
+const BOOLEAN_COLUMNS = new Set(['commentApproval', 'showCommentIp', 'enableAiDetection', 'aiAutoApprove'])
+
+function normalizeConfigValue(col: string, val: any) {
+  if (BOOLEAN_COLUMNS.has(col)) return Boolean(val) ? 1 : 0
+  if (col === 'secretClicks') return Math.max(1, Number(val) || 5)
+  if (val === undefined || val === null) return ''
+  return val
+}
 
 function getConfigAuditPayload(changedKeys: string[]) {
   const preview = changedKeys.slice(0, 4)
@@ -89,18 +104,11 @@ export async function PUT(req: NextRequest) {
   if (data.enableAiDetection !== undefined) data.enableAiDetection = Boolean(data.enableAiDetection)
   if (data.aiAutoApprove !== undefined) data.aiAutoApprove = Boolean(data.aiAutoApprove)
 
-  // 先 upsert Prisma 已知字段
-  let config: any
+  // 全量使用 raw SQL，避免 Prisma Client 字段不一致导致保存失败
   try {
-    console.log('[config PUT] Prisma upsert 前的 data:', { openrouterApiKey: data.openrouterApiKey?.substring(0, 20) || '(empty)', openrouterModel: data.openrouterModel, enableAiDetection: data.enableAiDetection })
-    config = await prisma.siteConfig.upsert({
-      where: { id: 'singleton' },
-      update: data,
-      create: { id: 'singleton', ...data },
-    })
-    console.log('[config PUT] Prisma upsert 后的结果:', { openrouterApiKey: config.openrouterApiKey?.substring(0, 20) || '(empty)', openrouterModel: config.openrouterModel, enableAiDetection: config.enableAiDetection })
+    await prisma.$executeRawUnsafe(`INSERT OR IGNORE INTO SiteConfig (id) VALUES ('singleton')`)
   } catch (e: any) {
-    console.error('[config PUT] upsert failed:', e?.message)
+    console.error('[config PUT] ensure SiteConfig failed:', e?.message)
     await logAdminAudit({
       ...auditPayload,
       status: 'failed',
@@ -108,14 +116,18 @@ export async function PUT(req: NextRequest) {
       targetId: 'singleton',
       actor: session,
       ip: requestIp,
-      metadata: { changedKeys, error: e?.message || 'upsert failed' },
+      metadata: { changedKeys, error: e?.message || 'ensure SiteConfig failed' },
     })
     return NextResponse.json({ error: '保存失败', detail: e?.message }, { status: 500 })
   }
 
+  const rawUpdates: Array<{ col: string; val: any }> = []
+  for (const [col, val] of Object.entries(data)) {
+    if (!RAW_CONFIG_COLUMNS.has(col)) continue
+    rawUpdates.push({ col, val: normalizeConfigValue(col, val) })
+  }
 
-  // 再用 raw SQL 逐列更新动态列，每列独立 try/catch 互不影响
-  const rawUpdates: Array<{ col: string; val: string }> = []
+  // 动态迁移列
   if (siteIcon !== null) rawUpdates.push({ col: 'siteIcon', val: siteIcon })
   if (siteLogo !== null) rawUpdates.push({ col: 'siteLogo', val: siteLogo })
   if (rightPanelWidgets !== null) rawUpdates.push({ col: 'rightPanelWidgets', val: rightPanelWidgets })
@@ -128,12 +140,22 @@ export async function PUT(req: NextRequest) {
   if (defaultTheme !== null) rawUpdates.push({ col: 'defaultTheme', val: defaultTheme })
   if (customDomain !== null) rawUpdates.push({ col: 'customDomain', val: customDomain })
 
-  for (const { col, val } of rawUpdates) {
-    try {
+  try {
+    for (const { col, val } of rawUpdates) {
       await prisma.$executeRawUnsafe(`UPDATE SiteConfig SET ${col} = ? WHERE id = 'singleton'`, val)
-    } catch (e: any) {
-      console.warn(`[config PUT] raw update ${col}:`, e?.message)
     }
+  } catch (e: any) {
+    console.error('[config PUT] raw update failed:', e?.message)
+    await logAdminAudit({
+      ...auditPayload,
+      status: 'failed',
+      targetType: 'siteConfig',
+      targetId: 'singleton',
+      actor: session,
+      ip: requestIp,
+      metadata: { changedKeys, error: e?.message || 'raw update failed' },
+    })
+    return NextResponse.json({ error: '保存失败', detail: e?.message }, { status: 500 })
   }
 
   await revalidateSiteConfig()
