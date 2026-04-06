@@ -5,7 +5,7 @@ import { IMEInput, IMETextarea } from '@/components/ui/IMEInput'
 import ImageCropModal from '@/components/ui/ImageCropModal'
 import { MarkdownEditor } from '@/components/admin/MarkdownEditor'
 import { ADMIN_PAGE_TITLE_CLASS, ADMIN_CARD_LG_CLASS, ADMIN_SUBCARD_CLASS } from '@/components/admin/adminUi'
-import { DEFAULT_NAV, DEFAULT_WIDGETS, DEFAULT_SITE_LOGO, isImageSource, parseSiteLogo, type NavItem, type RightPanelWidget as Widget, type SiteLogo } from '@/lib/config'
+import { DEFAULT_NAV, DEFAULT_WIDGETS, DEFAULT_SITE_LOGO, isImageSource, parseNavItems, parseSiteLogo, parseWidgets, type NavItem, type RightPanelWidget as Widget, type SiteLogo } from '@/lib/config'
 
 type WidgetType = 'search' | 'about' | 'tags' | 'hotPosts' | 'custom' | 'links' | 'carousel'
 type FriendLink = { label: string; url: string; desc?: string; avatar?: string }
@@ -107,35 +107,32 @@ export default function SettingsPage() {
   const iconInputRef = useRef<HTMLInputElement>(null)
   const siteLogoInputRef = useRef<HTMLInputElement>(null)
 
+  const applyConfigData = (data: any) => {
+    setConfig({
+      siteName: data.siteName || '',
+      siteDesc: data.siteDesc || '',
+      socialX: data.socialX || '',
+      socialGithub: data.socialGithub || '',
+      socialEmail: data.socialEmail || '',
+      commentApproval: data.commentApproval ?? true,
+      showCommentIp: data.showCommentIp ?? false,
+      copyright: data.copyright || '',
+      emailSubjectNewComment: data.emailSubjectNewComment || '',
+      emailSubjectReply: data.emailSubjectReply || '',
+      emailSubjectApproved: data.emailSubjectApproved || '',
+      emailSenderName: data.emailSenderName || '',
+    })
+    setNavItems(parseNavItems(data.navItems || '[]'))
+    setWidgets(parseWidgets(data.rightPanelWidgets || '[]'))
+    setSiteLogo(parseSiteLogo(data.siteLogo || ''))
+    setSiteIcon(data.siteIcon || '')
+    setDefaultTheme(data.defaultTheme === 'light' ? 'light' : 'dark')
+  }
+
   useEffect(() => {
     fetch('/api/admin/config').then(r => r.json()).then(data => {
       if (data) {
-        setConfig({
-          siteName: data.siteName || '',
-          siteDesc: data.siteDesc || '',
-          socialX: data.socialX || '',
-          socialGithub: data.socialGithub || '',
-          socialEmail: data.socialEmail || '',
-          commentApproval: data.commentApproval ?? true,
-          showCommentIp: data.showCommentIp ?? false,
-
-          copyright: data.copyright || '',
-          emailSubjectNewComment: data.emailSubjectNewComment || '',
-          emailSubjectReply: data.emailSubjectReply || '',
-          emailSubjectApproved: data.emailSubjectApproved || '',
-          emailSenderName: data.emailSenderName || '',
-        })
-        try {
-          const nav = JSON.parse(data.navItems || '[]')
-          if (Array.isArray(nav)) setNavItems(nav)
-        } catch {}
-        setSiteLogo(parseSiteLogo(data.siteLogo || ''))
-        setSiteIcon(data.siteIcon || '')
-        setDefaultTheme(data.defaultTheme === 'light' ? 'light' : 'dark')
-        try {
-          const w = JSON.parse(data.rightPanelWidgets || '[]')
-          if (Array.isArray(w)) setWidgets(w)
-        } catch {}
+        applyConfigData(data)
       }
     })
     fetch('/api/admin/profile').then(r => r.json()).then(data => {
@@ -184,9 +181,7 @@ export default function SettingsPage() {
       try {
         const freshData = await fetch('/api/admin/config').then(r => r.json())
         if (freshData) {
-          setSiteIcon(freshData.siteIcon || '')
-          setSiteLogo(parseSiteLogo(freshData.siteLogo || ''))
-          setDefaultTheme(freshData.defaultTheme === 'light' ? 'light' : 'dark')
+          applyConfigData(freshData)
         }
       } catch {}
       return
