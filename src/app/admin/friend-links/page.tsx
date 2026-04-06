@@ -25,6 +25,7 @@ export default function AdminFriendLinksPage() {
   const [loading, setLoading] = useState(true)
   const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [rejectReason, setRejectReason] = useState('')
+  const [reviewingId, setReviewingId] = useState<string | null>(null)
 
   const limit = 20
 
@@ -99,6 +100,30 @@ export default function AdminFriendLinksPage() {
       }
     } catch {
       toast.error('操作失败')
+    }
+  }
+
+  const handleAiReview = async (id: string) => {
+    setReviewingId(id)
+    try {
+      const res = await fetch('/api/friend-links/review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ linkId: id }),
+      })
+
+      if (res.ok) {
+        const result = await res.json()
+        toast.success(`AI 审核完成 (风险评分: ${result.score})`)
+        fetchLinks(page)
+      } else {
+        const error = await res.json()
+        toast.error(error.error || 'AI 审核失败')
+      }
+    } catch (error) {
+      toast.error('发起审核失败')
+    } finally {
+      setReviewingId(null)
     }
   }
 
@@ -243,6 +268,14 @@ export default function AdminFriendLinksPage() {
                         style={{ background: '#ef4444' }}
                       >
                         拒绝
+                      </button>
+                      <button
+                        onClick={() => handleAiReview(link.id)}
+                        disabled={reviewingId === link.id}
+                        className="px-4 py-2 rounded-lg text-sm font-medium text-white transition-all hover:opacity-80 disabled:opacity-60"
+                        style={{ background: '#f59e0b' }}
+                      >
+                        {reviewingId === link.id ? '审核中...' : '🤖 AI 审核'}
                       </button>
                     </>
                   )}
