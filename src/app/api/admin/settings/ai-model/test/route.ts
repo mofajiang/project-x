@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
-    const { provider, baseUrl, apiKey, model, timeout } = data
+    let { provider, baseUrl, apiKey, model, timeout } = data
+
+    // 如果 API Key 被掩盖（保存后前端展示的是 ***），从数据库取真实 key
+    if (!apiKey || apiKey.includes('***')) {
+      const settings = await prisma.siteConfig.findUnique({ where: { id: 'singleton' } })
+      apiKey = settings?.aiModelApiKey || ''
+    }
+
+    if (!apiKey) {
+      return NextResponse.json({ error: '请先填写并保存 API Key' }, { status: 400 })
+    }
 
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), (timeout || 30) * 1000)
