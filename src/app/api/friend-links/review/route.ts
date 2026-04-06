@@ -207,7 +207,7 @@ export async function POST(request: NextRequest) {
     const strength = config.aiReviewStrength || 'balanced'
     const thresholds = {
       lenient: { auto_reject: 85, auto_approve: 20 },
-      balanced: { auto_reject: 70, auto_approve: 30 },
+      balanced: { auto_reject: 70, auto_approve: 40 },
       strict: { auto_reject: 60, auto_approve: 40 },
     }
 
@@ -220,6 +220,15 @@ export async function POST(request: NextRequest) {
       reviewResult.recommendation = 'manual'
     }
 
+    const autoApproveEnabled = Boolean(Number(config.aiAutoApprove))
+    const finalStatus = reviewResult.recommendation === 'reject'
+      ? 'rejected'
+      : (reviewResult.recommendation === 'approve' && autoApproveEnabled ? 'approved' : link.status)
+
+    console.log(
+      `[friend-link-review] link=${link.id} score=${reviewResult.score} strength=${strength} recommendation=${reviewResult.recommendation} autoApprove=${autoApproveEnabled} finalStatus=${finalStatus}`
+    )
+
     // 保存审核结果
     await prisma.friendLink.update({
       where: { id: linkId },
@@ -227,12 +236,8 @@ export async function POST(request: NextRequest) {
         aiScore: reviewResult.score,
         aiReview: JSON.stringify(reviewResult),
         // 根据建议自动处理状态
-        status: reviewResult.recommendation === 'reject' 
-          ? 'rejected' 
-          : (reviewResult.recommendation === 'approve' && Boolean(Number(config.aiAutoApprove))
-            ? 'approved' 
-            : link.status),
-        approvedAt: reviewResult.recommendation === 'approve' && Boolean(Number(config.aiAutoApprove))
+        status: finalStatus,
+        approvedAt: reviewResult.recommendation === 'approve' && autoApproveEnabled
           ? new Date() 
           : link.approvedAt,
         rejectionReason:
