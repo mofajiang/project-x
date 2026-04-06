@@ -11,9 +11,31 @@ import Image from 'next/image'
 
 export const dynamic = 'force-dynamic'
 
+function buildSlugCandidates(input: string) {
+  const set = new Set<string>()
+  const raw = (input || '').trim()
+  if (!raw) return []
+
+  set.add(raw)
+  try {
+    set.add(decodeURIComponent(raw))
+  } catch {}
+  try {
+    set.add(encodeURIComponent(raw))
+  } catch {}
+
+  for (const value of Array.from(set)) {
+    set.add(value.normalize('NFC'))
+    set.add(value.normalize('NFD'))
+  }
+
+  return Array.from(set).filter(Boolean)
+}
+
 export async function generateMetadata({ params }: { params: { slug: string } }) {
-  const post = await prisma.post.findUnique({
-    where: { slug: params.slug },
+  const slugCandidates = buildSlugCandidates(params.slug)
+  const post = await prisma.post.findFirst({
+    where: { slug: { in: slugCandidates }, published: true },
     include: { author: { select: { username: true } }, tags: { include: { tag: true } } },
   })
   if (!post) return {}
@@ -43,15 +65,20 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 
 export default async function PostPage({ params }: { params: { slug: string } }) {
   const config = await getSiteConfig()
-  const post = await prisma.post.findUnique({
-    where: { slug: params.slug, published: true },
+  const slugCandidates = buildSlugCandidates(params.slug)
+  const session = await getSession()
+  const post = await prisma.post.findFirst({
+    where: {
+      slug: { in: slugCandidates },
+      ...(session ? {} : { published: true }),
+    },
     include: {
       author: { select: { username: true, avatar: true, bio: true } },
       tags: { include: { tag: true } },
       _count: { select: { comments: true } },
     },
   })
-  if (!post) notFound()
+  if (!post || (!post.published && !session)) notFound()
 
   // 补充 displayName
   let authorDisplayName = ''
@@ -67,8 +94,8 @@ export default async function PostPage({ params }: { params: { slug: string } })
   prisma.post.update({ where: { id: post.id }, data: { views: { increment: 1 } } }).catch(() => {})
 
   // 并行获取 session 和评论
-  const [session, commentsRaw] = await Promise.all([
-    getSession(),
+  const [, commentsRaw] = await Promise.all([
+    Promise.resolve(session),
     prisma.comment.findMany({
       where: { postId: post.id, approved: true, parentId: null },
       include: {
