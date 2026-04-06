@@ -126,17 +126,17 @@ export async function GET(req: NextRequest) {
     }
 
     // 返回已通过的公开友链（供展示使用）
-    const approvedLinks = await prisma.friendLink.findMany({
-      where: { status: 'approved' },
-      select: {
-        id: true,
-        name: true,
-        url: true,
-        description: true,
-        favicon: true,
-      },
-      orderBy: { approvedAt: 'desc' },
-    })
+    const approvedLinks = await prisma.$queryRawUnsafe<any[]>(
+      `SELECT id, name, url, description, favicon
+       FROM FriendLink
+       WHERE status = 'approved'
+       ORDER BY COALESCE(sortOrder, 0) DESC,
+                CASE
+                  WHEN approvedAt IS NULL THEN 0
+                  WHEN typeof(approvedAt) = 'integer' THEN approvedAt
+                  ELSE CAST(strftime('%s', approvedAt) AS INTEGER) * 1000
+                END DESC`
+    )
 
     return NextResponse.json(approvedLinks)
   } catch (error) {

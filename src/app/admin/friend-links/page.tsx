@@ -14,6 +14,7 @@ interface FriendLink {
   hasReciprocal: boolean
   reciprocalChecked: boolean
   aiScore: number
+  sortOrder: number
   createdAt: string
 }
 
@@ -148,6 +149,25 @@ export default function AdminFriendLinksPage() {
     }
   }
 
+  const handleChangeOrder = async (id: string, delta: 1 | -1) => {
+    try {
+      const res = await fetch(`/api/admin/friend-links?id=${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ action: 'change-order', delta }),
+        headers: { 'Content-Type': 'application/json' },
+      })
+      if (res.ok) {
+        toast.success(delta > 0 ? '已上移' : '已下移')
+        fetchLinks(page)
+      } else {
+        const data = await res.json().catch(() => ({}))
+        toast.error(data.error || '排序失败')
+      }
+    } catch {
+      toast.error('排序失败')
+    }
+  }
+
   return (
     <div className="w-full max-w-6xl mx-auto">
       <div className="mb-6 flex items-center justify-between">
@@ -260,6 +280,12 @@ export default function AdminFriendLinksPage() {
                     >
                       AI 评分: {link.aiScore}
                     </span>
+                    <span
+                      className="text-xs px-2 py-1 rounded-full"
+                      style={{ background: 'rgba(29,155,240,0.1)', color: 'var(--accent)' }}
+                    >
+                      排序权重: {link.sortOrder}
+                    </span>
                     <span className="text-xs px-2 py-1" style={{ color: 'var(--text-secondary)' }}>
                       {new Date(link.createdAt).toLocaleDateString()}
                     </span>
@@ -274,6 +300,24 @@ export default function AdminFriendLinksPage() {
 
                 {/* 右侧操作 */}
                 <div className="flex flex-col gap-2 flex-shrink-0">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleChangeOrder(link.id, 1)}
+                      className="px-3 py-2 rounded-lg text-sm transition-all"
+                      style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+                      title="上移"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      onClick={() => handleChangeOrder(link.id, -1)}
+                      className="px-3 py-2 rounded-lg text-sm transition-all"
+                      style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+                      title="下移"
+                    >
+                      ↓
+                    </button>
+                  </div>
                   {link.status === 'pending' && (
                     <>
                       <button

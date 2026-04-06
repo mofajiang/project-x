@@ -102,6 +102,7 @@ export async function runMigrations() {
       await addColumn('FriendLink', 'approvedAt', `TEXT`, 'friendLink approvedAt (通过时间)')
       await addColumn('FriendLink', 'hasReciprocal', `INTEGER NOT NULL DEFAULT 0`, 'friendLink hasReciprocal (是否回链)')
       await addColumn('FriendLink', 'rejectionReason', `TEXT`, 'friendLink rejectionReason (拒绝原因)')
+      await addColumn('FriendLink', 'sortOrder', `INTEGER NOT NULL DEFAULT 0`, 'friendLink sortOrder (排序权重)')
       await createTable(
         `CREATE TABLE IF NOT EXISTS Visitor (
           id TEXT PRIMARY KEY,

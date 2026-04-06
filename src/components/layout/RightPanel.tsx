@@ -26,11 +26,17 @@ const getHotPosts = unstable_cache(
 )
 
 const getApprovedFriendLinks = unstable_cache(
-  () => prisma.friendLink.findMany({
-    where: { status: 'approved' },
-    orderBy: { approvedAt: 'desc' },
-    select: { id: true, name: true, url: true, description: true, favicon: true },
-  }),
+  () => prisma.$queryRawUnsafe<Array<{ id: string; name: string; url: string; description: string | null; favicon: string | null }>>(
+    `SELECT id, name, url, description, favicon
+     FROM FriendLink
+     WHERE status = 'approved'
+     ORDER BY COALESCE(sortOrder, 0) DESC,
+              CASE
+                WHEN approvedAt IS NULL THEN 0
+                WHEN typeof(approvedAt) = 'integer' THEN approvedAt
+                ELSE CAST(strftime('%s', approvedAt) AS INTEGER) * 1000
+              END DESC`
+  ),
   ['approved-friend-links'],
   { revalidate: 300 }
 )

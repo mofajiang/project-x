@@ -3,17 +3,23 @@ import { prisma } from '@/lib/prisma'
 
 async function getApprovedLinks() {
   try {
-    return await prisma.friendLink.findMany({
-      where: { status: 'approved' },
-      select: {
-        id: true,
-        name: true,
-        url: true,
-        description: true,
-        favicon: true,
-      },
-      orderBy: { approvedAt: 'desc' },
-    })
+    return await prisma.$queryRawUnsafe<Array<{
+      id: string
+      name: string
+      url: string
+      description: string | null
+      favicon: string | null
+    }>>(
+      `SELECT id, name, url, description, favicon
+       FROM FriendLink
+       WHERE status = 'approved'
+       ORDER BY COALESCE(sortOrder, 0) DESC,
+                CASE
+                  WHEN approvedAt IS NULL THEN 0
+                  WHEN typeof(approvedAt) = 'integer' THEN approvedAt
+                  ELSE CAST(strftime('%s', approvedAt) AS INTEGER) * 1000
+                END DESC`
+    )
   } catch {
     return []
   }

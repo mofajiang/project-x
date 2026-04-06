@@ -3,6 +3,15 @@ import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
 import { checkFriendLinkOnTargetSite } from '@/lib/friend-link-checker'
 
+function toSafeNumber(value: unknown, fallback = 0) {
+  if (typeof value === 'bigint') {
+    const n = Number(value)
+    return Number.isFinite(n) ? n : fallback
+  }
+  const n = Number(value)
+  return Number.isFinite(n) ? n : fallback
+}
+
 /**
  * 后台：获取待审核的友链列表
  */
@@ -18,17 +27,64 @@ export async function GET(req: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
     const limit = Math.min(50, parseInt(searchParams.get('limit') || '20'))
 
-    const [links, total] = await Promise.all([
-      prisma.friendLink.findMany({
-        where: status !== 'all' ? { status } : undefined,
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      prisma.friendLink.count({
-        where: status !== 'all' ? { status } : undefined,
-      }),
-    ])
+    const offset = (page - 1) * limit
+    const [linksRaw, totalRaw] = await Promise.all(
+      status !== 'all'
+        ? [
+            prisma.$queryRawUnsafe<any[]>(
+              `SELECT id, name, url, description, favicon, status, rejectionReason,
+                      COALESCE(hasReciprocal, 0) AS hasReciprocal,
+                      COALESCE(reciprocalChecked, 0) AS reciprocalChecked,
+                      COALESCE(aiScore, 0) AS aiScore,
+                      COALESCE(sortOrder, 0) AS sortOrder,
+                      createdAt
+               FROM FriendLink
+               WHERE status = ?
+               ORDER BY COALESCE(sortOrder, 0) DESC,
+                        CASE
+                          WHEN typeof(createdAt) = 'integer' THEN createdAt
+                          ELSE CAST(strftime('%s', createdAt) AS INTEGER) * 1000
+                        END DESC
+               LIMIT ? OFFSET ?`,
+              status,
+              limit,
+              offset
+            ),
+            prisma.$queryRawUnsafe<any[]>(
+              `SELECT COUNT(*) AS total FROM FriendLink WHERE status = ?`,
+              status
+            ),
+          ]
+        : [
+            prisma.$queryRawUnsafe<any[]>(
+              `SELECT id, name, url, description, favicon, status, rejectionReason,
+                      COALESCE(hasReciprocal, 0) AS hasReciprocal,
+                      COALESCE(reciprocalChecked, 0) AS reciprocalChecked,
+                      COALESCE(aiScore, 0) AS aiScore,
+                      COALESCE(sortOrder, 0) AS sortOrder,
+                      createdAt
+               FROM FriendLink
+               ORDER BY COALESCE(sortOrder, 0) DESC,
+                        CASE
+                          WHEN typeof(createdAt) = 'integer' THEN createdAt
+                          ELSE CAST(strftime('%s', createdAt) AS INTEGER) * 1000
+                        END DESC
+               LIMIT ? OFFSET ?`,
+              limit,
+              offset
+            ),
+            prisma.$queryRawUnsafe<any[]>(`SELECT COUNT(*) AS total FROM FriendLink`),
+          ]
+    )
+
+    const links = (linksRaw || []).map((item: any) => ({
+      ...item,
+      hasReciprocal: Boolean(toSafeNumber(item.hasReciprocal, 0)),
+      reciprocalChecked: Boolean(toSafeNumber(item.reciprocalChecked, 0)),
+      aiScore: toSafeNumber(item.aiScore, 0),
+      sortOrder: toSafeNumber(item.sortOrder, 0),
+    }))
+    const total = toSafeNumber(totalRaw?.[0]?.total, 0)
 
     return NextResponse.json({
       links: links || [],
@@ -55,7 +111,7 @@ export async function PUT(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const id = searchParams.get('id')
-    const { action, rejectionReason } = await req.json()
+    const { action, rejectionReason, delta } = await req.json()
 
     if (!id) {
       return NextResponse.json({ error: '缺少 ID' }, { status: 400 })
@@ -115,6 +171,29 @@ export async function PUT(req: NextRequest) {
         message: result.found ? '已检测到互链' : '未检测到互链',
         hasReciprocal: result.found,
         link: updated,
+      })
+    } else if (action === 'change-order') {
+      const orderDelta = toSafeNumber(delta, 0)
+      if (!orderDelta) {
+        return NextResponse.json({ error: '无效的排序参数' }, { status: 400 })
+      }
+
+      await prisma.$executeRawUnsafe(
+        `UPDATE FriendLink
+         SET sortOrder = COALESCE(sortOrder, 0) + ?
+         WHERE id = ?`,
+        orderDelta,
+        id
+      )
+
+      const rows = await prisma.$queryRawUnsafe<any[]>(
+        `SELECT id, COALESCE(sortOrder, 0) AS sortOrder FROM FriendLink WHERE id = ?`,
+        id
+      )
+
+      return NextResponse.json({
+        message: orderDelta > 0 ? '已上移' : '已下移',
+        sortOrder: toSafeNumber(rows?.[0]?.sortOrder, 0),
       })
     }
 
