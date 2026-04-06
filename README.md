@@ -77,7 +77,32 @@ npm run dev
 bash <(curl -fsSL https://raw.githubusercontent.com/mofajiang/project-x/main/scripts/install.sh)
 ```
 
-该脚本会自动完成依赖安装、配置生成、构建、数据库初始化、PM2 启动和 Nginx 配置。
+脚本提供交互式菜单，支持以下操作：
+
+| 命令 | 说明 |
+|------|------|
+| `install` | 全新安装（默认） |
+| `update` | 升级（拉取代码+安装依赖+迁移数据库+构建+重启） |
+| `uninstall` | 卸载并删除目录（会提示备份数据库） |
+| `status` | 查看 PM2 运行状态 |
+| `restart` | 重启 PM2 进程 |
+| `stop` | 停止 PM2 进程 |
+| `logs` | 查看 PM2 日志 |
+
+也可直接传参执行：
+
+```bash
+# 全新安装
+bash <(curl -fsSL https://raw.githubusercontent.com/mofajiang/project-x/main/scripts/install.sh) install
+
+# 升级到最新版本（自动备份数据库、同步新字段）
+bash <(curl -fsSL https://raw.githubusercontent.com/mofajiang/project-x/main/scripts/install.sh) update
+
+# 查看菜单
+bash <(curl -fsSL https://raw.githubusercontent.com/mofajiang/project-x/main/scripts/install.sh) menu
+```
+
+安装过程中会交互式配置：安装目录、域名、端口、HTTPS、JWT 密钥、管理员账号密码、PM2 进程名。
 
 ### 手动部署
 
@@ -127,18 +152,30 @@ pm2 startup
 
 ### 更新与卸载
 
-**更新：**
+**一键更新（推荐）：**
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/mofajiang/project-x/main/scripts/install.sh) update
+```
+
+更新流程会自动执行：`git pull` → `npm install` → `npm run build` → 备份数据库 → `npm run db:push`（同步新字段） → `pm2 restart`
+
+**手动更新：**
 
 ```bash
 cd /www/wwwroot/yourdomain.com/project-x
 git pull origin main
+npm install
 npm run build
+npm run db:push -- --accept-data-loss
 pm2 restart x-blog
 ```
 
 **卸载：**
 
 ```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/mofajiang/project-x/main/scripts/install.sh) uninstall
+# 或独立卸载脚本：
 bash <(curl -fsSL https://raw.githubusercontent.com/mofajiang/project-x/main/scripts/uninstall.sh)
 ```
 
