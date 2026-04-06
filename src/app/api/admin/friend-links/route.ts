@@ -9,7 +9,7 @@ import { checkFriendLinkOnTargetSite } from '@/lib/friend-link-checker'
 export async function GET(req: NextRequest) {
   const session = await getSessionFromRequest(req)
   if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorized', links: [], total: 0 }, { status: 401 })
   }
 
   try {
@@ -31,15 +31,15 @@ export async function GET(req: NextRequest) {
     ])
 
     return NextResponse.json({
-      links,
-      total,
+      links: links || [],
+      total: total || 0,
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.ceil((total || 0) / limit),
     })
   } catch (error) {
     console.error('[Admin FriendLinks Error]', error)
-    return NextResponse.json({ error: '获取失败' }, { status: 500 })
+    return NextResponse.json({ error: '获取失败', links: [], total: 0 }, { status: 500 })
   }
 }
 

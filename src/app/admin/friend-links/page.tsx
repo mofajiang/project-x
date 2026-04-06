@@ -33,12 +33,18 @@ export default function AdminFriendLinksPage() {
     setLoading(true)
     try {
       const res = await fetch(`/api/admin/friend-links?status=${status}&page=${pageNum}&limit=${limit}`)
+      if (!res.ok) {
+        throw new Error(`API returned ${res.status}`)
+      }
       const data = await res.json()
-      setLinks(data.links)
-      setTotal(data.total)
+      setLinks(Array.isArray(data.links) ? data.links : [])
+      setTotal(typeof data.total === 'number' ? data.total : 0)
       setPage(pageNum)
     } catch (error) {
+      console.error('Failed to fetch friend links:', error)
       toast.error('获取友链列表失败')
+      setLinks([])
+      setTotal(0)
     } finally {
       setLoading(false)
     }
