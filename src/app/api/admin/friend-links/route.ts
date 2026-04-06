@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
 import { checkFriendLinkOnTargetSite } from '@/lib/friend-link-checker'
@@ -125,6 +126,7 @@ export async function PUT(req: NextRequest) {
           approvedAt: new Date(),
         },
       })
+      revalidateTag('approved-friend-links')
       return NextResponse.json({
         message: '已批准',
         link,
@@ -144,6 +146,7 @@ export async function PUT(req: NextRequest) {
           rejectionReason,
         },
       })
+      revalidateTag('approved-friend-links')
       return NextResponse.json({
         message: '已拒绝',
         link,
@@ -191,6 +194,8 @@ export async function PUT(req: NextRequest) {
         id
       )
 
+      revalidateTag('approved-friend-links')
+
       return NextResponse.json({
         message: orderDelta > 0 ? '已上移' : '已下移',
         sortOrder: toSafeNumber(rows?.[0]?.sortOrder, 0),
@@ -222,6 +227,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     await prisma.friendLink.delete({ where: { id } })
+    revalidateTag('approved-friend-links')
 
     return NextResponse.json({ message: '已删除' })
   } catch (error) {

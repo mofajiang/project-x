@@ -38,7 +38,7 @@ const getApprovedFriendLinks = unstable_cache(
               END DESC`
   ),
   ['approved-friend-links'],
-  { revalidate: 300 }
+  { revalidate: 300, tags: ['approved-friend-links'] }
 )
 
 interface Props {

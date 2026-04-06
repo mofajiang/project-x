@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { revalidateTag } from 'next/cache'
 
 export interface FriendLinkReviewResult {
   score: number
@@ -249,6 +250,8 @@ export async function reviewFriendLinkById(linkId: string): Promise<FriendLinkRe
           : link.rejectionReason,
     },
   })
+
+  revalidateTag('approved-friend-links')
 
   return reviewResult
 }
