@@ -13,16 +13,17 @@ export async function DELETE(req: NextRequest) {
 
   try {
     await runMigrations()
-    const deleted = await prisma.$executeRaw`DELETE FROM Visitor`
+    const deletedRaw = await prisma.$executeRaw`DELETE FROM Visitor`
+    const deleted = Number(deletedRaw) || 0
     await logAdminAudit({
       action: 'visitor.logs.cleared',
-      summary: `清空访客日志，共删除 ${Number(deleted) || 0} 条记录`,
+      summary: `清空访客日志，共删除 ${deleted} 条记录`,
       riskLevel: 'critical',
       targetType: 'visitor',
       targetId: 'all',
       actor: session,
       ip: requestIp,
-      metadata: { deleted: Number(deleted) || 0 },
+      metadata: { deleted },
     })
     return NextResponse.json({ ok: true, deleted })
   } catch (e: any) {

@@ -4,6 +4,42 @@ import { runMigrations } from './db-migrate'
 
 const DEFAULT_VISITOR_STATS_DISPLAY = '["总访问","今日访问","7 日访问","14 日访问","国家数","精确坐标","国家/省份落点","最近时间"]'
 
+function toSafeNumber(value: unknown, fallback: number) {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : fallback
+  if (typeof value === 'bigint') {
+    const n = Number(value)
+    return Number.isFinite(n) ? n : fallback
+  }
+  if (typeof value === 'string') {
+    const n = Number(value)
+    return Number.isFinite(n) ? n : fallback
+  }
+  return fallback
+}
+
+function toSafeBoolean(value: unknown, fallback: boolean) {
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'number' || typeof value === 'bigint') return Number(value) !== 0
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase()
+    if (['1', 'true', 'yes', 'on'].includes(normalized)) return true
+    if (['0', 'false', 'no', 'off'].includes(normalized)) return false
+  }
+  return fallback
+}
+
+function sanitizeBigIntDeep<T>(value: T): T {
+  return JSON.parse(
+    JSON.stringify(value, (_key, v) => {
+      if (typeof v === 'bigint') {
+        const num = Number(v)
+        return Number.isSafeInteger(num) ? num : v.toString()
+      }
+      return v
+    })
+  )
+}
+
 
 export type NavItem = {
   label: string
@@ -207,7 +243,7 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
       } catch {}
     }
   }
-  const config: any = rows[0] || {}
+  const config: any = sanitizeBigIntDeep(rows[0] || {})
   if (!config.navItems) config.navItems = JSON.stringify(DEFAULT_NAV)
   // 若已有导航里缺少友链项，自动插入（在关于之前）
   try {
@@ -243,11 +279,11 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
   if (config.emailSenderName === undefined || config.emailSenderName === null) config.emailSenderName = ''
   
   // SQLite 存的是 0/1 整数，需转换为布尔值
-  if (typeof config.showCommentIp === 'number') config.showCommentIp = Boolean(config.showCommentIp)
-  if (typeof config.commentApproval === 'number') config.commentApproval = Boolean(config.commentApproval)
-  if (typeof config.enableAiDetection === 'number') config.enableAiDetection = Boolean(config.enableAiDetection)
-  if (typeof config.aiAutoApprove === 'number') config.aiAutoApprove = Boolean(config.aiAutoApprove)
-  if (typeof config.secretClicks === 'string') config.secretClicks = Number(config.secretClicks) || 5
+  config.showCommentIp = toSafeBoolean(config.showCommentIp, false)
+  config.commentApproval = toSafeBoolean(config.commentApproval, true)
+  config.enableAiDetection = toSafeBoolean(config.enableAiDetection, true)
+  config.aiAutoApprove = toSafeBoolean(config.aiAutoApprove, true)
+  config.secretClicks = toSafeNumber(config.secretClicks, 5)
   if (typeof config.loginPath === 'string' && !config.loginPath.startsWith('/')) config.loginPath = `/${config.loginPath}`
 
   if (!config.copyright) config.copyright = ''
@@ -259,8 +295,9 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
   if (!config.aiModelBaseUrl) config.aiModelBaseUrl = ''
   if (!config.aiModelMaxTokens) config.aiModelMaxTokens = 2000
   if (!config.aiModelTimeout) config.aiModelTimeout = 30
-  if (typeof config.enableCustomAiModel === 'number') config.enableCustomAiModel = Boolean(config.enableCustomAiModel)
-  if (config.enableCustomAiModel === undefined || config.enableCustomAiModel === null) config.enableCustomAiModel = false
+  config.aiModelMaxTokens = toSafeNumber(config.aiModelMaxTokens, 2000)
+  config.aiModelTimeout = toSafeNumber(config.aiModelTimeout, 30)
+  config.enableCustomAiModel = toSafeBoolean(config.enableCustomAiModel, false)
   return config as SiteConfig
 }
 
