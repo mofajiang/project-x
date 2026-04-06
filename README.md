@@ -145,6 +145,26 @@ bash <(curl -fsSL https://raw.githubusercontent.com/mofajiang/project-x/main/scr
 
 ## 功能配置
 
+### 环境变量配置
+
+编辑 `.env` 文件配置核心环境变量：
+
+```env
+# 必须配置
+DATABASE_URL="file:./data/db.sqlite"
+JWT_SECRET="your-strong-secret-here"
+
+# 部署到实际服务器时必须设置此项（本地开发留空则默认 http://localhost:3000）
+NEXT_PUBLIC_SITE_URL="https://yourdomain.com"
+```
+
+`NEXT_PUBLIC_SITE_URL` 用于：
+- RSS/Sitemap 生成正确的 URL
+- 文章页面的 SEO 元数据（OpenGraph、Twitter Card）
+- 评论邮件中的文章链接
+
+> ⚠️ 如果在部署时不设置 `NEXT_PUBLIC_SITE_URL`，RSS、Sitemap 和社交分享都将使用 `http://localhost:3000`，这会影响 SEO 和用户体验。
+
 ### 显示名称与认证徽章
 
 在后台「站点设置 → 个人资料」中配置：
