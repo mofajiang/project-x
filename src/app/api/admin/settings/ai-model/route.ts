@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { runMigrations } from '@/lib/db-migrate'
+import { getSessionFromRequest } from '@/lib/auth'
+import { revalidateSiteConfig } from '@/lib/config'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,7 +43,9 @@ const DEFAULT_CONFIG = {
   aiAutoApprove: false,
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const session = await getSessionFromRequest(request)
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     // 确保列存在（服务器可能未运行 db:push）
     await runMigrations()
@@ -67,6 +71,8 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const session = await getSessionFromRequest(request)
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     // 确保列存在（服务器可能未运行 db:push）
     await runMigrations()
@@ -109,6 +115,15 @@ export async function POST(request: NextRequest) {
       data.aiAutoApprove ? 1 : 0,
     )
 
+    console.log('[ai-model POST] 保存成功:', {
+      aiModelProvider: data.aiModelProvider,
+      aiModelName: data.aiModelName,
+      aiModelMaxTokens: maxTokens,
+      aiModelTimeout: timeout,
+      enableAiDetection: data.enableAiDetection,
+      aiAutoApprove: data.aiAutoApprove,
+    })
+
     // 读取刚保存的数据返回给前端
     const rows = await prisma.$queryRawUnsafe<any[]>(
       `SELECT enableCustomAiModel, aiModelProvider, aiModelName, aiModelBaseUrl,
@@ -116,6 +131,9 @@ export async function POST(request: NextRequest) {
               enableAiDetection, aiReviewStrength, aiAutoApprove
        FROM SiteConfig WHERE id = 'singleton'`
     )
+
+    // 保存后让 getSiteConfig 缓存失效，确保评论 AI 分析读到新配置
+    try { await revalidateSiteConfig() } catch {}
 
     return NextResponse.json(rows.length ? rowToConfig(rows[0]) : DEFAULT_CONFIG)
   } catch (error) {
