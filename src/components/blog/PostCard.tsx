@@ -22,6 +22,11 @@ interface Post {
   _count: { comments: number }
 }
 
+interface PostCardProps {
+  post: Post & { authorId?: string }
+  currentUserId?: string
+}
+
 interface QuoteSegment {
   type: 'internal' | 'external'
   value: string
@@ -60,10 +65,11 @@ function stripMarkdown(md: string): string {
     .trim()
 }
 
-export function PostCard({ post }: { post: Post }) {
+export function PostCard({ post, currentUserId }: PostCardProps) {
   const [likes, setLikes] = useState(post.likes)
   const [liked, setLiked] = useState(false)
   const [liking, setLiking] = useState(false)
+  const isAuthor = currentUserId && post.authorId && currentUserId === post.authorId
 
   const handleLike = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -85,22 +91,32 @@ export function PostCard({ post }: { post: Post }) {
     <article className="post-card px-4 py-5 transition-all duration-200 cursor-pointer" style={{ borderBottom: '1px solid var(--border)' }}>
         <Link href={`/post/${post.slug}`} prefetch={true} className="block">
         {/* 作者行 */}
-        <div className="flex items-center gap-2.5 mb-2.5">
-          <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0" style={{ background: 'var(--bg-secondary)', outline: '1px solid var(--border)' }}>
-            {post.author.avatar
-              ? <Image src={post.author.avatar} alt={post.author.username} width={36} height={36} className="object-cover w-full h-full" />
-              : <div className="w-full h-full flex items-center justify-center text-base font-bold" style={{ color: 'var(--text-secondary)' }}>{post.author.username[0]?.toUpperCase()}</div>
-            }
+        <div className="flex items-center justify-between gap-2.5 mb-2.5">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0" style={{ background: 'var(--bg-secondary)', outline: '1px solid var(--border)' }}>
+              {post.author.avatar
+                ? <Image src={post.author.avatar} alt={post.author.username} width={36} height={36} className="object-cover w-full h-full" />
+                : <div className="w-full h-full flex items-center justify-center text-base font-bold" style={{ color: 'var(--text-secondary)' }}>{post.author.username[0]?.toUpperCase()}</div>
+              }
+            </div>
+            <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+              <span className="font-bold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{post.author.displayName || post.author.username}</span>
+              {/* 认证徽章 */}
+              <svg className="flex-shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="var(--accent)">
+                <path d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91C1.88 9.33 1 10.57 1 12s.88 2.67 2.19 3.34c-.46 1.39-.2 2.9.81 3.91s2.52 1.26 3.91.8c.66 1.31 1.91 2.19 3.34 2.19s2.67-.88 3.33-2.19c1.4.46 2.91.2 3.92-.81s1.26-2.52.8-3.91C21.37 14.67 22.25 13.43 22.25 12zm-6.07-1.73l-3.5 4.67a.75.75 0 01-1.14.09l-2-2a.75.75 0 011.06-1.06l1.41 1.41 2.96-3.95a.75.75 0 011.21.84z"/>
+              </svg>
+              <span className="text-sm flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>@{post.author.username}</span>
+              <span className="text-sm flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>· {post.publishedAt ? relativeTime(post.publishedAt) : '草稿'}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-            <span className="font-bold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{post.author.displayName || post.author.username}</span>
-            {/* 认证徽章 */}
-            <svg className="flex-shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="var(--accent)">
-              <path d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91C1.88 9.33 1 10.57 1 12s.88 2.67 2.19 3.34c-.46 1.39-.2 2.9.81 3.91s2.52 1.26 3.91.8c.66 1.31 1.91 2.19 3.34 2.19s2.67-.88 3.33-2.19c1.4.46 2.91.2 3.92-.81s1.26-2.52.8-3.91C21.37 14.67 22.25 13.43 22.25 12zm-6.07-1.73l-3.5 4.67a.75.75 0 01-1.14.09l-2-2a.75.75 0 011.06-1.06l1.41 1.41 2.96-3.95a.75.75 0 011.21.84z"/>
-            </svg>
-            <span className="text-sm flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>@{post.author.username}</span>
-            <span className="text-sm flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>· {post.publishedAt ? relativeTime(post.publishedAt) : '草稿'}</span>
-          </div>
+          {isAuthor && (
+            <Link href={`/admin/posts/${post.id}`} className="flex-shrink-0 p-2 rounded-full transition-colors hover:bg-white/10" title="编辑此文章" style={{ color: 'var(--text-secondary)' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            </Link>
+          )}
         </div>
 
         {/* 标题 + 置顶图标 */}

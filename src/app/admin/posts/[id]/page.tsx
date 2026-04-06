@@ -13,7 +13,7 @@ export default function EditPostPage() {
   const DRAFT_KEY = `post-draft-${params.id}`
 
   const [form, setForm] = useState({
-    title: '', content: '', excerpt: '', coverImage: '', published: false, tags: '', pinned: false,
+    title: '', content: '', excerpt: '', coverImage: '', published: false, tags: '', pinned: false, publishedAt: '',
   })
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -47,6 +47,7 @@ export default function EditPostPage() {
             excerpt: data.excerpt || '',
             coverImage: data.coverImage || '',
             published: data.published || false,
+            publishedAt: data.publishedAt ? new Date(data.publishedAt).toISOString().slice(0, 16) : '',
             tags: (data.tags || []).map((t: { tag: { name: string } }) => t.tag.name).join(', '),
             pinned: data.pinned || false,
           }
@@ -86,7 +87,12 @@ export default function EditPostPage() {
       .split(/[，,]+/)
       .map(t => t.trim())
       .filter(Boolean)
-    const body = { ...form, published: publish !== undefined ? publish : form.published, tags: tagsArr }
+    const body = { 
+      ...form, 
+      published: publish !== undefined ? publish : form.published, 
+      tags: tagsArr,
+      publishedAt: form.publishedAt ? new Date(form.publishedAt).toISOString() : null,
+    }
     const url = isNew ? '/api/admin/posts' : `/api/admin/posts/${params.id}`
     const method = isNew ? 'POST' : 'PUT'
     const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
@@ -195,6 +201,23 @@ export default function EditPostPage() {
               置顶此文章
             </span>
           </label>
+        </div>
+
+        {/* 发布时间 */}
+        <div>
+          <label className="block text-xs sm:text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+            发布时间
+          </label>
+          <input
+            type="datetime-local"
+            value={form.publishedAt}
+            onChange={e => updateForm(f => ({ ...f, publishedAt: e.target.value }))}
+            className="w-full bg-transparent outline-none py-2 text-sm border rounded-lg px-3"
+            style={{ color: 'var(--text-primary)', borderColor: 'var(--border)' }}
+          />
+          <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+            留空即使用当前时间，仅在发布时生效
+          </p>
         </div>
 
         {/* 封面图 */}

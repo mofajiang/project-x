@@ -32,6 +32,7 @@ export default async function HomePage({
       pinned: true,
       views: true,
       likes: true,
+      authorId: true,
       author: { select: { username: true, avatar: true } },
       tags: { include: { tag: true } },
       _count: { select: { comments: true } },
@@ -78,7 +79,7 @@ export default async function HomePage({
           </div>
         ) : (
           postsWithDisplay.map((post) => (
-            <PostCard key={post.id} post={post} />
+            <PostCard key={post.id} post={post} currentUserId={session?.userId} />
           ))
         )}
       </div>
