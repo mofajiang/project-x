@@ -13,8 +13,17 @@ interface ReviewResult {
   }
 }
 
+function toSafeNumber(value: unknown, fallback: number): number {
+  if (typeof value === 'bigint') {
+    const n = Number(value)
+    return Number.isFinite(n) ? n : fallback
+  }
+  const n = Number(value)
+  return Number.isFinite(n) ? n : fallback
+}
+
 async function callAiModel(prompt: string, config: any): Promise<string> {
-  const timeout = config.aiModelTimeout || 30
+  const timeout = toSafeNumber(config.aiModelTimeout, 30)
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeout * 1000)
 
@@ -33,7 +42,7 @@ async function callAiModel(prompt: string, config: any): Promise<string> {
       body = {
         model: config.aiModelName,
         messages: [{ role: 'user', content: prompt }],
-        max_tokens: config.aiModelMaxTokens || 2000,
+        max_tokens: toSafeNumber(config.aiModelMaxTokens, 2000),
         temperature: 0.3,
       }
     } else if (config.aiModelProvider === 'custom') {
@@ -93,6 +102,13 @@ export async function POST(request: NextRequest) {
        FROM SiteConfig WHERE id = 'singleton'`
     )
     const config = configRows[0] || null
+
+    if (config) {
+      config.enableAiDetection = Number(config.enableAiDetection)
+      config.aiAutoApprove = Number(config.aiAutoApprove)
+      config.aiModelMaxTokens = toSafeNumber(config.aiModelMaxTokens, 2000)
+      config.aiModelTimeout = toSafeNumber(config.aiModelTimeout, 30)
+    }
 
     if (!config || !Number(config.enableAiDetection)) {
       return NextResponse.json(
