@@ -26,6 +26,7 @@ const ICON_OPTIONS = [
   { value: 'home', label: '🏠 首页' },
   { value: 'archive', label: '📅 归档' },
   { value: 'tag', label: '🏷️ 标签' },
+  { value: 'link', label: '🔗 友链' },
   { value: 'user', label: '👤 用户' },
 ]
 

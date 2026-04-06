@@ -131,6 +131,7 @@ export const DEFAULT_NAV: NavItem[] = [
   { label: '首页', href: '/', icon: 'home' },
   { label: '归档', href: '/archive', icon: 'archive' },
   { label: '标签', href: '/tags', icon: 'tag' },
+  { label: '友链', href: '/links', icon: 'link' },
   { label: '关于', href: '/about', icon: 'user' },
 ]
 
@@ -208,6 +209,17 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
   }
   const config: any = rows[0] || {}
   if (!config.navItems) config.navItems = JSON.stringify(DEFAULT_NAV)
+  // 若已有导航里缺少友链项，自动插入（在关于之前）
+  try {
+    const navArr: NavItem[] = JSON.parse(config.navItems)
+    if (Array.isArray(navArr) && !navArr.some(item => item.href === '/links')) {
+      const aboutIdx = navArr.findIndex(item => item.href === '/about')
+      const linksItem: NavItem = { label: '友链', href: '/links', icon: 'link' }
+      if (aboutIdx >= 0) navArr.splice(aboutIdx, 0, linksItem)
+      else navArr.push(linksItem)
+      config.navItems = JSON.stringify(navArr)
+    }
+  } catch {}
   if (!config.rightPanelWidgets) config.rightPanelWidgets = JSON.stringify(DEFAULT_WIDGETS)
   if (!config.siteLogo) config.siteLogo = JSON.stringify(DEFAULT_SITE_LOGO)
   if (!config.siteIcon) config.siteIcon = ''

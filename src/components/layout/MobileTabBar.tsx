@@ -26,17 +26,25 @@ const IconUser = ({ filled }: { filled?: boolean }) => (
   </svg>
 )
 
+const IconLink = ({ filled }: { filled?: boolean }) => (
+  <svg width="26" height="26" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.75">
+    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+  </svg>
+)
+
 const ICON_MAP: Record<string, React.ComponentType<{ filled?: boolean }>> = {
   home: IconHome,
   archive: IconArchive,
   tag: IconTag,
   user: IconUser,
+  link: IconLink,
 }
 
 const DEFAULT_NAV: NavItemDef[] = [
   { label: '首页', href: '/', icon: 'home' },
   { label: '归档', href: '/archive', icon: 'archive' },
   { label: '标签', href: '/tags', icon: 'tag' },
+  { label: '友链', href: '/links', icon: 'link' },
   { label: '关于', href: '/about', icon: 'user' },
 ]
 
