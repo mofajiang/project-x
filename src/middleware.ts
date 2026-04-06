@@ -30,6 +30,7 @@ export async function middleware(request: NextRequest) {
   const skipLicense =
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
+    pathname.startsWith('/uploads') ||
     pathname.startsWith('/unlicensed') ||
     pathname === '/favicon.ico' ||
     pathname === '/robots.txt' ||
@@ -77,6 +78,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico|uploads).*)',
   ],
 }
