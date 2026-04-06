@@ -12,45 +12,51 @@ async function ensureSiteConfigExists() {
   }
 }
 
+function rowToConfig(row: any) {
+  const apiKey: string = row.aiModelApiKey || ''
+  return {
+    enableCustomAiModel: Boolean(Number(row.enableCustomAiModel)),
+    aiModelProvider: row.aiModelProvider || 'openrouter',
+    aiModelName: row.aiModelName || '',
+    aiModelBaseUrl: row.aiModelBaseUrl || '',
+    aiModelApiKey: apiKey ? apiKey.substring(0, 10) + '***' : '',
+    aiModelMaxTokens: Number(row.aiModelMaxTokens) || 2000,
+    aiModelTimeout: Number(row.aiModelTimeout) || 30,
+    enableAiDetection: Boolean(Number(row.enableAiDetection)),
+    aiReviewStrength: row.aiReviewStrength || 'balanced',
+    aiAutoApprove: Boolean(Number(row.aiAutoApprove)),
+  }
+}
+
+const DEFAULT_CONFIG = {
+  enableCustomAiModel: false,
+  aiModelProvider: 'openrouter',
+  aiModelName: '',
+  aiModelBaseUrl: '',
+  aiModelApiKey: '',
+  aiModelMaxTokens: 2000,
+  aiModelTimeout: 30,
+  enableAiDetection: false,
+  aiReviewStrength: 'balanced',
+  aiAutoApprove: false,
+}
+
 export async function GET() {
   try {
     // 确保列存在（服务器可能未运行 db:push）
     await runMigrations()
-    // 确保配置记录存在
     await ensureSiteConfigExists()
 
-    const settings = await prisma.siteConfig.findUnique({
-      where: { id: 'singleton' },
-    })
+    // 使用 raw SQL 读取，避免 Prisma 客户端版本不匹配时静默忽略字段
+    const rows = await prisma.$queryRawUnsafe<any[]>(
+      `SELECT enableCustomAiModel, aiModelProvider, aiModelName, aiModelBaseUrl,
+              aiModelApiKey, aiModelMaxTokens, aiModelTimeout,
+              enableAiDetection, aiReviewStrength, aiAutoApprove
+       FROM SiteConfig WHERE id = 'singleton'`
+    )
 
-    if (!settings) {
-      // 返回默认配置
-      return NextResponse.json({
-        enableCustomAiModel: false,
-        aiModelProvider: 'openrouter',
-        aiModelName: 'claude-3.5-sonnet',
-        aiModelBaseUrl: 'https://openrouter.ai/api/v1',
-        aiModelApiKey: process.env.OPENROUTER_API_KEY || '',
-        aiModelMaxTokens: 2000,
-        aiModelTimeout: 30,
-        enableAiDetection: false,
-        aiReviewStrength: 'balanced',
-        aiAutoApprove: false,
-      })
-    }
-
-    return NextResponse.json({
-      enableCustomAiModel: settings.enableCustomAiModel || false,
-      aiModelProvider: settings.aiModelProvider || 'openrouter',
-      aiModelName: settings.aiModelName || 'claude-3.5-sonnet',
-      aiModelBaseUrl: settings.aiModelBaseUrl || '',
-      aiModelApiKey: settings.aiModelApiKey ? settings.aiModelApiKey.substring(0, 10) + '***' : '',
-      aiModelMaxTokens: settings.aiModelMaxTokens || 2000,
-      aiModelTimeout: settings.aiModelTimeout || 30,
-      enableAiDetection: settings.enableAiDetection || false,
-      aiReviewStrength: settings.aiReviewStrength || 'balanced',
-      aiAutoApprove: settings.aiAutoApprove || false,
-    })
+    if (!rows.length) return NextResponse.json(DEFAULT_CONFIG)
+    return NextResponse.json(rowToConfig(rows[0]))
   } catch (error) {
     console.error('Failed to fetch AI model config:', error)
     return NextResponse.json(
@@ -64,59 +70,54 @@ export async function POST(request: NextRequest) {
   try {
     // 确保列存在（服务器可能未运行 db:push）
     await runMigrations()
-    // 确保配置记录存在
     await ensureSiteConfigExists()
 
     const data = await request.json()
 
-    // 验证必须的字段
     if (!data.aiModelProvider) {
-      return NextResponse.json(
-        { error: '请选择 AI 模型提供商' },
-        { status: 400 }
+      return NextResponse.json({ error: '请选择 AI 模型提供商' }, { status: 400 })
+    }
+
+    // 如果 API Key 被掩盖（***），从数据库读取真实值
+    let apiKey = String(data.aiModelApiKey || '')
+    if (!apiKey || apiKey.includes('***')) {
+      const rows = await prisma.$queryRawUnsafe<any[]>(
+        `SELECT aiModelApiKey FROM SiteConfig WHERE id = 'singleton'`
       )
+      apiKey = rows[0]?.aiModelApiKey || ''
     }
 
-    // 如果 API Key 被掩盖了，不更新
-    let apiKey = data.aiModelApiKey || ''
-    if (apiKey.includes('***')) {
-      const existing = await prisma.siteConfig.findUnique({
-        where: { id: 'singleton' },
-      })
-      apiKey = existing?.aiModelApiKey || ''
-    }
+    const maxTokens = Math.max(100, Math.min(10000, Number.isFinite(Number(data.aiModelMaxTokens)) ? Number(data.aiModelMaxTokens) : 2000))
+    const timeout = Math.max(5, Math.min(300, Number.isFinite(Number(data.aiModelTimeout)) ? Number(data.aiModelTimeout) : 30))
 
-    const updateData = {
-      enableCustomAiModel: Boolean(data.enableCustomAiModel),
-      aiModelProvider: String(data.aiModelProvider),
-      aiModelName: String(data.aiModelName || ''),
-      aiModelBaseUrl: String(data.aiModelBaseUrl || ''),
-      aiModelApiKey: String(apiKey),
-      aiModelMaxTokens: Math.max(100, Math.min(10000, (Number.isFinite(Number(data.aiModelMaxTokens)) ? Number(data.aiModelMaxTokens) : 2000))),
-      aiModelTimeout: Math.max(5, Math.min(300, (Number.isFinite(Number(data.aiModelTimeout)) ? Number(data.aiModelTimeout) : 30))),
-      enableAiDetection: Boolean(data.enableAiDetection),
-      aiReviewStrength: String(data.aiReviewStrength || 'balanced'),
-      aiAutoApprove: Boolean(data.aiAutoApprove),
-    }
+    // 使用 raw SQL 更新，避免 Prisma 客户端版本不匹配时静默忽略字段
+    await prisma.$executeRawUnsafe(
+      `UPDATE SiteConfig SET
+         enableCustomAiModel = ?, aiModelProvider = ?, aiModelName = ?,
+         aiModelBaseUrl = ?, aiModelApiKey = ?, aiModelMaxTokens = ?,
+         aiModelTimeout = ?, enableAiDetection = ?, aiReviewStrength = ?, aiAutoApprove = ?
+       WHERE id = 'singleton'`,
+      data.enableCustomAiModel ? 1 : 0,
+      String(data.aiModelProvider),
+      String(data.aiModelName || ''),
+      String(data.aiModelBaseUrl || ''),
+      apiKey,
+      maxTokens,
+      timeout,
+      data.enableAiDetection ? 1 : 0,
+      String(data.aiReviewStrength || 'balanced'),
+      data.aiAutoApprove ? 1 : 0,
+    )
 
-    const updated = await prisma.siteConfig.update({
-      where: { id: 'singleton' },
-      data: updateData,
-    })
+    // 读取刚保存的数据返回给前端
+    const rows = await prisma.$queryRawUnsafe<any[]>(
+      `SELECT enableCustomAiModel, aiModelProvider, aiModelName, aiModelBaseUrl,
+              aiModelApiKey, aiModelMaxTokens, aiModelTimeout,
+              enableAiDetection, aiReviewStrength, aiAutoApprove
+       FROM SiteConfig WHERE id = 'singleton'`
+    )
 
-    // 返回完整的保存后配置（API Key 掩盖）
-    return NextResponse.json({
-      enableCustomAiModel: updated.enableCustomAiModel || false,
-      aiModelProvider: updated.aiModelProvider || 'openrouter',
-      aiModelName: updated.aiModelName || 'claude-3.5-sonnet',
-      aiModelBaseUrl: updated.aiModelBaseUrl || '',
-      aiModelApiKey: updated.aiModelApiKey ? updated.aiModelApiKey.substring(0, 10) + '***' : '',
-      aiModelMaxTokens: updated.aiModelMaxTokens || 2000,
-      aiModelTimeout: updated.aiModelTimeout || 30,
-      enableAiDetection: updated.enableAiDetection || false,
-      aiReviewStrength: updated.aiReviewStrength || 'balanced',
-      aiAutoApprove: updated.aiAutoApprove || false,
-    })
+    return NextResponse.json(rows.length ? rowToConfig(rows[0]) : DEFAULT_CONFIG)
   } catch (error) {
     console.error('Failed to save AI model config:', error)
     return NextResponse.json(
