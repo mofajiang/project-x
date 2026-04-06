@@ -94,12 +94,24 @@ export async function POST(request: NextRequest) {
       aiAutoApprove: Boolean(data.aiAutoApprove),
     }
 
-    await prisma.siteConfig.update({
+    const updated = await prisma.siteConfig.update({
       where: { id: 'singleton' },
       data: updateData,
     })
 
-    return NextResponse.json({ success: true })
+    // 返回完整的保存后配置（API Key 掩盖）
+    return NextResponse.json({
+      enableCustomAiModel: updated.enableCustomAiModel || false,
+      aiModelProvider: updated.aiModelProvider || 'openrouter',
+      aiModelName: updated.aiModelName || 'claude-3.5-sonnet',
+      aiModelBaseUrl: updated.aiModelBaseUrl || '',
+      aiModelApiKey: updated.aiModelApiKey ? updated.aiModelApiKey.substring(0, 10) + '***' : '',
+      aiModelMaxTokens: updated.aiModelMaxTokens || 2000,
+      aiModelTimeout: updated.aiModelTimeout || 30,
+      enableAiDetection: updated.enableAiDetection || false,
+      aiReviewStrength: updated.aiReviewStrength || 'balanced',
+      aiAutoApprove: updated.aiAutoApprove || false,
+    })
   } catch (error) {
     console.error('Failed to save AI model config:', error)
     return NextResponse.json(

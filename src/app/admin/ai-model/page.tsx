@@ -67,10 +67,12 @@ export default function AdminAiModelPage() {
       })
 
       if (res.ok) {
+        const savedConfig = await res.json()
+        setConfig(savedConfig)
         toast.success('配置已保存')
-        await fetchConfig()
       } else {
-        toast.error('保存失败')
+        const err = await res.json()
+        toast.error(err?.error || '保存失败')
       }
     } catch {
       toast.error('网络错误')
