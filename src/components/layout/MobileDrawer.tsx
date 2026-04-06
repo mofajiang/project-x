@@ -68,9 +68,10 @@ interface Props {
   copyright?: string
   topTags?: { id: string; name: string; slug: string; posts: number }[]
   hotPosts?: { id: string; title: string; slug: string; views: number }[]
+  approvedFriendLinks?: { id: string; name: string; url: string; description?: string | null; favicon?: string | null }[]
 }
 
-export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, session, avatar, displayName = '', handle = '', siteDesc = '', social = { x: '', github: '', email: '' }, widgets = [], copyright = '', topTags = [], hotPosts = [] }: Props) {
+export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, session, avatar, displayName = '', handle = '', siteDesc = '', social = { x: '', github: '', email: '' }, widgets = [], copyright = '', topTags = [], hotPosts = [], approvedFriendLinks = [] }: Props) {
   const items = (navItems && navItems.length > 0) ? navItems : DEFAULT_NAV
   const primaryItems = items.slice(0, 4)
   const pathname = usePathname()
@@ -307,7 +308,9 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
                 }
 
                 if (widget.type === 'links') {
-                  const links: FriendLink[] = widget.links || []
+                  const links: FriendLink[] = approvedFriendLinks.length
+                    ? approvedFriendLinks.map(l => ({ label: l.name, url: l.url, desc: l.description || '', avatar: l.favicon || '' }))
+                    : (widget.links || [])
                   if (!links.length) return null
                   return (
                     <details key={`links-${index}`} className={cardCls} style={cardStyle}>

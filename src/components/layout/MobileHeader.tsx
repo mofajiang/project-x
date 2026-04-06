@@ -27,9 +27,10 @@ interface Props {
   topTags?: TopTag[]
   hotPosts?: TopPost[]
   siteLogo?: SiteLogo | null
+  approvedFriendLinks?: { id: string; name: string; url: string; description?: string | null; favicon?: string | null }[]
 }
 
-export function MobileHeader({ siteName, session, avatar, displayName, handle, loginMode, secretClicks = 5, loginPath = '/admin-login', navItems, siteDesc = '', social = { x: '', github: '', email: '' }, widgets = [], copyright = '', topTags = [], hotPosts = [], siteLogo = null }: Props) {
+export function MobileHeader({ siteName, session, avatar, displayName, handle, loginMode, secretClicks = 5, loginPath = '/admin-login', navItems, siteDesc = '', social = { x: '', github: '', email: '' }, widgets = [], copyright = '', topTags = [], hotPosts = [], siteLogo = null, approvedFriendLinks = [] }: Props) {
   const router = useRouter()
   const [clicks, setClicks] = useState(0)
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -69,6 +70,7 @@ export function MobileHeader({ siteName, session, avatar, displayName, handle, l
         copyright={copyright}
         topTags={topTags}
         hotPosts={hotPosts}
+        approvedFriendLinks={approvedFriendLinks}
       />
       <header
         className="md:hidden flex items-center justify-between px-4 h-14 sticky top-0 z-40"

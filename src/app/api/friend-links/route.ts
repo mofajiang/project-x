@@ -4,7 +4,7 @@ import { checkFriendLinkOnTargetSite, validateUrl, getFavicon } from '@/lib/frie
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, url, description, email } = await req.json()
+    const { name, url, description, email, favicon: userFavicon } = await req.json()
 
     // 基础验证
     if (!name || !name.trim()) {
@@ -40,8 +40,8 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // 获取 Favicon
-    const favicon = await getFavicon(finalUrl)
+    // 用户提供头像则直接用，否则自动抓取 Favicon
+    const favicon = (userFavicon?.trim()) ? userFavicon.trim() : await getFavicon(finalUrl)
 
     // 检查互链
     const myDomain = new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').hostname

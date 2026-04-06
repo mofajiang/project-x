@@ -93,6 +93,21 @@ export default function AdminFriendLinksPage() {
     }
   }
 
+  const handleDelete = async (id: string) => {
+    if (!confirm('确定要删除此友链吗？')) return
+    try {
+      const res = await fetch(`/api/admin/friend-links?id=${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        toast.success('已删除')
+        fetchLinks(page)
+      } else {
+        toast.error('删除失败')
+      }
+    } catch {
+      toast.error('删除失败')
+    }
+  }
+
   const handleRecheck = async (id: string) => {
     try {
       const res = await fetch(`/api/admin/friend-links?id=${id}`, {
@@ -291,6 +306,13 @@ export default function AdminFriendLinksPage() {
                     style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
                   >
                     重新检查互链
+                  </button>
+                  <button
+                    onClick={() => handleDelete(link.id)}
+                    className="px-4 py-2 rounded-lg text-sm font-medium text-white transition-all hover:opacity-80"
+                    style={{ background: '#64748b' }}
+                  >
+                    删除
                   </button>
                 </div>
               </div>

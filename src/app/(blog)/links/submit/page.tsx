@@ -12,6 +12,7 @@ export default function SubmitFriendLinkPage() {
     url: '',
     description: '',
     email: '',
+    favicon: '',
   })
   const [submitting, setSubmitting] = useState(false)
   const [reciprocal, setReciprocal] = useState<{ status: 'checking' | 'found' | 'not-found' | null }>({ status: null })
@@ -79,7 +80,7 @@ export default function SubmitFriendLinkPage() {
       }
 
       toast.success('✅ 提交成功！')
-      setForm({ name: '', url: '', description: '', email: '' })
+      setForm({ name: '', url: '', description: '', email: '', favicon: '' })
       setReciprocal({ status: null })
 
       // 重定向到查询状态页面
@@ -218,6 +219,24 @@ export default function SubmitFriendLinkPage() {
                 className="w-full px-4 py-2 rounded-lg bg-transparent outline-none border"
                 style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
               />
+            </div>
+
+            {/* 头像 URL */}
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                头像 URL（可选）
+              </label>
+              <IMEInput
+                type="url"
+                placeholder="https://example.com/avatar.png"
+                value={form.favicon}
+                onValueChange={v => handleChange('favicon', v)}
+                className="w-full px-4 py-2 rounded-lg bg-transparent outline-none border"
+                style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+              />
+              <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+                留空则自动从网站抓取图标
+              </p>
             </div>
 
             {/* 须知 */}

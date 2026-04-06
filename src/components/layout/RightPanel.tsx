@@ -25,6 +25,16 @@ const getHotPosts = unstable_cache(
   { revalidate: 120 }
 )
 
+const getApprovedFriendLinks = unstable_cache(
+  () => prisma.friendLink.findMany({
+    where: { status: 'approved' },
+    orderBy: { approvedAt: 'desc' },
+    select: { id: true, name: true, url: true, description: true, favicon: true },
+  }),
+  ['approved-friend-links'],
+  { revalidate: 300 }
+)
+
 interface Props {
   siteDesc: string
   social: { x: string; github: string; email: string }
@@ -43,10 +53,12 @@ export async function RightPanel({ siteDesc, social, widgets = [], copyright = '
   const enabledWidgets = widgets.filter(w => w.enabled)
   const needTags = enabledWidgets.some(w => w.type === 'tags')
   const needHotPosts = enabledWidgets.some(w => w.type === 'hotPosts')
+  const needFriendLinks = enabledWidgets.some(w => w.type === 'links')
 
-  const [topTags, hotPosts] = await Promise.all([
+  const [topTags, hotPosts, approvedFriendLinks] = await Promise.all([
     needTags ? getTopTags() : Promise.resolve([]),
     needHotPosts ? getHotPosts() : Promise.resolve([]),
+    needFriendLinks ? getApprovedFriendLinks() : Promise.resolve([]),
   ])
 
   return (
@@ -127,7 +139,9 @@ export async function RightPanel({ siteDesc, social, widgets = [], copyright = '
         }
 
         if (widget.type === 'links') {
-          const links: FriendLink[] = widget.links || []
+          const links = approvedFriendLinks.length
+            ? approvedFriendLinks.map(l => ({ label: l.name, url: l.url, desc: l.description || '', avatar: l.favicon || '' }))
+            : (widget.links || []) as FriendLink[]
           if (!links.length) return null
           return (
             <div key={i} className="rounded-2xl overflow-hidden mb-3" style={{ background: 'var(--bg-secondary)' }}>

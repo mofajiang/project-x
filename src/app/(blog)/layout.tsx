@@ -28,6 +28,15 @@ export default async function BlogLayout({ children }: { children: React.ReactNo
     }),
   ])
 
+  const needFriendLinks = widgets.some((w: any) => w.type === 'links' && w.enabled)
+  const approvedFriendLinks = needFriendLinks
+    ? await prisma.friendLink.findMany({
+        where: { status: 'approved' },
+        orderBy: { approvedAt: 'desc' },
+        select: { id: true, name: true, url: true, description: true, favicon: true },
+      })
+    : []
+
   const mobileTopTags = topTags.map(tag => ({ id: tag.id, name: tag.name, slug: tag.slug, posts: tag._count.posts }))
   let avatar: string | null = null
   let displayName: string = ''
@@ -65,6 +74,7 @@ export default async function BlogLayout({ children }: { children: React.ReactNo
         copyright={(config as any).copyright || ''}
         topTags={mobileTopTags}
         hotPosts={hotPosts}
+        approvedFriendLinks={approvedFriendLinks}
       />
 
       <div className="max-w-[1280px] mx-auto flex justify-center">
