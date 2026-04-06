@@ -167,6 +167,9 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
     rows = await prisma.$queryRawUnsafe<any[]>(
       `SELECT *, COALESCE(copyright,'') as copyright, COALESCE(siteIcon,'') as siteIcon,
        COALESCE(siteLogo,'') as siteLogo,
+       COALESCE(loginPath,'/admin-login') as loginPath,
+       COALESCE(loginMode,'path') as loginMode,
+       COALESCE(secretClicks,5) as secretClicks,
        COALESCE(navItems,'') as navItems, COALESCE(rightPanelWidgets,'') as rightPanelWidgets,
        COALESCE(visitorGeoMode,'offline') as visitorGeoMode, COALESCE(visitorGeoKey,'') as visitorGeoKey, COALESCE(visitorGeoEndpoint,'') as visitorGeoEndpoint,
        COALESCE(visitorMapSource,'carto_positron') as visitorMapSource,
@@ -187,6 +190,9 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
       rows = await prisma.$queryRawUnsafe<any[]>(
         `SELECT *, COALESCE(copyright,'') as copyright, COALESCE(siteIcon,'') as siteIcon,
          COALESCE(siteLogo,'') as siteLogo,
+         COALESCE(loginPath,'/admin-login') as loginPath,
+         COALESCE(loginMode,'path') as loginMode,
+         COALESCE(secretClicks,5) as secretClicks,
          COALESCE(navItems,'') as navItems, COALESCE(rightPanelWidgets,'') as rightPanelWidgets,
          COALESCE(visitorGeoMode,'offline') as visitorGeoMode, COALESCE(visitorGeoKey,'') as visitorGeoKey, COALESCE(visitorGeoEndpoint,'') as visitorGeoEndpoint,
          COALESCE(visitorMapSource,'carto_positron') as visitorMapSource,
@@ -223,6 +229,9 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
   if (!config.rightPanelWidgets) config.rightPanelWidgets = JSON.stringify(DEFAULT_WIDGETS)
   if (!config.siteLogo) config.siteLogo = JSON.stringify(DEFAULT_SITE_LOGO)
   if (!config.siteIcon) config.siteIcon = ''
+  if (!config.loginPath) config.loginPath = '/admin-login'
+  if (!config.loginMode) config.loginMode = 'path'
+  if (!config.secretClicks) config.secretClicks = 5
   if (!config.visitorGeoMode) config.visitorGeoMode = 'ip9'
   if (['xxapi', 'tencent', 'uapis'].includes(config.visitorGeoMode)) config.visitorGeoMode = 'custom'
   if (!['offline', 'ip9', 'ipwho', 'ipapi', 'ipinfo', 'ip-api', 'geolocation-db', 'custom'].includes(config.visitorGeoMode)) config.visitorGeoMode = 'ip9'
@@ -244,6 +253,8 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
   if (typeof config.commentApproval === 'number') config.commentApproval = Boolean(config.commentApproval)
   if (typeof config.enableAiDetection === 'number') config.enableAiDetection = Boolean(config.enableAiDetection)
   if (typeof config.aiAutoApprove === 'number') config.aiAutoApprove = Boolean(config.aiAutoApprove)
+  if (typeof config.secretClicks === 'string') config.secretClicks = Number(config.secretClicks) || 5
+  if (typeof config.loginPath === 'string' && !config.loginPath.startsWith('/')) config.loginPath = `/${config.loginPath}`
 
   if (!config.copyright) config.copyright = ''
   if (!config.defaultTheme) config.defaultTheme = 'dark'
