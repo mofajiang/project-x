@@ -7,6 +7,8 @@
 [![Stars](https://img.shields.io/github/stars/mofajiang/project-x?style=social)](https://github.com/mofajiang/project-x)
 [![Last Commit](https://img.shields.io/github/last-commit/mofajiang/project-x)](https://github.com/mofajiang/project-x/commits/main)
 
+示例网站：https://thisblog.me/
+
 基于 Next.js 14 + Tailwind CSS + SQLite（Prisma）构建的 X 风格个人博客系统，支持文章发布、Markdown 编辑、评论审核、邮件提醒、后台管理以及站点个性化配置。
 
 ---
