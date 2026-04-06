@@ -98,6 +98,14 @@ export type SiteConfig = {
   aiAutoApprove: boolean
   openrouterApiKey: string
   openrouterModel: string
+  // 新 AI 模型字段
+  enableCustomAiModel: boolean
+  aiModelProvider: string
+  aiModelName: string
+  aiModelBaseUrl: string
+  aiModelApiKey: string
+  aiModelMaxTokens: number
+  aiModelTimeout: number
   emailSubjectNewComment: string
   emailSubjectReply: string
   emailSubjectApproved: string
@@ -162,7 +170,13 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
        COALESCE(visitorGeoMode,'offline') as visitorGeoMode, COALESCE(visitorGeoKey,'') as visitorGeoKey, COALESCE(visitorGeoEndpoint,'') as visitorGeoEndpoint,
        COALESCE(visitorMapSource,'carto_positron') as visitorMapSource,
       COALESCE(visitorStatsDisplay,'["总访问","今日访问","7 日访问","14 日访问","国家数","精确坐标","国家/省份落点","最近时间"]') as visitorStatsDisplay,
-       COALESCE(defaultTheme,'dark') as defaultTheme
+       COALESCE(defaultTheme,'dark') as defaultTheme,
+       COALESCE(aiModelApiKey,'') as aiModelApiKey, COALESCE(aiModelName,'') as aiModelName,
+       COALESCE(aiModelProvider,'openrouter') as aiModelProvider,
+       COALESCE(aiModelBaseUrl,'') as aiModelBaseUrl,
+       COALESCE(aiModelMaxTokens,2000) as aiModelMaxTokens,
+       COALESCE(aiModelTimeout,30) as aiModelTimeout,
+       COALESCE(enableCustomAiModel,0) as enableCustomAiModel
        FROM SiteConfig WHERE id = 'singleton'`
     )
   } catch {}
@@ -176,7 +190,13 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
          COALESCE(visitorGeoMode,'offline') as visitorGeoMode, COALESCE(visitorGeoKey,'') as visitorGeoKey, COALESCE(visitorGeoEndpoint,'') as visitorGeoEndpoint,
          COALESCE(visitorMapSource,'carto_positron') as visitorMapSource,
          COALESCE(visitorStatsDisplay,'["总访问","今日访问","7 日访问","14 日访问","国家数","精确坐标","国家/省份落点","最近时间"]') as visitorStatsDisplay,
-         COALESCE(defaultTheme,'dark') as defaultTheme
+         COALESCE(defaultTheme,'dark') as defaultTheme,
+         COALESCE(aiModelApiKey,'') as aiModelApiKey, COALESCE(aiModelName,'') as aiModelName,
+         COALESCE(aiModelProvider,'openrouter') as aiModelProvider,
+         COALESCE(aiModelBaseUrl,'') as aiModelBaseUrl,
+         COALESCE(aiModelMaxTokens,2000) as aiModelMaxTokens,
+         COALESCE(aiModelTimeout,30) as aiModelTimeout,
+         COALESCE(enableCustomAiModel,0) as enableCustomAiModel
          FROM SiteConfig WHERE id = 'singleton'`
       )
     } catch (e: any) {
@@ -215,6 +235,15 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
 
   if (!config.copyright) config.copyright = ''
   if (!config.defaultTheme) config.defaultTheme = 'dark'
+  // 新 AI 模型字段默认值
+  if (!config.aiModelApiKey) config.aiModelApiKey = ''
+  if (!config.aiModelName) config.aiModelName = ''
+  if (!config.aiModelProvider) config.aiModelProvider = 'openrouter'
+  if (!config.aiModelBaseUrl) config.aiModelBaseUrl = ''
+  if (!config.aiModelMaxTokens) config.aiModelMaxTokens = 2000
+  if (!config.aiModelTimeout) config.aiModelTimeout = 30
+  if (typeof config.enableCustomAiModel === 'number') config.enableCustomAiModel = Boolean(config.enableCustomAiModel)
+  if (config.enableCustomAiModel === undefined || config.enableCustomAiModel === null) config.enableCustomAiModel = false
   return config as SiteConfig
 }
 

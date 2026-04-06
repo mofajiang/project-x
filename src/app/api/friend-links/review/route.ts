@@ -83,12 +83,18 @@ export async function POST(request: NextRequest) {
   try {
     const { linkId } = await request.json()
 
-    // 获取站点配置
-    const config = await prisma.siteConfig.findUnique({
-      where: { id: 'singleton' },
-    })
+    // 获取站点配置（raw SQL 避免 Prisma 客户端版本不匹配静默忽略新字段）
+    const configRows = await prisma.$queryRawUnsafe<any[]>(
+      `SELECT enableAiDetection, aiReviewStrength, aiAutoApprove,
+              aiModelProvider, aiModelName, aiModelBaseUrl, aiModelApiKey,
+              COALESCE(aiModelMaxTokens,2000) as aiModelMaxTokens,
+              COALESCE(aiModelTimeout,30) as aiModelTimeout,
+              enableCustomAiModel
+       FROM SiteConfig WHERE id = 'singleton'`
+    )
+    const config = configRows[0] || null
 
-    if (!config || !config.enableAiDetection) {
+    if (!config || !Number(config.enableAiDetection)) {
       return NextResponse.json(
         { error: 'AI detection is not enabled' },
         { status: 400 }
@@ -207,10 +213,10 @@ export async function POST(request: NextRequest) {
         // 根据建议自动处理状态
         status: reviewResult.recommendation === 'reject' 
           ? 'rejected' 
-          : (reviewResult.recommendation === 'approve' && config.aiAutoApprove 
+          : (reviewResult.recommendation === 'approve' && Boolean(Number(config.aiAutoApprove))
             ? 'approved' 
             : link.status),
-        approvedAt: reviewResult.recommendation === 'approve' && config.aiAutoApprove 
+        approvedAt: reviewResult.recommendation === 'approve' && Boolean(Number(config.aiAutoApprove))
           ? new Date() 
           : link.approvedAt,
         rejectionReason:

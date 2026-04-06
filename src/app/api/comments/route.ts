@@ -125,8 +125,10 @@ async function analyzeAndUpdateComment(
     
     const aiResult = await analyzeCommentWithAI(
       content,
-      config.openrouterApiKey,
-      config.openrouterModel,
+      // 优先使用新字段 aiModelApiKey，如为空则回退到旧字段 openrouterApiKey
+      config.aiModelApiKey || config.openrouterApiKey,
+      // 优先使用新字段 aiModelName，如为空则回退到旧字段 openrouterModel
+      config.aiModelName || config.openrouterModel,
       commentData.guestName,
       commentData.guestEmail,
       commentData.guestWebsite
