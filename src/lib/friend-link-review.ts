@@ -21,6 +21,24 @@ function toSafeNumber(value: unknown, fallback: number): number {
   return Number.isFinite(n) ? n : fallback
 }
 
+function isRetryableAiError(error: unknown) {
+  const msg = error instanceof Error ? error.message : String(error || '')
+  return (
+    msg.includes('AI API returned 429') ||
+    msg.includes('AI API returned 500') ||
+    msg.includes('AI API returned 502') ||
+    msg.includes('AI API returned 503') ||
+    msg.includes('AI API returned 504') ||
+    msg.includes('fetch failed') ||
+    msg.includes('aborted') ||
+    msg.includes('timeout')
+  )
+}
+
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
 async function callAiModel(prompt: string, config: any): Promise<string> {
   const timeout = toSafeNumber(config.aiModelTimeout, 30)
   const controller = new AbortController()
@@ -140,7 +158,7 @@ export async function reviewFriendLinkById(linkId: string): Promise<FriendLinkRe
 }
 `
 
-  const aiResponse = await callAiModel(reviewPrompt, {
+  const aiModelConfig = {
     enableCustomAiModel: config.enableCustomAiModel,
     aiModelName: config.aiModelName,
     aiModelProvider: config.aiModelProvider,
@@ -148,7 +166,18 @@ export async function reviewFriendLinkById(linkId: string): Promise<FriendLinkRe
     aiModelApiKey: config.aiModelApiKey,
     aiModelMaxTokens: config.aiModelMaxTokens || 2000,
     aiModelTimeout: config.aiModelTimeout || 30,
-  })
+  }
+
+  let aiResponse = ''
+  try {
+    aiResponse = await callAiModel(reviewPrompt, aiModelConfig)
+  } catch (error) {
+    if (!isRetryableAiError(error)) throw error
+
+    console.warn(`[friend-link-review] retrying once for link=${link.id} due to transient AI error: ${error instanceof Error ? error.message : String(error)}`)
+    await sleep(600)
+    aiResponse = await callAiModel(reviewPrompt, aiModelConfig)
+  }
 
   let reviewResult: FriendLinkReviewResult
   try {
