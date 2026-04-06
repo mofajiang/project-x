@@ -62,6 +62,26 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    // 自动后台触发 AI 审核（不阻塞提交响应）
+    ;(async () => {
+      try {
+        const rows = await prisma.$queryRawUnsafe<any[]>(
+          `SELECT enableAiDetection FROM SiteConfig WHERE id = 'singleton'`
+        )
+        const enabled = Boolean(Number(rows[0]?.enableAiDetection))
+        if (!enabled) return
+
+        const reviewUrl = new URL('/api/friend-links/review', req.url)
+        await fetch(reviewUrl.toString(), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ linkId: link.id }),
+        })
+      } catch (e) {
+        console.warn('[friend-link] auto AI review failed:', e)
+      }
+    })()
+
     return NextResponse.json({
       id: link.id,
       message: '感谢提交！我们会尽快审核。',
