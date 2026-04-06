@@ -46,8 +46,12 @@ export default function AdminAiModelPage() {
       if (res.ok) {
         const data = await res.json()
         setConfig(data)
+      } else {
+        const error = await res.json()
+        toast.error(error.error || '加载配置失败')
       }
     } catch (error) {
+      console.error('Fetch error:', error)
       toast.error('加载配置失败')
     } finally {
       setLoading(false)
