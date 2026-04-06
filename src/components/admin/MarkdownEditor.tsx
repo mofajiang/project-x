@@ -10,12 +10,13 @@ const MDEditor = dynamic(() => import('@uiw/react-md-editor'), { ssr: false })
 interface Props {
   value: string
   onChange: (val: string) => void
+  initialHeight?: number
 }
 
-export function MarkdownEditor({ value, onChange }: Props) {
+export function MarkdownEditor({ value, onChange, initialHeight = 500 }: Props) {
   const theme = useTheme()
   const [isMobile, setIsMobile] = useState(false)
-  const [editorHeight, setEditorHeight] = useState(500)
+  const [editorHeight, setEditorHeight] = useState(initialHeight)
 
   useEffect(() => {
     const checkMobile = () => {

@@ -393,7 +393,7 @@ export default function SettingsPage() {
           <div className={`${mobileCardClass} flex flex-col gap-2.5 sm:gap-4`} style={{ background: 'var(--bg-secondary)' }}>
             <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>🌐 站点选项</h2>
             <Field compact label="博客名称" value={config.siteName} onChange={v => setConfig(c => ({ ...c, siteName: v }))} placeholder="我的博客" />
-            <div><label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>博客简介 (支持 Markdown)</label><MarkdownEditor value={config.siteDesc} onChange={v => setConfig(c => ({ ...c, siteDesc: v }))} /></div>
+            <div><label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>博客简介 (支持 Markdown)</label><MarkdownEditor value={config.siteDesc} onChange={v => setConfig(c => ({ ...c, siteDesc: v }))} initialHeight={250} /></div>
             <Field compact label="邮箱" value={config.socialEmail} onChange={v => setConfig(c => ({ ...c, socialEmail: v }))} placeholder="you@example.com" />
           </div>
 
