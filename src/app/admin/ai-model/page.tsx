@@ -68,6 +68,7 @@ export default function AdminAiModelPage() {
 
       if (res.ok) {
         toast.success('配置已保存')
+        await fetchConfig()
       } else {
         toast.error('保存失败')
       }

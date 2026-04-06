@@ -1,7 +1,6 @@
 ﻿'use client'
 import { useEffect, useState, useRef, useCallback } from 'react'
 import toast from 'react-hot-toast'
-import Image from 'next/image'
 import { IMEInput, IMETextarea } from '@/components/ui/IMEInput'
 import ImageCropModal from '@/components/ui/ImageCropModal'
 import { MarkdownEditor } from '@/components/admin/MarkdownEditor'
@@ -181,6 +180,15 @@ export default function SettingsPage() {
     setSaving(false)
     if (res.ok) {
       toast.success('站点设置已保存')
+      // 重新加载配置确认持久化
+      try {
+        const freshData = await fetch('/api/admin/config').then(r => r.json())
+        if (freshData) {
+          setSiteIcon(freshData.siteIcon || '')
+          setSiteLogo(parseSiteLogo(freshData.siteLogo || ''))
+          setDefaultTheme(freshData.defaultTheme === 'light' ? 'light' : 'dark')
+        }
+      } catch {}
       return
     }
     let msg = '保存失败'
@@ -249,7 +257,12 @@ export default function SettingsPage() {
     const data = await res.json()
     setSavingProfile(false)
     if (res.ok) {
-      setProfile(p => ({ ...p, username: data.username }))
+      setProfile({
+        username: data.username || '',
+        displayName: data.displayName || '',
+        avatar: data.avatar || '',
+        bio: data.bio || '',
+      })
       toast.success('个人资料已保存')
     } else {
       toast.error(data.error || '保存失败')
@@ -370,7 +383,8 @@ export default function SettingsPage() {
             <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>👤 个人资料</h2>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
               <div className="relative w-16 h-16 rounded-full overflow-hidden flex-shrink-0 cursor-pointer" style={{ background: 'var(--bg-hover)' }} onClick={() => avatarInputRef.current?.click()}>
-                {profile.avatar ? <Image src={profile.avatar} alt="头像" fill className="object-cover" /> : <div className="w-full h-full flex items-center justify-center text-2xl">👤</div>}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                {profile.avatar ? <img src={profile.avatar} alt="头像" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-2xl">👤</div>}
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity" style={{ background: 'rgba(0,0,0,0.5)' }}><span className="text-white text-xs">更换</span></div>
               </div>
               <div className="flex flex-col gap-2 w-full sm:w-auto">
