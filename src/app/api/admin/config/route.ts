@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   await runMigrations()
   const config = await getSiteConfig()
-  return NextResponse.json(config)
+  return NextResponse.json(config, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } })
 }
 
 export async function PUT(req: NextRequest) {
@@ -146,6 +146,6 @@ export async function PUT(req: NextRequest) {
     metadata: { changedKeys },
   })
   const freshConfig = await getSiteConfig()
-  return NextResponse.json(freshConfig)
+  return NextResponse.json(freshConfig, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } })
 }
 

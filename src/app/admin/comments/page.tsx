@@ -40,7 +40,7 @@ export default function AdminCommentsPage() {
     try {
       const params = new URLSearchParams({ page: String(p), pageSize: '20', filter: f })
       if (q) params.set('search', q)
-      const res = await fetch(`/api/admin/comments?${params}`)
+      const res = await fetch(`/api/admin/comments?${params}`, { cache: 'no-store' })
       const json = await res.json()
       if (json && Array.isArray(json.comments)) {
         setData(json)

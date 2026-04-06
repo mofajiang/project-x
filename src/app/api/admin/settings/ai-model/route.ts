@@ -59,13 +59,13 @@ export async function GET(request: NextRequest) {
        FROM SiteConfig WHERE id = 'singleton'`
     )
 
-    if (!rows.length) return NextResponse.json(DEFAULT_CONFIG)
-    return NextResponse.json(rowToConfig(rows[0]))
+    if (!rows.length) return NextResponse.json(DEFAULT_CONFIG, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } })
+    return NextResponse.json(rowToConfig(rows[0]), { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } })
   } catch (error) {
     console.error('Failed to fetch AI model config:', error)
     return NextResponse.json(
       { error: '获取配置失败: ' + (error instanceof Error ? error.message : String(error)) },
-      { status: 500 }
+      { status: 500, headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } }
     )
   }
 }
@@ -135,12 +135,12 @@ export async function POST(request: NextRequest) {
     // 保存后让 getSiteConfig 缓存失效，确保评论 AI 分析读到新配置
     try { await revalidateSiteConfig() } catch {}
 
-    return NextResponse.json(rows.length ? rowToConfig(rows[0]) : DEFAULT_CONFIG)
+    return NextResponse.json(rows.length ? rowToConfig(rows[0]) : DEFAULT_CONFIG, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } })
   } catch (error) {
     console.error('Failed to save AI model config:', error)
     return NextResponse.json(
       { error: '保存配置失败: ' + (error instanceof Error ? error.message : String(error)) },
-      { status: 500 }
+      { status: 500, headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } }
     )
   }
 }

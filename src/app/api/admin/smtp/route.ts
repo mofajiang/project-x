@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  return NextResponse.json(readSmtpConfig())
+  return NextResponse.json(readSmtpConfig(), { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } })
 }
 
 export async function PUT(req: NextRequest) {
@@ -84,7 +84,7 @@ export async function PUT(req: NextRequest) {
       ip: requestIp,
       metadata: { changedKeys },
     })
-    return NextResponse.json({ ok: true, ...readSmtpConfig() })
+    return NextResponse.json({ ok: true, ...readSmtpConfig() }, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } })
   } catch (e: any) {
     await logAdminAudit({
       action: 'smtp.updated',
@@ -97,7 +97,7 @@ export async function PUT(req: NextRequest) {
       ip: requestIp,
       metadata: { changedKeys, error: e?.message || 'write env failed' },
     })
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return NextResponse.json({ error: e.message }, { status: 500, headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } })
   }
 }
 

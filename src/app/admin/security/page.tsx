@@ -22,7 +22,7 @@ export default function SecurityPage() {
   }
 
   useEffect(() => {
-    fetch('/api/admin/config').then(r => r.json()).then(data => {
+    fetch('/api/admin/config', { cache: 'no-store' }).then(r => r.json()).then(data => {
       if (data) applyConfigData(data)
     })
   }, [])

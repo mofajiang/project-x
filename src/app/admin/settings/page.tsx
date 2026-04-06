@@ -130,12 +130,12 @@ export default function SettingsPage() {
   }
 
   useEffect(() => {
-    fetch('/api/admin/config').then(r => r.json()).then(data => {
+    fetch('/api/admin/config', { cache: 'no-store' }).then(r => r.json()).then(data => {
       if (data) {
         applyConfigData(data)
       }
     })
-    fetch('/api/admin/profile').then(r => r.json()).then(data => {
+    fetch('/api/admin/profile', { cache: 'no-store' }).then(r => r.json()).then(data => {
       if (data) setProfile({
         username: data.username || '',
         displayName: data.displayName || '',
@@ -145,13 +145,13 @@ export default function SettingsPage() {
     })
 
     // 自动检测授权状态
-    fetch('/api/admin/license-check')
+    fetch('/api/admin/license-check', { cache: 'no-store' })
       .then(r => r.json())
       .then(data => setLicenseResult(data))
       .catch(() => setLicenseResult({ authorized: false, domains: [] }))
       .finally(() => setLicenseChecking(false))
 
-    fetch('/api/admin/smtp').then(r => r.json()).then(data => {
+    fetch('/api/admin/smtp', { cache: 'no-store' }).then(r => r.json()).then(data => {
       if (data) {
         setSmtp({
           SMTP_HOST: data.SMTP_HOST || '',
@@ -179,7 +179,7 @@ export default function SettingsPage() {
       toast.success('站点设置已保存')
       // 重新加载配置确认持久化
       try {
-        const freshData = await fetch('/api/admin/config').then(r => r.json())
+        const freshData = await fetch('/api/admin/config', { cache: 'no-store' }).then(r => r.json())
         if (freshData) {
           applyConfigData(freshData)
         }

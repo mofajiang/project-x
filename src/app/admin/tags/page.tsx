@@ -11,7 +11,7 @@ export default function AdminTagsPage() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    fetch('/api/admin/tags')
+    fetch('/api/admin/tags', { cache: 'no-store' })
       .then(r => r.json())
       .then(data => { if (Array.isArray(data)) setTags(data) })
       .catch(() => {})

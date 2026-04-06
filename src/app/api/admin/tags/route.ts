@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     include: { _count: { select: { posts: true } } },
     orderBy: { posts: { _count: 'desc' } },
   })
-  return NextResponse.json(tags)
+  return NextResponse.json(tags, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } })
 }
 
 export async function DELETE(req: NextRequest) {
@@ -18,7 +18,7 @@ export async function DELETE(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { id } = await req.json()
   await prisma.tag.delete({ where: { id } })
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true }, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } })
 }
 
 export async function POST(req: NextRequest) {
@@ -43,5 +43,5 @@ export async function POST(req: NextRequest) {
     include: { _count: { select: { posts: true } } },
   })
 
-  return NextResponse.json(tag)
+  return NextResponse.json(tag, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } })
 }

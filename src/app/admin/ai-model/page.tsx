@@ -33,7 +33,7 @@ export default function AdminAiModelPage() {
 
   const fetchConfig = async () => {
     try {
-      const res = await fetch('/api/admin/settings/ai-model')
+      const res = await fetch('/api/admin/settings/ai-model', { cache: 'no-store' })
       if (res.ok) {
         const data = await res.json()
         setConfig(data)

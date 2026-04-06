@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   const rows = await prisma.$queryRawUnsafe<any[]>(
     `SELECT id, username, displayName, email, avatar, bio FROM User WHERE id = ?`, session.userId
   )
-  return NextResponse.json(rows[0] ?? null)
+  return NextResponse.json(rows[0] ?? null, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } })
 }
 
 export async function PUT(req: NextRequest) {
@@ -42,5 +42,5 @@ export async function PUT(req: NextRequest) {
   const rows = await prisma.$queryRawUnsafe<any[]>(
     `SELECT id, username, displayName, email, avatar, bio FROM User WHERE id = ?`, session.userId
   )
-  return NextResponse.json(rows[0] ?? null)
+  return NextResponse.json(rows[0] ?? null, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } })
 }

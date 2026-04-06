@@ -12,7 +12,7 @@ export default function SmtpPage() {
   const [testing, setTesting] = useState(false)
 
   useEffect(() => {
-    fetch('/api/admin/smtp').then(r => r.json()).then(data => {
+    fetch('/api/admin/smtp', { cache: 'no-store' }).then(r => r.json()).then(data => {
       if (data) {
         setSmtp({ SMTP_HOST: data.SMTP_HOST || '', SMTP_PORT: data.SMTP_PORT || '465', SMTP_USER: data.SMTP_USER || '', SMTP_PASS: data.SMTP_PASS || '', SMTP_FROM: data.SMTP_FROM || '' })
         setConfigured(data.configured || false)
