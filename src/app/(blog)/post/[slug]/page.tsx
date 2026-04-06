@@ -164,3 +164,4 @@ export default async function PostPage({ params }: { params: { slug: string } })
     </div>
   )
 }
+NEXT_PUBLIC_SITE_URL
