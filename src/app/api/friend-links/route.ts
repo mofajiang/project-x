@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { checkFriendLinkOnTargetSite, validateUrl, getFavicon } from '@/lib/friend-link-checker'
+import { reviewFriendLinkById } from '@/lib/friend-link-review'
 
 export async function POST(req: NextRequest) {
   try {
@@ -71,12 +72,10 @@ export async function POST(req: NextRequest) {
         const enabled = Boolean(Number(rows[0]?.enableAiDetection))
         if (!enabled) return
 
-        const reviewUrl = new URL('/api/friend-links/review', req.url)
-        await fetch(reviewUrl.toString(), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ linkId: link.id }),
-        })
+        const result = await reviewFriendLinkById(link.id)
+        console.log(
+          `[friend-link] auto AI review completed: link=${link.id} recommendation=${result.recommendation} score=${result.score}`
+        )
       } catch (e) {
         console.warn('[friend-link] auto AI review failed:', e)
       }
