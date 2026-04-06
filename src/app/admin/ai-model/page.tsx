@@ -21,13 +21,14 @@ const PROVIDERS = [
   { value: 'custom', label: '自定义接口', desc: '运行自己部署的 AI 服务（如 Ollama、LocalAI 等）' },
 ]
 
-const MODELS = {
+const MODELS: Record<string, string[]> = {
   openrouter: [
     'claude-3.5-sonnet',
     'claude-3-opus',
     'gpt-4-turbo',
     'gpt-4',
   ],
+  custom: [],
 }
 
 export default function AdminAiModelPage() {
