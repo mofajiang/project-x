@@ -3,6 +3,7 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { MarkdownEditor } from '@/components/admin/MarkdownEditor'
+import { StorageImagePicker } from '@/components/admin/StorageImagePicker'
 import { IMEInput } from '@/components/ui/IMEInput'
 import { ADMIN_PAGE_TITLE_CLASS } from '@/components/admin/adminUi'
 
@@ -17,8 +18,10 @@ export default function EditPostPage() {
   })
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [uploadingBodyImage, setUploadingBodyImage] = useState(false)
   const [hasDraft, setHasDraft] = useState(false)
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const bodyImageInputRef = useRef<HTMLInputElement | null>(null)
 
   // 自动保存草稿到 localStorage
   const scheduleDraftSave = useCallback((newForm: typeof form) => {
@@ -116,6 +119,31 @@ export default function EditPostPage() {
     const data = await res.json()
     setUploading(false)
     if (data.url) updateForm(f => ({ ...f, coverImage: data.url }))
+  }
+
+  const uploadBodyImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+
+    setUploadingBodyImage(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/upload', { method: 'POST', body: fd })
+      const data = await res.json().catch(() => null)
+      if (!res.ok || !data?.url) throw new Error(data?.error || '上传失败')
+
+      updateForm(f => {
+        const prefix = f.content && !f.content.endsWith('\n') ? '\n' : ''
+        return { ...f, content: `${f.content}${prefix}\n![图片](${data.url})\n` }
+      })
+      toast.success('图片已插入正文')
+    } catch (err: any) {
+      toast.error(err?.message || '图片上传失败')
+    } finally {
+      setUploadingBodyImage(false)
+    }
   }
 
   return (
@@ -231,6 +259,13 @@ export default function EditPostPage() {
               {uploading ? '上传中...' : '选择封面图'}
               <input type="file" accept="image/*" className="hidden" onChange={uploadCover} />
             </label>
+            <StorageImagePicker
+              buttonText="从云存储选择封面"
+              onSelect={(url) => {
+                updateForm(f => ({ ...f, coverImage: url }))
+                toast.success('已选择云存储图片')
+              }}
+            />
             {form.coverImage && <span className="text-xs sm:text-sm" style={{ color: 'var(--accent)' }}>✓ 已上传</span>}
           </div>
         </div>
@@ -240,6 +275,37 @@ export default function EditPostPage() {
           <label className="block text-xs sm:text-sm font-medium mb-3" style={{ color: 'var(--text-secondary)' }}>
             正文内容 – Markdown / GFM *
           </label>
+          <div className="mb-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => bodyImageInputRef.current?.click()}
+                disabled={uploadingBodyImage}
+                className="px-4 py-2 rounded-lg sm:rounded-full text-xs sm:text-sm font-medium disabled:opacity-60"
+                style={{ background: 'var(--bg-secondary)', color: 'var(--accent)', border: '1px solid var(--border)' }}
+              >
+                {uploadingBodyImage ? '上传中...' : '上传正文图片并插入'}
+              </button>
+              <StorageImagePicker
+                buttonText="从云存储插入"
+                onSelect={(url) => {
+                  updateForm(f => {
+                    const prefix = f.content && !f.content.endsWith('\n') ? '\n' : ''
+                    return { ...f, content: `${f.content}${prefix}\n![图片](${url})\n` }
+                  })
+                  toast.success('已插入云存储图片')
+                }}
+                className="px-4 py-2 rounded-lg sm:rounded-full text-xs sm:text-sm font-medium"
+              />
+            </div>
+            <input
+              ref={bodyImageInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={uploadBodyImage}
+            />
+          </div>
           <MarkdownEditor
             value={form.content}
             onChange={v => updateForm(f => ({ ...f, content: v }))}

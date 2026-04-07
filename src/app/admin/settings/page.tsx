@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import { IMEInput, IMETextarea } from '@/components/ui/IMEInput'
 import ImageCropModal from '@/components/ui/ImageCropModal'
 import { MarkdownEditor } from '@/components/admin/MarkdownEditor'
+import { StorageImagePicker } from '@/components/admin/StorageImagePicker'
 import { ADMIN_PAGE_TITLE_CLASS, ADMIN_CARD_LG_CLASS, ADMIN_SUBCARD_CLASS } from '@/components/admin/adminUi'
 import { DEFAULT_NAV, DEFAULT_WIDGETS, DEFAULT_SITE_LOGO, isImageSource, parseNavItems, parseSiteLogo, parseWidgets, type NavItem, type RightPanelWidget as Widget, type SiteLogo } from '@/lib/config'
 
@@ -395,6 +396,14 @@ export default function SettingsPage() {
               </div>
               <div className="flex flex-col gap-2 w-full sm:w-auto">
                 <button onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar} className="px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50 w-full sm:w-auto" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>{uploadingAvatar ? '上传中...' : '更换头像'}</button>
+                <StorageImagePicker
+                  buttonText="从云存储选择头像"
+                  onSelect={(url) => {
+                    setProfile(p => ({ ...p, avatar: url }))
+                    toast.success('已选择云存储头像，记得保存')
+                  }}
+                  className="px-4 py-2 rounded-full text-sm font-medium w-full sm:w-auto"
+                />
                 <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>支持 JPG、PNG、GIF，建议 200x200</p>
               </div>
               <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={uploadAvatar} />
@@ -478,6 +487,14 @@ export default function SettingsPage() {
                 </div>
                 <div className="flex flex-col gap-2 min-w-0 flex-1">
                   <button onClick={() => iconInputRef.current?.click()} disabled={uploadingIcon} className="px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50 w-full sm:w-auto" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>{uploadingIcon ? '上传中...' : '上传图标'}</button>
+                  <StorageImagePicker
+                    buttonText="从云存储选择图标"
+                    onSelect={(url) => {
+                      setSiteIcon(url)
+                      toast.success('已选择云存储图标，记得保存设置')
+                    }}
+                    className="px-4 py-2 rounded-full text-sm font-medium w-full sm:w-auto"
+                  />
                   <div className="flex items-center gap-2 min-w-0">
                     <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>建议 32x32 或 64x64 PNG/ICO</p>
                     {siteIcon && <button onClick={() => setSiteIcon('')} className="text-xs shrink-0" style={{ color: '#F4212E' }}>移除</button>}
@@ -540,6 +557,14 @@ export default function SettingsPage() {
                   >
                     清空
                   </button>
+                  <StorageImagePicker
+                    buttonText="从云存储选择"
+                    onSelect={(url) => {
+                      setSiteLogo(s => ({ ...s, type: 'image', value: url }))
+                      toast.success('已选择云存储 Logo，记得保存设置')
+                    }}
+                    className="px-4 py-2 rounded-full text-sm font-medium w-full sm:w-auto"
+                  />
                   <input ref={siteLogoInputRef} type="file" accept="image/*,.ico" className="hidden" onChange={uploadSiteLogo} />
                 </div>
               )}

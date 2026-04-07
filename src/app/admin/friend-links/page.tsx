@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { ADMIN_PAGE_TITLE_CLASS } from '@/components/admin/adminUi'
+import { StorageImagePicker } from '@/components/admin/StorageImagePicker'
 
 interface FriendLink {
   id: string
@@ -631,8 +632,15 @@ export default function AdminFriendLinksPage() {
                       className="px-3 py-1.5 rounded-lg bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
                     <input value={editForm.description} onChange={e => setEditForm(v => ({ ...v, description: e.target.value }))} placeholder="简介（可选）"
                       className="px-3 py-1.5 rounded-lg bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
-                    <input value={editForm.favicon} onChange={e => setEditForm(v => ({ ...v, favicon: e.target.value }))} placeholder="头像URL（可选）"
-                      className="px-3 py-1.5 rounded-lg bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+                    <div className="flex items-center gap-2">
+                      <input value={editForm.favicon} onChange={e => setEditForm(v => ({ ...v, favicon: e.target.value }))} placeholder="头像URL（可选）"
+                        className="flex-1 px-3 py-1.5 rounded-lg bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+                      <StorageImagePicker
+                        buttonText="选择"
+                        onSelect={(url) => setEditForm(v => ({ ...v, favicon: url }))}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                      />
+                    </div>
                     <input value={editForm.email} onChange={e => setEditForm(v => ({ ...v, email: e.target.value }))} placeholder="邮箱（可选）"
                       className="px-3 py-1.5 rounded-lg bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
                     <input value={editForm.sortOrder} onChange={e => setEditForm(v => ({ ...v, sortOrder: e.target.value }))} placeholder="排序权重"
@@ -700,8 +708,15 @@ export default function AdminFriendLinksPage() {
               className="w-full px-3 py-1.5 rounded-xl bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
             <input value={createForm.description} onChange={e => setCreateForm(v => ({ ...v, description: e.target.value }))} placeholder="简介（可选）"
               className="w-full px-3 py-1.5 rounded-xl bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
-            <input value={createForm.favicon} onChange={e => setCreateForm(v => ({ ...v, favicon: e.target.value }))} placeholder="头像URL（可选）"
-              className="w-full px-3 py-1.5 rounded-xl bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+            <div className="flex items-center gap-2">
+              <input value={createForm.favicon} onChange={e => setCreateForm(v => ({ ...v, favicon: e.target.value }))} placeholder="头像URL（可选）"
+                className="flex-1 px-3 py-1.5 rounded-xl bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+              <StorageImagePicker
+                buttonText="选择"
+                onSelect={(url) => setCreateForm(v => ({ ...v, favicon: url }))}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium"
+              />
+            </div>
             <input value={createForm.email} onChange={e => setCreateForm(v => ({ ...v, email: e.target.value }))} placeholder="邮箱（可选）"
               className="w-full px-3 py-1.5 rounded-xl bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
             <input value={createForm.sortOrder} onChange={e => setCreateForm(v => ({ ...v, sortOrder: e.target.value }))} placeholder="排序权重"
