@@ -110,7 +110,17 @@ export default function AdminCommentsPage() {
 
   return (
     <div>
-      <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)' }}>评论管理</h1>
+      {/* WP 风格顶部工具栏 */}
+      <div className="sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl mb-4 -mx-1" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', backdropFilter: 'blur(8px)' }}>
+        <div className="flex items-center gap-2 min-w-0">
+          <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)', margin: 0 }}>评论管理</h1>
+          {pendingCount > 0 && (
+            <span className="text-xs px-2 py-0.5 rounded-full font-bold shrink-0" style={{ background: 'rgba(249,24,128,0.15)', color: 'var(--red)' }}>
+              {pendingCount} 待审
+            </span>
+          )}
+        </div>
+      </div>
 
       {/* 顶栏：筛选 + 搜索 */}
       <div className="flex flex-col gap-3 mb-4">

@@ -350,7 +350,13 @@ export default function SettingsPage() {
           onCancel={handleCropCancel}
         />
       )}
-      <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)' }}>⚙️ 站点设置</h1>
+      {/* WP 风格顶部工具栏 */}
+      <div className="sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl mb-4 -mx-1" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', backdropFilter: 'blur(8px)' }}>
+        <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)', margin: 0 }}>⚙️ 站点设置</h1>
+        <button onClick={save} disabled={saving} className="px-5 py-2 rounded-full text-sm font-bold text-white disabled:opacity-50 shrink-0 min-h-9" style={{ background: 'var(--accent)' }}>
+          {saving ? '保存中...' : '保存设置'}
+        </button>
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-5 items-start">
 
         {/* 左列 */}
@@ -818,7 +824,7 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="sticky bottom-3 z-10 mt-6 md:static pt-2 bg-transparent">
+      <div className="mt-6 pt-2">
         <button onClick={save} disabled={saving} className="px-6 py-3 rounded-full text-sm font-bold text-white disabled:opacity-50 w-full sm:w-auto shadow-lg min-h-11" style={{ background: 'var(--accent)' }}>{saving ? '保存中...' : '保存设置'}</button>
       </div>
     </div>
