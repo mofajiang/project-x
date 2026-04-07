@@ -78,8 +78,8 @@ export default async function HomePage({
             暂无文章
           </div>
         ) : (
-          postsWithDisplay.map((post) => (
-            <PostCard key={post.id} post={post} currentUserId={session?.userId} />
+          postsWithDisplay.map((post, index) => (
+            <PostCard key={post.id} post={post} currentUserId={session?.userId} index={index} />
           ))
         )}
       </div>

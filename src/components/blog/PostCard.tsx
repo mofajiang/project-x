@@ -25,6 +25,7 @@ interface Post {
 interface PostCardProps {
   post: Post & { authorId?: string }
   currentUserId?: string
+  index?: number
 }
 
 interface QuoteSegment {
@@ -65,7 +66,7 @@ function stripMarkdown(md: string): string {
     .trim()
 }
 
-export function PostCard({ post, currentUserId }: PostCardProps) {
+export function PostCard({ post, currentUserId, index = 0 }: PostCardProps) {
   const [likes, setLikes] = useState(post.likes)
   const [liked, setLiked] = useState(false)
   const [liking, setLiking] = useState(false)
@@ -95,7 +96,7 @@ export function PostCard({ post, currentUserId }: PostCardProps) {
           <div className="flex items-center gap-2.5 min-w-0 flex-1">
             <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0" style={{ background: 'var(--bg-secondary)', outline: '1px solid var(--border)' }}>
               {post.author.avatar
-                ? <Image src={post.author.avatar} alt={post.author.username} width={36} height={36} className="object-cover w-full h-full" />
+                ? <Image src={post.author.avatar} alt={post.author.username} width={36} height={36} className="object-cover w-full h-full" sizes="36px" />
                 : <div className="w-full h-full flex items-center justify-center text-base font-bold" style={{ color: 'var(--text-secondary)' }}>{post.author.username[0]?.toUpperCase()}</div>
               }
             </div>
@@ -156,7 +157,7 @@ export function PostCard({ post, currentUserId }: PostCardProps) {
         {/* 封面大图（无封面缩略图时全宽展示） */}
         {post.coverImage && (
           <div className="mt-2.5 rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
-            <Image src={post.coverImage} alt={post.title} width={560} height={280} className="object-cover w-full" style={{ maxHeight: 280 }} />
+            <Image src={post.coverImage} alt={post.title} width={560} height={280} className="object-cover w-full" style={{ maxHeight: 280 }} priority={index < 2} sizes="(max-width: 640px) calc(100vw - 32px), (max-width: 1024px) calc(100vw - 120px), 600px" quality={85} />
           </div>
         )}
 

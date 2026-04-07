@@ -14,7 +14,7 @@ export default async function BlogLayout({ children }: { children: React.ReactNo
   const siteLogo = parseSiteLogo((config as any).siteLogo)
   const widgets = parseWidgets((config as any).rightPanelWidgets)
   const session = await getSession()
-  const [topTags, hotPosts] = await Promise.all([
+  const [topTags, hotPosts, approvedFriendLinks] = await Promise.all([
     prisma.tag.findMany({
       orderBy: { posts: { _count: 'desc' } },
       take: 8,
@@ -26,19 +26,18 @@ export default async function BlogLayout({ children }: { children: React.ReactNo
       take: 5,
       select: { id: true, title: true, slug: true, views: true },
     }),
+    prisma.$queryRawUnsafe<Array<{ id: string; name: string; url: string; description: string | null; favicon: string | null }>>(
+      `SELECT id, name, url, description, favicon
+       FROM FriendLink
+       WHERE status = 'approved' AND COALESCE(showInSidebar, 1) = 1
+       ORDER BY COALESCE(sortOrder, 0) DESC,
+                CASE
+                  WHEN approvedAt IS NULL THEN 0
+                  WHEN typeof(approvedAt) = 'integer' THEN approvedAt
+                  ELSE CAST(strftime('%s', approvedAt) AS INTEGER) * 1000
+                END DESC`
+    ),
   ])
-
-  const approvedFriendLinks = await prisma.$queryRawUnsafe<Array<{ id: string; name: string; url: string; description: string | null; favicon: string | null }>>(
-    `SELECT id, name, url, description, favicon
-     FROM FriendLink
-     WHERE status = 'approved' AND COALESCE(showInSidebar, 1) = 1
-     ORDER BY COALESCE(sortOrder, 0) DESC,
-              CASE
-                WHEN approvedAt IS NULL THEN 0
-                WHEN typeof(approvedAt) = 'integer' THEN approvedAt
-                ELSE CAST(strftime('%s', approvedAt) AS INTEGER) * 1000
-              END DESC`
-  )
 
   const mobileTopTags = topTags.map(tag => ({ id: tag.id, name: tag.name, slug: tag.slug, posts: tag._count.posts }))
   let avatar: string | null = null
