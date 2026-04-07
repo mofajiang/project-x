@@ -22,6 +22,7 @@ export default function EditPostPage() {
   const [hasDraft, setHasDraft] = useState(false)
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const bodyImageInputRef = useRef<HTMLInputElement | null>(null)
+  const coverInputRef = useRef<HTMLInputElement | null>(null)
 
   // 自动保存草稿到 localStorage
   const scheduleDraftSave = useCallback((newForm: typeof form) => {
@@ -303,19 +304,16 @@ export default function EditPostPage() {
           <section className="rounded-2xl p-4" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
             <h2 className="text-sm font-bold mb-3" style={{ color: 'var(--text-primary)' }}>封面图</h2>
             <div className="flex flex-col gap-2">
-              <label className="px-4 py-2 rounded-lg text-sm font-medium cursor-pointer text-center"
-                style={{ background: 'var(--bg)', color: 'var(--accent)', border: '1px solid var(--border)' }}>
-                {uploading ? '上传中...' : '选择封面图'}
-                <input type="file" accept="image/*" className="hidden" onChange={uploadCover} />
-              </label>
               <StorageImagePicker
-                buttonText="从云存储选择封面"
                 onSelect={(url) => {
                   updateForm(f => ({ ...f, coverImage: url }))
                   toast.success('已选择云存储图片')
                 }}
-                className="px-4 py-2 rounded-lg text-sm font-medium"
+                onLocalClick={() => coverInputRef.current?.click()}
+                localLoading={uploading}
+                localButtonText="选择封面图"
               />
+              <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={uploadCover} />
               {form.coverImage && (
                 <div className="rounded-lg p-2" style={{ background: 'var(--bg)' }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}

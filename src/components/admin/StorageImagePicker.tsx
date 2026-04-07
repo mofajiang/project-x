@@ -15,11 +15,15 @@ type Props = {
   onSelect: (url: string) => void
   buttonText?: string
   className?: string
+  // Segmented mode: when provided, shows [local | cloud] pill control
+  onLocalClick?: () => void
+  localLoading?: boolean
+  localButtonText?: string
 }
 
 const IMAGE_EXTS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'ico'])
 
-export function StorageImagePicker({ onSelect, buttonText = '从云存储选择', className = '' }: Props) {
+export function StorageImagePicker({ onSelect, buttonText = '从云存储选择', className = '', onLocalClick, localLoading, localButtonText }: Props) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [keyword, setKeyword] = useState('')
@@ -53,14 +57,37 @@ export function StorageImagePicker({ onSelect, buttonText = '从云存储选择'
 
   return (
     <>
-      <button
-        type="button"
-        onClick={openPicker}
-        className={className || 'px-3 py-2 rounded-full text-sm font-medium'}
-        style={{ background: 'var(--bg-hover)', color: 'var(--accent)', border: '1px solid var(--border)' }}
-      >
-        {buttonText}
-      </button>
+      {onLocalClick ? (
+        <div className="flex rounded-full overflow-hidden text-sm font-medium" style={{ border: '1px solid var(--border)', width: 'fit-content' }}>
+          <button
+            type="button"
+            onClick={onLocalClick}
+            disabled={localLoading}
+            className="px-3 py-1.5 disabled:opacity-50 transition-colors"
+            style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+          >
+            {localLoading ? '上传中…' : (localButtonText || '本地上传')}
+          </button>
+          <div style={{ width: 1, flexShrink: 0, background: 'var(--border)' }} />
+          <button
+            type="button"
+            onClick={openPicker}
+            className="px-3 py-1.5 transition-colors"
+            style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+          >
+            ☁️ 云存储
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={openPicker}
+          className={className || 'px-3 py-2 rounded-full text-sm font-medium'}
+          style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
+        >
+          {buttonText}
+        </button>
+      )}
 
       {open && (
         <div

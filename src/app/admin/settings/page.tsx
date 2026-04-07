@@ -404,15 +404,15 @@ export default function SettingsPage() {
                 {profile.avatar ? <img src={profile.avatar} alt="头像" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-2xl">👤</div>}
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity" style={{ background: 'rgba(0,0,0,0.5)' }}><span className="text-white text-xs">更换</span></div>
               </div>
-              <div className="flex flex-col gap-2 w-full sm:w-auto">
-                <button onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar} className="px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50 w-full sm:w-auto" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>{uploadingAvatar ? '上传中...' : '更换头像'}</button>
+              <div className="flex flex-col gap-2">
                 <StorageImagePicker
-                  buttonText="从云存储选择头像"
                   onSelect={(url) => {
                     setProfile(p => ({ ...p, avatar: url }))
                     toast.success('已选择云存储头像，记得保存')
                   }}
-                  className="px-4 py-2 rounded-full text-sm font-medium w-full sm:w-auto"
+                  onLocalClick={() => avatarInputRef.current?.click()}
+                  localLoading={uploadingAvatar}
+                  localButtonText="更换头像"
                 />
                 <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>支持 JPG、PNG、GIF，建议 200x200</p>
               </div>
@@ -496,14 +496,14 @@ export default function SettingsPage() {
                   {siteIcon ? <img src={siteIcon} alt="网站图标" width={64} height={64} className="w-full h-full object-contain" /> : <span className="text-3xl">🌐</span>}
                 </div>
                 <div className="flex flex-col gap-2 min-w-0 flex-1">
-                  <button onClick={() => iconInputRef.current?.click()} disabled={uploadingIcon} className="px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50 w-full sm:w-auto" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>{uploadingIcon ? '上传中...' : '上传图标'}</button>
                   <StorageImagePicker
-                    buttonText="从云存储选择图标"
                     onSelect={(url) => {
                       setSiteIcon(url)
                       toast.success('已选择云存储图标，记得保存设置')
                     }}
-                    className="px-4 py-2 rounded-full text-sm font-medium w-full sm:w-auto"
+                    onLocalClick={() => iconInputRef.current?.click()}
+                    localLoading={uploadingIcon}
+                    localButtonText="上传图标"
                   />
                   <div className="flex items-center gap-2 min-w-0">
                     <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>建议 32x32 或 64x64 PNG/ICO</p>
@@ -550,15 +550,15 @@ export default function SettingsPage() {
 
               {siteLogo.type === 'image' && (
                 <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-                  <button
-                    type="button"
-                    onClick={() => siteLogoInputRef.current?.click()}
-                    disabled={uploadingSiteLogo}
-                    className="px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50 w-full sm:w-auto"
-                    style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
-                  >
-                    {uploadingSiteLogo ? '上传中...' : '上传图片'}
-                  </button>
+                  <StorageImagePicker
+                    onSelect={(url) => {
+                      setSiteLogo(s => ({ ...s, type: 'image', value: url }))
+                      toast.success('已选择云存储 Logo，记得保存设置')
+                    }}
+                    onLocalClick={() => siteLogoInputRef.current?.click()}
+                    localLoading={uploadingSiteLogo}
+                    localButtonText="上传图片"
+                  />
                   <button
                     type="button"
                     onClick={() => setSiteLogo(s => ({ ...s, value: '' }))}
@@ -567,14 +567,6 @@ export default function SettingsPage() {
                   >
                     清空
                   </button>
-                  <StorageImagePicker
-                    buttonText="从云存储选择"
-                    onSelect={(url) => {
-                      setSiteLogo(s => ({ ...s, type: 'image', value: url }))
-                      toast.success('已选择云存储 Logo，记得保存设置')
-                    }}
-                    className="px-4 py-2 rounded-full text-sm font-medium w-full sm:w-auto"
-                  />
                   <input ref={siteLogoInputRef} type="file" accept="image/*,.ico" className="hidden" onChange={uploadSiteLogo} />
                 </div>
               )}
