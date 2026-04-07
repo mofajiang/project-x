@@ -389,6 +389,12 @@ export default function SettingsPage() {
             >↻</button>
           </div>
 
+          {/* 系统更新 */}
+          <div className={`${mobileCardClass} flex flex-col gap-2.5`} style={{ background: 'var(--bg-secondary)' }}>
+            <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>🔄 系统更新</h2>
+            <AdminUpdateChecker />
+          </div>
+
           {/* 个人资料 */}
           <div className={`${mobileCardClass} flex flex-col gap-2.5 sm:gap-4`} style={{ background: 'var(--bg-secondary)' }}>
             <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>👤 个人资料</h2>
@@ -592,19 +598,6 @@ export default function SettingsPage() {
                 </div>
               </div>
             </div>
-          </div>
-
-          <div className={`${mobileCardClass} flex flex-col gap-2.5 sm:gap-4`} style={{ background: 'var(--bg-secondary)' }}>
-            <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>🗂 存储设置</h2>
-            <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>存储配置已迁移到上传管理页，便于在同一处完成上传、配置和连通性测试。</p>
-            <a href="/admin/uploads" className="inline-flex items-center justify-center px-4 py-2 rounded-full text-sm font-medium" style={{ background: 'var(--bg-hover)', color: 'var(--accent)' }}>
-              前往上传管理配置存储
-            </a>
-          </div>
-
-          <div className={`${mobileCardClass} flex flex-col gap-2.5 sm:gap-4`} style={{ background: 'var(--bg-secondary)' }}>
-            <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>🔄 系统更新</h2>
-            <AdminUpdateChecker />
           </div>
 
           {/* 默认主题 */}
