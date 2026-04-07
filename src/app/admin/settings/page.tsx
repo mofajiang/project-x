@@ -35,25 +35,6 @@ const SITE_LOGO_TYPES: { value: SiteLogo['type']; label: string }[] = [
   { value: 'image', label: '图片' },
 ]
 
-const STORAGE_DRIVER_OPTIONS = [
-  { value: 'local', label: '本地存储（服务器磁盘）' },
-  { value: 's3', label: '云存储（S3 兼容：R2/OSS/COS/MinIO）' },
-  { value: 'smms', label: '图床（SM.MS）' },
-] as const
-
-type StorageStatus = {
-  configuredDriver: 'local' | 's3' | 'smms'
-  activeDriver: 'local' | 's3' | 'smms'
-  fallbackReason?: 's3_config_incomplete' | 'smms_config_incomplete'
-  capabilities: {
-    upload: boolean
-    list: boolean
-    download: boolean
-    rename: boolean
-    delete: boolean
-  }
-}
-
 function Field({
   label,
   value,
@@ -122,10 +103,6 @@ export default function SettingsPage() {
   const [smtpSaving, setSmtpSaving] = useState(false)
   const [smtpTesting, setSmtpTesting] = useState(false)
   const [testEmail, setTestEmail] = useState('')
-  const [storageStatus, setStorageStatus] = useState<StorageStatus | null>(null)
-
-
-
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const iconInputRef = useRef<HTMLInputElement>(null)
   const siteLogoInputRef = useRef<HTMLInputElement>(null)
@@ -198,13 +175,6 @@ export default function SettingsPage() {
       }
     })
 
-    fetch('/api/admin/storage/status', { cache: 'no-store' })
-      .then(r => r.json())
-      .then(data => {
-        if (data && !data.error) setStorageStatus(data)
-      })
-      .catch(() => setStorageStatus(null))
-
   }, [])
 
   const save = async () => {
@@ -223,8 +193,6 @@ export default function SettingsPage() {
         if (freshData) {
           applyConfigData(freshData)
         }
-        const statusData = await fetch('/api/admin/storage/status', { cache: 'no-store' }).then(r => r.json())
-        if (statusData && !statusData.error) setStorageStatus(statusData)
       } catch {}
       return
     }
@@ -597,66 +565,12 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* 默认主题 */}
           <div className={`${mobileCardClass} flex flex-col gap-2.5 sm:gap-4`} style={{ background: 'var(--bg-secondary)' }}>
             <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>🗂 存储设置</h2>
-            <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>用于图片上传、后台上传管理、站点图标与头像等资源。</p>
-
-            <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>存储类型</label>
-              <select
-                value={config.storageDriver}
-                onChange={e => setConfig(c => ({ ...c, storageDriver: e.target.value }))}
-                className="w-full px-3 py-2 rounded-2xl text-sm outline-none"
-                style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}
-              >
-                {STORAGE_DRIVER_OPTIONS.map(item => (
-                  <option key={item.value} value={item.value}>{item.label}</option>
-                ))}
-              </select>
-            </div>
-
-            {storageStatus && (
-              <div className="rounded-xl p-3 text-xs" style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>
-                <p>配置驱动：{storageStatus.configuredDriver.toUpperCase()}</p>
-                <p>当前生效：{storageStatus.activeDriver.toUpperCase()}</p>
-                {storageStatus.fallbackReason === 's3_config_incomplete' && (
-                  <p style={{ color: '#f59e0b' }}>S3 配置不完整，系统已自动回退到本地存储。</p>
-                )}
-                {storageStatus.fallbackReason === 'smms_config_incomplete' && (
-                  <p style={{ color: '#f59e0b' }}>SM.MS Token 未配置，系统已自动回退到本地存储。</p>
-                )}
-              </div>
-            )}
-
-            {config.storageDriver === 's3' && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Field compact label="Endpoint" value={config.storageS3Endpoint} onChange={v => setConfig(c => ({ ...c, storageS3Endpoint: v }))} placeholder="https://<account>.r2.cloudflarestorage.com" />
-                <Field compact label="Region" value={config.storageS3Region} onChange={v => setConfig(c => ({ ...c, storageS3Region: v }))} placeholder="auto" />
-                <Field compact label="Bucket" value={config.storageS3Bucket} onChange={v => setConfig(c => ({ ...c, storageS3Bucket: v }))} placeholder="my-bucket" />
-                <Field compact label="Key Prefix" value={config.storageS3Prefix} onChange={v => setConfig(c => ({ ...c, storageS3Prefix: v }))} placeholder="uploads/" />
-                <Field compact label="Access Key" value={config.storageS3AccessKeyId} onChange={v => setConfig(c => ({ ...c, storageS3AccessKeyId: v }))} placeholder="AKIA..." />
-                <Field compact label="Secret Key" type="password" value={config.storageS3SecretAccessKey} onChange={v => setConfig(c => ({ ...c, storageS3SecretAccessKey: v }))} placeholder="******" />
-                <div className="sm:col-span-2">
-                  <Field compact label="公网访问前缀" value={config.storagePublicBaseUrl} onChange={v => setConfig(c => ({ ...c, storagePublicBaseUrl: v }))} placeholder="https://cdn.example.com" />
-                </div>
-                <label className="sm:col-span-2 flex items-center gap-2 text-sm" style={{ color: 'var(--text-primary)' }}>
-                  <input
-                    type="checkbox"
-                    checked={config.storageS3ForcePathStyle}
-                    onChange={e => setConfig(c => ({ ...c, storageS3ForcePathStyle: e.target.checked }))}
-                  />
-                  使用 Path-Style（MinIO/部分网关需要）
-                </label>
-              </div>
-            )}
-
-            {config.storageDriver === 'smms' && (
-              <div className="flex flex-col gap-2">
-                <Field compact label="SM.MS Token" type="password" value={config.storageSmmsToken} onChange={v => setConfig(c => ({ ...c, storageSmmsToken: v }))} placeholder="在 sm.ms 后台生成 Token" />
-                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>说明：SM.MS 模式支持上传，后台“文件列表/重命名/删除”不支持。</p>
-              </div>
-            )}
+            <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>存储配置已迁移到上传管理页，便于在同一处完成上传、配置和连通性测试。</p>
+            <a href="/admin/uploads" className="inline-flex items-center justify-center px-4 py-2 rounded-full text-sm font-medium" style={{ background: 'var(--bg-hover)', color: 'var(--accent)' }}>
+              前往上传管理配置存储
+            </a>
           </div>
 
           {/* 默认主题 */}
