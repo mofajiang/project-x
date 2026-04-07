@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import JSZip from 'jszip'
 import toast from 'react-hot-toast'
 import { ADMIN_PAGE_TITLE_CLASS } from '@/components/admin/adminUi'
 
@@ -65,13 +66,17 @@ export default function AdminUploadsPage() {
   const [files, setFiles] = useState<UploadFile[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
+  const [batchDeleting, setBatchDeleting] = useState(false)
+  const [batchDownloading, setBatchDownloading] = useState(false)
   const [savingStorage, setSavingStorage] = useState(false)
   const [testingStorage, setTestingStorage] = useState(false)
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
   const [keyword, setKeyword] = useState('')
   const [customName, setCustomName] = useState('')
   const [editingName, setEditingName] = useState<string | null>(null)
   const [renameDraft, setRenameDraft] = useState('')
   const [listError, setListError] = useState('')
+  const [selectedMap, setSelectedMap] = useState<Record<string, boolean>>({})
   const [storageStatus, setStorageStatus] = useState<StorageStatus | null>(null)
   const [storageConfig, setStorageConfig] = useState<StorageConfig>({
     storageDriver: 'local',
@@ -92,6 +97,12 @@ export default function AdminUploadsPage() {
     return files.filter(f => f.name.toLowerCase().includes(k) || f.ext.toLowerCase().includes(k))
   }, [files, keyword])
 
+  const selectedFiles = useMemo(
+    () => filtered.filter(f => !!selectedMap[f.name]),
+    [filtered, selectedMap]
+  )
+  const allSelectedInView = filtered.length > 0 && filtered.every(f => !!selectedMap[f.name])
+
   const fetchFiles = async () => {
     setLoading(true)
     try {
@@ -103,7 +114,16 @@ export default function AdminUploadsPage() {
         throw new Error(message)
       }
       setListError('')
-      setFiles(Array.isArray(data.files) ? data.files : [])
+      const nextFiles = Array.isArray(data.files) ? data.files : []
+      setFiles(nextFiles)
+      setSelectedMap(prev => {
+        const names = new Set(nextFiles.map((f: UploadFile) => f.name))
+        const next: Record<string, boolean> = {}
+        for (const key of Object.keys(prev)) {
+          if (names.has(key)) next[key] = prev[key]
+        }
+        return next
+      })
     } catch (err: any) {
       const msg = String(err?.message || '')
       if (!msg.includes('不支持文件列表')) {
@@ -256,6 +276,74 @@ export default function AdminUploadsPage() {
     }
   }
 
+  const toggleSelect = (name: string, checked: boolean) => {
+    setSelectedMap(prev => ({ ...prev, [name]: checked }))
+  }
+
+  const toggleSelectAllInView = (checked: boolean) => {
+    setSelectedMap(prev => {
+      const next = { ...prev }
+      for (const file of filtered) next[file.name] = checked
+      return next
+    })
+  }
+
+  const handleBatchDelete = async () => {
+    if (!selectedFiles.length) {
+      toast.error('请先选择文件')
+      return
+    }
+    if (!confirm(`确认批量删除 ${selectedFiles.length} 个文件吗？`)) return
+
+    setBatchDeleting(true)
+    try {
+      const results = await Promise.allSettled(
+        selectedFiles.map(file =>
+          fetch(`/api/admin/uploads/${encodeURIComponent(file.name)}`, { method: 'DELETE' })
+        )
+      )
+      const success = results.filter(r => r.status === 'fulfilled').length
+      const failed = results.length - success
+      if (failed === 0) toast.success(`已删除 ${success} 个文件`)
+      else toast.error(`删除完成：成功 ${success}，失败 ${failed}`)
+      await fetchFiles()
+    } finally {
+      setBatchDeleting(false)
+    }
+  }
+
+  const handleBatchDownload = async () => {
+    if (!selectedFiles.length) {
+      toast.error('请先选择文件')
+      return
+    }
+    setBatchDownloading(true)
+    try {
+      const zip = new JSZip()
+      for (const file of selectedFiles) {
+        const res = await fetch(`/api/admin/uploads/${encodeURIComponent(file.name)}`)
+        if (!res.ok) throw new Error(`下载失败: ${file.name}`)
+        const blob = await res.blob()
+        zip.file(file.name, blob)
+      }
+
+      const archive = await zip.generateAsync({ type: 'blob' })
+      const a = document.createElement('a')
+      const url = URL.createObjectURL(archive)
+      a.href = url
+      a.download = `uploads-${Date.now()}.zip`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+      toast.success(`已打包下载 ${selectedFiles.length} 个文件`)
+    } catch (err: any) {
+      toast.error(err?.message || '批量下载失败')
+    } finally {
+      setBatchDownloading(false)
+    }
+  }
+
   return (
     <div className='w-full max-w-7xl mx-auto'>
       <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)' }}>文件上传管理</h1>
@@ -297,53 +385,132 @@ export default function AdminUploadsPage() {
             <span className='text-xs shrink-0' style={{ color: 'var(--text-secondary)' }}>{filtered.length} 项</span>
           </div>
 
+          <div className='rounded-xl p-3 mb-3 flex flex-wrap items-center gap-2' style={{ background: 'var(--bg-hover)' }}>
+            <label className='inline-flex items-center gap-2 text-xs' style={{ color: 'var(--text-secondary)' }}>
+              <input type='checkbox' checked={allSelectedInView} onChange={e => toggleSelectAllInView(e.target.checked)} />
+              当前视图全选
+            </label>
+            <span className='text-xs' style={{ color: 'var(--text-secondary)' }}>已选 {selectedFiles.length}</span>
+            <button
+              onClick={() => setViewMode(v => (v === 'list' ? 'grid' : 'list'))}
+              className='px-3 py-1.5 rounded-lg text-xs'
+              style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+            >
+              {viewMode === 'list' ? '切换网格' : '切换列表'}
+            </button>
+            {storageStatus?.capabilities.download !== false && (
+              <button
+                onClick={handleBatchDownload}
+                disabled={batchDownloading || selectedFiles.length === 0}
+                className='px-3 py-1.5 rounded-lg text-xs text-white disabled:opacity-50'
+                style={{ background: '#0ea5e9' }}
+              >
+                {batchDownloading ? '打包中...' : '批量下载'}
+              </button>
+            )}
+            {storageStatus?.capabilities.delete !== false && (
+              <button
+                onClick={handleBatchDelete}
+                disabled={batchDeleting || selectedFiles.length === 0}
+                className='px-3 py-1.5 rounded-lg text-xs text-white disabled:opacity-50'
+                style={{ background: '#64748b' }}
+              >
+                {batchDeleting ? '删除中...' : '批量删除'}
+              </button>
+            )}
+          </div>
+
           {!loading && !!listError && (
             <div className='rounded-xl p-3 mb-3 text-sm' style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.35)', color: '#b45309' }}>
               <p>{listError}</p>
             </div>
           )}
 
-          <div className='rounded-xl overflow-hidden border' style={{ borderColor: 'var(--border)' }}>
-            <div className='grid grid-cols-[1fr_120px_180px_220px] gap-2 px-4 py-3 text-xs font-medium' style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>
-              <span>文件名</span>
-              <span>大小</span>
-              <span>更新时间</span>
-              <span>操作</span>
-            </div>
+          {viewMode === 'list' ? (
+            <div className='rounded-xl overflow-hidden border' style={{ borderColor: 'var(--border)' }}>
+              <div className='grid grid-cols-[36px_1fr_120px_180px_220px] gap-2 px-4 py-3 text-xs font-medium' style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>
+                <span></span>
+                <span>文件名</span>
+                <span>大小</span>
+                <span>更新时间</span>
+                <span>操作</span>
+              </div>
 
-            {loading ? (
-              <div className='py-12 text-center text-sm' style={{ color: 'var(--text-secondary)' }}>加载中...</div>
-            ) : filtered.length === 0 ? (
-              <div className='py-12 text-center text-sm' style={{ color: 'var(--text-secondary)' }}>暂无文件</div>
-            ) : (
-              <div className='divide-y' style={{ borderColor: 'var(--border)' }}>
-                {filtered.map(file => (
-                  <div key={file.name} className='grid grid-cols-[1fr_120px_180px_220px] gap-2 px-4 py-3 items-center text-sm'>
-                    <div className='min-w-0'>
-                      {editingName === file.name ? (
-                        <div className='flex gap-2'>
-                          <input
-                            value={renameDraft}
-                            onChange={e => setRenameDraft(e.target.value)}
-                            className='flex-1 px-3 py-2 rounded-lg border bg-transparent outline-none text-sm'
-                            style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-                          />
-                          <button onClick={() => saveRename(file.name)} className='px-3 py-2 rounded-lg text-xs text-white' style={{ background: 'var(--accent)' }}>保存</button>
-                          <button onClick={() => setEditingName(null)} className='px-3 py-2 rounded-lg text-xs' style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>取消</button>
-                        </div>
-                      ) : (
-                        <div className='flex items-center gap-2 min-w-0'>
-                          <span>{extIcon(file.ext)}</span>
-                          <div className='min-w-0'>
-                            <p className='truncate font-medium' style={{ color: 'var(--text-primary)' }}>{file.name}</p>
-                            <p className='truncate text-xs' style={{ color: 'var(--text-secondary)' }}>{file.url}</p>
+              {loading ? (
+                <div className='py-12 text-center text-sm' style={{ color: 'var(--text-secondary)' }}>加载中...</div>
+              ) : filtered.length === 0 ? (
+                <div className='py-12 text-center text-sm' style={{ color: 'var(--text-secondary)' }}>暂无文件</div>
+              ) : (
+                <div className='divide-y' style={{ borderColor: 'var(--border)' }}>
+                  {filtered.map(file => (
+                    <div key={file.name} className='grid grid-cols-[36px_1fr_120px_180px_220px] gap-2 px-4 py-3 items-center text-sm'>
+                      <label className='inline-flex items-center justify-center'>
+                        <input type='checkbox' checked={!!selectedMap[file.name]} onChange={e => toggleSelect(file.name, e.target.checked)} />
+                      </label>
+                      <div className='min-w-0'>
+                        {editingName === file.name ? (
+                          <div className='flex gap-2'>
+                            <input
+                              value={renameDraft}
+                              onChange={e => setRenameDraft(e.target.value)}
+                              className='flex-1 px-3 py-2 rounded-lg border bg-transparent outline-none text-sm'
+                              style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                            />
+                            <button onClick={() => saveRename(file.name)} className='px-3 py-2 rounded-lg text-xs text-white' style={{ background: 'var(--accent)' }}>保存</button>
+                            <button onClick={() => setEditingName(null)} className='px-3 py-2 rounded-lg text-xs' style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>取消</button>
                           </div>
-                        </div>
-                      )}
+                        ) : (
+                          <div className='flex items-center gap-2 min-w-0'>
+                            <span>{extIcon(file.ext)}</span>
+                            <div className='min-w-0'>
+                              <p className='truncate font-medium' style={{ color: 'var(--text-primary)' }}>{file.name}</p>
+                              <p className='truncate text-xs' style={{ color: 'var(--text-secondary)' }}>{file.url}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <span className='text-xs' style={{ color: 'var(--text-secondary)' }}>{formatSize(file.size)}</span>
+                      <span className='text-xs' style={{ color: 'var(--text-secondary)' }}>{new Date(file.updatedAt).toLocaleString('zh-CN', { hour12: false })}</span>
+                      <div className='flex items-center gap-1'>
+                        {storageStatus?.capabilities.download !== false && (
+                          <a href={`/api/admin/uploads/${encodeURIComponent(file.name)}`} className='px-2 py-1 rounded text-xs' style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>下载</a>
+                        )}
+                        <a href={file.url} target='_blank' rel='noopener noreferrer' className='px-2 py-1 rounded text-xs' style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>访问</a>
+                        {storageStatus?.capabilities.rename !== false && (
+                          <button onClick={() => beginRename(file.name)} className='px-2 py-1 rounded text-xs' style={{ background: 'rgba(29,155,240,0.12)', color: 'var(--accent)' }}>重命名</button>
+                        )}
+                        {storageStatus?.capabilities.delete !== false && (
+                          <button onClick={() => deleteFile(file.name)} className='px-2 py-1 rounded text-xs text-white' style={{ background: '#64748b' }}>删除</button>
+                        )}
+                      </div>
                     </div>
-                    <span className='text-xs' style={{ color: 'var(--text-secondary)' }}>{formatSize(file.size)}</span>
-                    <span className='text-xs' style={{ color: 'var(--text-secondary)' }}>{new Date(file.updatedAt).toLocaleString('zh-CN', { hour12: false })}</span>
-                    <div className='flex items-center gap-1'>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3'>
+              {loading ? (
+                <div className='col-span-full py-12 text-center text-sm' style={{ color: 'var(--text-secondary)' }}>加载中...</div>
+              ) : filtered.length === 0 ? (
+                <div className='col-span-full py-12 text-center text-sm' style={{ color: 'var(--text-secondary)' }}>暂无文件</div>
+              ) : (
+                filtered.map(file => (
+                  <div key={file.name} className='rounded-xl p-3 border' style={{ borderColor: 'var(--border)', background: 'var(--bg-secondary)' }}>
+                    <div className='flex items-start justify-between gap-2'>
+                      <label className='inline-flex items-center gap-2 text-xs' style={{ color: 'var(--text-secondary)' }}>
+                        <input type='checkbox' checked={!!selectedMap[file.name]} onChange={e => toggleSelect(file.name, e.target.checked)} />
+                        选择
+                      </label>
+                      <span className='text-xs' style={{ color: 'var(--text-secondary)' }}>{formatSize(file.size)}</span>
+                    </div>
+                    <div className='mt-2 flex items-center gap-2 min-w-0'>
+                      <span>{extIcon(file.ext)}</span>
+                      <p className='truncate font-medium text-sm' style={{ color: 'var(--text-primary)' }}>{file.name}</p>
+                    </div>
+                    <p className='text-xs mt-1 truncate' style={{ color: 'var(--text-secondary)' }}>{file.url}</p>
+                    <p className='text-xs mt-1' style={{ color: 'var(--text-secondary)' }}>{new Date(file.updatedAt).toLocaleString('zh-CN', { hour12: false })}</p>
+                    <div className='mt-3 flex flex-wrap gap-1'>
                       {storageStatus?.capabilities.download !== false && (
                         <a href={`/api/admin/uploads/${encodeURIComponent(file.name)}`} className='px-2 py-1 rounded text-xs' style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>下载</a>
                       )}
@@ -356,10 +523,10 @@ export default function AdminUploadsPage() {
                       )}
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                ))
+              )}
+            </div>
+          )}
         </section>
 
         <aside className='rounded-2xl p-4 h-fit sticky top-4' style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
