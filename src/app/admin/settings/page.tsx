@@ -350,9 +350,7 @@ export default function SettingsPage() {
           onCancel={handleCropCancel}
         />
       )}
-      {/* WP 风格顶部工具栏 */}
-      <div className="sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl mb-4 -mx-1" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', backdropFilter: 'blur(8px)' }}>
-        <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)', margin: 0 }}>⚙️ 站点设置</h1>
+      <div className="sticky top-0 z-20 flex items-center justify-end gap-3 px-3 py-2 rounded-2xl mb-4 -mx-1" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', backdropFilter: 'blur(8px)' }}>
         <button onClick={save} disabled={saving} className="px-5 py-2 rounded-full text-sm font-bold text-white disabled:opacity-50 shrink-0 min-h-9" style={{ background: 'var(--accent)' }}>
           {saving ? '保存中...' : '保存设置'}
         </button>

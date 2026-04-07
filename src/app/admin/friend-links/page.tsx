@@ -355,19 +355,15 @@ export default function AdminFriendLinksPage() {
 
   return (
     <div className="w-full max-w-7xl mx-auto">
-      {/* WP 风格顶部工具栏 */}
-      <div className="sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl mb-4 -mx-1" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', backdropFilter: 'blur(8px)' }}>
-        <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)', margin: 0 }}>友情链接管理</h1>
-        <div className="flex items-center gap-2 shrink-0">
-          <Link href="/links" className="px-3 py-1.5 rounded-full text-xs font-medium hidden sm:block" style={{ background: 'var(--bg-hover)', color: 'var(--accent)' }}>
-            前台友链页
-          </Link>
-          <button
-            onClick={() => { setCreating(true); setCreateForm(EMPTY_FORM) }}
-            className="px-4 py-2 rounded-full text-sm font-bold"
-            style={{ background: 'var(--accent)', color: '#fff' }}
-          >+ 添加</button>
-        </div>
+      <div className="sticky top-0 z-20 flex items-center justify-end gap-2 px-3 py-2 rounded-2xl mb-4 -mx-1" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', backdropFilter: 'blur(8px)' }}>
+        <Link href="/links" className="px-3 py-1.5 rounded-full text-xs font-medium hidden sm:block" style={{ background: 'var(--bg-hover)', color: 'var(--accent)' }}>
+          前台友链页
+        </Link>
+        <button
+          onClick={() => { setCreating(true); setCreateForm(EMPTY_FORM) }}
+          className="px-4 py-2 rounded-full text-sm font-bold"
+          style={{ background: 'var(--accent)', color: '#fff' }}
+        >+ 添加</button>
       </div>
       <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>集中处理审核、排序与展示策略</p>
 

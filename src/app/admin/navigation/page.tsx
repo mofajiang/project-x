@@ -92,10 +92,6 @@ export default function AdminNavigationPage() {
 
   return (
     <div>
-      <div className="sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl mb-4 -mx-1" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', backdropFilter: 'blur(8px)' }}>
-        <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)', margin: 0 }}>🧭 导航与组件</h1>
-      </div>
-
       <div className="grid grid-cols-1 gap-3 sm:gap-5 items-start max-w-4xl">
         <div className={`${mobileCardClass} flex flex-col gap-3 sm:gap-4`} style={{ background: 'var(--bg-secondary)' }}>
           <div className="flex flex-col gap-1.5">

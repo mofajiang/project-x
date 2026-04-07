@@ -67,8 +67,7 @@ export default function AdminTagsPage() {
 
   return (
     <div>
-      <div className="sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl mb-4 -mx-1" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', backdropFilter: 'blur(8px)' }}>
-        <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)', margin: 0 }}>🏷 标签管理</h1>
+      <div className="sticky top-0 z-20 flex items-center justify-end gap-3 px-3 py-2 rounded-2xl mb-4 -mx-1" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', backdropFilter: 'blur(8px)' }}>
         <div className="flex gap-2">
           <input
             value={name}

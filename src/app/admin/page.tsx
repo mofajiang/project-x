@@ -42,17 +42,12 @@ export default async function AdminDashboard() {
     <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)] gap-6 items-start">
       {/* 左侧主内容 */}
       <div className="min-w-0">
-        <div className="sticky top-0 z-20 flex items-center gap-3 px-4 py-2.5 rounded-2xl mb-4 -mx-1" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', backdropFilter: 'blur(8px)' }}>
-          <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)', margin: 0 }}>仪表盘</h1>
-        </div>
-
         {/* 统计卡片 */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4 mb-6 sm:mb-8">
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-4">
           {stats.map(s => (
-            <div key={s.label} className={ADMIN_CARD_CLASS} style={{ background: s.alert ? 'rgba(249,24,128,0.08)' : 'var(--bg-secondary)', boxShadow: s.alert ? 'inset 0 0 0 1px var(--red)' : 'none' }}>
-              <p className="text-2xl mb-1">{s.icon}</p>
-              <p className="text-2xl font-bold" style={{ color: s.alert ? 'var(--red)' : 'var(--text-primary)' }}>{s.value}</p>
-              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{s.label}</p>
+            <div key={s.label} className="rounded-xl px-3 py-2.5" style={{ background: s.alert ? 'rgba(249,24,128,0.08)' : 'var(--bg-secondary)', boxShadow: s.alert ? 'inset 0 0 0 1px var(--red)' : 'none' }}>
+              <p className="text-xl font-black leading-tight tabular-nums" style={{ color: s.alert ? 'var(--red)' : 'var(--text-primary)' }}>{s.value}</p>
+              <p className="text-[10px] leading-snug mt-0.5 truncate" style={{ color: 'var(--text-secondary)' }}>{s.label}</p>
             </div>
           ))}
         </div>

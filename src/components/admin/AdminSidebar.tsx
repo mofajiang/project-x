@@ -53,6 +53,7 @@ export function AdminSidebar({ username }: { username: string }) {
   const pathname = usePathname()
   const router = useRouter()
   const [pendingCount, setPendingCount] = useState(0)
+  const [expanded, setExpanded] = useState(false)
 
   useEffect(() => {
     const fetchPending = () => fetch('/api/admin/comments/pending')
@@ -73,55 +74,97 @@ export function AdminSidebar({ username }: { username: string }) {
 
   return (
     <>
-      {/* 桌面端左侧栏 */}
-      <aside className="hidden md:flex w-56 min-h-screen flex-col py-6 px-3" style={{ background: 'var(--bg-secondary)', borderRight: '1px solid var(--border)' }}>
-        <div className="px-3 mb-6">
-          <p className="font-bold text-xl" style={{ color: 'var(--text-primary)' }}>⚙ 后台管理</p>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>@{username}</p>
-        </div>
+      {/* 桌面端左侧栏：图标模式，hover 覆盖展开 */}
+      <aside
+        className="hidden md:flex shrink-0 relative"
+        style={{ width: 56, zIndex: 40 }}
+        onMouseEnter={() => setExpanded(true)}
+        onMouseLeave={() => setExpanded(false)}
+      >
+        <div
+          className="absolute inset-y-0 left-0 flex flex-col py-4 overflow-hidden"
+          style={{
+            width: expanded ? 220 : 56,
+            transition: 'width 0.2s ease, box-shadow 0.2s ease',
+            background: 'var(--bg-secondary)',
+            borderRight: '1px solid var(--border)',
+            boxShadow: expanded ? '6px 0 24px rgba(0,0,0,0.12)' : 'none',
+          }}
+        >
+          {/* Logo */}
+          <div className="flex items-center gap-3 px-3 mb-4 overflow-hidden whitespace-nowrap" style={{ height: 36 }}>
+            <span className="text-lg shrink-0" style={{ width: 22, textAlign: 'center' }}>⚙</span>
+            <div style={{ opacity: expanded ? 1 : 0, transition: 'opacity 0.15s' }}>
+              <p className="font-bold text-sm leading-tight whitespace-nowrap" style={{ color: 'var(--text-primary)' }}>后台管理</p>
+              <p className="text-xs whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>@{username}</p>
+            </div>
+          </div>
 
-        <nav className="flex flex-col gap-0.5 flex-1">
-          {ADMIN_NAV_GROUPS.map((group, gi) => {
-            const items = ADMIN_NAV_ITEMS.filter(item => item.group === group.key)
-            return (
-              <div key={group.key}>
-                {gi > 0 && <div className="my-2 mx-2" style={{ borderTop: '1px solid var(--border)' }} />}
-                <p className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-secondary)', opacity: 0.6 }}>{group.label}</p>
-                {items.map(item => {
-                  const active = item.href === '/admin' ? pathname === '/admin' : pathname === item.href || pathname.startsWith(item.href + '/')
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      prefetch={false}
-                      className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-colors"
-                      style={{
-                        background: active ? 'var(--bg-hover)' : 'transparent',
-                        color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
-                        fontWeight: active ? '600' : '400',
-                      }}
-                    >
-                      <span>{item.icon}</span>
-                      <span className="flex-1">{item.label}</span>
-                      {item.badge && pendingCount > 0 && (
-                        <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full leading-none" style={{ background: 'var(--red,#F4212E)', color: '#fff' }}>
-                          {pendingCount > 99 ? '99+' : pendingCount}
-                        </span>
-                      )}
-                    </Link>
-                  )
-                })}
-              </div>
-            )
-          })}
-        </nav>
+          {/* 分组导航 */}
+          <nav className="flex flex-col gap-0.5 flex-1 overflow-y-auto overflow-x-hidden">
+            {ADMIN_NAV_GROUPS.map((group, gi) => {
+              const items = ADMIN_NAV_ITEMS.filter(item => item.group === group.key)
+              return (
+                <div key={group.key}>
+                  {gi > 0 && <div className="my-1.5 mx-2" style={{ borderTop: '1px solid var(--border)' }} />}
+                  <p
+                    className="px-3 text-[10px] font-bold uppercase tracking-wider whitespace-nowrap"
+                    style={{
+                      color: 'var(--text-secondary)',
+                      opacity: expanded ? 0.55 : 0,
+                      maxHeight: expanded ? '20px' : '0',
+                      paddingTop: expanded ? '2px' : '0',
+                      paddingBottom: expanded ? '2px' : '0',
+                      overflow: 'hidden',
+                      transition: 'opacity 0.15s, max-height 0.15s, padding 0.1s',
+                    }}
+                  >{group.label}</p>
+                  {items.map(item => {
+                    const active = item.href === '/admin' ? pathname === '/admin' : pathname === item.href || pathname.startsWith(item.href + '/')
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        prefetch={false}
+                        title={item.label}
+                        className="relative flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-colors overflow-hidden whitespace-nowrap"
+                        style={{
+                          background: active ? 'var(--bg-hover)' : 'transparent',
+                          color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+                          fontWeight: active ? '600' : '400',
+                        }}
+                      >
+                        <span className="shrink-0 leading-none" style={{ width: 22, textAlign: 'center' }}>{item.icon}</span>
+                        <span className="flex-1">{item.label}</span>
+                        {item.badge && pendingCount > 0 && expanded && (
+                          <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full leading-none shrink-0" style={{ background: 'var(--red,#F4212E)', color: '#fff' }}>
+                            {pendingCount > 99 ? '99+' : pendingCount}
+                          </span>
+                        )}
+                        {item.badge && pendingCount > 0 && !expanded && (
+                          <span className="absolute top-1 right-1 w-2 h-2 rounded-full" style={{ background: 'var(--red,#F4212E)' }} />
+                        )}
+                      </Link>
+                    )
+                  })}
+                </div>
+              )
+            })}
+          </nav>
 
-
-        <div className="px-3 mt-4 flex flex-col gap-2">
-          <AdminUpdateChecker />
-          <AdminThemeToggle />
-          <a href="/" target="_blank" className="text-sm py-2 px-3 rounded-xl text-center transition-colors hover:bg-x-bg-hover" style={{ color: 'var(--text-secondary)' }}>查看博客 ↗</a>
-          <button onClick={logout} className="text-sm py-2 px-3 rounded-xl text-center transition-colors w-full" style={{ color: 'var(--red)' }}>退出登录</button>
+          {/* 底部工具 */}
+          <div className="px-2 mt-2 flex flex-col gap-1">
+            <div style={{ opacity: expanded ? 1 : 0, maxHeight: expanded ? '60px' : '0', overflow: 'hidden', transition: 'opacity 0.15s, max-height 0.2s' }}>
+              <AdminUpdateChecker />
+            </div>
+            <AdminThemeToggle compact={!expanded} />
+            {expanded && (
+              <>
+                <a href="/" target="_blank" className="text-xs py-1.5 px-3 rounded-xl text-center" style={{ color: 'var(--text-secondary)' }}>查看博客 ↗</a>
+                <button onClick={logout} className="text-xs py-1.5 px-3 rounded-xl text-center w-full" style={{ color: 'var(--red)' }}>退出登录</button>
+              </>
+            )}
+          </div>
         </div>
       </aside>
 
