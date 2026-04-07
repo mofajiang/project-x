@@ -365,8 +365,6 @@ export default function AdminFriendLinksPage() {
           style={{ background: 'var(--accent)', color: '#fff' }}
         >+ 添加</button>
       </div>
-      <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>集中处理审核、排序与展示策略</p>
-
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-3">
         <section className="rounded-2xl p-3" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
           <div className="rounded-2xl p-2.5 mb-2.5 flex flex-col md:flex-row gap-2 md:items-center md:justify-between" style={{ background: 'linear-gradient(135deg, rgba(29,155,240,0.15), rgba(16,185,129,0.08))' }}>

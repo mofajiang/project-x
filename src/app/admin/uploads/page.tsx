@@ -346,8 +346,6 @@ export default function AdminUploadsPage() {
 
   return (
     <div className='w-full max-w-7xl mx-auto'>
-      <p className='text-sm mb-4' style={{ color: 'var(--text-secondary)' }}>网盘视图 + 存储配置统一管理</p>
-
       <div className='grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-4'>
         <section className='rounded-2xl p-4' style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
           <div className='rounded-2xl p-3 mb-3' style={{ background: 'linear-gradient(135deg, rgba(29,155,240,0.15), rgba(34,197,94,0.08))' }}>
