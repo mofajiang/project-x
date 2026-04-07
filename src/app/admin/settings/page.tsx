@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import { IMEInput, IMETextarea } from '@/components/ui/IMEInput'
 import ImageCropModal from '@/components/ui/ImageCropModal'
 import { StorageImagePicker } from '@/components/admin/StorageImagePicker'
+import { AdminUpdateChecker } from '@/components/admin/AdminUpdateChecker'
 import { ADMIN_PAGE_TITLE_CLASS, ADMIN_CARD_LG_CLASS, ADMIN_SUBCARD_CLASS } from '@/components/admin/adminUi'
 import { DEFAULT_NAV, DEFAULT_WIDGETS, DEFAULT_SITE_LOGO, isImageSource, parseNavItems, parseSiteLogo, parseWidgets, type NavItem, type RightPanelWidget as Widget, type SiteLogo } from '@/lib/config'
 
@@ -599,6 +600,11 @@ export default function SettingsPage() {
             <a href="/admin/uploads" className="inline-flex items-center justify-center px-4 py-2 rounded-full text-sm font-medium" style={{ background: 'var(--bg-hover)', color: 'var(--accent)' }}>
               前往上传管理配置存储
             </a>
+          </div>
+
+          <div className={`${mobileCardClass} flex flex-col gap-2.5 sm:gap-4`} style={{ background: 'var(--bg-secondary)' }}>
+            <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>🔄 系统更新</h2>
+            <AdminUpdateChecker />
           </div>
 
           {/* 默认主题 */}

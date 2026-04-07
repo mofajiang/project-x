@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { AdminUpdateChecker } from './AdminUpdateChecker'
+// AdminUpdateChecker has been moved to the settings page
 import { ADMIN_NAV_ITEMS, ADMIN_NAV_GROUPS } from './navItems'
 
 type ThemeMode = 'dark' | 'light'
@@ -158,7 +159,7 @@ export function AdminSidebar({ username }: { username: string }) {
           <div
             className="px-2 mt-2 overflow-hidden"
             style={{
-              maxHeight: expanded ? '200px' : '0',
+              maxHeight: expanded ? '160px' : '0',
               opacity: expanded ? 1 : 0,
               transition: expanded
                 ? 'max-height 0.2s ease, opacity 0.13s ease 0.1s'
@@ -166,7 +167,6 @@ export function AdminSidebar({ username }: { username: string }) {
             }}
           >
             <div className="flex flex-col gap-1">
-              <AdminUpdateChecker />
               <AdminThemeToggle />
               <a href="/" target="_blank" className="text-xs py-1.5 px-3 rounded-xl text-center" style={{ color: 'var(--text-secondary)' }}>查看博客 ↗</a>
               <button onClick={logout} className="text-xs py-1.5 px-3 rounded-xl text-center w-full" style={{ color: 'var(--red)' }}>退出登录</button>
