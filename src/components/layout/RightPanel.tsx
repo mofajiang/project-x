@@ -25,11 +25,11 @@ const getHotPosts = unstable_cache(
   { revalidate: 120 }
 )
 
-const getApprovedFriendLinks = unstable_cache(
+const getSidebarFriendLinks = unstable_cache(
   () => prisma.$queryRawUnsafe<Array<{ id: string; name: string; url: string; description: string | null; favicon: string | null }>>(
     `SELECT id, name, url, description, favicon
      FROM FriendLink
-     WHERE status = 'approved'
+     WHERE status = 'approved' AND COALESCE(showInSidebar, 1) = 1
      ORDER BY COALESCE(sortOrder, 0) DESC,
               CASE
                 WHEN approvedAt IS NULL THEN 0
@@ -52,19 +52,17 @@ const DEFAULT_TITLES: Record<string, string> = {
   about: '关于我',
   tags: '热门标签',
   hotPosts: '热门文章',
-  links: '友情链接',
+  links: '自定义链接',
 }
 
 export async function RightPanel({ siteDesc, social, widgets = [], copyright = '' }: Props) {
   const enabledWidgets = widgets.filter(w => w.enabled)
   const needTags = enabledWidgets.some(w => w.type === 'tags')
   const needHotPosts = enabledWidgets.some(w => w.type === 'hotPosts')
-  const needFriendLinks = enabledWidgets.some(w => w.type === 'links')
-
-  const [topTags, hotPosts, approvedFriendLinks] = await Promise.all([
+  const [topTags, hotPosts, sidebarFriendLinks] = await Promise.all([
     needTags ? getTopTags() : Promise.resolve([]),
     needHotPosts ? getHotPosts() : Promise.resolve([]),
-    needFriendLinks ? getApprovedFriendLinks() : Promise.resolve([]),
+    getSidebarFriendLinks(),
   ])
 
   return (
@@ -145,9 +143,7 @@ export async function RightPanel({ siteDesc, social, widgets = [], copyright = '
         }
 
         if (widget.type === 'links') {
-          const links = approvedFriendLinks.length
-            ? approvedFriendLinks.map(l => ({ label: l.name, url: l.url, desc: l.description || '', avatar: l.favicon || '' }))
-            : (widget.links || []) as FriendLink[]
+          const links = (widget.links || []) as FriendLink[]
           if (!links.length) return null
           return (
             <div key={i} className="rounded-2xl overflow-hidden mb-3" style={{ background: 'var(--bg-secondary)' }}>
@@ -190,6 +186,34 @@ export async function RightPanel({ siteDesc, social, widgets = [], copyright = '
 
         return null
       })}
+
+      {sidebarFriendLinks.length > 0 && (
+        <div className="rounded-2xl overflow-hidden mb-3" style={{ background: 'var(--bg-secondary)' }}>
+          <details className="group" open>
+            <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 transition-colors hover:bg-white/5">
+              <span className="font-extrabold text-[20px]" style={{ color: 'var(--text-primary)' }}>友情链接</span>
+              <span className="text-sm transition-transform duration-150 group-open:rotate-180" style={{ color: 'var(--text-secondary)' }}>⌄</span>
+            </summary>
+            <div className="flex flex-col border-t" style={{ borderColor: 'var(--border)' }}>
+              {sidebarFriendLinks.map((link, idx) => (
+                <a key={idx} href={link.url} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-3 py-3 px-4 transition-colors hover:bg-white/5">
+                  <div className="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center font-bold text-sm"
+                    style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
+                    {link.favicon
+                      ? <img src={link.favicon} alt={link.name} className="w-full h-full object-cover" />
+                      : <span>{link.name[0]?.toUpperCase()}</span>}
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-sm font-bold truncate" style={{ color: 'var(--text-primary)' }}>{link.name}</span>
+                    {link.description && <span className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>{link.description}</span>}
+                  </div>
+                </a>
+              ))}
+            </div>
+          </details>
+        </div>
+      )}
 
       {/* 版权信息 */}
       {copyright && (

@@ -18,7 +18,7 @@ const WIDGET_LABELS: Record<WidgetType, string> = {
   tags: '🏷️ 热门标签',
   hotPosts: '🔥 热门文章',
   custom: '📝 自定义文本',
-  links: '🔗 友情链接',
+  links: '🔗 自定义链接',
   carousel: '🎠 轮播图',
 }
 
@@ -217,7 +217,7 @@ export default function AdminNavigationPage() {
                         {(w.links || []).map((lk, li) => (
                           <div key={li} className="flex flex-col gap-2 p-3 rounded-xl" style={{ background: 'var(--bg-secondary)' }}>
                             <div className="flex items-center justify-between gap-2">
-                              <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>友链 #{li + 1}</span>
+                              <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>自定义链接 #{li + 1}</span>
                               <button onClick={() => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; return {...x, links:(x.links||[]).filter((_,k)=>k!==li)} }))} className="w-8 h-8 flex items-center justify-center rounded-full text-xs flex-shrink-0" style={{ color: '#F4212E', background: 'rgba(244,33,46,0.1)' }}>×</button>
                             </div>
                             <IMEInput value={lk.label} onValueChange={v => setWidgets(arr => arr.map((x,j) => { if (j!==i) return x; const ls=[...(x.links||[])]; ls[li]={...ls[li],label:v}; return {...x,links:ls} }))} placeholder="名称" className="w-full px-2.5 py-2 rounded-lg text-sm outline-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />

@@ -28,14 +28,17 @@ export default async function BlogLayout({ children }: { children: React.ReactNo
     }),
   ])
 
-  const needFriendLinks = widgets.some((w: any) => w.type === 'links' && w.enabled)
-  const approvedFriendLinks = needFriendLinks
-    ? await prisma.friendLink.findMany({
-        where: { status: 'approved' },
-        orderBy: { approvedAt: 'desc' },
-        select: { id: true, name: true, url: true, description: true, favicon: true },
-      })
-    : []
+  const approvedFriendLinks = await prisma.$queryRawUnsafe<Array<{ id: string; name: string; url: string; description: string | null; favicon: string | null }>>(
+    `SELECT id, name, url, description, favicon
+     FROM FriendLink
+     WHERE status = 'approved' AND COALESCE(showInSidebar, 1) = 1
+     ORDER BY COALESCE(sortOrder, 0) DESC,
+              CASE
+                WHEN approvedAt IS NULL THEN 0
+                WHEN typeof(approvedAt) = 'integer' THEN approvedAt
+                ELSE CAST(strftime('%s', approvedAt) AS INTEGER) * 1000
+              END DESC`
+  )
 
   const mobileTopTags = topTags.map(tag => ({ id: tag.id, name: tag.name, slug: tag.slug, posts: tag._count.posts }))
   let avatar: string | null = null

@@ -198,7 +198,7 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
           {enabledWidgets.length > 0 && (
             <section className="px-1 pb-1 space-y-2">
               {enabledWidgets.map((widget, index) => {
-                const title = widget.title?.trim() || ({ search: '搜索', about: '关于我', tags: '热门标签', hotPosts: '热门文章', custom: '自定义文本', links: '友情链接', carousel: '轮播图' } as Record<string, string>)[widget.type]
+                const title = widget.title?.trim() || ({ search: '搜索', about: '关于我', tags: '热门标签', hotPosts: '热门文章', custom: '自定义文本', links: '自定义链接', carousel: '轮播图' } as Record<string, string>)[widget.type]
                 const cardCls = 'group rounded-2xl overflow-hidden'
                 const cardStyle = { border: '1px solid var(--border)' }
                 const summaryCls = 'flex cursor-pointer list-none items-center justify-between px-4 py-3'
@@ -308,9 +308,7 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
                 }
 
                 if (widget.type === 'links') {
-                  const links: FriendLink[] = approvedFriendLinks.length
-                    ? approvedFriendLinks.map(l => ({ label: l.name, url: l.url, desc: l.description || '', avatar: l.favicon || '' }))
-                    : (widget.links || [])
+                  const links: FriendLink[] = (widget.links || [])
                   if (!links.length) return null
                   return (
                     <details key={`links-${index}`} className={cardCls} style={cardStyle}>
@@ -363,6 +361,35 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
 
                 return null
               })}
+
+              {approvedFriendLinks.length > 0 && (
+                <details className="group rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
+                  <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3">
+                    <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>友情链接</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="transition-transform duration-200 group-open:rotate-180 shrink-0" style={{ color: 'var(--text-secondary)' }}>
+                      <path d="M6 9l6 6 6-6" />
+                    </svg>
+                  </summary>
+                  <div style={{ borderTop: '1px solid var(--border)' }}>
+                    {approvedFriendLinks.slice(0, 8).map((link, idx) => (
+                      <a key={link.id || idx} href={link.url} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-3 px-4 py-2.5 transition-colors"
+                        style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--border)' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        <div className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center shrink-0" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
+                          {link.favicon ? <img src={link.favicon} alt={link.name} className="w-full h-full object-cover" /> : <span className="text-xs font-bold">{link.name[0]?.toUpperCase()}</span>}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>{link.name}</p>
+                          {link.description && <p className="text-[10px] truncate" style={{ color: 'var(--text-secondary)' }}>{link.description}</p>}
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </details>
+              )}
 
               {copyright && (
                 <div className="px-2 text-[10px] leading-relaxed opacity-75" style={{ color: 'var(--text-secondary)' }} dangerouslySetInnerHTML={{ __html: copyright }} />

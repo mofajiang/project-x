@@ -41,20 +41,58 @@ export default async function LinksPage() {
           </p>
         </div>
 
+        {/* 申请表单卡片（上移） */}
+        <div
+          className="rounded-xl overflow-hidden border mb-8"
+          style={{
+            background: 'var(--bg-secondary)',
+            borderColor: 'var(--border)',
+          }}
+        >
+          <div className="px-6 py-7 text-center">
+            <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+              申请友情链接
+            </h2>
+            <p className="mb-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
+              填写网站信息，审核后会加入友链列表。
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link
+                href="/links/submit"
+                className="px-6 py-2.5 rounded-lg font-bold text-white transition-all hover:shadow-lg"
+                style={{ background: 'var(--accent)' }}
+              >
+                立即申请
+              </Link>
+              <Link
+                href="/"
+                className="px-6 py-2.5 rounded-lg font-bold transition-all"
+                style={{
+                  background: 'var(--bg-hover)',
+                  color: 'var(--text-primary)',
+                }}
+              >
+                返回首页
+              </Link>
+            </div>
+          </div>
+        </div>
+
         {/* 已通过的友链 */}
         {links.length > 0 && (
           <div className="mb-12">
             <h2 className="text-2xl font-bold mb-6" style={{ color: 'var(--text-primary)' }}>
               已认可的友链
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {links.map((link, idx) => (
                 <a
                   key={idx}
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex items-center gap-4 p-4 rounded-xl border transition-all hover:shadow-lg hover:scale-105"
+                  className="group flex items-center gap-3 p-3 rounded-lg border transition-all hover:shadow-md"
                   style={{
                     background: 'var(--bg-secondary)',
                     borderColor: 'var(--border)',
@@ -62,7 +100,7 @@ export default async function LinksPage() {
                 >
                   {/* 头像 */}
                   <div
-                    className="w-12 h-12 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center font-bold"
+                    className="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center font-bold text-sm"
                     style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
                   >
                     {link.favicon ? (
@@ -75,7 +113,7 @@ export default async function LinksPage() {
 
                   {/* 信息 */}
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold truncate group-hover:underline" style={{ color: 'var(--text-primary)' }}>
+                    <p className="font-bold truncate group-hover:underline text-[18px]" style={{ color: 'var(--text-primary)' }}>
                       {link.name}
                     </p>
                     {link.description && (
@@ -108,44 +146,6 @@ export default async function LinksPage() {
             </div>
           </div>
         )}
-
-        {/* 申请表单卡片 */}
-        <div
-          className="rounded-2xl overflow-hidden border"
-          style={{
-            background: 'var(--bg-secondary)',
-            borderColor: 'var(--border)',
-          }}
-        >
-          <div className="px-8 py-12 text-center">
-            <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
-              申请友情链接
-            </h2>
-            <p className="mb-6" style={{ color: 'var(--text-secondary)' }}>
-              请填写您的网站信息，我们会审核后添加到友链列表中。
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href="/links/submit"
-                className="px-8 py-3 rounded-lg font-bold text-white transition-all hover:shadow-lg"
-                style={{ background: 'var(--accent)' }}
-              >
-                立即申请
-              </Link>
-              <Link
-                href="/"
-                className="px-8 py-3 rounded-lg font-bold transition-all"
-                style={{
-                  background: 'var(--bg-hover)',
-                  color: 'var(--text-primary)',
-                }}
-              >
-                返回首页
-              </Link>
-            </div>
-          </div>
-        </div>
 
         {/* 须知 */}
         <div className="mt-12 p-8 rounded-xl" style={{ background: 'var(--bg-hover)' }}>

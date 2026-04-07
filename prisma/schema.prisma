@@ -184,6 +184,8 @@ model FriendLink {
   rejectionReason String? // 拒绝原因
   aiScore     Int       @default(0)  // AI 风险评分 0-100（分数越低越安全）
   aiReview    String    @default("{}")  // AI 审核结论 JSON
+  sortOrder   Int       @default(0)  // 手动排序权重（越大越靠前）
+  showInSidebar Boolean @default(true) // 是否在右侧栏友链区显示
   
   // 互链检查
   reciprocalChecked Boolean @default(false)  // 是否检查过互链
@@ -196,5 +198,6 @@ model FriendLink {
   
   @@index([status, createdAt(sort: Desc)])
   @@index([hasReciprocal, status])
+  @@index([status, showInSidebar, sortOrder])
 }
 

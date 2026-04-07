@@ -9,13 +9,37 @@ interface FriendLink {
   url: string
   description?: string
   favicon?: string
+  email?: string
   status: string
   rejectionReason?: string
   hasReciprocal: boolean
   reciprocalChecked: boolean
   aiScore: number
   sortOrder: number
+  showInSidebar: boolean
   createdAt: string
+}
+
+type LinkForm = {
+  name: string
+  url: string
+  description: string
+  favicon: string
+  email: string
+  status: 'pending' | 'approved' | 'rejected'
+  sortOrder: string
+  showInSidebar: boolean
+}
+
+const EMPTY_FORM: LinkForm = {
+  name: '',
+  url: '',
+  description: '',
+  favicon: '',
+  email: '',
+  status: 'approved',
+  sortOrder: '0',
+  showInSidebar: true,
 }
 
 export default function AdminFriendLinksPage() {
@@ -29,6 +53,10 @@ export default function AdminFriendLinksPage() {
   const [reviewingId, setReviewingId] = useState<string | null>(null)
   const [orderDrafts, setOrderDrafts] = useState<Record<string, string>>({})
   const [savingOrderId, setSavingOrderId] = useState<string | null>(null)
+  const [creating, setCreating] = useState(false)
+  const [createForm, setCreateForm] = useState<LinkForm>(EMPTY_FORM)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState<LinkForm>(EMPTY_FORM)
 
   const limit = 20
 
@@ -208,6 +236,90 @@ export default function AdminFriendLinksPage() {
     }
   }
 
+  const handleCreate = async () => {
+    if (!createForm.name.trim()) {
+      toast.error('请输入名称')
+      return
+    }
+    if (!createForm.url.trim()) {
+      toast.error('请输入 URL')
+      return
+    }
+
+    setCreating(true)
+    try {
+      const res = await fetch('/api/admin/friend-links', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...createForm,
+          sortOrder: Number(createForm.sortOrder || 0),
+        }),
+      })
+
+      if (res.ok) {
+        toast.success('友链已创建')
+        setCreateForm(EMPTY_FORM)
+        fetchLinks(1)
+      } else {
+        const data = await res.json().catch(() => ({}))
+        toast.error(data.error || '创建失败')
+      }
+    } catch {
+      toast.error('创建失败')
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  const openEdit = (link: FriendLink) => {
+    setEditingId(link.id)
+    setEditForm({
+      name: link.name || '',
+      url: link.url || '',
+      description: link.description || '',
+      favicon: link.favicon || '',
+      email: link.email || '',
+      status: (['pending', 'approved', 'rejected'].includes(link.status) ? link.status : 'pending') as LinkForm['status'],
+      sortOrder: String(link.sortOrder ?? 0),
+      showInSidebar: !!link.showInSidebar,
+    })
+  }
+
+  const handleUpdateBasic = async (id: string) => {
+    if (!editForm.name.trim()) {
+      toast.error('请输入名称')
+      return
+    }
+    if (!editForm.url.trim()) {
+      toast.error('请输入 URL')
+      return
+    }
+
+    try {
+      const res = await fetch(`/api/admin/friend-links?id=${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update-basic',
+          ...editForm,
+          sortOrder: Number(editForm.sortOrder || 0),
+        }),
+      })
+
+      if (res.ok) {
+        toast.success('已保存')
+        setEditingId(null)
+        fetchLinks(page)
+      } else {
+        const data = await res.json().catch(() => ({}))
+        toast.error(data.error || '保存失败')
+      }
+    } catch {
+      toast.error('保存失败')
+    }
+  }
+
   return (
     <div className="w-full max-w-6xl mx-auto">
       <div className="mb-6 flex items-center justify-between">
@@ -244,6 +356,41 @@ export default function AdminFriendLinksPage() {
             }[s] || s}
           </button>
         ))}
+      </div>
+
+      <div className="rounded-xl p-4 mb-6 border" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
+        <h2 className="text-base font-bold mb-3" style={{ color: 'var(--text-primary)' }}>手动新增友链</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <input value={createForm.name} onChange={e => setCreateForm(v => ({ ...v, name: e.target.value }))} placeholder="名称"
+            className="px-3 py-2 rounded-lg bg-transparent border outline-none" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+          <input value={createForm.url} onChange={e => setCreateForm(v => ({ ...v, url: e.target.value }))} placeholder="https://example.com"
+            className="px-3 py-2 rounded-lg bg-transparent border outline-none" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+          <input value={createForm.description} onChange={e => setCreateForm(v => ({ ...v, description: e.target.value }))} placeholder="简介（可选）"
+            className="px-3 py-2 rounded-lg bg-transparent border outline-none" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+          <input value={createForm.favicon} onChange={e => setCreateForm(v => ({ ...v, favicon: e.target.value }))} placeholder="头像URL（可选）"
+            className="px-3 py-2 rounded-lg bg-transparent border outline-none" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+          <input value={createForm.email} onChange={e => setCreateForm(v => ({ ...v, email: e.target.value }))} placeholder="邮箱（可选）"
+            className="px-3 py-2 rounded-lg bg-transparent border outline-none" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+          <input value={createForm.sortOrder} onChange={e => setCreateForm(v => ({ ...v, sortOrder: e.target.value }))} placeholder="排序权重"
+            className="px-3 py-2 rounded-lg bg-transparent border outline-none" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <label className="text-sm" style={{ color: 'var(--text-secondary)' }}>状态</label>
+          <select value={createForm.status} onChange={e => setCreateForm(v => ({ ...v, status: e.target.value as LinkForm['status'] }))}
+            className="px-3 py-2 rounded-lg bg-transparent border outline-none" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}>
+            <option value="approved">已通过</option>
+            <option value="pending">待审核</option>
+            <option value="rejected">已拒绝</option>
+          </select>
+          <label className="inline-flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+            <input type="checkbox" checked={createForm.showInSidebar} onChange={e => setCreateForm(v => ({ ...v, showInSidebar: e.target.checked }))} />
+            在右侧栏显示
+          </label>
+          <button onClick={handleCreate} disabled={creating}
+            className="px-4 py-2 rounded-lg text-white font-medium disabled:opacity-60" style={{ background: 'var(--accent)' }}>
+            {creating ? '创建中...' : '新增友链'}
+          </button>
+        </div>
       </div>
 
       {/* 友链列表 */}
@@ -326,6 +473,12 @@ export default function AdminFriendLinksPage() {
                     >
                       排序权重: {link.sortOrder}
                     </span>
+                    <span
+                      className="text-xs px-2 py-1 rounded-full"
+                      style={{ background: link.showInSidebar ? 'rgba(34,197,94,0.1)' : 'rgba(100,116,139,0.1)', color: link.showInSidebar ? '#22c55e' : '#64748b' }}
+                    >
+                      {link.showInSidebar ? '侧栏显示' : '仅友链页显示'}
+                    </span>
                     <span className="text-xs px-2 py-1" style={{ color: 'var(--text-secondary)' }}>
                       {new Date(link.createdAt).toLocaleDateString()}
                     </span>
@@ -403,6 +556,13 @@ export default function AdminFriendLinksPage() {
                     </>
                   )}
                   <button
+                    onClick={() => openEdit(link)}
+                    className="px-4 py-2 rounded-lg text-sm transition-all"
+                    style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+                  >
+                    编辑
+                  </button>
+                  <button
                     onClick={() => handleRecheck(link.id)}
                     className="px-4 py-2 rounded-lg text-sm transition-all"
                     style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
@@ -446,6 +606,46 @@ export default function AdminFriendLinksPage() {
                       className="flex-1 px-4 py-2 rounded-lg text-sm"
                       style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
                     >
+                      取消
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {editingId === link.id && (
+                <div className="mt-4 pt-4 border-t space-y-2" style={{ borderColor: 'var(--border)' }}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <input value={editForm.name} onChange={e => setEditForm(v => ({ ...v, name: e.target.value }))} placeholder="名称"
+                      className="px-3 py-2 rounded-lg bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+                    <input value={editForm.url} onChange={e => setEditForm(v => ({ ...v, url: e.target.value }))} placeholder="https://example.com"
+                      className="px-3 py-2 rounded-lg bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+                    <input value={editForm.description} onChange={e => setEditForm(v => ({ ...v, description: e.target.value }))} placeholder="简介（可选）"
+                      className="px-3 py-2 rounded-lg bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+                    <input value={editForm.favicon} onChange={e => setEditForm(v => ({ ...v, favicon: e.target.value }))} placeholder="头像URL（可选）"
+                      className="px-3 py-2 rounded-lg bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+                    <input value={editForm.email} onChange={e => setEditForm(v => ({ ...v, email: e.target.value }))} placeholder="邮箱（可选）"
+                      className="px-3 py-2 rounded-lg bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+                    <input value={editForm.sortOrder} onChange={e => setEditForm(v => ({ ...v, sortOrder: e.target.value }))} placeholder="排序权重"
+                      className="px-3 py-2 rounded-lg bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <label className="text-sm" style={{ color: 'var(--text-secondary)' }}>状态</label>
+                    <select value={editForm.status} onChange={e => setEditForm(v => ({ ...v, status: e.target.value as LinkForm['status'] }))}
+                      className="px-3 py-2 rounded-lg bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}>
+                      <option value="approved">已通过</option>
+                      <option value="pending">待审核</option>
+                      <option value="rejected">已拒绝</option>
+                    </select>
+                    <label className="inline-flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                      <input type="checkbox" checked={editForm.showInSidebar} onChange={e => setEditForm(v => ({ ...v, showInSidebar: e.target.checked }))} />
+                      在右侧栏显示
+                    </label>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => handleUpdateBasic(link.id)} className="px-4 py-2 rounded-lg text-sm text-white" style={{ background: 'var(--accent)' }}>
+                      保存编辑
+                    </button>
+                    <button onClick={() => setEditingId(null)} className="px-4 py-2 rounded-lg text-sm" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
                       取消
                     </button>
                   </div>
