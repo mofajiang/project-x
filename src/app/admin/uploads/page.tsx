@@ -12,6 +12,19 @@ type UploadFile = {
   ext: string
 }
 
+type StorageStatus = {
+  configuredDriver: 'local' | 's3' | 'smms'
+  activeDriver: 'local' | 's3' | 'smms'
+  fallbackReason?: 's3_config_incomplete' | 'smms_config_incomplete'
+  capabilities: {
+    upload: boolean
+    list: boolean
+    download: boolean
+    rename: boolean
+    delete: boolean
+  }
+}
+
 function formatSize(size: number) {
   if (size < 1024) return `${size} B`
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`
@@ -28,6 +41,7 @@ export default function AdminUploadsPage() {
   const [editingName, setEditingName] = useState<string | null>(null)
   const [renameDraft, setRenameDraft] = useState('')
   const [listError, setListError] = useState('')
+  const [storageStatus, setStorageStatus] = useState<StorageStatus | null>(null)
 
   const filtered = useMemo(() => {
     const k = keyword.trim().toLowerCase()
@@ -58,8 +72,23 @@ export default function AdminUploadsPage() {
     }
   }
 
+  const fetchStorageStatus = async () => {
+    try {
+      const res = await fetch('/api/admin/storage/status', { cache: 'no-store' })
+      const data = await res.json().catch(() => null)
+      if (!res.ok || !data?.activeDriver) {
+        setStorageStatus(null)
+        return
+      }
+      setStorageStatus(data)
+    } catch {
+      setStorageStatus(null)
+    }
+  }
+
   useEffect(() => {
     fetchFiles()
+    fetchStorageStatus()
   }, [])
 
   const uploadFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -157,6 +186,28 @@ export default function AdminUploadsPage() {
         </p>
       </div>
 
+      {storageStatus && (
+        <div className='rounded-2xl p-4 mb-4 text-sm' style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+          <p style={{ color: 'var(--text-primary)' }}>
+            当前存储：<b>{storageStatus.activeDriver.toUpperCase()}</b>（配置为 {storageStatus.configuredDriver.toUpperCase()}）
+          </p>
+          {!!storageStatus.fallbackReason && (
+            <p className='mt-1' style={{ color: '#b45309' }}>
+              {storageStatus.fallbackReason === 's3_config_incomplete'
+                ? 'S3 配置不完整，系统已自动回退到本地存储。'
+                : 'SM.MS Token 未配置，系统已自动回退到本地存储。'}
+            </p>
+          )}
+          <div className='flex flex-wrap gap-2 mt-3 text-xs'>
+            <span className='px-2 py-1 rounded-lg' style={{ background: storageStatus.capabilities.upload ? 'rgba(34,197,94,0.14)' : 'rgba(148,163,184,0.2)', color: storageStatus.capabilities.upload ? '#15803d' : '#475569' }}>上传</span>
+            <span className='px-2 py-1 rounded-lg' style={{ background: storageStatus.capabilities.list ? 'rgba(34,197,94,0.14)' : 'rgba(148,163,184,0.2)', color: storageStatus.capabilities.list ? '#15803d' : '#475569' }}>列表</span>
+            <span className='px-2 py-1 rounded-lg' style={{ background: storageStatus.capabilities.download ? 'rgba(34,197,94,0.14)' : 'rgba(148,163,184,0.2)', color: storageStatus.capabilities.download ? '#15803d' : '#475569' }}>下载</span>
+            <span className='px-2 py-1 rounded-lg' style={{ background: storageStatus.capabilities.rename ? 'rgba(34,197,94,0.14)' : 'rgba(148,163,184,0.2)', color: storageStatus.capabilities.rename ? '#15803d' : '#475569' }}>重命名</span>
+            <span className='px-2 py-1 rounded-lg' style={{ background: storageStatus.capabilities.delete ? 'rgba(34,197,94,0.14)' : 'rgba(148,163,184,0.2)', color: storageStatus.capabilities.delete ? '#15803d' : '#475569' }}>删除</span>
+          </div>
+        </div>
+      )}
+
       <div className='rounded-2xl p-4 mb-4' style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
         <input
           value={keyword}
@@ -206,11 +257,13 @@ export default function AdminUploadsPage() {
                   </div>
                 </div>
                 <div className='flex flex-col gap-2 shrink-0'>
-                  <a
-                    href={`/api/admin/uploads/${encodeURIComponent(file.name)}`}
-                    className='px-3 py-2 rounded-lg text-sm text-center'
-                    style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
-                  >下载</a>
+                  {storageStatus?.capabilities.download !== false && (
+                    <a
+                      href={`/api/admin/uploads/${encodeURIComponent(file.name)}`}
+                      className='px-3 py-2 rounded-lg text-sm text-center'
+                      style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+                    >下载</a>
+                  )}
                   <a
                     href={file.url}
                     target='_blank'
@@ -218,8 +271,12 @@ export default function AdminUploadsPage() {
                     className='px-3 py-2 rounded-lg text-sm text-center'
                     style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
                   >访问</a>
-                  <button onClick={() => beginRename(file.name)} className='px-3 py-2 rounded-lg text-sm' style={{ background: 'rgba(29,155,240,0.12)', color: 'var(--accent)' }}>编辑名称</button>
-                  <button onClick={() => deleteFile(file.name)} className='px-3 py-2 rounded-lg text-sm text-white' style={{ background: '#64748b' }}>删除</button>
+                  {storageStatus?.capabilities.rename !== false && (
+                    <button onClick={() => beginRename(file.name)} className='px-3 py-2 rounded-lg text-sm' style={{ background: 'rgba(29,155,240,0.12)', color: 'var(--accent)' }}>编辑名称</button>
+                  )}
+                  {storageStatus?.capabilities.delete !== false && (
+                    <button onClick={() => deleteFile(file.name)} className='px-3 py-2 rounded-lg text-sm text-white' style={{ background: '#64748b' }}>删除</button>
+                  )}
                 </div>
               </div>
             </div>
