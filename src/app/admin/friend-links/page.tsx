@@ -27,6 +27,8 @@ export default function AdminFriendLinksPage() {
   const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [rejectReason, setRejectReason] = useState('')
   const [reviewingId, setReviewingId] = useState<string | null>(null)
+  const [orderDrafts, setOrderDrafts] = useState<Record<string, string>>({})
+  const [savingOrderId, setSavingOrderId] = useState<string | null>(null)
 
   const limit = 20
 
@@ -38,7 +40,16 @@ export default function AdminFriendLinksPage() {
         throw new Error(`API returned ${res.status}`)
       }
       const data = await res.json()
-      setLinks(Array.isArray(data.links) ? data.links : [])
+      const nextLinks = Array.isArray(data.links) ? data.links : []
+      setLinks(nextLinks)
+      setOrderDrafts(prev => {
+        const next: Record<string, string> = {}
+        for (const item of nextLinks) {
+          const keep = prev[item.id]
+          next[item.id] = keep !== undefined ? keep : String(item.sortOrder ?? 0)
+        }
+        return next
+      })
       setTotal(typeof data.total === 'number' ? data.total : 0)
       setPage(pageNum)
     } catch (error) {
@@ -165,6 +176,35 @@ export default function AdminFriendLinksPage() {
       }
     } catch {
       toast.error('排序失败')
+    }
+  }
+
+  const handleSetOrder = async (id: string) => {
+    const raw = (orderDrafts[id] ?? '').trim()
+    if (!/^[-+]?\d+$/.test(raw)) {
+      toast.error('请输入整数排序权重')
+      return
+    }
+
+    const value = Number(raw)
+    setSavingOrderId(id)
+    try {
+      const res = await fetch(`/api/admin/friend-links?id=${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ action: 'set-order', sortOrder: value }),
+        headers: { 'Content-Type': 'application/json' },
+      })
+      if (res.ok) {
+        toast.success('排序权重已保存')
+        fetchLinks(page)
+      } else {
+        const data = await res.json().catch(() => ({}))
+        toast.error(data.error || '保存失败')
+      }
+    } catch {
+      toast.error('保存失败')
+    } finally {
+      setSavingOrderId(null)
     }
   }
 
@@ -300,6 +340,24 @@ export default function AdminFriendLinksPage() {
 
                 {/* 右侧操作 */}
                 <div className="flex flex-col gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      value={orderDrafts[link.id] ?? String(link.sortOrder)}
+                      onChange={e => setOrderDrafts(prev => ({ ...prev, [link.id]: e.target.value }))}
+                      className="w-20 px-2 py-2 rounded-lg text-sm border bg-transparent outline-none"
+                      style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                      title="手动设置排序权重"
+                    />
+                    <button
+                      onClick={() => handleSetOrder(link.id)}
+                      disabled={savingOrderId === link.id}
+                      className="px-3 py-2 rounded-lg text-sm transition-all disabled:opacity-60"
+                      style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+                    >
+                      {savingOrderId === link.id ? '保存中' : '保存'}
+                    </button>
+                  </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleChangeOrder(link.id, 1)}

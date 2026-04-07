@@ -112,7 +112,7 @@ export async function PUT(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const id = searchParams.get('id')
-    const { action, rejectionReason, delta } = await req.json()
+    const { action, rejectionReason, delta, sortOrder } = await req.json()
 
     if (!id) {
       return NextResponse.json({ error: '缺少 ID' }, { status: 400 })
@@ -199,6 +199,26 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({
         message: orderDelta > 0 ? '已上移' : '已下移',
         sortOrder: toSafeNumber(rows?.[0]?.sortOrder, 0),
+      })
+    } else if (action === 'set-order') {
+      const nextOrder = Math.trunc(toSafeNumber(sortOrder, Number.NaN))
+      if (!Number.isFinite(nextOrder)) {
+        return NextResponse.json({ error: '排序权重必须是数字' }, { status: 400 })
+      }
+
+      await prisma.$executeRawUnsafe(
+        `UPDATE FriendLink
+         SET sortOrder = ?
+         WHERE id = ?`,
+        nextOrder,
+        id
+      )
+
+      revalidateTag('approved-friend-links')
+
+      return NextResponse.json({
+        message: '排序权重已更新',
+        sortOrder: nextOrder,
       })
     }
 
