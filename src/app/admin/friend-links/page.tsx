@@ -1,7 +1,8 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
+import { ADMIN_PAGE_TITLE_CLASS } from '@/components/admin/adminUi'
 
 interface FriendLink {
   id: string
@@ -45,6 +46,7 @@ const EMPTY_FORM: LinkForm = {
 export default function AdminFriendLinksPage() {
   const [links, setLinks] = useState<FriendLink[]>([])
   const [status, setStatus] = useState('pending')
+  const [keyword, setKeyword] = useState('')
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -59,6 +61,17 @@ export default function AdminFriendLinksPage() {
   const [editForm, setEditForm] = useState<LinkForm>(EMPTY_FORM)
 
   const limit = 20
+
+  const filteredLinks = useMemo(() => {
+    const k = keyword.trim().toLowerCase()
+    if (!k) return links
+    return links.filter(link => {
+      const name = (link.name || '').toLowerCase()
+      const url = (link.url || '').toLowerCase()
+      const desc = (link.description || '').toLowerCase()
+      return name.includes(k) || url.includes(k) || desc.includes(k)
+    })
+  }, [links, keyword])
 
   const fetchLinks = async (pageNum: number) => {
     setLoading(true)
@@ -340,93 +353,61 @@ export default function AdminFriendLinksPage() {
   }
 
   return (
-    <div className="w-full max-w-6xl mx-auto">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
-          友情链接管理
-        </h1>
-        <Link href="/links" className="px-4 py-2 rounded-lg text-sm" style={{ background: 'var(--accent)', color: '#fff' }}>
-          查看友链页面
-        </Link>
-      </div>
+    <div className="w-full max-w-7xl mx-auto">
+      <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)' }}>友情链接管理</h1>
+      <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>网盘式工作台，集中处理审核、排序与展示策略</p>
 
-      {/* 状态筛选 */}
-      <div className="flex gap-3 mb-6">
-        {['pending', 'approved', 'rejected', 'all'].map(s => (
-          <button
-            key={s}
-            onClick={() => {
-              setStatus(s)
-              setPage(1)
-            }}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-              status === s ? 'opacity-100' : 'opacity-60 hover:opacity-80'
-            }`}
-            style={{
-              background: status === s ? 'var(--accent)' : 'var(--bg-secondary)',
-              color: status === s ? '#fff' : 'var(--text-primary)',
-            }}
-          >
-            {{
-              pending: '待审核',
-              approved: '已通过',
-              rejected: '已拒绝',
-              all: '全部',
-            }[s] || s}
-          </button>
-        ))}
-      </div>
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-4">
+        <section className="rounded-2xl p-4" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+          <div className="rounded-2xl p-3 mb-3 flex flex-col md:flex-row gap-2 md:items-center md:justify-between" style={{ background: 'linear-gradient(135deg, rgba(29,155,240,0.15), rgba(16,185,129,0.08))' }}>
+            <div className="flex flex-wrap gap-2">
+              {['pending', 'approved', 'rejected', 'all'].map(s => (
+                <button
+                  key={s}
+                  onClick={() => {
+                    setStatus(s)
+                    setPage(1)
+                  }}
+                  className="px-3 py-2 rounded-xl text-sm font-medium"
+                  style={{
+                    background: status === s ? 'var(--accent)' : 'var(--bg-secondary)',
+                    color: status === s ? '#fff' : 'var(--text-primary)',
+                  }}
+                >
+                  {{
+                    pending: '待审核',
+                    approved: '已通过',
+                    rejected: '已拒绝',
+                    all: '全部',
+                  }[s] || s}
+                </button>
+              ))}
+            </div>
+            <Link href="/links" className="px-4 py-2 rounded-xl text-sm text-center" style={{ background: 'var(--accent)', color: '#fff' }}>
+              查看前台友链页
+            </Link>
+          </div>
 
-      <div className="rounded-xl p-4 mb-6 border" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
-        <h2 className="text-base font-bold mb-3" style={{ color: 'var(--text-primary)' }}>手动新增友链</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          <input value={createForm.name} onChange={e => setCreateForm(v => ({ ...v, name: e.target.value }))} placeholder="名称"
-            className="px-3 py-2 rounded-lg bg-transparent border outline-none" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
-          <input value={createForm.url} onChange={e => setCreateForm(v => ({ ...v, url: e.target.value }))} placeholder="https://example.com"
-            className="px-3 py-2 rounded-lg bg-transparent border outline-none" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
-          <input value={createForm.description} onChange={e => setCreateForm(v => ({ ...v, description: e.target.value }))} placeholder="简介（可选）"
-            className="px-3 py-2 rounded-lg bg-transparent border outline-none" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
-          <input value={createForm.favicon} onChange={e => setCreateForm(v => ({ ...v, favicon: e.target.value }))} placeholder="头像URL（可选）"
-            className="px-3 py-2 rounded-lg bg-transparent border outline-none" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
-          <input value={createForm.email} onChange={e => setCreateForm(v => ({ ...v, email: e.target.value }))} placeholder="邮箱（可选）"
-            className="px-3 py-2 rounded-lg bg-transparent border outline-none" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
-          <input value={createForm.sortOrder} onChange={e => setCreateForm(v => ({ ...v, sortOrder: e.target.value }))} placeholder="排序权重"
-            className="px-3 py-2 rounded-lg bg-transparent border outline-none" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
-        </div>
-        <div className="mt-3 flex flex-wrap items-center gap-3">
-          <label className="text-sm" style={{ color: 'var(--text-secondary)' }}>状态</label>
-          <select value={createForm.status} onChange={e => setCreateForm(v => ({ ...v, status: e.target.value as LinkForm['status'] }))}
-            className="px-3 py-2 rounded-lg bg-transparent border outline-none" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}>
-            <option value="approved">已通过</option>
-            <option value="pending">待审核</option>
-            <option value="rejected">已拒绝</option>
-          </select>
-          <label className="inline-flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
-            <input type="checkbox" checked={createForm.showInSidebar} onChange={e => setCreateForm(v => ({ ...v, showInSidebar: e.target.checked }))} />
-            在右侧栏显示
-          </label>
-          <button onClick={handleCreate} disabled={creating}
-            className="px-4 py-2 rounded-lg text-white font-medium disabled:opacity-60" style={{ background: 'var(--accent)' }}>
-            {creating ? '创建中...' : '新增友链'}
-          </button>
-        </div>
-      </div>
+          <div className="rounded-xl p-3 mb-3" style={{ background: 'var(--bg-hover)' }}>
+            <input
+              value={keyword}
+              onChange={e => setKeyword(e.target.value)}
+              placeholder="搜索名称 / URL / 简介"
+              className="w-full px-3 py-2 rounded-lg border bg-transparent outline-none text-sm"
+              style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+            />
+          </div>
 
-      {/* 友链列表 */}
-      {loading ? (
-        <div className="py-12 text-center" style={{ color: 'var(--text-secondary)' }}>
-          加载中...
-        </div>
-      ) : links.length === 0 ? (
-        <div className="py-12 text-center" style={{ color: 'var(--text-secondary)' }}>
-          暂无友链
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {links.map(link => (
+          {loading ? (
+            <div className="py-12 text-center" style={{ color: 'var(--text-secondary)' }}>加载中...</div>
+          ) : filteredLinks.length === 0 ? (
+            <div className="py-12 text-center" style={{ color: 'var(--text-secondary)' }}>暂无友链</div>
+          ) : (
+            <div className="space-y-3">
+              {filteredLinks.map(link => (
             <div
               key={link.id}
-              className="rounded-xl p-6 border"
+              className="rounded-xl p-4 border"
               style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}
             >
               <div className="flex items-start justify-between gap-4">
@@ -682,33 +663,69 @@ export default function AdminFriendLinksPage() {
               )}
             </div>
           ))}
-        </div>
-      )}
+            </div>
+          )}
 
-      {/* 分页 */}
-      {total > limit && (
-        <div className="flex items-center justify-center gap-3 mt-8">
-          <button
-            onClick={() => fetchLinks(Math.max(1, page - 1))}
-            disabled={page === 1}
-            className="px-4 py-2 rounded-lg disabled:opacity-50"
-            style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-          >
-            上一页
-          </button>
-          <span style={{ color: 'var(--text-secondary)' }}>
-            第 {page} / {Math.ceil(total / limit)} 页
-          </span>
-          <button
-            onClick={() => fetchLinks(Math.min(Math.ceil(total / limit), page + 1))}
-            disabled={page >= Math.ceil(total / limit)}
-            className="px-4 py-2 rounded-lg disabled:opacity-50"
-            style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-          >
-            下一页
-          </button>
-        </div>
-      )}
+          {total > limit && (
+            <div className="flex items-center justify-center gap-3 mt-6">
+              <button
+                onClick={() => fetchLinks(Math.max(1, page - 1))}
+                disabled={page === 1}
+                className="px-4 py-2 rounded-xl disabled:opacity-50"
+                style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+              >
+                上一页
+              </button>
+              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                第 {page} / {Math.ceil(total / limit)} 页
+              </span>
+              <button
+                onClick={() => fetchLinks(Math.min(Math.ceil(total / limit), page + 1))}
+                disabled={page >= Math.ceil(total / limit)}
+                className="px-4 py-2 rounded-xl disabled:opacity-50"
+                style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+              >
+                下一页
+              </button>
+            </div>
+          )}
+        </section>
+
+        <aside className="rounded-2xl p-4 h-fit sticky top-4" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+          <h2 className="text-base font-bold mb-3" style={{ color: 'var(--text-primary)' }}>手动新增友链</h2>
+          <div className="space-y-2">
+            <input value={createForm.name} onChange={e => setCreateForm(v => ({ ...v, name: e.target.value }))} placeholder="名称"
+              className="w-full px-3 py-2 rounded-xl bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+            <input value={createForm.url} onChange={e => setCreateForm(v => ({ ...v, url: e.target.value }))} placeholder="https://example.com"
+              className="w-full px-3 py-2 rounded-xl bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+            <input value={createForm.description} onChange={e => setCreateForm(v => ({ ...v, description: e.target.value }))} placeholder="简介（可选）"
+              className="w-full px-3 py-2 rounded-xl bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+            <input value={createForm.favicon} onChange={e => setCreateForm(v => ({ ...v, favicon: e.target.value }))} placeholder="头像URL（可选）"
+              className="w-full px-3 py-2 rounded-xl bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+            <input value={createForm.email} onChange={e => setCreateForm(v => ({ ...v, email: e.target.value }))} placeholder="邮箱（可选）"
+              className="w-full px-3 py-2 rounded-xl bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+            <input value={createForm.sortOrder} onChange={e => setCreateForm(v => ({ ...v, sortOrder: e.target.value }))} placeholder="排序权重"
+              className="w-full px-3 py-2 rounded-xl bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+          </div>
+
+          <div className="mt-3 space-y-2">
+            <select value={createForm.status} onChange={e => setCreateForm(v => ({ ...v, status: e.target.value as LinkForm['status'] }))}
+              className="w-full px-3 py-2 rounded-xl bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}>
+              <option value="approved">已通过</option>
+              <option value="pending">待审核</option>
+              <option value="rejected">已拒绝</option>
+            </select>
+            <label className="inline-flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <input type="checkbox" checked={createForm.showInSidebar} onChange={e => setCreateForm(v => ({ ...v, showInSidebar: e.target.checked }))} />
+              在右侧栏显示
+            </label>
+            <button onClick={handleCreate} disabled={creating}
+              className="w-full px-4 py-2 rounded-xl text-white font-medium disabled:opacity-60" style={{ background: 'var(--accent)' }}>
+              {creating ? '创建中...' : '新增友链'}
+            </button>
+          </div>
+        </aside>
+      </div>
     </div>
   )
 }
