@@ -1,8 +1,8 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import toast from 'react-hot-toast'
+import { usePathname } from 'next/navigation'
+import { useLogout } from '@/hooks/useLogout'
 import type { JWTPayload } from '@/lib/auth'
 import type { RightPanelWidget, FriendLink, SiteLogo } from '@/lib/config'
 import { isImageSource } from '@/lib/config'
@@ -75,7 +75,6 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
   const items = (navItems && navItems.length > 0) ? navItems : DEFAULT_NAV
   const primaryItems = items.slice(0, 4)
   const pathname = usePathname()
-  const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
   const drawerRef = useRef<HTMLDivElement>(null)
   const enabledWidgets = widgets.filter(w => w.enabled && w.mobileVisible !== false)
@@ -96,12 +95,12 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
     return () => { document.body.style.overflow = '' }
   }, [open])
 
+  const doLogout = useLogout()
+
   const logout = async () => {
     setMenuOpen(false)
     onClose()
-    await fetch('/api/auth/logout', { method: 'POST' })
-    toast.success('已退出登录')
-    router.refresh()
+    await doLogout()
   }
 
   if (!open) return null

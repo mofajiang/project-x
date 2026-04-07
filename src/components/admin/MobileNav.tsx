@@ -1,8 +1,8 @@
 'use client'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import toast from 'react-hot-toast'
+import { useLogout } from '@/hooks/useLogout'
 import { AdminUpdateChecker } from './AdminUpdateChecker'
 import { ADMIN_NAV_ITEMS, ADMIN_NAV_GROUPS } from './navItems'
 
@@ -12,7 +12,6 @@ const THEME_LABELS: Record<ThemeMode, string> = { dark: '🌙 暗黑', light: '�
 
 export function MobileNav({ username, pendingCount }: { username: string; pendingCount: number }) {
   const pathname = usePathname()
-  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [theme, setTheme] = useState<ThemeMode>('dark')
 
@@ -31,11 +30,7 @@ export function MobileNav({ username, pendingCount }: { username: string; pendin
     document.documentElement.classList.add(next)
   }
 
-  const logout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' })
-    toast.success('已退出登录')
-    router.push('/admin/login')
-  }
+  const logout = useLogout('/admin/login')
 
   const currentItem = ADMIN_NAV_ITEMS.find(item =>
     item.href === '/admin'

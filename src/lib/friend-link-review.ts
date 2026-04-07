@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { revalidateTag } from 'next/cache'
+import { fetchWithTimeout } from '@/lib/fetch-utils'
 
 export interface FriendLinkReviewResult {
   score: number
@@ -42,65 +43,58 @@ function sleep(ms: number) {
 
 async function callAiModel(prompt: string, config: any): Promise<string> {
   const timeout = toSafeNumber(config.aiModelTimeout, 30)
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), timeout * 1000)
+
+  let url: string
+  let headers: Record<string, string>
+  let body: any
+
+  if (config.aiModelProvider === 'openrouter') {
+    url = 'https://openrouter.ai/api/v1/chat/completions'
+    headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${config.aiModelApiKey}`,
+      'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+    }
+    body = {
+      model: config.aiModelName,
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: toSafeNumber(config.aiModelMaxTokens, 2000),
+      temperature: 0.3,
+    }
+  } else if (config.aiModelProvider === 'custom') {
+    url = `${config.aiModelBaseUrl}/api/chat`
+    headers = {
+      'Content-Type': 'application/json',
+    }
+    if (config.aiModelApiKey) {
+      headers['Authorization'] = `Bearer ${config.aiModelApiKey}`
+    }
+    body = {
+      model: config.aiModelName,
+      messages: [{ role: 'user', content: prompt }],
+      stream: false,
+    }
+  } else {
+    throw new Error('Unknown AI provider')
+  }
 
   try {
-    let url: string
-    let headers: Record<string, string>
-    let body: any
-
-    if (config.aiModelProvider === 'openrouter') {
-      url = 'https://openrouter.ai/api/v1/chat/completions'
-      headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${config.aiModelApiKey}`,
-        'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
-      }
-      body = {
-        model: config.aiModelName,
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: toSafeNumber(config.aiModelMaxTokens, 2000),
-        temperature: 0.3,
-      }
-    } else if (config.aiModelProvider === 'custom') {
-      url = `${config.aiModelBaseUrl}/api/chat`
-      headers = {
-        'Content-Type': 'application/json',
-      }
-      if (config.aiModelApiKey) {
-        headers['Authorization'] = `Bearer ${config.aiModelApiKey}`
-      }
-      body = {
-        model: config.aiModelName,
-        messages: [{ role: 'user', content: prompt }],
-        stream: false,
-      }
-    } else {
-      throw new Error('Unknown AI provider')
-    }
-
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: 'POST',
       headers,
       body: JSON.stringify(body),
-      signal: controller.signal,
-    })
-
-    clearTimeout(timeoutId)
+    }, timeout * 1000)
 
     if (!response.ok) {
       throw new Error(`AI API returned ${response.status}`)
     }
 
     const data = await response.json()
-
     if (config.aiModelProvider === 'openrouter') {
       return data.choices[0].message.content
     }
     return data.message.content || data.content
   } catch (error: any) {
-    clearTimeout(timeoutId)
     throw new Error(`AI model call failed: ${error.message}`)
   }
 }

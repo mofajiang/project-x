@@ -1,8 +1,8 @@
 'use client'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import toast from 'react-hot-toast'
+import { useLogout } from '@/hooks/useLogout'
 import { AdminUpdateChecker } from './AdminUpdateChecker'
 // AdminUpdateChecker has been moved to the settings page
 import { ADMIN_NAV_ITEMS, ADMIN_NAV_GROUPS } from './navItems'
@@ -52,7 +52,6 @@ function AdminThemeToggle({ compact = false }: { compact?: boolean }) {
 
 export function AdminSidebar({ username }: { username: string }) {
   const pathname = usePathname()
-  const router = useRouter()
   const [pendingCount, setPendingCount] = useState(0)
   const [expanded, setExpanded] = useState(false)
 
@@ -67,11 +66,7 @@ export function AdminSidebar({ username }: { username: string }) {
     return () => clearInterval(timer)
   }, [])
 
-  const logout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' })
-    toast.success('已退出登录')
-    router.push('/admin/login')
-  }
+  const logout = useLogout('/admin/login')
 
   return (
     <>

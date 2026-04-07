@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import toast from 'react-hot-toast'
+import { useLogout } from '@/hooks/useLogout'
 import type { JWTPayload } from '@/lib/auth'
 import type { SiteLogo } from '@/lib/config'
 import { isImageSource } from '@/lib/config'
@@ -88,11 +88,11 @@ export function Sidebar({ siteName, siteLogo, loginMode, secretClicks, loginPath
     return () => document.removeEventListener('mousedown', handler)
   }, [menuOpen])
 
+  const doLogout = useLogout()
+
   const logout = async () => {
     setMenuOpen(false)
-    await fetch('/api/auth/logout', { method: 'POST' })
-    toast.success('已退出登录')
-    router.refresh()
+    await doLogout()
   }
 
   useEffect(() => {

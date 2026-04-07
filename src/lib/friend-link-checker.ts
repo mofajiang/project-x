@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from '@/lib/fetch-utils'
+
 export interface CheckResult {
   found: boolean
   foundAt?: string
@@ -10,17 +12,11 @@ export interface CheckResult {
  */
 async function checkPageForLink(pageUrl: string, myDomain: string): Promise<CheckResult> {
   try {
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 8000)
-
-    const response = await fetch(pageUrl, {
+    const response = await fetchWithTimeout(pageUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (FriendLinkChecker/1.0)',
       },
-      signal: controller.signal,
-    })
-
-    clearTimeout(timeoutId)
+    }, 8000)
 
     if (!response.ok) {
       return { found: false, error: `网站返回 ${response.status}` }
@@ -131,15 +127,9 @@ export async function validateUrl(url: string): Promise<{ valid: boolean; error?
     new URL(url)
 
     // 尝试获取 HEAD 请求（更快）
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 5000)
-
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: 'HEAD',
-      signal: controller.signal,
-    })
-
-    clearTimeout(timeoutId)
+    }, 5000)
 
     if (!response.ok) {
       return {
@@ -152,15 +142,9 @@ export async function validateUrl(url: string): Promise<{ valid: boolean; error?
   } catch (error) {
     // HEAD 可能不被支持，再试 GET
     try {
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 5000)
-
-      const response = await fetch(url, {
+      const response = await fetchWithTimeout(url, {
         method: 'GET',
-        signal: controller.signal,
-      })
-
-      clearTimeout(timeoutId)
+      }, 5000)
       return { valid: response.ok }
     } catch (err) {
       const message = err instanceof Error ? err.message : '检查失败'
