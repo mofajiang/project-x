@@ -37,28 +37,34 @@ export function MobileNav({ username, pendingCount }: { username: string; pendin
     router.push('/admin/login')
   }
 
+  const currentItem = ADMIN_NAV_ITEMS.find(item =>
+    item.href === '/admin'
+      ? pathname === '/admin'
+      : pathname === item.href || pathname.startsWith(item.href + '/')
+  )
+
   return (
     <>
       {/* 顶部迷你导航 - 仅汉堡菜单和标题 */}
       <header
-        className="md:hidden fixed top-0 left-0 right-0 z-30 h-14 flex items-center justify-between px-4"
+        className="md:hidden fixed top-0 left-0 right-0 z-30 h-14 flex items-center justify-between px-4 gap-2"
         style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border)' }}
       >
         <button
           onClick={() => setOpen(true)}
-          className="text-xl p-2"
+          className="text-xl p-2 shrink-0"
           title="打开菜单"
         >
           ☰
         </button>
-        <h1 className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
-          ⚙ 后台
+        <h1 className="font-bold text-sm truncate flex-1 text-center" style={{ color: 'var(--text-primary)' }}>
+          {currentItem ? `${currentItem.icon} ${currentItem.label}` : '⚙ 后台'}
         </h1>
         <a
           href="/"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-sm px-2 py-1 rounded"
+          className="text-sm px-2 py-1 rounded shrink-0"
           style={{ color: 'var(--accent)' }}
           title="查看前台"
         >
