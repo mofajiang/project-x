@@ -154,18 +154,23 @@ export function AdminSidebar({ username }: { username: string }) {
             })}
           </nav>
 
-          {/* 底部工具 */}
-          <div className="px-2 mt-2 flex flex-col gap-1">
-            <div style={{ opacity: expanded ? 1 : 0, maxHeight: expanded ? '60px' : '0', overflow: 'hidden', transition: 'opacity 0.15s, max-height 0.2s' }}>
+          {/* 底部工具 - 折叠时整体隐藏，hover 展开后显示 */}
+          <div
+            className="px-2 mt-2 overflow-hidden"
+            style={{
+              maxHeight: expanded ? '200px' : '0',
+              opacity: expanded ? 1 : 0,
+              transition: expanded
+                ? 'max-height 0.2s ease, opacity 0.13s ease 0.1s'
+                : 'max-height 0.2s ease 0.05s, opacity 0.08s ease',
+            }}
+          >
+            <div className="flex flex-col gap-1">
               <AdminUpdateChecker />
+              <AdminThemeToggle />
+              <a href="/" target="_blank" className="text-xs py-1.5 px-3 rounded-xl text-center" style={{ color: 'var(--text-secondary)' }}>查看博客 ↗</a>
+              <button onClick={logout} className="text-xs py-1.5 px-3 rounded-xl text-center w-full" style={{ color: 'var(--red)' }}>退出登录</button>
             </div>
-            <AdminThemeToggle compact={!expanded} />
-            {expanded && (
-              <>
-                <a href="/" target="_blank" className="text-xs py-1.5 px-3 rounded-xl text-center" style={{ color: 'var(--text-secondary)' }}>查看博客 ↗</a>
-                <button onClick={logout} className="text-xs py-1.5 px-3 rounded-xl text-center w-full" style={{ color: 'var(--red)' }}>退出登录</button>
-              </>
-            )}
           </div>
         </div>
       </aside>
