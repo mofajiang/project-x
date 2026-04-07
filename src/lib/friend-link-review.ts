@@ -128,7 +128,7 @@ export async function reviewFriendLinkById(linkId: string): Promise<FriendLinkRe
 网站信息：
 - 名称：${link.name}
 - URL：${link.url}
-- 描述：${link.description || '无'}
+${link.description ? `- 描述：${link.description}` : ''}
 
 请评估以下方面（0-100 分，分数越低越安全）：
 1. brandSafety: 品牌安全性（是否涉及违规品牌、山寨等）

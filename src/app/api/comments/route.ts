@@ -131,7 +131,8 @@ async function analyzeAndUpdateComment(
       config.aiModelName || config.openrouterModel,
       commentData.guestName,
       commentData.guestEmail,
-      commentData.guestWebsite
+      commentData.guestWebsite,
+      config.aiModelMaxTokens
     )
     
     console.log('[ai-analysis-async] AI 分析完成:', { commentId, riskScore: aiResult.riskScore })

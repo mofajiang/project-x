@@ -23,6 +23,7 @@ export async function analyzeCommentWithAI(
   authorName?: string,
   authorEmail?: string,
   authorWebsite?: string,
+  maxTokens?: number,
 ): Promise<SpamAnalysisResult> {
   console.log('[analyzeCommentWithAI] 开始调用，参数检查:', { hasApiKey: !!apiKey, model, contentLength: content.length })
   
@@ -97,7 +98,7 @@ ${authorWebsite ? `- 网站: ${authorWebsite}` : ''}
           },
         ],
         temperature: 0.3,
-        max_tokens: 128000,
+        max_tokens: maxTokens || 500,
       }),
     })
 
@@ -116,6 +117,15 @@ ${authorWebsite ? `- 网站: ${authorWebsite}` : ''}
 
     const data = await response.json()
     console.log('[openrouter] 原始响应体 (前300字):', JSON.stringify(data).substring(0, 300))
+
+    // 记录 token 使用量，便于成本监控
+    if (data.usage) {
+      console.log('[openrouter] token 用量:', {
+        prompt: data.usage.prompt_tokens,
+        completion: data.usage.completion_tokens,
+        total: data.usage.total_tokens,
+      })
+    }
     
     let responseContent = data.choices?.[0]?.message?.content?.trim()
     
