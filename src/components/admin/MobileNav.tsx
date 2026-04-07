@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { AdminUpdateChecker } from './AdminUpdateChecker'
-import { ADMIN_NAV_ITEMS } from './navItems'
+import { ADMIN_NAV_ITEMS, ADMIN_NAV_GROUPS } from './navItems'
 
 type ThemeMode = 'dark' | 'light'
 const THEME_CYCLE: ThemeMode[] = ['dark', 'light']
@@ -98,32 +98,41 @@ export function MobileNav({ username, pendingCount }: { username: string; pendin
         </div>
 
         {/* 导航菜单 - 可滚动 */}
-        <div className="flex flex-col gap-1 p-4 overflow-y-auto flex-1">
-          {ADMIN_NAV_ITEMS.map((item) => {
-            const active = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))
+        <div className="flex flex-col gap-0.5 p-3 overflow-y-auto flex-1">
+          {ADMIN_NAV_GROUPS.map((group, gi) => {
+            const items = ADMIN_NAV_ITEMS.filter(item => item.group === group.key)
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setOpen(false)}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors"
-                style={{
-                  background: active ? 'var(--bg-hover)' : 'transparent',
-                  color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
-                  fontWeight: active ? '600' : '400',
-                }}
-              >
-                <span className="text-lg">{item.icon}</span>
-                <span>{item.label}</span>
-                {item.badge && pendingCount > 0 && (
-                  <span
-                    className="ml-auto text-xs font-bold px-2 py-1 rounded-full text-white"
-                    style={{ background: 'var(--red,#F4212E)' }}
-                  >
-                    {pendingCount > 99 ? '99+' : pendingCount}
-                  </span>
-                )}
-              </Link>
+              <div key={group.key}>
+                {gi > 0 && <div className="my-2 mx-1" style={{ borderTop: '1px solid var(--border)' }} />}
+                <p className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-secondary)', opacity: 0.6 }}>{group.label}</p>
+                {items.map(item => {
+                  const active = item.href === '/admin' ? pathname === '/admin' : pathname === item.href || pathname.startsWith(item.href + '/')
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors"
+                      style={{
+                        background: active ? 'var(--bg-hover)' : 'transparent',
+                        color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+                        fontWeight: active ? '600' : '400',
+                      }}
+                    >
+                      <span className="text-lg">{item.icon}</span>
+                      <span>{item.label}</span>
+                      {item.badge && pendingCount > 0 && (
+                        <span
+                          className="ml-auto text-xs font-bold px-2 py-1 rounded-full text-white"
+                          style={{ background: 'var(--red,#F4212E)' }}
+                        >
+                          {pendingCount > 99 ? '99+' : pendingCount}
+                        </span>
+                      )}
+                    </Link>
+                  )
+                })}
+              </div>
             )
           })}
         </div>
