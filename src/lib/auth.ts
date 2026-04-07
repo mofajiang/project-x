@@ -1,6 +1,6 @@
 import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || 'fallback-secret'
@@ -41,4 +41,22 @@ export async function getSessionFromRequest(req: NextRequest): Promise<JWTPayloa
   const token = req.cookies.get('auth-token')?.value
   if (!token) return null
   return verifyJWT(token)
+}
+
+/**
+ * Wraps an admin route handler with authentication check.
+ * If no valid session is found, returns 401 Unauthorized automatically.
+ *
+ * Usage:
+ *   export const GET = withAuth(async (req, session) => { ... })
+ *   export const GET = withAuth(async (req, session, { params }) => { ... })
+ */
+export function withAuth<TArgs extends unknown[]>(
+  handler: (req: NextRequest, session: JWTPayload, ...args: TArgs) => Promise<Response>
+) {
+  return async (req: NextRequest, ...args: TArgs): Promise<Response> => {
+    const session = await getSessionFromRequest(req)
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return handler(req, session, ...args)
+  }
 }

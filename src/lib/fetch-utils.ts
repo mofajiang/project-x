@@ -15,3 +15,8 @@ export async function fetchWithTimeout(
     clearTimeout(timer)
   }
 }
+
+/** Promise-based sleep helper. */
+export function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}

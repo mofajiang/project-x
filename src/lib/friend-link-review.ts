@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { revalidateTag } from 'next/cache'
-import { fetchWithTimeout } from '@/lib/fetch-utils'
+import { fetchWithTimeout, sleep } from '@/lib/fetch-utils'
 
 export interface FriendLinkReviewResult {
   score: number
@@ -35,10 +35,6 @@ function isRetryableAiError(error: unknown) {
     msg.includes('aborted') ||
     msg.includes('timeout')
   )
-}
-
-function sleep(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms))
 }
 
 async function callAiModel(prompt: string, config: any): Promise<string> {
