@@ -67,9 +67,9 @@ export default function AdminTagsPage() {
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-        <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)' }}>🏷 标签管理</h1>
-        <div className="flex gap-2 w-full sm:w-auto">
+      <div className="sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl mb-4 -mx-1" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', backdropFilter: 'blur(8px)' }}>
+        <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)', margin: 0 }}>🏷 标签管理</h1>
+        <div className="flex gap-2">
           <input
             value={name}
             onChange={e => setName(e.target.value)}
@@ -80,17 +80,17 @@ export default function AdminTagsPage() {
               }
             }}
             placeholder="输入新标签名"
-            className="flex-1 sm:w-64 px-4 py-2 rounded-full text-sm outline-none"
-            style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
+            className="w-36 sm:w-48 px-3 py-1.5 rounded-full text-sm outline-none"
+            style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
           />
           <button
             type="button"
             onClick={createTag}
             disabled={saving}
-            className="px-4 py-2 rounded-full text-sm font-bold text-white disabled:opacity-50"
+            className="px-4 py-1.5 rounded-full text-sm font-bold text-white disabled:opacity-50 shrink-0"
             style={{ background: 'var(--accent)' }}
           >
-            {saving ? '创建中...' : '新增标签'}
+            {saving ? '创建中...' : '新增'}
           </button>
         </div>
       </div>

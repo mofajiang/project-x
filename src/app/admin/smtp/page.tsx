@@ -63,13 +63,13 @@ export default function SmtpPage() {
 
   return (
     <div className="max-w-xl">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
-        <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)' }}>📧 邮件通知</h1>
-        {configured && (
-          <span className="px-2 py-1 rounded-full text-xs font-medium" style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E' }}>
-            已配置
-          </span>
-        )}
+      <div className="sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl mb-4 -mx-1" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', backdropFilter: 'blur(8px)' }}>
+        <div className="flex items-center gap-2 min-w-0">
+          <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)', margin: 0 }}>📧 邮件通知</h1>
+          {configured && (
+            <span className="px-2 py-1 rounded-full text-xs font-medium shrink-0" style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E' }}>已配置</span>
+          )}
+        </div>
       </div>
 
       <div className={`${ADMIN_CARD_LG_CLASS} mb-4 sm:mb-6`} style={{ background: 'var(--bg-secondary)' }}>
