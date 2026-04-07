@@ -62,7 +62,7 @@ export default function SmtpPage() {
   )
 
   return (
-    <div className="max-w-xl">
+    <div className="max-w-2xl">
       <div className={`${ADMIN_CARD_LG_CLASS} mb-4 sm:mb-6`} style={{ background: 'var(--bg-secondary)' }}>
         <h2 className="font-bold text-lg mb-4" style={{ color: 'var(--text-primary)' }}>SMTP 配置</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

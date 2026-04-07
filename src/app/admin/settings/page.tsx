@@ -336,7 +336,7 @@ export default function SettingsPage() {
 
   const sectionTitleClass = 'text-base sm:text-lg font-bold leading-tight tracking-tight'
   const sectionHintClass = 'text-[10px] sm:text-xs leading-relaxed text-balance'
-  const mobileCardClass = 'rounded-2xl p-2.5 sm:p-6'
+  const mobileCardClass = 'rounded-2xl p-2.5 sm:p-4'
   const mobileSubCardClass = 'rounded-xl p-2 sm:p-4'
 
   return (
@@ -355,10 +355,10 @@ export default function SettingsPage() {
           {saving ? '保存中...' : '保存设置'}
         </button>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-5 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 items-start">
 
         {/* 左列 */}
-        <div className="flex flex-col gap-3 sm:gap-6">
+        <div className="flex flex-col gap-3 sm:gap-4">
 
           {/* 授权状态 */}
           <div className={`${mobileCardClass} flex flex-row items-center gap-2 sm:gap-4`} style={{ background: licenseChecking ? 'var(--bg-secondary)' : licenseResult?.authorized ? 'rgba(0,186,124,0.08)' : 'rgba(244,33,46,0.08)', border: `1px solid ${licenseChecking ? 'var(--border)' : licenseResult?.authorized ? '#00ba7c' : '#F4212E'}` }}>
@@ -478,7 +478,7 @@ export default function SettingsPage() {
         </div>
 
         {/* 右列 */}
-        <div className="flex flex-col gap-4 sm:gap-6">
+        <div className="flex flex-col gap-3 sm:gap-4">
 
           {/* 网站图标 */}
           <div className={`${mobileCardClass} flex flex-col gap-2.5 sm:gap-4`} style={{ background: 'var(--bg-secondary)' }}>
