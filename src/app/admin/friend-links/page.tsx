@@ -320,6 +320,25 @@ export default function AdminFriendLinksPage() {
     }
   }
 
+  const handleToggleSidebar = async (id: string, showInSidebar: boolean) => {
+    try {
+      const res = await fetch(`/api/admin/friend-links?id=${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'toggle-sidebar', showInSidebar }),
+      })
+      if (res.ok) {
+        toast.success(showInSidebar ? '已显示在右侧栏' : '已从右侧栏隐藏')
+        fetchLinks(page)
+      } else {
+        const data = await res.json().catch(() => ({}))
+        toast.error(data.error || '操作失败')
+      }
+    } catch {
+      toast.error('操作失败')
+    }
+  }
+
   return (
     <div className="w-full max-w-6xl mx-auto">
       <div className="mb-6 flex items-center justify-between">
@@ -561,6 +580,16 @@ export default function AdminFriendLinksPage() {
                     style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
                   >
                     编辑
+                  </button>
+                  <button
+                    onClick={() => handleToggleSidebar(link.id, !link.showInSidebar)}
+                    className="px-4 py-2 rounded-lg text-sm transition-all"
+                    style={{
+                      background: link.showInSidebar ? 'rgba(100,116,139,0.15)' : 'rgba(34,197,94,0.12)',
+                      color: link.showInSidebar ? '#475569' : '#16a34a',
+                    }}
+                  >
+                    {link.showInSidebar ? '侧栏隐藏' : '侧栏显示'}
                   </button>
                   <button
                     onClick={() => handleRecheck(link.id)}

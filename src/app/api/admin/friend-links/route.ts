@@ -294,6 +294,23 @@ export async function PUT(req: NextRequest) {
         message: '排序权重已更新',
         sortOrder: nextOrder,
       })
+    } else if (action === 'toggle-sidebar') {
+      const nextShowInSidebar = toSafeBoolean(payload?.showInSidebar, false)
+
+      await prisma.$executeRawUnsafe(
+        `UPDATE FriendLink
+         SET showInSidebar = ?
+         WHERE id = ?`,
+        nextShowInSidebar ? 1 : 0,
+        id
+      )
+
+      revalidateTag('approved-friend-links')
+
+      return NextResponse.json({
+        message: nextShowInSidebar ? '已显示在右侧栏' : '已从右侧栏隐藏',
+        showInSidebar: nextShowInSidebar,
+      })
     } else if (action === 'update-basic') {
       const nextName = String(payload?.name ?? '').trim()
       const nextUrl = normalizeUrl(String(payload?.url ?? ''))
