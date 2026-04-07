@@ -85,7 +85,9 @@ export function AdminSidebar({ username }: { username: string }) {
           className="absolute inset-y-0 left-0 flex flex-col py-4 overflow-hidden"
           style={{
             width: expanded ? 220 : 56,
-            transition: 'width 0.2s ease, box-shadow 0.2s ease',
+            transition: expanded
+              ? 'width 0.22s ease, box-shadow 0.2s ease'
+              : 'width 0.2s ease 0.06s, box-shadow 0.15s ease',
             background: 'var(--bg-secondary)',
             borderRight: '1px solid var(--border)',
             boxShadow: expanded ? '6px 0 24px rgba(0,0,0,0.12)' : 'none',
@@ -135,9 +137,9 @@ export function AdminSidebar({ username }: { username: string }) {
                         }}
                       >
                         <span className="shrink-0 leading-none" style={{ width: 22, textAlign: 'center' }}>{item.icon}</span>
-                        <span className="flex-1">{item.label}</span>
+                        <span className="flex-1" style={{ opacity: expanded ? 1 : 0, transition: expanded ? 'opacity 0.13s ease 0.12s' : 'opacity 0.08s ease' }}>{item.label}</span>
                         {item.badge && pendingCount > 0 && expanded && (
-                          <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full leading-none shrink-0" style={{ background: 'var(--red,#F4212E)', color: '#fff' }}>
+                          <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full leading-none shrink-0" style={{ background: 'var(--red,#F4212E)', color: '#fff', opacity: expanded ? 1 : 0, transition: expanded ? 'opacity 0.13s ease 0.12s' : 'opacity 0.08s ease' }}>
                             {pendingCount > 99 ? '99+' : pendingCount}
                           </span>
                         )}
