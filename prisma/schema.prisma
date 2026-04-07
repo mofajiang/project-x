@@ -41,6 +41,7 @@ model Post {
   updatedAt   DateTime  @updatedAt
 
   @@index([published, createdAt(sort: Desc)])
+  @@index([published, publishedAt(sort: Desc)])
   @@index([authorId])
   @@index([slug])
 }
@@ -80,6 +81,7 @@ model Comment {
   createdAt DateTime @default(now())
 
   @@index([postId, approved])
+  @@index([postId, approved, createdAt(sort: Desc)])
   @@index([authorId])
   @@index([riskScore])
 }

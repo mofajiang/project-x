@@ -6,6 +6,7 @@ import { runMigrations } from '@/lib/db-migrate'
 import { sendNewCommentNotification } from '@/lib/mailer'
 import { getClientIp } from '@/lib/request-ip'
 import { analyzeCommentWithAI, quickSpamCheck } from '@/lib/openrouter-spam-filter'
+import { revalidateTag } from 'next/cache'
 
 export async function POST(req: NextRequest) {
   await runMigrations()
@@ -106,6 +107,7 @@ export async function POST(req: NextRequest) {
     })()
   }
 
+  revalidateTag('comments')
   return NextResponse.json(responseData)
 }
 

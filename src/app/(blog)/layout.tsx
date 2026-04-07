@@ -45,14 +45,14 @@ export default async function BlogLayout({ children }: { children: React.ReactNo
   let handle: string = session?.username || ''
   if (session) {
     try {
-      // 一次查询获取所有用户字段
-      const rows = await prisma.$queryRawUnsafe<any[]>(
-        `SELECT avatar, displayName, username FROM User WHERE id = ?`, session.userId
-      )
-      if (rows[0]) {
-        avatar = rows[0].avatar || null
-        displayName = rows[0].displayName || ''
-        handle = rows[0].username || handle
+      const user = await prisma.user.findUnique({
+        where: { id: session.userId },
+        select: { avatar: true, displayName: true, username: true },
+      })
+      if (user) {
+        avatar = user.avatar || null
+        displayName = user.displayName || ''
+        handle = user.username || handle
       }
     } catch {}
   }

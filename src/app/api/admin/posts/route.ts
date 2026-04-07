@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
 import { slugify } from '@/lib/utils'
+import { revalidateTag } from 'next/cache'
 
 export async function GET(req: NextRequest) {
   const session = await getSessionFromRequest(req)
@@ -61,5 +62,6 @@ export async function POST(req: NextRequest) {
       },
     },
   })
+  revalidateTag('posts')
   return NextResponse.json(post)
 }

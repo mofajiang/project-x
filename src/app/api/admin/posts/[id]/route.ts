@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
 import { getRequestIp, logAdminAudit } from '@/lib/admin-audit'
 import { slugify } from '@/lib/utils'
+import { revalidateTag } from 'next/cache'
 
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
@@ -69,6 +70,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       },
     },
   })
+  revalidateTag('posts')
   return NextResponse.json(post)
 }
 
@@ -83,6 +85,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     data: { pinned: typeof pinned === 'boolean' ? pinned : undefined },
     include: { tags: { include: { tag: true } } },
   })
+  revalidateTag('posts')
   return NextResponse.json(post)
 }
 
@@ -117,6 +120,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     actor: session,
     ip: requestIp,
   })
+  revalidateTag('posts')
   return NextResponse.json({ ok: true })
 }
 

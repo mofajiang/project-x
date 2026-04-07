@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { PostCard } from '@/components/blog/PostCard'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export default async function TagPage({ params }: { params: { slug: string } }) {
   const tag = await prisma.tag.findUnique({
@@ -14,7 +14,7 @@ export default async function TagPage({ params }: { params: { slug: string } }) 
         include: {
           post: {
             include: {
-              author: { select: { username: true, avatar: true } },
+              author: { select: { username: true, avatar: true, displayName: true } },
               tags: { include: { tag: true } },
               _count: { select: { comments: true } },
             },
@@ -26,21 +26,9 @@ export default async function TagPage({ params }: { params: { slug: string } }) 
   })
   if (!tag) notFound()
 
-  // 补充 displayName
-  const usernames = Array.from(new Set(tag.posts.map(({ post }) => post.author.username)))
-  let displayNameMap: Record<string, string> = {}
-  if (usernames.length > 0) {
-    try {
-      const placeholders = usernames.map(() => '?').join(',')
-      const rows = await prisma.$queryRawUnsafe<{ username: string; displayName: string }[]>(
-        `SELECT username, displayName FROM User WHERE username IN (${placeholders})`, ...usernames
-      )
-      displayNameMap = Object.fromEntries(rows.map(r => [r.username, r.displayName]))
-    } catch {}
-  }
   const postsWithDisplay = tag.posts.map(({ post }) => ({
     ...post,
-    author: { ...post.author, displayName: displayNameMap[post.author.username] || '' },
+    author: { ...post.author, displayName: post.author.displayName || '' },
   }))
 
   return (

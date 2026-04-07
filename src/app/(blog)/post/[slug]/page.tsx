@@ -9,7 +9,6 @@ import { getSession } from '@/lib/auth'
 import { getSiteConfig } from '@/lib/config'
 import Image from 'next/image'
 
-export const dynamic = 'force-dynamic'
 
 function buildSlugCandidates(input: string) {
   const set = new Set<string>()
@@ -73,22 +72,14 @@ export default async function PostPage({ params }: { params: { slug: string } })
       ...(session ? {} : { published: true }),
     },
     include: {
-      author: { select: { username: true, avatar: true, bio: true } },
+      author: { select: { username: true, avatar: true, bio: true, displayName: true } },
       tags: { include: { tag: true } },
       _count: { select: { comments: true } },
     },
   })
   if (!post || (!post.published && !session)) notFound()
 
-  // 补充 displayName
-  let authorDisplayName = ''
-  try {
-    const rows = await prisma.$queryRawUnsafe<{ displayName: string }[]>(
-      `SELECT displayName FROM User WHERE username = ?`, post.author.username
-    )
-    authorDisplayName = rows[0]?.displayName || ''
-  } catch {}
-  const postWithDisplay = { ...post, author: { ...post.author, displayName: authorDisplayName } }
+  const postWithDisplay = { ...post, author: { ...post.author, displayName: post.author.displayName || '' } }
 
   // 浏览量非阻塞更新，不等待结果
   prisma.post.update({ where: { id: post.id }, data: { views: { increment: 1 } } }).catch(() => {})

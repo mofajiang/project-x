@@ -5,13 +5,13 @@ export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get('q')?.trim()
   if (!q || q.length < 1) return NextResponse.json([])
 
-  const posts = await prisma.post.findMany({
+  // 先搜标题和摘要（索引友好），不够再加全文
+  let posts = await prisma.post.findMany({
     where: {
       published: true,
       OR: [
         { title: { contains: q } },
         { excerpt: { contains: q } },
-        { content: { contains: q } },
       ],
     },
     orderBy: { publishedAt: 'desc' },
@@ -24,6 +24,28 @@ export async function GET(req: NextRequest) {
       publishedAt: true,
     },
   })
+
+  // 标题/摘要不够 20 条时补充全文搜索
+  if (posts.length < 20) {
+    const existingIds = new Set(posts.map(p => p.id))
+    const contentPosts = await prisma.post.findMany({
+      where: {
+        published: true,
+        id: { notIn: Array.from(existingIds) },
+        content: { contains: q },
+      },
+      orderBy: { publishedAt: 'desc' },
+      take: 20 - posts.length,
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        excerpt: true,
+        publishedAt: true,
+      },
+    })
+    posts = [...posts, ...contentPosts]
+  }
 
   return NextResponse.json(posts)
 }

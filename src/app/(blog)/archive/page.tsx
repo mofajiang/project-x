@@ -3,7 +3,7 @@ import { formatDate } from '@/lib/utils'
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export default async function ArchivePage() {
   const posts = await prisma.post.findMany({

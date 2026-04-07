@@ -4,6 +4,7 @@ import { getSessionFromRequest } from '@/lib/auth'
 import { sendCommentApprovedNotification, sendReplyNotification } from '@/lib/mailer'
 import { runMigrations } from '@/lib/db-migrate'
 import { getSiteConfig } from '@/lib/config'
+import { revalidateTag } from 'next/cache'
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
@@ -86,6 +87,7 @@ export async function PUT(req: NextRequest) {
   } : null
 
   const comment = await prisma.comment.update({ where: { id }, data: { approved } })
+  revalidateTag('comments')
 
   // 审核通过后发邮件通知
   if (approved && before) {
@@ -120,5 +122,6 @@ export async function DELETE(req: NextRequest) {
   await runMigrations()
   const { id } = await req.json()
   await prisma.comment.delete({ where: { id } })
+  revalidateTag('comments')
   return NextResponse.json({ ok: true })
 }

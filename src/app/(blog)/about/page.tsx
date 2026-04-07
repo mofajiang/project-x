@@ -1,7 +1,7 @@
 import { getSiteConfig } from '@/lib/config'
 import { MarkdownRenderer } from '@/components/blog/MarkdownRenderer'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 300
 
 export default async function AboutPage() {
   const config = await getSiteConfig()

@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { getSiteConfig } from '@/lib/config'
 import { NextResponse } from 'next/server'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 3600
 
 function escapeXml(str: string) {
   return str
