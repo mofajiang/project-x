@@ -201,6 +201,7 @@ export default function SettingsPage() {
     setUploadingIcon(true)
     const fd = new FormData()
     fd.append('file', file)
+    fd.append('fixedName', 'site-icon')
     const res = await fetch('/api/upload', { method: 'POST', body: fd })
     const data = await res.json()
     setUploadingIcon(false)

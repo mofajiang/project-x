@@ -9,6 +9,7 @@ export async function POST(req: NextRequest) {
 
   const formData = await req.formData()
   const file = formData.get('file') as File
+  const fixedNameRaw = formData.get('fixedName')
   if (!file) return NextResponse.json({ error: 'No file' }, { status: 400 })
 
   // 文件类型白名单校验
@@ -26,7 +27,12 @@ export async function POST(req: NextRequest) {
   const bytes = await file.arrayBuffer()
   const buffer = Buffer.from(bytes)
 
-  const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+  const fixedName = typeof fixedNameRaw === 'string'
+    ? fixedNameRaw.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '')
+    : ''
+  const filename = fixedName
+    ? `${fixedName}.${ext}`
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
   const uploadDir = path.join(process.cwd(), 'public', 'uploads')
 
   await mkdir(uploadDir, { recursive: true })
