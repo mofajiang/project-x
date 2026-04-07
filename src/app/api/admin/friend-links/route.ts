@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { revalidateTag } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
-import { checkFriendLinkOnTargetSite } from '@/lib/friend-link-checker'
+import { checkFriendLinkOnTargetSite, getFavicon } from '@/lib/friend-link-checker'
 
 function toSafeNumber(value: unknown, fallback = 0) {
   if (typeof value === 'bigint') {
@@ -139,7 +139,7 @@ export async function POST(req: NextRequest) {
     const name = (body?.name || '').trim()
     const url = normalizeUrl(body?.url || '')
     const description = (body?.description || '').trim()
-    const favicon = (body?.favicon || '').trim()
+    const faviconInput = (body?.favicon || '').trim()
     const email = (body?.email || '').trim()
     const status = ['pending', 'approved', 'rejected'].includes(body?.status) ? body.status : 'approved'
     const showInSidebar = toSafeBoolean(body?.showInSidebar, true)
@@ -150,6 +150,8 @@ export async function POST(req: NextRequest) {
 
     const existing = await prisma.friendLink.findFirst({ where: { url } })
     if (existing) return NextResponse.json({ error: '该链接已存在' }, { status: 400 })
+
+    const favicon = faviconInput || await getFavicon(url)
 
     const link = await prisma.friendLink.create({
       data: {
@@ -315,7 +317,7 @@ export async function PUT(req: NextRequest) {
       const nextName = String(payload?.name ?? '').trim()
       const nextUrl = normalizeUrl(String(payload?.url ?? ''))
       const nextDescription = String(payload?.description ?? '').trim()
-      const nextFavicon = String(payload?.favicon ?? '').trim()
+      const nextFaviconInput = String(payload?.favicon ?? '').trim()
       const nextEmail = String(payload?.email ?? '').trim()
       const nextStatus = ['pending', 'approved', 'rejected'].includes(String(payload?.status))
         ? String(payload?.status)
@@ -325,6 +327,8 @@ export async function PUT(req: NextRequest) {
 
       if (!nextName) return NextResponse.json({ error: '名称不能为空' }, { status: 400 })
       if (!nextUrl) return NextResponse.json({ error: 'URL 不能为空' }, { status: 400 })
+
+      const nextFavicon = nextFaviconInput || await getFavicon(nextUrl)
 
       const updated = await prisma.friendLink.update({
         where: { id },
