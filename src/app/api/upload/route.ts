@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionFromRequest } from '@/lib/auth'
-import { writeFile, mkdir } from 'fs/promises'
-import path from 'path'
+import { getStorageProvider } from '@/lib/storage'
 
 export async function POST(req: NextRequest) {
   const session = await getSessionFromRequest(req)
@@ -30,13 +29,19 @@ export async function POST(req: NextRequest) {
   const fixedName = typeof fixedNameRaw === 'string'
     ? fixedNameRaw.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '')
     : ''
-  const filename = fixedName
-    ? `${fixedName}.${ext}`
-    : `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-  const uploadDir = path.join(process.cwd(), 'public', 'uploads')
 
-  await mkdir(uploadDir, { recursive: true })
-  await writeFile(path.join(uploadDir, filename), buffer)
-
-  return NextResponse.json({ url: `/uploads/${filename}` })
+  const storage = await getStorageProvider()
+  try {
+    const saved = await storage.saveFile({
+      buffer,
+      originalName: file.name,
+      fileName: fixedName ? undefined : `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`,
+      fixedName: fixedName || undefined,
+      ensureUnique: !fixedName,
+      overwrite: !!fixedName,
+    })
+    return NextResponse.json({ url: saved.url })
+  } catch {
+    return NextResponse.json({ error: '上传失败' }, { status: 500 })
+  }
 }

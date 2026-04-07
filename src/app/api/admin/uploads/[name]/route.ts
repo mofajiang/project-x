@@ -1,26 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionFromRequest } from '@/lib/auth'
-import { rename, rm, stat, readFile } from 'fs/promises'
-import path from 'path'
-
-const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads')
-
-function safeName(input: string) {
-  const decoded = decodeURIComponent(input || '')
-  const cleaned = decoded
-    .trim()
-    .replace(/[\\/:*?"<>|]/g, '-')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^[-.]+|[-.]+$/g, '')
-  if (!cleaned || cleaned === '.' || cleaned === '..') return ''
-  return cleaned
-}
-
-function extOf(filename: string) {
-  const i = filename.lastIndexOf('.')
-  return i >= 0 ? filename.slice(i + 1).toLowerCase() : ''
-}
+import { getStorageProvider, safeName } from '@/lib/storage'
 
 function mimeByExt(ext: string) {
   const map: Record<string, string> = {
@@ -42,18 +22,17 @@ export async function GET(req: NextRequest, { params }: { params: { name: string
   const safe = safeName(params.name)
   if (!safe) return NextResponse.json({ error: '文件名无效' }, { status: 400 })
 
-  const filePath = path.join(UPLOAD_DIR, safe)
+  const storage = await getStorageProvider()
   try {
-    const data = await readFile(filePath)
-    const ext = extOf(safe)
-    return new NextResponse(data, {
+    const { data, ext } = await storage.readFile(safe)
+    return new NextResponse(new Uint8Array(data), {
       headers: {
         'Content-Type': mimeByExt(ext),
         'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(safe)}`,
       },
     })
   } catch {
-    return NextResponse.json({ error: '文件不存在' }, { status: 404 })
+    return NextResponse.json({ error: '文件不存在或当前存储不支持下载' }, { status: 404 })
   }
 }
 
@@ -66,36 +45,29 @@ export async function PUT(req: NextRequest, { params }: { params: { name: string
 
   const body = await req.json()
   const nextRaw = String(body?.newName || '').trim()
-  let nextName = safeName(nextRaw)
+  const nextName = safeName(nextRaw)
   if (!nextName) return NextResponse.json({ error: '新文件名无效' }, { status: 400 })
 
-  const oldExt = extOf(oldName)
-  const nextExt = extOf(nextName)
-  if (!nextExt && oldExt) {
-    nextName = `${nextName}.${oldExt}`
+  const storage = await getStorageProvider()
+  let file
+  try {
+    file = await storage.renameFile(oldName, nextName)
+  } catch (error: any) {
+    if (error?.message === 'NOT_SUPPORTED') {
+      return NextResponse.json({ error: '当前存储不支持重命名' }, { status: 400 })
+    }
+    if (error?.code === 'ENOENT') {
+      return NextResponse.json({ error: '原文件不存在' }, { status: 404 })
+    }
+    if (error?.message === 'FILE_EXISTS') {
+      return NextResponse.json({ error: '新文件名已存在' }, { status: 400 })
+    }
+    return NextResponse.json({ error: '重命名失败' }, { status: 500 })
   }
 
-  const oldPath = path.join(UPLOAD_DIR, oldName)
-  const newPath = path.join(UPLOAD_DIR, nextName)
-
-  try {
-    await stat(oldPath)
-  } catch {
-    return NextResponse.json({ error: '原文件不存在' }, { status: 404 })
-  }
-
-  try {
-    await stat(newPath)
-    return NextResponse.json({ error: '新文件名已存在' }, { status: 400 })
-  } catch {}
-
-  await rename(oldPath, newPath)
   return NextResponse.json({
     ok: true,
-    file: {
-      name: nextName,
-      url: `/uploads/${encodeURIComponent(nextName)}`,
-    },
+    file,
   })
 }
 
@@ -106,10 +78,14 @@ export async function DELETE(req: NextRequest, { params }: { params: { name: str
   const safe = safeName(params.name)
   if (!safe) return NextResponse.json({ error: '文件名无效' }, { status: 400 })
 
+  const storage = await getStorageProvider()
   try {
-    await rm(path.join(UPLOAD_DIR, safe), { force: false })
+    await storage.deleteFile(safe)
     return NextResponse.json({ ok: true })
-  } catch {
+  } catch (error: any) {
+    if (error?.message === 'NOT_SUPPORTED') {
+      return NextResponse.json({ error: '当前存储不支持删除' }, { status: 400 })
+    }
     return NextResponse.json({ error: '删除失败或文件不存在' }, { status: 404 })
   }
 }

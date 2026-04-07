@@ -161,6 +161,16 @@ export type SiteConfig = {
   copyright: string
   defaultTheme: string
   customDomain: string
+  storageDriver: 'local' | 's3' | 'smms' | string
+  storageS3Endpoint: string
+  storageS3Region: string
+  storageS3Bucket: string
+  storageS3AccessKeyId: string
+  storageS3SecretAccessKey: string
+  storageS3Prefix: string
+  storageS3ForcePathStyle: boolean
+  storagePublicBaseUrl: string
+  storageSmmsToken: string
 }
 
 export const DEFAULT_NAV: NavItem[] = [
@@ -208,6 +218,16 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
        COALESCE(visitorMapSource,'carto_positron') as visitorMapSource,
       COALESCE(visitorStatsDisplay,'["总访问","今日访问","7 日访问","14 日访问","国家数","精确坐标","国家/省份落点","最近时间"]') as visitorStatsDisplay,
        COALESCE(defaultTheme,'dark') as defaultTheme,
+        COALESCE(storageDriver,'local') as storageDriver,
+        COALESCE(storageS3Endpoint,'') as storageS3Endpoint,
+        COALESCE(storageS3Region,'auto') as storageS3Region,
+        COALESCE(storageS3Bucket,'') as storageS3Bucket,
+        COALESCE(storageS3AccessKeyId,'') as storageS3AccessKeyId,
+        COALESCE(storageS3SecretAccessKey,'') as storageS3SecretAccessKey,
+        COALESCE(storageS3Prefix,'uploads/') as storageS3Prefix,
+        COALESCE(storageS3ForcePathStyle,0) as storageS3ForcePathStyle,
+        COALESCE(storagePublicBaseUrl,'') as storagePublicBaseUrl,
+        COALESCE(storageSmmsToken,'') as storageSmmsToken,
        COALESCE(aiModelApiKey,'') as aiModelApiKey, COALESCE(aiModelName,'') as aiModelName,
        COALESCE(aiModelProvider,'openrouter') as aiModelProvider,
        COALESCE(aiModelBaseUrl,'') as aiModelBaseUrl,
@@ -228,6 +248,16 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
          COALESCE(visitorMapSource,'carto_positron') as visitorMapSource,
          COALESCE(visitorStatsDisplay,'["总访问","今日访问","7 日访问","14 日访问","国家数","精确坐标","国家/省份落点","最近时间"]') as visitorStatsDisplay,
          COALESCE(defaultTheme,'dark') as defaultTheme,
+         COALESCE(storageDriver,'local') as storageDriver,
+         COALESCE(storageS3Endpoint,'') as storageS3Endpoint,
+         COALESCE(storageS3Region,'auto') as storageS3Region,
+         COALESCE(storageS3Bucket,'') as storageS3Bucket,
+         COALESCE(storageS3AccessKeyId,'') as storageS3AccessKeyId,
+         COALESCE(storageS3SecretAccessKey,'') as storageS3SecretAccessKey,
+         COALESCE(storageS3Prefix,'uploads/') as storageS3Prefix,
+         COALESCE(storageS3ForcePathStyle,0) as storageS3ForcePathStyle,
+         COALESCE(storagePublicBaseUrl,'') as storagePublicBaseUrl,
+         COALESCE(storageSmmsToken,'') as storageSmmsToken,
          COALESCE(aiModelApiKey,'') as aiModelApiKey, COALESCE(aiModelName,'') as aiModelName,
          COALESCE(aiModelProvider,'openrouter') as aiModelProvider,
          COALESCE(aiModelBaseUrl,'') as aiModelBaseUrl,
@@ -288,6 +318,16 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
 
   if (!config.copyright) config.copyright = ''
   if (!config.defaultTheme) config.defaultTheme = 'dark'
+  if (!config.storageDriver) config.storageDriver = 'local'
+  if (!config.storageS3Endpoint) config.storageS3Endpoint = ''
+  if (!config.storageS3Region) config.storageS3Region = 'auto'
+  if (!config.storageS3Bucket) config.storageS3Bucket = ''
+  if (!config.storageS3AccessKeyId) config.storageS3AccessKeyId = ''
+  if (!config.storageS3SecretAccessKey) config.storageS3SecretAccessKey = ''
+  if (!config.storageS3Prefix) config.storageS3Prefix = 'uploads/'
+  if (config.storagePublicBaseUrl === undefined || config.storagePublicBaseUrl === null) config.storagePublicBaseUrl = ''
+  if (config.storageSmmsToken === undefined || config.storageSmmsToken === null) config.storageSmmsToken = ''
+  config.storageS3ForcePathStyle = toSafeBoolean(config.storageS3ForcePathStyle, false)
   // 新 AI 模型字段默认值
   if (!config.aiModelApiKey) config.aiModelApiKey = ''
   if (!config.aiModelName) config.aiModelName = ''

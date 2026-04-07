@@ -12,8 +12,11 @@ const RAW_CONFIG_COLUMNS = new Set([
   'openrouterApiKey', 'openrouterModel',
   'emailSubjectNewComment', 'emailSubjectReply', 'emailSubjectApproved', 'emailSenderName',
   'socialX', 'socialGithub', 'socialEmail',
+  'storageDriver', 'storageS3Endpoint', 'storageS3Region', 'storageS3Bucket',
+  'storageS3AccessKeyId', 'storageS3SecretAccessKey', 'storageS3Prefix',
+  'storageS3ForcePathStyle', 'storagePublicBaseUrl', 'storageSmmsToken',
 ])
-const BOOLEAN_COLUMNS = new Set(['commentApproval', 'showCommentIp', 'enableAiDetection', 'aiAutoApprove'])
+const BOOLEAN_COLUMNS = new Set(['commentApproval', 'showCommentIp', 'enableAiDetection', 'aiAutoApprove', 'storageS3ForcePathStyle'])
 
 function normalizeConfigValue(col: string, val: any) {
   if (BOOLEAN_COLUMNS.has(col)) return Boolean(val) ? 1 : 0

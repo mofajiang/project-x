@@ -27,6 +27,7 @@ export default function AdminUploadsPage() {
   const [customName, setCustomName] = useState('')
   const [editingName, setEditingName] = useState<string | null>(null)
   const [renameDraft, setRenameDraft] = useState('')
+  const [listError, setListError] = useState('')
 
   const filtered = useMemo(() => {
     const k = keyword.trim().toLowerCase()
@@ -39,10 +40,18 @@ export default function AdminUploadsPage() {
     try {
       const res = await fetch('/api/admin/uploads', { cache: 'no-store' })
       const data = await res.json()
-      if (!res.ok) throw new Error(data?.error || '获取失败')
+      if (!res.ok) {
+        const message = data?.error || '获取失败'
+        setListError(message)
+        throw new Error(message)
+      }
+      setListError('')
       setFiles(Array.isArray(data.files) ? data.files : [])
     } catch (err: any) {
-      toast.error(err?.message || '获取文件失败')
+      const msg = String(err?.message || '')
+      if (!msg.includes('不支持文件列表')) {
+        toast.error(err?.message || '获取文件失败')
+      }
       setFiles([])
     } finally {
       setLoading(false)
@@ -144,7 +153,7 @@ export default function AdminUploadsPage() {
           </button>
         </div>
         <p className='text-xs mt-2' style={{ color: 'var(--text-secondary)' }}>
-          支持上传、下载、重命名(编辑)和删除，文件会保存在 public/uploads。
+          支持上传、下载、重命名(编辑)和删除，具体存储位置由后端存储配置决定。
         </p>
       </div>
 
@@ -157,6 +166,13 @@ export default function AdminUploadsPage() {
           style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
         />
       </div>
+
+      {!loading && !!listError && (
+        <div className='rounded-2xl p-4 mb-4 text-sm' style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.35)', color: '#b45309' }}>
+          <p>{listError}</p>
+          <p className='mt-1'>可到站点设置的存储配置切换为本地或 S3，以使用文件列表/重命名/删除能力。</p>
+        </div>
+      )}
 
       {loading ? (
         <div className='py-12 text-center' style={{ color: 'var(--text-secondary)' }}>加载中...</div>
