@@ -3,7 +3,6 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import { IMEInput, IMETextarea } from '@/components/ui/IMEInput'
 import ImageCropModal from '@/components/ui/ImageCropModal'
-import { MarkdownEditor } from '@/components/admin/MarkdownEditor'
 import { StorageImagePicker } from '@/components/admin/StorageImagePicker'
 import { ADMIN_PAGE_TITLE_CLASS, ADMIN_CARD_LG_CLASS, ADMIN_SUBCARD_CLASS } from '@/components/admin/adminUi'
 import { DEFAULT_NAV, DEFAULT_WIDGETS, DEFAULT_SITE_LOGO, isImageSource, parseNavItems, parseSiteLogo, parseWidgets, type NavItem, type RightPanelWidget as Widget, type SiteLogo } from '@/lib/config'
@@ -422,7 +421,7 @@ export default function SettingsPage() {
           <div className={`${mobileCardClass} flex flex-col gap-2.5 sm:gap-4`} style={{ background: 'var(--bg-secondary)' }}>
             <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>🌐 站点选项</h2>
             <Field compact label="博客名称" value={config.siteName} onChange={v => setConfig(c => ({ ...c, siteName: v }))} placeholder="我的博客" />
-            <div><label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>博客简介 (支持 Markdown)</label><MarkdownEditor value={config.siteDesc} onChange={v => setConfig(c => ({ ...c, siteDesc: v }))} initialHeight={200} /></div>
+            <div><label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>博客简介（支持 Markdown）</label><IMETextarea value={config.siteDesc} onValueChange={v => setConfig(c => ({ ...c, siteDesc: v }))} rows={4} placeholder="用 Markdown 写一段博客简介..." className="w-full px-3 py-2 rounded-2xl text-sm outline-none resize-none" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} /></div>
             <Field compact label="邮箱" value={config.socialEmail} onChange={v => setConfig(c => ({ ...c, socialEmail: v }))} placeholder="you@example.com" />
           </div>
 
