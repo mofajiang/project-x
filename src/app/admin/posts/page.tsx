@@ -77,7 +77,7 @@ export default function AdminPostsPage() {
   }
 
   const renderPostCard = (post: Post) => (
-    <div key={post.id} className={`${ADMIN_CARD_CLASS} flex flex-col gap-3`} style={{ background: 'var(--bg-secondary)' }}>
+    <div key={post.id} className={`${ADMIN_CARD_CLASS} flex flex-col gap-2`} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <Link href={`/admin/posts/${post.id}`} className="font-medium text-base leading-6 block truncate" style={{ color: 'var(--text-primary)' }}>
@@ -98,7 +98,7 @@ export default function AdminPostsPage() {
         {post.tags.map(t => `#${t.tag.name}`).join(' ')}
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 pt-1">
         <Link href={`/admin/posts/${post.id}`}
           className="flex-1 text-center px-3 py-2 rounded-full text-xs font-bold transition-colors hover:opacity-80 min-h-9"
           style={{ background: 'rgba(29,155,240,0.15)', color: 'var(--accent)' }}>编辑</Link>
@@ -110,8 +110,8 @@ export default function AdminPostsPage() {
   )
 
   return (
-    <div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+    <div className="w-full max-w-6xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)' }}>文章管理</h1>
         <Link href="/admin/posts/new"
           className="px-4 py-2 rounded-full text-sm font-bold text-white text-center"
@@ -119,8 +119,8 @@ export default function AdminPostsPage() {
       </div>
 
       {/* 搜索 + 状态筛选 */}
-      <div className="flex flex-col gap-3 mb-4">
-        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2 flex-1">
+      <div className="rounded-2xl p-3 sm:p-4 mb-4" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2 flex-1 mb-3">
           <input
             type="text"
             placeholder="搜索文章标题..."
@@ -138,7 +138,7 @@ export default function AdminPostsPage() {
                 style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>清除</button>
           )}
         </form>
-        <div className="flex gap-1 p-1 rounded-full overflow-x-auto" style={{ background: 'var(--bg-hover)' }}>
+        <div className="flex gap-1 p-1 rounded-full overflow-x-auto" style={{ background: 'var(--bg)' }}>
           {statusTabs.map(tab => (
             <button key={tab.key} onClick={() => handleStatus(tab.key)}
               className="px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap"
@@ -166,7 +166,7 @@ export default function AdminPostsPage() {
             {data.posts.map(renderPostCard)}
           </div>
 
-          <div className="hidden sm:block rounded-2xl overflow-hidden" style={{ background: 'var(--bg-secondary)' }}>
+          <div className="hidden sm:block rounded-2xl overflow-hidden" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
             <table className="w-full text-sm">
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
