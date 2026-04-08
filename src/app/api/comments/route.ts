@@ -7,9 +7,17 @@ import { sendNewCommentNotification } from '@/lib/mailer'
 import { getClientIp } from '@/lib/request-ip'
 import { analyzeCommentWithAI, quickSpamCheck } from '@/lib/openrouter-spam-filter'
 import { revalidateTag } from 'next/cache'
+import { rateLimit } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
   await runMigrations()
+
+  // 评论频率限制：同一 IP 每分钟最多 5 条
+  const clientIp = getClientIp(req)
+  if (!rateLimit(`comment:${clientIp}`, { max: 5, windowMs: 60_000 })) {
+    return NextResponse.json({ error: '评论太频繁，请稍后再试' }, { status: 429 })
+  }
+
   const session = await getSessionFromRequest(req)
 
   let { postId, content, parentId, guestName, guestEmail, guestWebsite } = await req.json()

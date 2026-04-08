@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useState, useMemo, memo } from 'react'
 import { relativeTime } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { InternalQuoteCard, ExternalQuoteCard } from './QuoteCard'
@@ -66,11 +66,13 @@ function stripMarkdown(md: string): string {
     .trim()
 }
 
-export function PostCard({ post, currentUserId, index = 0 }: PostCardProps) {
+export const PostCard = memo(function PostCard({ post, currentUserId, index = 0 }: PostCardProps) {
   const [likes, setLikes] = useState(post.likes)
   const [liked, setLiked] = useState(false)
   const [liking, setLiking] = useState(false)
   const isAuthor = currentUserId && post.authorId && currentUserId === post.authorId
+  const plainText = useMemo(() => stripMarkdown(post.content).trim(), [post.content])
+  const quotes = useMemo(() => extractQuotes(post.content), [post.content])
 
   const handleLike = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -135,10 +137,7 @@ export function PostCard({ post, currentUserId, index = 0 }: PostCardProps) {
         </div>
 
         {/* 正文内容预览（类 X 推文直接展示） */}
-        {post.content && (() => {
-          const plainText = stripMarkdown(post.content).trim()
-          const quotes = extractQuotes(post.content)
-          return (
+        {post.content && (
             <>
               {plainText && (
                 <p className="text-sm leading-relaxed mt-1.5 line-clamp-5 whitespace-pre-line" style={{ color: 'var(--text-primary)' }}>
@@ -151,8 +150,7 @@ export function PostCard({ post, currentUserId, index = 0 }: PostCardProps) {
                   : <ExternalQuoteCard key={i} url={q.value} />
               )}
             </>
-          )
-        })()}
+        )}
 
         {/* 封面大图（无封面缩略图时全宽展示） */}
         {post.coverImage && (
@@ -198,4 +196,4 @@ export function PostCard({ post, currentUserId, index = 0 }: PostCardProps) {
       </Link>
     </article>
   )
-}
+})

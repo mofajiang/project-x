@@ -23,6 +23,10 @@ const _k  = [122, 53, 78, 63,118, 95, 44,101,111,118, 90, 83,114, 87]
 const _xk = [ 42, 71, 33, 85, 19, 60, 88, 72, 55, 91, 24, 63, 29, 48]
 const LICENSE_SECRET = process.env.LICENSE_SECRET || _a(_k.map((c, i) => c ^ _xk[i]))
 
+// 授权结果内存缓存（每个 Edge Worker 实例独立）
+const licenseCache = new Map<string, { allowed: boolean; expires: number }>()
+const LICENSE_CACHE_TTL = 60 * 60 * 1000 // 1 小时
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -40,23 +44,35 @@ export async function middleware(request: NextRequest) {
   if (!skipLicense) {
     const forwarded = request.headers.get('x-forwarded-host') || request.headers.get('host') || ''
     const hostname = forwarded.split(':')[0]
+
+    // 检查缓存
+    const cached = licenseCache.get(hostname)
     let allowed = false
-    try {
-      const timestamp = Date.now().toString()
-      const sig = await hmacSign(`${hostname}|${timestamp}`, LICENSE_SECRET)
-      const res = await fetch(`${LICENSE_SERVER}/api/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ domain: hostname, timestamp, sig }),
-        signal: AbortSignal.timeout(8000),
-      })
-      if (res.ok) {
-        const data = await res.json()
-        allowed = data.valid === true
+    if (cached && cached.expires > Date.now()) {
+      allowed = cached.allowed
+    } else {
+      try {
+        const timestamp = Date.now().toString()
+        const sig = await hmacSign(`${hostname}|${timestamp}`, LICENSE_SECRET)
+        const res = await fetch(`${LICENSE_SERVER}/api/verify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ domain: hostname, timestamp, sig }),
+          signal: AbortSignal.timeout(3000),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          allowed = data.valid === true
+        }
+      } catch {
+        // 网络异常时：如果之前验证通过过，沿用旧结果
+        if (cached?.allowed) {
+          allowed = true
+        }
       }
-    } catch {
-      allowed = false
+      licenseCache.set(hostname, { allowed, expires: Date.now() + LICENSE_CACHE_TTL })
     }
+
     if (!allowed) {
       const url = new URL('/unlicensed', request.url)
       url.searchParams.set('host', hostname)
