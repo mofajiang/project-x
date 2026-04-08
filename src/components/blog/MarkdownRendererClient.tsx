@@ -1,4 +1,5 @@
 'use client'
+import { useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
@@ -46,7 +47,7 @@ export default function MarkdownRendererClient({ content }: { content: string })
     return <div className="prose-x" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }} />
   }
 
-  const { segments } = parseQuotes(content)
+  const { segments } = useMemo(() => parseQuotes(content), [content])
 
   return (
     <div className="prose-x markdown-body">

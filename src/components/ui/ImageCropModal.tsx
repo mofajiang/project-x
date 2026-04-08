@@ -1,6 +1,21 @@
 'use client'
 import { useState, useCallback } from 'react'
-import Cropper from 'react-easy-crop'
+import dynamic from 'next/dynamic'
+
+// react-easy-crop types mark many defaulted props as required, use type assertion for dynamic import
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const Cropper = dynamic(() => import('react-easy-crop').then(mod => mod.default) as any, { ssr: false }) as React.ComponentType<{
+  image: string
+  crop: { x: number; y: number }
+  zoom: number
+  aspect: number
+  cropShape: 'rect' | 'round'
+  showGrid: boolean
+  onCropChange: (location: { x: number; y: number }) => void
+  onZoomChange: (zoom: number) => void
+  onCropComplete: (croppedArea: any, croppedAreaPixels: any) => void
+}>
+import React from 'react'
 
 interface Area { x: number; y: number; width: number; height: number }
 

@@ -40,7 +40,7 @@ const getPost = cache(async (slugCandidates: string[], requirePublished: boolean
     },
     include: {
       author: { select: { username: true, avatar: true, bio: true, displayName: true } },
-      tags: { include: { tag: true } },
+      tags: { select: { tag: { select: { id: true, name: true, slug: true } } } },
       _count: { select: { comments: true } },
     },
   })
