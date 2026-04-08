@@ -425,7 +425,7 @@ export default function AdminFriendLinksPage() {
                     >
                       {link.favicon ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={link.favicon} alt={link.name} className="w-full h-full object-cover" />
+                        <img src={link.favicon} alt={link.name} className="w-full h-full object-cover" loading="lazy" />
                       ) : (
                         <span>{link.name[0]?.toUpperCase()}</span>
                       )}

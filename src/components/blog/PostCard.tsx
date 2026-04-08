@@ -98,7 +98,7 @@ export const PostCard = memo(function PostCard({ post, currentUserId, index = 0 
           <div className="flex items-center gap-2.5 min-w-0 flex-1">
             <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0" style={{ background: 'var(--bg-secondary)', outline: '1px solid var(--border)' }}>
               {post.author.avatar
-                ? <Image src={post.author.avatar} alt={post.author.username} width={36} height={36} className="object-cover w-full h-full" sizes="36px" />
+                ? <Image src={post.author.avatar} alt={post.author.username} width={36} height={36} className="object-cover w-full h-full" sizes="36px" loading="lazy" />
                 : <div className="w-full h-full flex items-center justify-center text-base font-bold" style={{ color: 'var(--text-secondary)' }}>{post.author.username[0]?.toUpperCase()}</div>
               }
             </div>

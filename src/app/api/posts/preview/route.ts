@@ -40,5 +40,7 @@ export async function GET(req: NextRequest) {
   })
 
   if (!post) return NextResponse.json({ error: 'not found' }, { status: 404 })
-  return NextResponse.json(post)
+  return NextResponse.json(post, {
+    headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=600' },
+  })
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
-import { getSiteConfig } from '@/lib/config'
+import { getSiteConfig, type SiteConfig } from '@/lib/config'
 import { runMigrations } from '@/lib/db-migrate'
 import { sendNewCommentNotification } from '@/lib/mailer'
 import { getClientIp } from '@/lib/request-ip'
@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
 async function analyzeAndUpdateComment(
   commentId: string,
   content: string,
-  config: any,
+  config: SiteConfig,
   commentData: any,
   session: any
 ) {

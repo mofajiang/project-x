@@ -119,7 +119,7 @@ export function ExternalQuoteCard({ url }: ExternalQuoteProps) {
         {image && (
           <div className="w-24 h-24 flex-shrink-0 overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={image} alt={title} className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+            <img src={image} alt={title} className="w-full h-full object-cover" loading="lazy" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
           </div>
         )}
         <div className="flex-1 min-w-0 px-4 py-3">

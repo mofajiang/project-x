@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
       orderBy: [{ pinned: 'desc' }, { createdAt: 'desc' }],
       skip: (page - 1) * limit,
       take: limit,
-      include: { tags: { include: { tag: true } }, _count: { select: { comments: true } } },
+      include: { tags: { select: { tag: { select: { id: true, name: true, slug: true } } } }, _count: { select: { comments: true } } },
     }),
     prisma.post.count({ where }),
   ])

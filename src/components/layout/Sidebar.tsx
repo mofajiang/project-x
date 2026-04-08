@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useLogout } from '@/hooks/useLogout'
 import type { JWTPayload } from '@/lib/auth'
@@ -130,8 +131,7 @@ export function Sidebar({ siteName, siteLogo, loginMode, secretClicks, loginPath
         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
       >
         {isLogoImage ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={logoValue} alt={siteName} className="w-[20px] h-[20px] flex-none object-contain" />
+          <Image src={logoValue} alt={siteName} width={20} height={20} className="flex-none object-contain" />
         ) : (
           <span className={siteLogo?.type === 'text' ? 'text-[18px] font-black leading-none' : 'text-[22px] leading-none'}>
             {logoValue}

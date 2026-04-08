@@ -2,6 +2,7 @@
 import DOMPurify from 'dompurify'
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useLogout } from '@/hooks/useLogout'
 import type { JWTPayload } from '@/lib/auth'
@@ -137,8 +138,7 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
             aria-label="返回首页"
           >
             {isLogoImage ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={logoValue} alt="首页" className="w-[18px] h-[18px] flex-none object-contain" />
+              <Image src={logoValue} alt="首页" width={18} height={18} className="flex-none object-contain" />
             ) : (
               <span className={siteLogo?.type === 'text' ? 'text-[18px] font-black leading-none' : 'text-[22px] leading-none'}>
                 {logoValue}

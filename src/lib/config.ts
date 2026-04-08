@@ -120,6 +120,16 @@ export function parseWidgets(raw: string | undefined | null): RightPanelWidget[]
   return DEFAULT_WIDGETS.map(normalizeWidget)
 }
 
+export type AiModelConfig = {
+  enableCustomAiModel: boolean
+  aiModelProvider: string
+  aiModelName: string
+  aiModelBaseUrl: string
+  aiModelApiKey: string
+  aiModelMaxTokens: number
+  aiModelTimeout: number
+}
+
 export type SiteConfig = {
   id: string
   siteName: string

@@ -47,5 +47,7 @@ export async function GET(req: NextRequest) {
     posts = [...posts, ...contentPosts]
   }
 
-  return NextResponse.json(posts)
+  return NextResponse.json(posts, {
+    headers: { 'Cache-Control': 'public, max-age=60, stale-while-revalidate=300' },
+  })
 }

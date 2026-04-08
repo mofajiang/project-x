@@ -141,7 +141,7 @@ export function StorageImagePicker({ onSelect, buttonText = '从云存储选择'
                   >
                     <div className="flex items-center gap-2">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={file.url} alt={file.name} className="w-10 h-10 rounded object-cover" />
+                      <img src={file.url} alt={file.name} className="w-10 h-10 rounded object-cover" loading="lazy" />
                       <div className="min-w-0 flex-1">
                         <p className="text-sm truncate" style={{ color: 'var(--text-primary)' }}>{file.name}</p>
                         <p className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>{file.url}</p>
