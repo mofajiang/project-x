@@ -38,15 +38,25 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const config = await getSiteConfig()
-  const defaultTheme = (config as any).defaultTheme || 'dark'
+  const defaultTheme = config.defaultTheme || 'dark'
   const antiFlash = `(function(){var t=localStorage.getItem('theme');var d=${JSON.stringify(defaultTheme)};var theme=t||d;if(theme==='light')document.documentElement.classList.add('light');})()`
-  const visitorGeoMode = (config as any).visitorGeoMode || 'offline'
-  const visitorGeoEndpoint = (config as any).visitorGeoEndpoint || ''
-  const visitorGeoKey = (config as any).visitorGeoKey || ''
+  const visitorGeoMode = config.visitorGeoMode || 'offline'
+  const visitorGeoEndpoint = config.visitorGeoEndpoint || ''
+  const visitorGeoKey = config.visitorGeoKey || ''
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const websiteJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: config.siteName || '我的博客',
+    url: baseUrl,
+    description: config.siteDesc || '个人博客',
+    potentialAction: { '@type': 'SearchAction', target: { '@type': 'EntryPoint', urlTemplate: `${baseUrl}/search?q={search_term_string}` }, 'query-input': 'required name=search_term_string' },
+  }
   return (
     <html lang="zh-CN">
       <head>
         <script dangerouslySetInnerHTML={{ __html: antiFlash }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }} />
         <link rel="alternate" type="application/rss+xml" title={config.siteName || '我的博客'} href="/feed.xml" />
       </head>
       <body>

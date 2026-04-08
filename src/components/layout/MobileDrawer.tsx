@@ -1,4 +1,5 @@
 'use client'
+import DOMPurify from 'dompurify'
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -228,8 +229,8 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
                         {siteDesc && <p className="text-xs leading-relaxed mb-2" style={{ color: 'var(--text-primary)' }}>{siteDesc}</p>}
                         {(social.x || social.github || social.email) && (
                           <div className="flex flex-wrap gap-2">
-                            {social.x && <a href={`https://x.com/${social.x}`} target="_blank" className="text-[10px] px-2 py-1 rounded-full font-bold" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>𝕏 @{social.x}</a>}
-                            {social.github && <a href={`https://github.com/${social.github}`} target="_blank" className="text-[10px] px-2 py-1 rounded-full font-bold" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>GitHub</a>}
+                            {social.x && <a href={`https://x.com/${social.x}`} target="_blank" rel="noopener noreferrer" className="text-[10px] px-2 py-1 rounded-full font-bold" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>𝕏 @{social.x}</a>}
+                            {social.github && <a href={`https://github.com/${social.github}`} target="_blank" rel="noopener noreferrer" className="text-[10px] px-2 py-1 rounded-full font-bold" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>GitHub</a>}
                             {social.email && <a href={`mailto:${social.email}`} className="text-[10px] px-2 py-1 rounded-full font-bold" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>邮件</a>}
                           </div>
                         )}
@@ -377,7 +378,7 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
               )}
 
               {copyright && (
-                <div className="px-2 text-[10px] leading-relaxed opacity-75" style={{ color: 'var(--text-secondary)' }} dangerouslySetInnerHTML={{ __html: copyright }} />
+                <div className="px-2 text-[10px] leading-relaxed opacity-75" style={{ color: 'var(--text-secondary)' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(copyright) }} />
               )}
             </section>
           )}

@@ -34,7 +34,7 @@ export default async function TagPage({ params }: { params: { slug: string } }) 
   return (
     <div>
       <div className="sticky top-0 z-10 flex items-center gap-4 px-4 py-3 backdrop-blur-md" style={{ background: 'var(--bg-blur)', borderBottom: '1px solid var(--border)' }}>
-        <Link href="/" className="p-2 rounded-full hover:bg-x-bg-hover transition-colors" style={{ color: 'var(--text-primary)' }}>←</Link>
+        <Link href="/" aria-label="返回首页" className="p-2 rounded-full hover:bg-x-bg-hover transition-colors" style={{ color: 'var(--text-primary)' }}>←</Link>
         <div>
           <p className="font-bold text-xl" style={{ color: 'var(--text-primary)' }}>#{tag.name}</p>
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{tag.posts.length} 篇文章</p>

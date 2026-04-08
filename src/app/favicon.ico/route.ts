@@ -29,7 +29,7 @@ function withCacheHeaders(contentType: string) {
 
 export async function GET(req: NextRequest) {
   const config = await getSiteConfig()
-  const iconSrc = String((config as any).siteIcon || '').trim()
+  const iconSrc = String(config.siteIcon || '').trim()
 
   if (!iconSrc) {
     return NextResponse.redirect(new URL('/default-avatar.png', req.url), { status: 302 })

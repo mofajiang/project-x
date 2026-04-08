@@ -3,8 +3,12 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
 import rehypeRaw from 'rehype-raw'
+import DOMPurify from 'dompurify'
+import { createLowlight, common } from 'lowlight'
 import 'highlight.js/styles/github-dark.css'
 import { InternalQuoteCard, ExternalQuoteCard } from './QuoteCard'
+
+const lowlight = createLowlight(common)
 
 // 解析引用语法，将特殊行转为占位符，渲染时替换为组件
 function parseQuotes(content: string): { segments: Array<{ type: 'md' | 'internal' | 'external'; content: string; url?: string; title?: string; desc?: string }> } {
@@ -39,7 +43,7 @@ function parseQuotes(content: string): { segments: Array<{ type: 'md' | 'interna
 export default function MarkdownRendererClient({ content }: { content: string }) {
   const isHtml = content.trimStart().startsWith('<')
   if (isHtml) {
-    return <div className="prose-x" dangerouslySetInnerHTML={{ __html: content }} />
+    return <div className="prose-x" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }} />
   }
 
   const { segments } = parseQuotes(content)
@@ -57,7 +61,7 @@ export default function MarkdownRendererClient({ content }: { content: string })
           <ReactMarkdown
             key={i}
             remarkPlugins={[remarkGfm]}
-            rehypePlugins={[rehypeHighlight, rehypeRaw]}
+            rehypePlugins={[[rehypeHighlight, { lowlight }], rehypeRaw]}
           >
             {seg.content}
           </ReactMarkdown>

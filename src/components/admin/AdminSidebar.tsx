@@ -163,7 +163,7 @@ export function AdminSidebar({ username }: { username: string }) {
           >
             <div className="flex flex-col gap-1">
               <AdminThemeToggle />
-              <a href="/" target="_blank" className="text-xs py-1.5 px-3 rounded-xl text-center" style={{ color: 'var(--text-secondary)' }}>查看博客 ↗</a>
+              <a href="/" target="_blank" rel="noopener noreferrer" className="text-xs py-1.5 px-3 rounded-xl text-center" style={{ color: 'var(--text-secondary)' }}>查看博客 ↗</a>
               <button onClick={logout} className="text-xs py-1.5 px-3 rounded-xl text-center w-full" style={{ color: 'var(--red)' }}>退出登录</button>
             </div>
           </div>

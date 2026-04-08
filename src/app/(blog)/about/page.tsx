@@ -22,14 +22,14 @@ export default async function AboutPage() {
         </div>
         <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
           {config.socialX && (
-            <a href={`https://x.com/${config.socialX}`} target="_blank"
+            <a href={`https://x.com/${config.socialX}`} target="_blank" rel="noopener noreferrer"
               className="px-5 py-2 rounded-full text-sm font-bold transition-colors hover:opacity-80"
               style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
               𝕏 @{config.socialX}
             </a>
           )}
           {config.socialGithub && (
-            <a href={`https://github.com/${config.socialGithub}`} target="_blank"
+            <a href={`https://github.com/${config.socialGithub}`} target="_blank" rel="noopener noreferrer"
               className="px-5 py-2 rounded-full text-sm font-bold transition-colors hover:opacity-80"
               style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
               GitHub

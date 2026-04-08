@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { cache } from 'react'
 import { prisma } from '@/lib/prisma'
 import { formatDate, relativeTime } from '@/lib/utils'
 import { PostActions } from '@/components/blog/PostActions'
@@ -31,12 +32,23 @@ function buildSlugCandidates(input: string) {
   return Array.from(set).filter(Boolean)
 }
 
+const getPost = cache(async (slugCandidates: string[], requirePublished: boolean) => {
+  return prisma.post.findFirst({
+    where: {
+      slug: { in: slugCandidates },
+      ...(requirePublished ? { published: true } : {}),
+    },
+    include: {
+      author: { select: { username: true, avatar: true, bio: true, displayName: true } },
+      tags: { include: { tag: true } },
+      _count: { select: { comments: true } },
+    },
+  })
+})
+
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   const slugCandidates = buildSlugCandidates(params.slug)
-  const post = await prisma.post.findFirst({
-    where: { slug: { in: slugCandidates }, published: true },
-    include: { author: { select: { username: true } }, tags: { include: { tag: true } } },
-  })
+  const post = await getPost(slugCandidates, true)
   if (!post) return {}
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
   return {
@@ -59,6 +71,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       description: post.excerpt || post.content.slice(0, 160).replace(/[#*`]/g, ''),
       images: post.coverImage ? [post.coverImage] : [],
     },
+    alternates: {
+      canonical: `${baseUrl}/post/${post.slug}`,
+    },
   }
 }
 
@@ -66,17 +81,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
   const config = await getSiteConfig()
   const slugCandidates = buildSlugCandidates(params.slug)
   const session = await getSession()
-  const post = await prisma.post.findFirst({
-    where: {
-      slug: { in: slugCandidates },
-      ...(session ? {} : { published: true }),
-    },
-    include: {
-      author: { select: { username: true, avatar: true, bio: true, displayName: true } },
-      tags: { include: { tag: true } },
-      _count: { select: { comments: true } },
-    },
-  })
+  const post = await getPost(slugCandidates, !session)
   if (!post || (!post.published && !session)) notFound()
 
   const postWithDisplay = { ...post, author: { ...post.author, displayName: post.author.displayName || '' } }
@@ -103,11 +108,25 @@ export default async function PostPage({ params }: { params: { slug: string } })
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const comments = commentsRaw as any[]
 
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: post.title,
+    description: post.excerpt || post.content.slice(0, 160).replace(/[#*`]/g, ''),
+    author: { '@type': 'Person', name: postWithDisplay.author.displayName || post.author.username },
+    datePublished: post.publishedAt?.toISOString(),
+    dateModified: post.updatedAt.toISOString(),
+    url: `${baseUrl}/post/${post.slug}`,
+    ...(post.coverImage ? { image: post.coverImage } : {}),
+  }
+
   return (
     <div>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* 返回导航 */}
       <div className="sticky top-0 z-10 flex items-center gap-4 px-4 py-3 backdrop-blur-md" style={{ background: 'var(--bg-blur)', borderBottom: '1px solid var(--border)' }}>
-        <Link href="/" className="w-9 h-9 rounded-full flex items-center justify-center transition-colors hover:bg-white/10" style={{ color: 'var(--text-primary)' }}>
+        <Link href="/" aria-label="返回首页" className="w-9 h-9 rounded-full flex items-center justify-center transition-colors hover:bg-white/10" style={{ color: 'var(--text-primary)' }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
         </Link>
         <span className="font-bold text-[17px]" style={{ color: 'var(--text-primary)' }}>文章</span>
@@ -178,7 +197,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
       </article>
 
       {/* 评论区 */}
-      <CommentSection postId={post.id} comments={comments} session={session} showCommentIp={!!(config as any).showCommentIp} />
+      <CommentSection postId={post.id} comments={comments} session={session} showCommentIp={!!config.showCommentIp} />
     </div>
   )
 }

@@ -1,3 +1,4 @@
+import DOMPurify from 'isomorphic-dompurify'
 import { unstable_cache } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { SearchBox } from './SearchBox'
@@ -66,7 +67,7 @@ export async function RightPanel({ siteDesc, social, widgets = [], copyright = '
   ])
 
   return (
-    <aside className="w-[350px] sticky top-0 h-screen overflow-y-auto px-4 py-4 hidden lg:block" style={{ WebkitFontSmoothing: 'antialiased' }}>
+    <aside aria-label="侧边栏" className="w-[350px] sticky top-0 h-screen overflow-y-auto px-4 py-4 hidden lg:block" style={{ WebkitFontSmoothing: 'antialiased' }}>
       {enabledWidgets.map((widget, i) => {
         const title = widget.title || DEFAULT_TITLES[widget.type] || ''
 
@@ -82,8 +83,8 @@ export async function RightPanel({ siteDesc, social, widgets = [], copyright = '
               {siteDesc && <p className="text-sm leading-relaxed px-4" style={{ color: 'var(--text-secondary)' }}>{siteDesc}</p>}
               {(social.x || social.github || social.email) && (
                 <div className="flex gap-2 mt-3 mb-3 flex-wrap px-4 pb-1">
-                  {social.x && <a href={`https://x.com/${social.x}`} target="_blank" className="text-xs px-3 py-1 rounded-full font-bold transition-colors hover:opacity-80" style={{ background: 'var(--accent)', color: '#fff' }}>𝕏 @{social.x}</a>}
-                  {social.github && <a href={`https://github.com/${social.github}`} target="_blank" className="text-xs px-3 py-1 rounded-full font-bold transition-colors hover:opacity-80" style={{ background: 'var(--accent)', color: '#fff' }}>GitHub</a>}
+                  {social.x && <a href={`https://x.com/${social.x}`} target="_blank" rel="noopener noreferrer" className="text-xs px-3 py-1 rounded-full font-bold transition-colors hover:opacity-80" style={{ background: 'var(--accent)', color: '#fff' }}>𝕏 @{social.x}</a>}
+                  {social.github && <a href={`https://github.com/${social.github}`} target="_blank" rel="noopener noreferrer" className="text-xs px-3 py-1 rounded-full font-bold transition-colors hover:opacity-80" style={{ background: 'var(--accent)', color: '#fff' }}>GitHub</a>}
                   {social.email && <a href={`mailto:${social.email}`} className="text-xs px-3 py-1 rounded-full font-bold transition-colors hover:opacity-80" style={{ background: 'var(--accent)', color: '#fff' }}>邮件</a>}
                 </div>
               )}
@@ -220,7 +221,7 @@ export async function RightPanel({ siteDesc, social, widgets = [], copyright = '
         <div
           className="px-2 pt-1 pb-4 text-xs text-center leading-relaxed"
           style={{ color: 'var(--text-secondary)' }}
-          dangerouslySetInnerHTML={{ __html: copyright }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(copyright) }}
         />
       )}
     </aside>

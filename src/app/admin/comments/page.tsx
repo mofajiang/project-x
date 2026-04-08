@@ -199,7 +199,7 @@ export default function AdminCommentsPage() {
               </div>
               <p className="text-sm leading-6" style={{ color: 'var(--text-primary)' }}>{comment.content}</p>
               <p className="text-xs mt-2" style={{ color: 'var(--text-secondary)' }}>
-                来自文章：<a href={`/post/${comment.post.slug}`} target="_blank" className="hover:underline" style={{ color: 'var(--accent)' }}>{comment.post.title}</a>
+                来自文章：<a href={`/post/${comment.post.slug}`} target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: 'var(--accent)' }}>{comment.post.title}</a>
               </p>
             </div>
           </div>

@@ -10,9 +10,9 @@ import { prisma } from '@/lib/prisma'
 
 export default async function BlogLayout({ children }: { children: React.ReactNode }) {
   const config = await getSiteConfig()
-  const navItems = parseNavItems((config as any).navItems)
-  const siteLogo = parseSiteLogo((config as any).siteLogo)
-  const widgets = parseWidgets((config as any).rightPanelWidgets)
+  const navItems = parseNavItems(config.navItems)
+  const siteLogo = parseSiteLogo(config.siteLogo)
+  const widgets = parseWidgets(config.rightPanelWidgets)
   const session = await getSession()
   const [topTags, hotPosts, approvedFriendLinks] = await Promise.all([
     prisma.tag.findMany({
@@ -73,7 +73,7 @@ export default async function BlogLayout({ children }: { children: React.ReactNo
         siteDesc={config.siteDesc}
         social={{ x: config.socialX, github: config.socialGithub, email: config.socialEmail }}
         widgets={widgets}
-        copyright={(config as any).copyright || ''}
+        copyright={config.copyright || ''}
         topTags={mobileTopTags}
         hotPosts={hotPosts}
         approvedFriendLinks={approvedFriendLinks}
@@ -90,7 +90,7 @@ export default async function BlogLayout({ children }: { children: React.ReactNo
         </main>
         {/* 右侧面板（桌面端） */}
         <div className="hidden lg:flex w-[350px] flex-shrink-0">
-          <RightPanel siteDesc={config.siteDesc} social={{ x: config.socialX, github: config.socialGithub, email: config.socialEmail }} widgets={widgets} copyright={(config as any).copyright || ''} />
+          <RightPanel siteDesc={config.siteDesc} social={{ x: config.socialX, github: config.socialGithub, email: config.socialEmail }} widgets={widgets} copyright={config.copyright || ''} />
         </div>
       </div>
 
