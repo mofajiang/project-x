@@ -5,8 +5,6 @@ import { ToasterProvider } from '@/components/ToasterProvider'
 import { getSiteConfig } from '@/lib/config'
 import { VisitorTracker } from '@/components/VisitorTracker'
 
-export const dynamic = 'force-dynamic'
-
 export async function generateMetadata(): Promise<Metadata> {
   const config = await getSiteConfig()
   const icon = '/favicon.ico'
