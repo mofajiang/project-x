@@ -1,8 +1,12 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 
-export const dynamic = 'force-dynamic'
+export const metadata: Metadata = {
+  title: '友链申请状态',
+  robots: { index: false },
+}
 
 type StatusTone = {
   label: string

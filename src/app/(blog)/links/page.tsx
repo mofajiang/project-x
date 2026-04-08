@@ -1,5 +1,11 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
+
+export const metadata: Metadata = {
+  title: '友情链接',
+  description: '友情链接列表，欢迎互换友链',
+}
 
 async function getApprovedLinks() {
   try {

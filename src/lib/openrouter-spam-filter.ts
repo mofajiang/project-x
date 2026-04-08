@@ -11,6 +11,7 @@ interface SpamAnalysisResult {
 }
 
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions'
+const DEBUG = process.env.NODE_ENV === 'development'
 
 /**
  * 调用 OpenRouter API 分析评论内容
@@ -25,7 +26,7 @@ export async function analyzeCommentWithAI(
   authorWebsite?: string,
   maxTokens?: number,
 ): Promise<SpamAnalysisResult> {
-  console.log('[analyzeCommentWithAI] 开始调用，参数检查:', { hasApiKey: !!apiKey, model, contentLength: content.length })
+  if (DEBUG) console.log('[analyzeCommentWithAI] 开始调用，参数检查:', { hasApiKey: !!apiKey, model, contentLength: content.length })
   
   if (!apiKey) {
     console.error('[spam-filter] ❌ OpenRouter API 密钥未配置（为空），跳过 AI 检测')
@@ -48,8 +49,7 @@ export async function analyzeCommentWithAI(
   }
 
   try {
-    console.log('[openrouter] 准备发送请求到:', OPENROUTER_API_URL)
-    console.log('[openrouter] 使用模型:', model)
+    if (DEBUG) console.log('[openrouter] 准备发送请求到:', OPENROUTER_API_URL, '模型:', model)
     
     const systemPrompt = `你是博客评论垃圾检测系统。分析 <comment> 标签内的评论，判断是否为垃圾/低质量评论。
 评估维度：垃圾广告、骚扰攻击、机器生成、语言质量。
@@ -83,7 +83,7 @@ ${authorWebsite ? `网站: ${authorWebsite}` : ''}`
       }),
     })
 
-    console.log('[openrouter] API 响应状态:', response.status, response.statusText)
+    if (DEBUG) console.log('[openrouter] API 响应状态:', response.status, response.statusText)
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
@@ -97,7 +97,7 @@ ${authorWebsite ? `网站: ${authorWebsite}` : ''}`
     }
 
     const data = await response.json()
-    console.log('[openrouter] 原始响应体 (前300字):', JSON.stringify(data).substring(0, 300))
+    if (DEBUG) console.log('[openrouter] 原始响应体 (前300字):', JSON.stringify(data).substring(0, 300))
 
     // 记录 token 使用量，便于成本监控
     if (data.usage) {
@@ -112,7 +112,7 @@ ${authorWebsite ? `网站: ${authorWebsite}` : ''}`
     
     // 如果 content 为空，尝试从 reasoning 字段提取（某些模型如 reasoning 会用这个格式）
     if (!responseContent && data.choices?.[0]?.message?.reasoning) {
-      console.log('[openrouter] ⚠️  content 为空，尝试从 reasoning 字段提取...')
+      if (DEBUG) console.log('[openrouter] ⚠️  content 为空，尝试从 reasoning 字段提取...')
       responseContent = data.choices[0].message.reasoning?.trim()
     }
 
@@ -126,8 +126,8 @@ ${authorWebsite ? `网站: ${authorWebsite}` : ''}`
       }
     }
     
-    console.log('[openrouter] ✅ 收到响应内容长度:', responseContent.length, '字')
-    console.log('[openrouter] 完整响应内容:', responseContent)
+    if (DEBUG) console.log('[openrouter] ✅ 收到响应内容长度:', responseContent.length, '字')
+    if (DEBUG) console.log('[openrouter] 完整响应内容:', responseContent)
 
     // 解析 JSON（可能被包裹在 markdown ``` 中）
     let jsonStr = responseContent.trim()
@@ -141,16 +141,16 @@ ${authorWebsite ? `网站: ${authorWebsite}` : ''}`
     // 如果仍然失败，尝试提取第一个 { 到最后一个 }
     let result: any = null
     try {
-      console.log('[openrouter] 尝试直接解析 JSON...')
+      if (DEBUG) console.log('[openrouter] 尝试直接解析 JSON...')
       result = JSON.parse(jsonStr.trim())
     } catch (parseErr: any) {
-      console.log('[openrouter] 直接解析失败，尝试提取 JSON 对象...')
+      if (DEBUG) console.log('[openrouter] 直接解析失败，尝试提取 JSON 对象...')
       const start = jsonStr.indexOf('{')
       const end = jsonStr.lastIndexOf('}')
       if (start !== -1 && end !== -1 && end > start) {
         try {
           jsonStr = jsonStr.substring(start, end + 1)
-          console.log('[openrouter] 提取的 JSON:', jsonStr.substring(0, 100), '...')
+          if (DEBUG) console.log('[openrouter] 提取的 JSON:', jsonStr.substring(0, 100), '...')
           result = JSON.parse(jsonStr)
         } catch (extractErr: any) {
           console.error('[openrouter] ❌ JSON 提取和解析都失败:', {
@@ -166,7 +166,7 @@ ${authorWebsite ? `网站: ${authorWebsite}` : ''}`
       }
     }
 
-    console.log('[openrouter] ✅ JSON 解析成功:', { riskScore: result.riskScore, isSpam: result.isSpam })
+    if (DEBUG) console.log('[openrouter] ✅ JSON 解析成功:', { riskScore: result.riskScore, isSpam: result.isSpam })
 
     // 验证和归一化结果
     const normalized = {
@@ -175,7 +175,7 @@ ${authorWebsite ? `网站: ${authorWebsite}` : ''}`
       riskReasons: Array.isArray(result.riskReasons) ? result.riskReasons : [],
       confidence: Math.min(1, Math.max(0, Number(result.confidence) || 0)),
     }
-    console.log('[openrouter] ✅ 最终返回结果:', normalized)
+    if (DEBUG) console.log('[openrouter] ✅ 最终返回结果:', normalized)
     return normalized
   } catch (error: any) {
     console.error('[spam-filter] ❌ AI 分析异常:', error?.message || error)
