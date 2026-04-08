@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
 import { sendCommentApprovedNotification, sendReplyNotification } from '@/lib/mailer'
@@ -19,15 +20,11 @@ export async function GET(req: NextRequest) {
   const search = searchParams.get('search')?.trim() || ''
   const filter = searchParams.get('filter') || 'all'
 
-  const where: any = {}
+  const where: Prisma.CommentWhereInput = {}
   if (filter === 'pending') where.approved = false
   if (filter === 'approved') where.approved = true
   if (search) {
-    where.OR = [
-      { content: { contains: search } },
-      { guestName: { contains: search } },
-      { ip: { contains: search } },
-    ]
+    where.OR = [{ content: { contains: search } }, { guestName: { contains: search } }, { ip: { contains: search } }]
   }
 
   const [comments, total, pendingCount] = await Promise.all([
@@ -71,20 +68,27 @@ export async function PUT(req: NextRequest) {
      JOIN Post p ON p.id = c.postId
      LEFT JOIN Comment par ON par.id = c.parentId
      LEFT JOIN User u ON u.id = par.authorId
-     WHERE c.id = ?`, id
+     WHERE c.id = ?`,
+    id
   )
-  const before = rows[0] ? {
-    content: rows[0].content,
-    guestName: rows[0].guestName,
-    guestEmail: rows[0].guestEmail,
-    ip: rows[0].ip,
-    post: { title: rows[0].postTitle, slug: rows[0].postSlug },
-    parent: rows[0].parentId ? {
-      guestEmail: rows[0].parentGuestEmail,
-      guestName: rows[0].parentGuestName,
-      author: rows[0].parentUserEmail ? { email: rows[0].parentUserEmail, username: rows[0].parentUsername } : null,
-    } : null,
-  } : null
+  const before = rows[0]
+    ? {
+        content: rows[0].content,
+        guestName: rows[0].guestName,
+        guestEmail: rows[0].guestEmail,
+        ip: rows[0].ip,
+        post: { title: rows[0].postTitle, slug: rows[0].postSlug },
+        parent: rows[0].parentId
+          ? {
+              guestEmail: rows[0].parentGuestEmail,
+              guestName: rows[0].parentGuestName,
+              author: rows[0].parentUserEmail
+                ? { email: rows[0].parentUserEmail, username: rows[0].parentUsername }
+                : null,
+            }
+          : null,
+      }
+    : null
 
   const comment = await prisma.comment.update({ where: { id }, data: { approved } })
   revalidateTag('comments')
@@ -99,7 +103,15 @@ export async function PUT(req: NextRequest) {
     const guestEmail = (before as any).guestEmail
     const guestName = (before as any).guestName || '访客'
     if (guestEmail) {
-      sendCommentApprovedNotification({ toEmail: guestEmail, toName: guestName, postTitle, postUrl, content: before.content, customSubject: emailConfig?.emailSubjectApproved || undefined, senderName: emailConfig?.emailSenderName || undefined }).catch(() => {})
+      sendCommentApprovedNotification({
+        toEmail: guestEmail,
+        toName: guestName,
+        postTitle,
+        postUrl,
+        content: before.content,
+        customSubject: emailConfig?.emailSubjectApproved || undefined,
+        senderName: emailConfig?.emailSenderName || undefined,
+      }).catch(() => {})
     }
 
     // 2. 如果是回复，通知被回复者
@@ -108,7 +120,16 @@ export async function PUT(req: NextRequest) {
       const parentName = before.parent.guestName || before.parent.author?.username || '用户'
       const replierName = (before as any).guestName || '用户'
       if (parentEmail && parentEmail !== guestEmail) {
-        sendReplyNotification({ toEmail: parentEmail, toName: parentName, replierName, postTitle, postUrl, replyContent: before.content, customSubject: emailConfig?.emailSubjectReply || undefined, senderName: emailConfig?.emailSenderName || undefined }).catch(() => {})
+        sendReplyNotification({
+          toEmail: parentEmail,
+          toName: parentName,
+          replierName,
+          postTitle,
+          postUrl,
+          replyContent: before.content,
+          customSubject: emailConfig?.emailSubjectReply || undefined,
+          senderName: emailConfig?.emailSenderName || undefined,
+        }).catch(() => {})
       }
     }
   }

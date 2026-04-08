@@ -15,7 +15,8 @@ function escapeXml(str: string) {
 
 export async function GET(req: Request) {
   const config = await getSiteConfig()
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || `https://${req.headers.get('host') || 'localhost'}`
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || `https://${req.headers.get('host') || 'localhost'}`
   const siteName = config.siteName || '我的博客'
   const siteDesc = config.siteDesc || ''
 
@@ -35,13 +36,14 @@ export async function GET(req: Request) {
     },
   })
 
-  const items = posts.map(post => {
-    const url = `${siteUrl}/post/${post.slug}`
-    const date = (post.publishedAt || post.createdAt).toUTCString()
-    const desc = post.excerpt || post.content.slice(0, 200).replace(/[#*`>\[\]]/g, '')
-    const author = post.author.displayName || post.author.username
-    const categories = (post as any).tags?.map((t: any) => `\n      <category>${escapeXml(t.tag.name)}</category>`).join('') || ''
-    return `
+  const items = posts
+    .map((post) => {
+      const url = `${siteUrl}/post/${post.slug}`
+      const date = (post.publishedAt || post.createdAt).toUTCString()
+      const desc = post.excerpt || post.content.slice(0, 200).replace(/[#*`>\[\]]/g, '')
+      const author = post.author.displayName || post.author.username
+      const categories = post.tags?.map((t) => `\n      <category>${escapeXml(t.tag.name)}</category>`).join('') || ''
+      return `
     <item>
       <title>${escapeXml(post.title)}</title>
       <link>${url}</link>
@@ -51,7 +53,8 @@ export async function GET(req: Request) {
       <author>${escapeXml(author)}</author>
       <pubDate>${date}</pubDate>${categories}
     </item>`
-  }).join('')
+    })
+    .join('')
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">

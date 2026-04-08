@@ -1,5 +1,10 @@
 {
-    "recommendations": [
-        "github.copilot-chat"
-    ]
+  "recommendations": [
+    "github.copilot-chat",
+    "github.copilot",
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "prisma.prisma",
+    "bradlc.vscode-tailwindcss"
+  ]
 }

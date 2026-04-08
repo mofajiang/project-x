@@ -1,4 +1,4 @@
-import { getErrorMessage } from './converters';
+import { getErrorMessage } from './converters'
 /**
  * OpenRouter AI 垃圾评论检测
  * 使用 Claude 模型进行内容分析
@@ -25,10 +25,15 @@ export async function analyzeCommentWithAI(
   authorName?: string,
   authorEmail?: string,
   authorWebsite?: string,
-  maxTokens?: number,
+  maxTokens?: number
 ): Promise<SpamAnalysisResult> {
-  if (DEBUG) console.log('[analyzeCommentWithAI] 开始调用，参数检查:', { hasApiKey: !!apiKey, model, contentLength: content.length })
-  
+  if (DEBUG)
+    console.log('[analyzeCommentWithAI] 开始调用，参数检查:', {
+      hasApiKey: !!apiKey,
+      model,
+      contentLength: content.length,
+    })
+
   if (!apiKey) {
     console.error('[spam-filter] ❌ OpenRouter API 密钥未配置（为空），跳过 AI 检测')
     return {
@@ -38,7 +43,7 @@ export async function analyzeCommentWithAI(
       confidence: 0,
     }
   }
-  
+
   if (!model) {
     console.error('[spam-filter] ❌ AI 模型 ID 未配置（为空）')
     return {
@@ -51,7 +56,7 @@ export async function analyzeCommentWithAI(
 
   try {
     if (DEBUG) console.log('[openrouter] 准备发送请求到:', OPENROUTER_API_URL, '模型:', model)
-    
+
     const systemPrompt = `你是博客评论垃圾检测系统。分析 <comment> 标签内的评论，判断是否为垃圾/低质量评论。
 评估维度：垃圾广告、骚扰攻击、机器生成、语言质量。
 评分标准：riskScore 0-20 正常，21-50 可疑，51-100 高危。
@@ -68,7 +73,7 @@ ${authorWebsite ? `网站: ${authorWebsite}` : ''}`
     const response = await fetch(OPENROUTER_API_URL, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
         'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
         'X-Title': 'Blog Comment Spam Filter',
@@ -101,16 +106,16 @@ ${authorWebsite ? `网站: ${authorWebsite}` : ''}`
     if (DEBUG) console.log('[openrouter] 原始响应体 (前300字):', JSON.stringify(data).substring(0, 300))
 
     // 记录 token 使用量，便于成本监控
-    if (data.usage) {
+    if (DEBUG && data.usage) {
       console.log('[openrouter] token 用量:', {
         prompt: data.usage.prompt_tokens,
         completion: data.usage.completion_tokens,
         total: data.usage.total_tokens,
       })
     }
-    
+
     let responseContent = data.choices?.[0]?.message?.content?.trim()
-    
+
     // 如果 content 为空，尝试从 reasoning 字段提取（某些模型如 reasoning 会用这个格式）
     if (!responseContent && data.choices?.[0]?.message?.reasoning) {
       if (DEBUG) console.log('[openrouter] ⚠️  content 为空，尝试从 reasoning 字段提取...')
@@ -126,19 +131,19 @@ ${authorWebsite ? `网站: ${authorWebsite}` : ''}`
         confidence: 0,
       }
     }
-    
+
     if (DEBUG) console.log('[openrouter] ✅ 收到响应内容长度:', responseContent.length, '字')
     if (DEBUG) console.log('[openrouter] 完整响应内容:', responseContent)
 
     // 解析 JSON（可能被包裹在 markdown ``` 中）
     let jsonStr = responseContent.trim()
-    
+
     // 首先尝试移除 markdown 代码块标记
     if (jsonStr.startsWith('```')) {
       // 移除开头的 ```json 或 ```
       jsonStr = jsonStr.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '')
     }
-    
+
     // 如果仍然失败，尝试提取第一个 { 到最后一个 }
     let result: any = null
     try {
@@ -157,7 +162,7 @@ ${authorWebsite ? `网站: ${authorWebsite}` : ''}`
           console.error('[openrouter] ❌ JSON 提取和解析都失败:', {
             originalError: getErrorMessage(parseErr),
             extractError: getErrorMessage(extractErr),
-            failedContent: jsonStr.substring(0, 200)
+            failedContent: jsonStr.substring(0, 200),
           })
           throw new Error(`JSON 解析失败: ${getErrorMessage(extractErr)}`)
         }
@@ -195,7 +200,7 @@ ${authorWebsite ? `网站: ${authorWebsite}` : ''}`
  */
 export function quickSpamCheck(
   content: string,
-  authorEmail?: string,
+  authorEmail?: string
 ): { shouldAnalyze: boolean; localRiskScore: number } {
   let localRiskScore = 0
   const checks = []
@@ -229,13 +234,22 @@ export function quickSpamCheck(
 
   // 4. 常见垃圾词（区分中英文）
   const spamKeywords = [
-    'viagra', 'cialis', 'casino', 'poker', 'lottery',
-    '博彩', '赌场', '彩票', '代孕', '黑客',
-    'bitcoin', 'crypto', 'forex', 'investment',
+    'viagra',
+    'cialis',
+    'casino',
+    'poker',
+    'lottery',
+    '博彩',
+    '赌场',
+    '彩票',
+    '代孕',
+    '黑客',
+    'bitcoin',
+    'crypto',
+    'forex',
+    'investment',
   ]
-  const hasSpamKeyword = spamKeywords.some(kw =>
-    content.toLowerCase().includes(kw.toLowerCase())
-  )
+  const hasSpamKeyword = spamKeywords.some((kw) => content.toLowerCase().includes(kw.toLowerCase()))
   if (hasSpamKeyword) {
     localRiskScore += 30
     checks.push('包含垃圾关键词')

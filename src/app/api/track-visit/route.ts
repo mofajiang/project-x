@@ -5,6 +5,8 @@ import { runMigrations } from '@/lib/db-migrate'
 import { getClientIp, isPublicIp } from '@/lib/request-ip'
 import { getErrorMessage } from '@/lib/converters'
 
+const DEBUG = process.env.NODE_ENV === 'development'
+
 type NormalizedGeo = {
   country: string
   countryCode: string
@@ -42,9 +44,10 @@ const EMPTY_GEO: NormalizedGeo = {
   lon: null,
 }
 
-const countryNames = typeof Intl !== 'undefined' && typeof Intl.DisplayNames === 'function'
-  ? new Intl.DisplayNames(['zh-Hans'], { type: 'region' })
-  : null
+const countryNames =
+  typeof Intl !== 'undefined' && typeof Intl.DisplayNames === 'function'
+    ? new Intl.DisplayNames(['zh-Hans'], { type: 'region' })
+    : null
 
 function toCountryName(codeOrName: string) {
   const value = codeOrName.trim()
@@ -57,7 +60,9 @@ function toCountryName(codeOrName: string) {
 
 function lookupOfflineGeo(ip: string): NormalizedGeo {
   try {
-    const geoip = require('geoip-lite') as { lookup: (value: string) => { country?: string; region?: string; city?: string; ll?: [number, number] } | null }
+    const geoip = require('geoip-lite') as {
+      lookup: (value: string) => { country?: string; region?: string; city?: string; ll?: [number, number] } | null
+    }
     const result = geoip.lookup(ip)
     if (!result) return EMPTY_GEO
     return {
@@ -65,8 +70,8 @@ function lookupOfflineGeo(ip: string): NormalizedGeo {
       countryCode: (result.country || '').trim().toUpperCase(),
       region: (result.region || '').trim(),
       city: (result.city || '').trim(),
-      lat: Array.isArray(result.ll) ? result.ll[0] ?? null : null,
-      lon: Array.isArray(result.ll) ? result.ll[1] ?? null : null,
+      lat: Array.isArray(result.ll) ? (result.ll[0] ?? null) : null,
+      lon: Array.isArray(result.ll) ? (result.ll[1] ?? null) : null,
     }
   } catch {
     return EMPTY_GEO
@@ -86,7 +91,14 @@ function normalizeIncomingGeo(data: unknown): NormalizedGeo | null {
     lat: Number.isFinite(lat as number) ? lat : null,
     lon: Number.isFinite(lon as number) ? lon : null,
   }
-  if (normalized.country || normalized.countryCode || normalized.region || normalized.city || normalized.lat !== null || normalized.lon !== null) {
+  if (
+    normalized.country ||
+    normalized.countryCode ||
+    normalized.region ||
+    normalized.city ||
+    normalized.lat !== null ||
+    normalized.lon !== null
+  ) {
     return normalized
   }
   return null
@@ -95,25 +107,49 @@ function normalizeIncomingGeo(data: unknown): NormalizedGeo | null {
 function normalizeRemoteGeo(data: unknown): NormalizedGeo | null {
   if (!data || typeof data !== 'object') return null
   const record = data as Record<string, unknown>
-  const source = record.data && typeof record.data === 'object' && !Array.isArray(record.data)
-    ? { ...record, ...(record.data as Record<string, unknown>) }
-    : record
+  const source =
+    record.data && typeof record.data === 'object' && !Array.isArray(record.data)
+      ? { ...record, ...(record.data as Record<string, unknown>) }
+      : record
 
   const locValue = source.loc ?? source.Loc ?? source.LOC
-  const locParts = typeof locValue === 'string' ? locValue.split(',').map(part => part.trim()) : []
+  const locParts = typeof locValue === 'string' ? locValue.split(',').map((part) => part.trim()) : []
   const latValue = source.latitude ?? source.lat ?? (locParts[0] || undefined)
   const lonValue = source.longitude ?? source.lon ?? source.lng ?? (locParts[1] || undefined)
   const lat = typeof latValue === 'string' ? Number(latValue) : typeof latValue === 'number' ? latValue : null
   const lon = typeof lonValue === 'string' ? Number(lonValue) : typeof lonValue === 'number' ? lonValue : null
   const normalized: NormalizedGeo = {
-    country: toCountryName(String(source.country || source.country_name || source.countryCode || source.country_code || source.nation || '').trim()),
-    countryCode: String(source.country_code || source.countryCode || source.nation_code || '').trim().toUpperCase(),
-    region: String(source.region || source.region_name || source.regionName || source.prov || source.province || source.province_name || source.provinceName || source.address || '').trim(),
+    country: toCountryName(
+      String(
+        source.country || source.country_name || source.countryCode || source.country_code || source.nation || ''
+      ).trim()
+    ),
+    countryCode: String(source.country_code || source.countryCode || source.nation_code || '')
+      .trim()
+      .toUpperCase(),
+    region: String(
+      source.region ||
+        source.region_name ||
+        source.regionName ||
+        source.prov ||
+        source.province ||
+        source.province_name ||
+        source.provinceName ||
+        source.address ||
+        ''
+    ).trim(),
     city: String(source.city || source.city_name || source.cityName || source.district || '').trim(),
     lat: Number.isFinite(lat as number) ? lat : null,
     lon: Number.isFinite(lon as number) ? lon : null,
   }
-  if (normalized.country || normalized.countryCode || normalized.region || normalized.city || normalized.lat !== null || normalized.lon !== null) {
+  if (
+    normalized.country ||
+    normalized.countryCode ||
+    normalized.region ||
+    normalized.city ||
+    normalized.lat !== null ||
+    normalized.lon !== null
+  ) {
     return normalized
   }
   return null
@@ -145,7 +181,10 @@ async function resolveProviderGeo(mode: string | undefined, clientIp: string): P
     if (!(provider in builtins)) continue
     const providerUrl = builtins[provider]
     try {
-      const response = await fetch(providerUrl, { signal: AbortSignal.timeout(3000), headers: { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0 (compatible; VisitorTracker/1.0)' } })
+      const response = await fetch(providerUrl, {
+        signal: AbortSignal.timeout(3000),
+        headers: { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0 (compatible; VisitorTracker/1.0)' },
+      })
       if (!response.ok) {
         console.warn('[track-visit] provider geo fetch failed:', provider, response.status, response.statusText)
         continue
@@ -172,13 +211,15 @@ async function lookupGeoCache(ip: string): Promise<NormalizedGeo | null> {
   try {
     const rows = await prisma.$queryRawUnsafe<any[]>(
       `SELECT country, countryCode, region, city, lat, lon FROM VisitorGeoCache WHERE ip = ?`,
-      ip,
+      ip
     )
     const row = rows?.[0]
     if (!row) return null
     return {
       country: String(row.country || '').trim(),
-      countryCode: String(row.countryCode || '').trim().toUpperCase(),
+      countryCode: String(row.countryCode || '')
+        .trim()
+        .toUpperCase(),
       region: String(row.region || '').trim(),
       city: String(row.city || '').trim(),
       lat: Number.isFinite(row.lat) ? Number(row.lat) : null,
@@ -210,7 +251,7 @@ async function upsertGeoCache(ip: string, geo: NormalizedGeo) {
       geo.city || '',
       geo.lat,
       geo.lon,
-      new Date().toISOString(),
+      new Date().toISOString()
     )
   } catch {
     // ignore cache failures
@@ -291,7 +332,10 @@ export async function POST(req: NextRequest) {
             geo = cacheGeo
           } else {
             geo = lookupOfflineGeo(ip)
-            if (geo && (geo.country || geo.countryCode || geo.region || geo.city || geo.lat !== null || geo.lon !== null)) {
+            if (
+              geo &&
+              (geo.country || geo.countryCode || geo.region || geo.city || geo.lat !== null || geo.lon !== null)
+            ) {
               await upsertGeoCache(ip, geo)
             }
           }
@@ -302,12 +346,17 @@ export async function POST(req: NextRequest) {
       const createdAt = new Date().toISOString()
       const visitDay = createdAt.slice(0, 10)
 
-      console.log('[track-visit] client_ip:', ip, 'is_public:', isPublicIp(ip))
-      console.log('[track-visit] payload.geo:', JSON.stringify(payload.geo))
-      console.log('[track-visit] normalized_geo:', incomingGeo ? JSON.stringify(incomingGeo) : 'null')
-      console.log('[track-visit] resolved_custom_geo:', resolvedCustomGeo ? JSON.stringify(resolvedCustomGeo) : 'null')
-      console.log('[track-visit] cached_geo:', cacheGeo ? JSON.stringify(cacheGeo) : 'null')
-      console.log('[track-visit] final_geo:', JSON.stringify(geo))
+      if (DEBUG) {
+        console.log('[track-visit] client_ip:', ip, 'is_public:', isPublicIp(ip))
+        console.log('[track-visit] payload.geo:', JSON.stringify(payload.geo))
+        console.log('[track-visit] normalized_geo:', incomingGeo ? JSON.stringify(incomingGeo) : 'null')
+        console.log(
+          '[track-visit] resolved_custom_geo:',
+          resolvedCustomGeo ? JSON.stringify(resolvedCustomGeo) : 'null'
+        )
+        console.log('[track-visit] cached_geo:', cacheGeo ? JSON.stringify(cacheGeo) : 'null')
+        console.log('[track-visit] final_geo:', JSON.stringify(geo))
+      }
 
       await prisma.$executeRaw`
         INSERT INTO Visitor (
@@ -329,7 +378,7 @@ export async function POST(req: NextRequest) {
           ${createdAt}
         )
       `
-      console.log('[track-visit] success: saved visitor record')
+      if (DEBUG) console.log('[track-visit] success: saved visitor record')
     } catch (e) {
       console.warn('[track-visit] background error:', e)
     }

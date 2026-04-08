@@ -8,18 +8,45 @@ import { toJsonSafe, getErrorMessage } from '@/lib/converters'
 
 const SECURITY_CONFIG_KEYS = new Set(['loginPath', 'loginMode', 'secretClicks', 'customDomain'])
 const RAW_CONFIG_COLUMNS = new Set([
-  'siteName', 'siteDesc', 'loginPath', 'loginMode', 'secretClicks',
-  'commentApproval', 'showCommentIp', 'enableAiDetection', 'aiReviewStrength', 'aiAutoApprove',
-  'openrouterApiKey', 'openrouterModel',
-  'emailSubjectNewComment', 'emailSubjectReply', 'emailSubjectApproved', 'emailSenderName',
-  'socialX', 'socialGithub', 'socialEmail',
-  'storageDriver', 'storageS3Endpoint', 'storageS3Region', 'storageS3Bucket',
-  'storageS3AccessKeyId', 'storageS3SecretAccessKey', 'storageS3Prefix',
-  'storageS3ForcePathStyle', 'storagePublicBaseUrl', 'storageSmmsToken',
+  'siteName',
+  'siteDesc',
+  'loginPath',
+  'loginMode',
+  'secretClicks',
+  'commentApproval',
+  'showCommentIp',
+  'enableAiDetection',
+  'aiReviewStrength',
+  'aiAutoApprove',
+  'openrouterApiKey',
+  'openrouterModel',
+  'emailSubjectNewComment',
+  'emailSubjectReply',
+  'emailSubjectApproved',
+  'emailSenderName',
+  'socialX',
+  'socialGithub',
+  'socialEmail',
+  'storageDriver',
+  'storageS3Endpoint',
+  'storageS3Region',
+  'storageS3Bucket',
+  'storageS3AccessKeyId',
+  'storageS3SecretAccessKey',
+  'storageS3Prefix',
+  'storageS3ForcePathStyle',
+  'storagePublicBaseUrl',
+  'storageSmmsToken',
 ])
-const BOOLEAN_COLUMNS = new Set(['commentApproval', 'showCommentIp', 'enableAiDetection', 'aiAutoApprove', 'storageS3ForcePathStyle'])
+const BOOLEAN_COLUMNS = new Set([
+  'commentApproval',
+  'showCommentIp',
+  'enableAiDetection',
+  'aiAutoApprove',
+  'storageS3ForcePathStyle',
+])
 
-function normalizeConfigValue(col: string, val: any) {
+function normalizeConfigValue(col: string, val: unknown) {
   if (BOOLEAN_COLUMNS.has(col)) return Boolean(val) ? 1 : 0
   if (col === 'secretClicks') return Math.max(1, Number(val) || 5)
   if (val === undefined || val === null) return ''
@@ -30,7 +57,7 @@ function getConfigAuditPayload(changedKeys: string[]) {
   const preview = changedKeys.slice(0, 4)
   const suffix = changedKeys.length > 4 ? ` 等 ${changedKeys.length} 项` : ''
 
-  if (changedKeys.some(key => SECURITY_CONFIG_KEYS.has(key))) {
+  if (changedKeys.some((key) => SECURITY_CONFIG_KEYS.has(key))) {
     return {
       action: 'security.config.updated' as const,
       riskLevel: 'critical' as const,
@@ -45,26 +72,35 @@ function getConfigAuditPayload(changedKeys: string[]) {
   }
 }
 
-
 export async function GET(req: NextRequest) {
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   await runMigrations()
   const config = await getSiteConfig()
-  return NextResponse.json(toJsonSafe(config), { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } })
+  return NextResponse.json(toJsonSafe(config), {
+    headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' },
+  })
 }
 
 export async function PUT(req: NextRequest) {
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  try { await runMigrations() } catch (e: unknown) { console.warn('[config PUT] runMigrations:', getErrorMessage(e)) }
+  try {
+    await runMigrations()
+  } catch (e: unknown) {
+    console.warn('[config PUT] runMigrations:', getErrorMessage(e))
+  }
   const requestIp = getRequestIp(req)
   const data = await req.json()
-  console.log('[config PUT] 收到数据:', { openrouterApiKey: data.openrouterApiKey, openrouterModel: data.openrouterModel, enableAiDetection: data.enableAiDetection })
+  if (process.env.NODE_ENV === 'development')
+    console.log('[config PUT] 收到数据:', {
+      openrouterApiKey: data.openrouterApiKey,
+      openrouterModel: data.openrouterModel,
+      enableAiDetection: data.enableAiDetection,
+    })
   delete data.id
   const changedKeys = Object.keys(data)
   const auditPayload = getConfigAuditPayload(changedKeys)
-
 
   // navItems 若为数组则序列化为 JSON 字符串
   if (Array.isArray(data.navItems)) {
@@ -125,7 +161,7 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: '保存失败', detail: getErrorMessage(e) }, { status: 500 })
   }
 
-  const rawUpdates: Array<{ col: string; val: any }> = []
+  const rawUpdates: Array<{ col: string; val: unknown }> = []
   for (const [col, val] of Object.entries(data)) {
     if (!RAW_CONFIG_COLUMNS.has(col)) continue
     rawUpdates.push({ col, val: normalizeConfigValue(col, val) })
@@ -172,6 +208,7 @@ export async function PUT(req: NextRequest) {
     metadata: { changedKeys },
   })
   const freshConfig = await getSiteConfig()
-  return NextResponse.json(toJsonSafe(freshConfig), { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } })
+  return NextResponse.json(toJsonSafe(freshConfig), {
+    headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' },
+  })
 }
-

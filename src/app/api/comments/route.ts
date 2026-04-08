@@ -8,7 +8,9 @@ import { getClientIp } from '@/lib/request-ip'
 import { analyzeCommentWithAI, quickSpamCheck } from '@/lib/openrouter-spam-filter'
 import { revalidateTag } from 'next/cache'
 import { rateLimit } from '@/lib/rate-limit'
-import { getErrorMessage } from '@/lib/converters';
+import { getErrorMessage } from '@/lib/converters'
+
+const DEBUG = process.env.NODE_ENV === 'development'
 
 export async function POST(req: NextRequest) {
   await runMigrations()
@@ -22,7 +24,7 @@ export async function POST(req: NextRequest) {
   const session = await getSessionFromRequest(req)
 
   let { postId, content, parentId, guestName, guestEmail, guestWebsite } = await req.json()
-  postId = String(postId)  // 确保 postId 是字符串
+  postId = String(postId) // 确保 postId 是字符串
   if (!postId || !content?.trim()) return NextResponse.json({ error: '内容不能为空' }, { status: 400 })
   if (content.trim().length > 2000) return NextResponse.json({ error: '评论不能超过2000字' }, { status: 400 })
 
@@ -36,7 +38,9 @@ export async function POST(req: NextRequest) {
       if (!emailReg.test(guestEmail.trim())) return NextResponse.json({ error: '邮箱格式不正确' }, { status: 400 })
     }
     if (guestWebsite?.trim()) {
-      try { new URL(guestWebsite.trim()) } catch {
+      try {
+        new URL(guestWebsite.trim())
+      } catch {
         return NextResponse.json({ error: '网站地址格式不正确' }, { status: 400 })
       }
     }
@@ -76,7 +80,13 @@ export async function POST(req: NextRequest) {
     comment = await prisma.comment.create({ data: commentData })
   } catch (e: unknown) {
     // guestName 列可能尚未迁移，降级去掉该字段重试
-    if (getErrorMessage(e).includes('guestName') || getErrorMessage(e).includes('guestEmail') || getErrorMessage(e).includes('guestWebsite') || getErrorMessage(e).includes('ip') || getErrorMessage(e).includes('no such column')) {
+    if (
+      getErrorMessage(e).includes('guestName') ||
+      getErrorMessage(e).includes('guestEmail') ||
+      getErrorMessage(e).includes('guestWebsite') ||
+      getErrorMessage(e).includes('ip') ||
+      getErrorMessage(e).includes('no such column')
+    ) {
       delete commentData.guestName
       delete commentData.guestEmail
       delete commentData.guestWebsite
@@ -90,11 +100,11 @@ export async function POST(req: NextRequest) {
 
   // 立即返回响应（用户感受极快）⚡
   const responseData = { ok: true, comment }
-  
+
   // 后台异步执行：AI 检测 + 邮件通知
   if (quickCheck.shouldAnalyze || config.enableAiDetection) {
     // 使用 Promise 不等待，后台异步处理
-    analyzeAndUpdateComment(comment.id, content.trim(), config, commentData, session).catch((err: any) => 
+    analyzeAndUpdateComment(comment.id, content.trim(), config, commentData, session).catch((err: any) =>
       console.error('[ai-detection-async] 后台处理失败:', getErrorMessage(err))
     )
   }
@@ -102,13 +112,20 @@ export async function POST(req: NextRequest) {
   // 需要审核时给管理员发邮件提醒（后台异步发送）
   if (config.commentApproval) {
     // 异步发送通知，不阻塞响应
-    (async () => {
+    ;(async () => {
       try {
         const post = await prisma.post.findUnique({ where: { id: postId }, select: { title: true, slug: true } })
         if (post) {
           const commenterName = session?.username || commentData.guestName || '匿名访客'
           const postUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000') + '/post/' + post.slug
-          await sendNewCommentNotification({ postTitle: post.title, postUrl, commenterName, content: content.trim(), customSubject: config.emailSubjectNewComment || undefined, senderName: config.emailSenderName || undefined })
+          await sendNewCommentNotification({
+            postTitle: post.title,
+            postUrl,
+            commenterName,
+            content: content.trim(),
+            customSubject: config.emailSubjectNewComment || undefined,
+            senderName: config.emailSenderName || undefined,
+          })
         }
       } catch (err) {
         console.error('[email-notification] 邮件发送失败:', err)
@@ -132,8 +149,8 @@ async function analyzeAndUpdateComment(
   session: any
 ) {
   try {
-    console.log('[ai-analysis-async] 开始后台 AI 分析:', { commentId, contentLength: content.length })
-    
+    if (DEBUG) console.log('[ai-analysis-async] 开始后台 AI 分析:', { commentId, contentLength: content.length })
+
     const aiResult = await analyzeCommentWithAI(
       content,
       // 优先使用新字段 aiModelApiKey，如为空则回退到旧字段 openrouterApiKey
@@ -145,30 +162,37 @@ async function analyzeAndUpdateComment(
       commentData.guestWebsite,
       config.aiModelMaxTokens
     )
-    
-    console.log('[ai-analysis-async] AI 分析完成:', { commentId, riskScore: aiResult.riskScore })
-    
+
+    if (DEBUG) console.log('[ai-analysis-async] AI 分析完成:', { commentId, riskScore: aiResult.riskScore })
+
     // 根据强度等级和 AI 风险评分决定是否自动通过/隐藏
     let approved: boolean | undefined = undefined
     const reviewStrength = (config.aiReviewStrength || 'balanced') as 'lenient' | 'balanced' | 'strict'
     const thresholdMap: Record<'lenient' | 'balanced' | 'strict', number> = {
-      'lenient': 30,    // 宽松：风险分 < 30 自动通过
-      'balanced': 20,   // 平衡：风险分 < 20 自动通过
-      'strict': 10,     // 严格：风险分 < 10 自动通过
+      lenient: 30, // 宽松：风险分 < 30 自动通过
+      balanced: 20, // 平衡：风险分 < 20 自动通过
+      strict: 10, // 严格：风险分 < 10 自动通过
     }
     const autoApproveThreshold = thresholdMap[reviewStrength] || 20
-    
+
     if (!session) {
       // 访客评论：支持自动通过和自动隐藏
       if (aiResult.riskScore >= 70) {
-        approved = false  // 高风险自动隐藏
-        console.log('[ai-analysis-async] ⚠️ 高风险评论自动隐藏')
+        approved = false // 高风险自动隐藏
+        if (DEBUG) console.log('[ai-analysis-async] ⚠️ 高风险评论自动隐藏')
       } else if (config.aiAutoApprove && aiResult.riskScore < autoApproveThreshold) {
-        approved = true   // 低风险且启用自动通过，则自动通过
-        console.log('[ai-analysis-async] ✅ 安全评论自动通过 (评审强度:', reviewStrength, ', 阈值:', autoApproveThreshold, ')')
+        approved = true // 低风险且启用自动通过，则自动通过
+        if (DEBUG)
+          console.log(
+            '[ai-analysis-async] ✅ 安全评论自动通过 (评审强度:',
+            reviewStrength,
+            ', 阈值:',
+            autoApproveThreshold,
+            ')'
+          )
       }
     }
-    
+
     // 更新数据库
     await prisma.comment.update({
       where: { id: commentId },
@@ -178,8 +202,8 @@ async function analyzeAndUpdateComment(
         ...(approved !== undefined && { approved }),
       },
     })
-    
-    console.log('[ai-analysis-async] ✅ 评论已更新:', { commentId, riskScore: aiResult.riskScore, approved })
+
+    if (DEBUG) console.log('[ai-analysis-async] ✅ 评论已更新:', { commentId, riskScore: aiResult.riskScore, approved })
   } catch (error: unknown) {
     console.error('[ai-analysis-async] ❌ 后台分析失败:', getErrorMessage(error))
     // 失败时只更新错误状态，不影响已保存的评论

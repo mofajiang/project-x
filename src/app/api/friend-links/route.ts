@@ -18,10 +18,7 @@ export async function POST(req: NextRequest) {
     // 验证 URL
     const urlValidation = await validateUrl(url)
     if (!urlValidation.valid) {
-      return NextResponse.json(
-        { error: `URL 无法访问: ${urlValidation.error}` },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: `URL 无法访问: ${urlValidation.error}` }, { status: 400 })
     }
 
     // 规范化 URL
@@ -35,14 +32,11 @@ export async function POST(req: NextRequest) {
       where: { url: finalUrl },
     })
     if (existing) {
-      return NextResponse.json(
-        { error: '此链接已存在' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: '此链接已存在' }, { status: 400 })
     }
 
     // 用户提供头像则直接用，否则自动抓取 Favicon
-    const favicon = (userFavicon?.trim()) ? userFavicon.trim() : await getFavicon(finalUrl)
+    const favicon = userFavicon?.trim() ? userFavicon.trim() : await getFavicon(finalUrl)
 
     // 检查互链
     const myDomain = new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').hostname
@@ -73,9 +67,10 @@ export async function POST(req: NextRequest) {
         if (!enabled) return
 
         const result = await reviewFriendLinkById(link.id)
-        console.log(
-          `[friend-link] auto AI review completed: link=${link.id} recommendation=${result.recommendation} score=${result.score}`
-        )
+        if (process.env.NODE_ENV === 'development')
+          console.log(
+            `[friend-link] auto AI review completed: link=${link.id} recommendation=${result.recommendation} score=${result.score}`
+          )
       } catch (e) {
         console.warn('[friend-link] auto AI review failed:', e)
       }
@@ -91,10 +86,7 @@ export async function POST(req: NextRequest) {
     })
   } catch (error) {
     console.error('[FriendLink Submit Error]', error)
-    return NextResponse.json(
-      { error: '提交失败，请稍后重试' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: '提交失败，请稍后重试' }, { status: 500 })
   }
 }
 
@@ -141,9 +133,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(approvedLinks)
   } catch (error) {
     console.error('[FriendLink Get Error]', error)
-    return NextResponse.json(
-      { error: '查询失败' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: '查询失败' }, { status: 500 })
   }
 }

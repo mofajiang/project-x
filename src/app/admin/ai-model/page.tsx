@@ -49,7 +49,7 @@ export default function AdminAiModelPage() {
     }
   }
 
-  const handleChange = (field: keyof AiConfig, value: any) => {
+  const handleChange = (field: keyof AiConfig, value: string | number | boolean) => {
     if (config) {
       setConfig({ ...config, [field]: value })
     }
@@ -123,27 +123,28 @@ export default function AdminAiModelPage() {
   }
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold mb-8" style={{ color: 'var(--text-primary)' }}>
+    <div className="mx-auto w-full max-w-4xl">
+      <h1 className="mb-8 text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
         AI 模型管理
       </h1>
 
       <div className="space-y-8">
         {/* 模型提供商选择 */}
-        <div className="rounded-2xl p-6 border" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
-          <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
+        <div
+          className="rounded-2xl border p-6"
+          style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}
+        >
+          <h2 className="mb-4 text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
             选择模型提供商
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {PROVIDERS.map(provider => (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {PROVIDERS.map((provider) => (
               <button
                 key={provider.value}
                 onClick={() => handleChange('aiModelProvider', provider.value)}
-                className={`p-4 rounded-xl border-2 transition-all text-left ${
-                  config.aiModelProvider === provider.value
-                    ? 'border-accent'
-                    : 'border-transparent'
+                className={`rounded-xl border-2 p-4 text-left transition-all ${
+                  config.aiModelProvider === provider.value ? 'border-accent' : 'border-transparent'
                 }`}
                 style={{
                   background: 'var(--bg-hover)',
@@ -153,7 +154,7 @@ export default function AdminAiModelPage() {
                 <p className="font-bold" style={{ color: 'var(--text-primary)' }}>
                   {provider.label}
                 </p>
-                <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+                <p className="mt-1 text-sm" style={{ color: 'var(--text-secondary)' }}>
                   {provider.desc}
                 </p>
               </button>
@@ -163,44 +164,52 @@ export default function AdminAiModelPage() {
 
         {/* OpenRouter 配置 */}
         {config.aiModelProvider === 'openrouter' && (
-          <div className="rounded-2xl p-6 border" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
-            <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
+          <div
+            className="rounded-2xl border p-6"
+            style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}
+          >
+            <h2 className="mb-4 text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
               OpenRouter 配置
             </h2>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
                   API Key
                 </label>
                 <IMEInput
                   type="password"
                   placeholder="输入 OpenRouter API Key"
                   value={config.aiModelApiKey}
-                  onValueChange={v => handleChange('aiModelApiKey', v)}
-                  className="w-full px-4 py-2 rounded-lg bg-transparent outline-none border"
+                  onValueChange={(v) => handleChange('aiModelApiKey', v)}
+                  className="w-full rounded-lg border bg-transparent px-4 py-2 outline-none"
                   style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                 />
-                <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
-                  <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener noreferrer" className="underline">
+                <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                  <a
+                    href="https://openrouter.ai/settings/keys"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline"
+                  >
                     获取 API Key →
                   </a>
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
                   模型名称
                 </label>
                 <IMEInput
                   type="text"
                   placeholder="例如 claude-3.5-sonnet, gpt-4-turbo"
                   value={config.aiModelName}
-                  onValueChange={v => handleChange('aiModelName', v)}
-                  className="w-full px-4 py-2 rounded-lg bg-transparent outline-none border"
+                  onValueChange={(v) => handleChange('aiModelName', v)}
+                  className="w-full rounded-lg border bg-transparent px-4 py-2 outline-none"
                   style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                 />
-                <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+                <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
                   填写 OpenRouter 支持的模型全名，如 claude-3.5-sonnet、gpt-4-turbo 等
                 </p>
               </div>
@@ -210,53 +219,56 @@ export default function AdminAiModelPage() {
 
         {/* 自定义接口配置 */}
         {config.aiModelProvider === 'custom' && (
-          <div className="rounded-2xl p-6 border" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
-            <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
+          <div
+            className="rounded-2xl border p-6"
+            style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}
+          >
+            <h2 className="mb-4 text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
               自定义接口配置
             </h2>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
                   基础 URL
                 </label>
                 <IMEInput
                   type="url"
                   placeholder="http://localhost:11434"
                   value={config.aiModelBaseUrl}
-                  onValueChange={v => handleChange('aiModelBaseUrl', v)}
-                  className="w-full px-4 py-2 rounded-lg bg-transparent outline-none border"
+                  onValueChange={(v) => handleChange('aiModelBaseUrl', v)}
+                  className="w-full rounded-lg border bg-transparent px-4 py-2 outline-none"
                   style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                 />
-                <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+                <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
                   例如 Ollama: http://localhost:11434
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
                   模型名称
                 </label>
                 <IMEInput
                   type="text"
                   placeholder="llama2, mistral, 等"
                   value={config.aiModelName}
-                  onValueChange={v => handleChange('aiModelName', v)}
-                  className="w-full px-4 py-2 rounded-lg bg-transparent outline-none border"
+                  onValueChange={(v) => handleChange('aiModelName', v)}
+                  className="w-full rounded-lg border bg-transparent px-4 py-2 outline-none"
                   style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
                   API Key（可选）
                 </label>
                 <IMEInput
                   type="password"
                   placeholder="留空如果接口不需要认证"
                   value={config.aiModelApiKey}
-                  onValueChange={v => handleChange('aiModelApiKey', v)}
-                  className="w-full px-4 py-2 rounded-lg bg-transparent outline-none border"
+                  onValueChange={(v) => handleChange('aiModelApiKey', v)}
+                  className="w-full rounded-lg border bg-transparent px-4 py-2 outline-none"
                   style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                 />
               </div>
@@ -265,14 +277,17 @@ export default function AdminAiModelPage() {
         )}
 
         {/* 高级配置 */}
-        <div className="rounded-2xl p-6 border" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
-          <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
+        <div
+          className="rounded-2xl border p-6"
+          style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}
+        >
+          <h2 className="mb-4 text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
             高级配置
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+              <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
                 最大 Token 数
               </label>
               <input
@@ -280,20 +295,20 @@ export default function AdminAiModelPage() {
                 min="100"
                 max="10000"
                 value={isNaN(config.aiModelMaxTokens) ? '' : config.aiModelMaxTokens}
-                onChange={e => {
+                onChange={(e) => {
                   const v = parseInt(e.target.value)
                   handleChange('aiModelMaxTokens', isNaN(v) ? 2000 : v)
                 }}
-                className="w-full px-4 py-2 rounded-lg bg-transparent outline-none border"
+                className="w-full rounded-lg border bg-transparent px-4 py-2 outline-none"
                 style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
               />
-              <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+              <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
                 模型回应的最大长度限制
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+              <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
                 超时时间（秒）
               </label>
               <input
@@ -301,14 +316,14 @@ export default function AdminAiModelPage() {
                 min="5"
                 max="300"
                 value={isNaN(config.aiModelTimeout) ? '' : config.aiModelTimeout}
-                onChange={e => {
+                onChange={(e) => {
                   const v = parseInt(e.target.value)
                   handleChange('aiModelTimeout', isNaN(v) ? 30 : v)
                 }}
-                className="w-full px-4 py-2 rounded-lg bg-transparent outline-none border"
+                className="w-full rounded-lg border bg-transparent px-4 py-2 outline-none"
                 style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
               />
-              <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+              <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
                 请求超时限制
               </p>
             </div>
@@ -316,8 +331,11 @@ export default function AdminAiModelPage() {
         </div>
 
         {/* AI 审核设置 */}
-        <div className="rounded-2xl p-6 border" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
-          <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
+        <div
+          className="rounded-2xl border p-6"
+          style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}
+        >
+          <h2 className="mb-4 text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
             AI 审核设置
           </h2>
 
@@ -326,25 +344,23 @@ export default function AdminAiModelPage() {
               <input
                 type="checkbox"
                 checked={config.enableAiDetection}
-                onChange={e => handleChange('enableAiDetection', e.target.checked)}
-                className="w-4 h-4 rounded cursor-pointer"
+                onChange={(e) => handleChange('enableAiDetection', e.target.checked)}
+                className="h-4 w-4 cursor-pointer rounded"
                 style={{ accentColor: 'var(--accent)' }}
               />
-              <span style={{ color: 'var(--text-primary)' }}>
-                启用 AI 智能审核（用于评论和友链）
-              </span>
+              <span style={{ color: 'var(--text-primary)' }}>启用 AI 智能审核（用于评论和友链）</span>
             </label>
 
             {config.enableAiDetection && (
               <>
                 <div>
-                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                  <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
                     审核强度
                   </label>
                   <select
                     value={config.aiReviewStrength}
-                    onChange={e => handleChange('aiReviewStrength', e.target.value)}
-                    className="w-full px-4 py-2 rounded-lg bg-transparent outline-none border"
+                    onChange={(e) => handleChange('aiReviewStrength', e.target.value)}
+                    className="w-full rounded-lg border bg-transparent px-4 py-2 outline-none"
                     style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                   >
                     <option value="lenient">宽松 - 较少拦截，可能漏过一些违规</option>
@@ -357,13 +373,11 @@ export default function AdminAiModelPage() {
                   <input
                     type="checkbox"
                     checked={config.aiAutoApprove}
-                    onChange={e => handleChange('aiAutoApprove', e.target.checked)}
-                    className="w-4 h-4 rounded cursor-pointer"
+                    onChange={(e) => handleChange('aiAutoApprove', e.target.checked)}
+                    className="h-4 w-4 cursor-pointer rounded"
                     style={{ accentColor: 'var(--accent)' }}
                   />
-                  <span style={{ color: 'var(--text-primary)' }}>
-                    AI 判断安全时自动批准（评论和友链）
-                  </span>
+                  <span style={{ color: 'var(--text-primary)' }}>AI 判断安全时自动批准（评论和友链）</span>
                 </label>
               </>
             )}
@@ -375,7 +389,7 @@ export default function AdminAiModelPage() {
           <button
             onClick={handleTestConnection}
             disabled={testingConnection || saving}
-            className="px-6 py-3 rounded-lg font-bold transition-all"
+            className="rounded-lg px-6 py-3 font-bold transition-all"
             style={{
               background: 'var(--bg-hover)',
               color: 'var(--text-primary)',
@@ -388,7 +402,7 @@ export default function AdminAiModelPage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-8 py-3 rounded-lg font-bold text-white transition-all"
+            className="rounded-lg px-8 py-3 font-bold text-white transition-all"
             style={{
               background: 'var(--accent)',
               opacity: saving ? 0.5 : 1,
