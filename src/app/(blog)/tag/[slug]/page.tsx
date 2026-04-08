@@ -3,12 +3,14 @@ import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { PostCard } from '@/components/blog/PostCard'
 import { stripMarkdown, extractQuotes } from '@/lib/post-utils'
+import { buildSlugCandidates } from '@/lib/slug'
 
 export const revalidate = 60
 
 export default async function TagPage({ params }: { params: { slug: string } }) {
-  const tag = await prisma.tag.findUnique({
-    where: { slug: params.slug },
+  const slugCandidates = buildSlugCandidates(params.slug)
+  const tag = await prisma.tag.findFirst({
+    where: { slug: { in: slugCandidates } },
     include: {
       posts: {
         where: { post: { published: true } },
@@ -48,15 +50,31 @@ export default async function TagPage({ params }: { params: { slug: string } }) 
 
   return (
     <div>
-      <div className="sticky top-0 z-10 flex items-center gap-4 px-4 py-3 backdrop-blur-md" style={{ background: 'var(--bg-blur)', borderBottom: '1px solid var(--border)' }}>
-        <Link href="/" aria-label="返回首页" className="p-2 rounded-full hover:bg-x-bg-hover transition-colors" style={{ color: 'var(--text-primary)' }}>←</Link>
+      <div
+        className="sticky top-0 z-10 flex items-center gap-4 px-4 py-3 backdrop-blur-md"
+        style={{ background: 'var(--bg-blur)', borderBottom: '1px solid var(--border)' }}
+      >
+        <Link
+          href="/"
+          aria-label="返回首页"
+          className="rounded-full p-2 transition-colors hover:bg-x-bg-hover"
+          style={{ color: 'var(--text-primary)' }}
+        >
+          ←
+        </Link>
         <div>
-          <p className="font-bold text-xl" style={{ color: 'var(--text-primary)' }}>#{tag.name}</p>
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{tag.posts.length} 篇文章</p>
+          <p className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+            #{tag.name}
+          </p>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+            {tag.posts.length} 篇文章
+          </p>
         </div>
       </div>
       <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
-        {postsWithDisplay.map((post) => <PostCard key={post.id} post={post} />)}
+        {postsWithDisplay.map((post) => (
+          <PostCard key={post.id} post={post} />
+        ))}
       </div>
     </div>
   )
