@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 移动端触摸反馈（替代 hover） */
+.touch-active { -webkit-tap-highlight-color: transparent; }
+.touch-active:active { background: var(--bg-hover); }
+
 :root {
   --bg: #000000;
   --bg-secondary: #16181C;
@@ -26,6 +30,9 @@
   --comment-surface-soft: rgba(255,255,255,0.02);
   --comment-shadow: 0 20px 50px rgba(0,0,0,0.18);
   --comment-thread-line: rgba(231,233,234,0.18);
+  --code-bg: #1e1e1e;
+  --code-color: #e06c75;
+  --code-block-color: #abb2bf;
 }
 
 html.light {
@@ -52,6 +59,9 @@ html.light {
   --comment-surface-soft: rgba(15,20,25,0.02);
   --comment-shadow: 0 20px 40px rgba(15,20,25,0.08);
   --comment-thread-line: rgba(15,20,25,0.14);
+  --code-bg: #f0f2f5;
+  --code-color: #c7254e;
+  --code-block-color: #383a42;
 }
 
 html.sepia {
@@ -78,6 +88,9 @@ html.sepia {
   --comment-surface-soft: rgba(90,55,40,0.03);
   --comment-shadow: 0 20px 40px rgba(50,28,18,0.10);
   --comment-thread-line: rgba(90,55,40,0.14);
+  --code-bg: #ede4d0;
+  --code-color: #a33a2a;
+  --code-block-color: #4a3520;
 }
 
 body.admin-layout-1 .admin-content-grid {
@@ -154,15 +167,15 @@ img { background: var(--bg-secondary); }
 }
 .prose-x a:hover { text-decoration: underline; }
 .prose-x code {
-  background: #1e1e1e;
+  background: var(--code-bg);
   padding: 2px 6px;
   border-radius: 4px;
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
   font-size: 0.9em;
-  color: #e06c75;
+  color: var(--code-color);
 }
 .prose-x pre {
-  background: #1e1e1e;
+  background: var(--code-bg);
   border-radius: 8px;
   padding: 16px;
   overflow-x: auto;
@@ -171,7 +184,7 @@ img { background: var(--bg-secondary); }
 .prose-x pre code {
   background: transparent;
   padding: 0;
-  color: #abb2bf;
+  color: var(--code-block-color);
 }
 .prose-x blockquote {
   border-left: 4px solid var(--accent);
@@ -213,15 +226,15 @@ img { background: var(--bg-secondary); }
 .markdown-body strong { color: var(--text-primary); font-weight: 700; }
 .markdown-body em { font-style: italic; }
 .markdown-body code {
-  background: #1e1e1e;
+  background: var(--code-bg);
   padding: 2px 6px;
   border-radius: 4px;
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
   font-size: 0.9em;
-  color: #e06c75;
+  color: var(--code-color);
 }
 .markdown-body pre {
-  background: #1e1e1e;
+  background: var(--code-bg);
   border-radius: 8px;
   padding: 16px;
   overflow-x: auto;
@@ -230,7 +243,7 @@ img { background: var(--bg-secondary); }
 .markdown-body pre code {
   background: transparent;
   padding: 0;
-  color: #abb2bf;
+  color: var(--code-block-color);
   font-size: 0.9em;
 }
 

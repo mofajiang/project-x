@@ -117,6 +117,7 @@ export function MobileTabBar({ navItems, session }: Props) {
               style={{ color: 'var(--accent)' }}
             >
               {tab.icon}
+              <span className="text-[10px] leading-none">{tab.label}</span>
             </button>
           )
         }
@@ -128,6 +129,7 @@ export function MobileTabBar({ navItems, session }: Props) {
             style={{ color: tab.accent ? 'var(--accent)' : active ? 'var(--text-primary)' : 'var(--text-secondary)' }}
           >
             {tab.icon}
+            <span className="text-[10px] leading-none">{tab.label}</span>
           </Link>
         )
       })}

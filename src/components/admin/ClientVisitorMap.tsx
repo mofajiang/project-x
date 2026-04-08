@@ -8,6 +8,7 @@ const Marker = dynamic(() => import('react-leaflet').then(m => m.Marker), { ssr:
 const Popup = dynamic(() => import('react-leaflet').then(m => m.Popup), { ssr: false })
 const ZoomControl = dynamic(() => import('react-leaflet').then(m => m.ZoomControl), { ssr: false })
 
+import 'leaflet/dist/leaflet.css'
 import L, { LatLngExpression } from 'leaflet'
 
 // 使用Leaflet官方默认指针，仅移除阴影

@@ -36,7 +36,7 @@ export function ScrollToTop() {
       className="fixed z-50 flex items-center justify-center rounded-full shadow-lg transition-all duration-200 hover:scale-105 active:scale-95"
       style={{
         // 桌面端：居中内容区左侧；手机端：居中
-        bottom: '80px',
+        bottom: 'calc(70px + env(safe-area-inset-bottom, 0px))',
         left: '50%',
         transform: 'translateX(-50%)',
         width: '44px',

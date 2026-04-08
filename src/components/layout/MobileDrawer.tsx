@@ -134,8 +134,6 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
             style={{ color: 'var(--text-primary)' }}
             title="首页"
             aria-label="返回首页"
-            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(29,155,240,0.06)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
           >
             {isLogoImage ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -159,13 +157,11 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
                   <Link
                     key={item.href}
                     href={item.href}
-                    className="flex items-center gap-3 px-4 py-3.5 transition-colors"
+                    className="flex items-center gap-3 px-4 py-3.5 transition-colors touch-active"
                     style={{
                       color: 'var(--text-primary)',
                       borderTop: index === 0 ? 'none' : '1px solid var(--border)',
                     }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                   >
                     <span className="flex-shrink-0 text-[var(--text-secondary)]"><Icon filled={active} /></span>
                     <span className="flex-1 text-[15px]" style={{ fontWeight: active ? 700 : 500 }}>{item.label}</span>
@@ -177,10 +173,8 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
               {session && (
                 <button
                   onClick={() => { onClose(); window.dispatchEvent(new Event('open-compose')) }}
-                  className="flex items-center justify-between gap-3 w-full px-4 py-3.5 text-left transition-colors"
+                  className="flex items-center justify-between gap-3 w-full px-4 py-3.5 text-left transition-colors touch-active"
                   style={{ color: 'var(--text-primary)', borderTop: '1px solid var(--border)' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
                   <span className="flex items-center gap-3 min-w-0">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--text-secondary)' }}>
@@ -210,10 +204,8 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
                 if (widget.type === 'search') {
                   return (
                     <Link key={`search-${index}`} href="/search"
-                      className="flex items-center justify-between gap-3 px-4 py-3 rounded-2xl transition-colors"
+                      className="flex items-center justify-between gap-3 px-4 py-3 rounded-2xl transition-colors touch-active"
                       style={{ border: '1px solid var(--border)', color: 'var(--text-primary)' }}
-                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                     >
                       <span className="flex items-center gap-2.5">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--text-secondary)' }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -279,10 +271,8 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
                       <div style={{ borderTop: '1px solid var(--border)' }}>
                         {hotPosts.slice(0, 5).map((post, idx) => (
                           <Link key={post.id} href={`/post/${post.slug}`}
-                            className="flex items-center justify-between gap-3 px-4 py-2.5 transition-colors"
+                            className="flex items-center justify-between gap-3 px-4 py-2.5 transition-colors touch-active"
                             style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--border)', color: 'var(--text-primary)' }}
-                            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
-                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                           >
                             <span className="text-xs font-medium truncate leading-5">{post.title}</span>
                             <span className="text-[10px] shrink-0" style={{ color: 'var(--text-secondary)' }}>{post.views}阅</span>
@@ -318,10 +308,8 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
                       <div style={{ borderTop: '1px solid var(--border)' }}>
                         {links.slice(0, 6).map((link, idx) => (
                           <a key={idx} href={link.url} target="_blank" rel="noopener noreferrer"
-                            className="flex items-center gap-3 px-4 py-2.5 transition-colors"
+                            className="flex items-center gap-3 px-4 py-2.5 transition-colors touch-active"
                             style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--border)' }}
-                            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
-                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                           >
                             <div className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center shrink-0" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
                               {link.avatar ? <img src={link.avatar} alt={link.label} className="w-full h-full object-cover" /> : <span className="text-xs font-bold">{link.label[0]?.toUpperCase()}</span>}
@@ -372,10 +360,8 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
                   <div style={{ borderTop: '1px solid var(--border)' }}>
                     {approvedFriendLinks.slice(0, 8).map((link, idx) => (
                       <a key={link.id || idx} href={link.url} target="_blank" rel="noopener noreferrer"
-                        className="flex items-center gap-3 px-4 py-2.5 transition-colors"
+                        className="flex items-center gap-3 px-4 py-2.5 transition-colors touch-active"
                         style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--border)' }}
-                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
-                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                       >
                         <div className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center shrink-0" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
                           {link.favicon ? <img src={link.favicon} alt={link.name} className="w-full h-full object-cover" /> : <span className="text-xs font-bold">{link.name[0]?.toUpperCase()}</span>}
@@ -403,10 +389,8 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
               type="button"
               onClick={() => setMenuOpen(v => !v)}
               aria-label="打开账号菜单"
-              className="flex items-center gap-2 w-full px-1.5 py-1.25 rounded-full transition-colors"
+              className="flex items-center gap-2 w-full px-1.5 py-1.25 rounded-full transition-colors touch-active"
               style={{ color: 'var(--text-primary)' }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(29,155,240,0.06)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
             >
               <div
                 className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center font-bold text-[12px]"
@@ -435,10 +419,8 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
                 <Link
                   href="/admin"
                   onClick={() => { setMenuOpen(false); onClose() }}
-                  className="flex items-center gap-3 px-0.5 py-2.5 text-sm font-medium transition-colors"
+                  className="flex items-center gap-3 px-0.5 py-2.5 text-sm font-medium transition-colors touch-active"
                   style={{ color: 'var(--text-primary)' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(29,155,240,0.05)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--text-secondary)' }}>
                     <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
@@ -447,17 +429,15 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
                   后台控制台
                 </Link>
                 <div style={{ borderTop: '1px solid var(--border)' }} />
-                <div className="flex items-center justify-between px-0.5 py-2.5" onMouseEnter={e => (e.currentTarget.style.background = 'rgba(29,155,240,0.05)')}>
+                <div className="flex items-center justify-between px-0.5 py-2.5 touch-active">
                   <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>切换主题</span>
                   <ThemeToggle className="w-8 h-8" />
                 </div>
                 <div style={{ borderTop: '1px solid var(--border)' }} />
                 <button
                   onClick={logout}
-                  className="flex items-center gap-3 px-0.5 py-2.5 text-sm font-medium w-full text-left transition-colors"
+                  className="flex items-center gap-3 px-0.5 py-2.5 text-sm font-medium w-full text-left transition-colors touch-active"
                   style={{ color: 'var(--text-primary)' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(29,155,240,0.05)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--text-secondary)' }}>
                     <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />

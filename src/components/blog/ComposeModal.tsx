@@ -217,7 +217,7 @@ export function ComposeModal({ avatar, username }: Props) {
                 <MDEditor
                   value={content}
                   onChange={v => setContent(v || '')}
-                  height={220}
+                  height={window.innerHeight < 700 ? 140 : 220}
                   preview="edit"
                   style={{ background: 'transparent', borderRadius: 8 }}
                 />

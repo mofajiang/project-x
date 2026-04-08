@@ -43,7 +43,7 @@ export default async function AdminDashboard() {
       {/* 左侧主内容 */}
       <div className="min-w-0">
         {/* 统计卡片 */}
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
           {stats.map(s => (
             <div key={s.label} className="rounded-xl px-3 py-2.5" style={{ background: s.alert ? 'rgba(249,24,128,0.08)' : 'var(--bg-secondary)', boxShadow: s.alert ? 'inset 0 0 0 1px var(--red)' : 'none' }}>
               <p className="text-xl font-black leading-tight tabular-nums" style={{ color: s.alert ? 'var(--red)' : 'var(--text-primary)' }}>{s.value}</p>

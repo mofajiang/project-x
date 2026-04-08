@@ -72,7 +72,7 @@ export function AdminSidebar({ username }: { username: string }) {
     <>
       {/* 桌面端左侧栏：图标模式，hover 覆盖展开 */}
       <aside
-        className="hidden md:flex shrink-0 relative"
+        className="hidden lg:flex shrink-0 relative"
         style={{ width: 56, zIndex: 40 }}
         onMouseEnter={() => setExpanded(true)}
         onMouseLeave={() => setExpanded(false)}

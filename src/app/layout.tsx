@@ -1,9 +1,13 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import './globals.css'
-import 'leaflet/dist/leaflet.css'
 import { ToasterProvider } from '@/components/ToasterProvider'
 import { getSiteConfig } from '@/lib/config'
 import { VisitorTracker } from '@/components/VisitorTracker'
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+}
 
 export async function generateMetadata(): Promise<Metadata> {
   const config = await getSiteConfig()

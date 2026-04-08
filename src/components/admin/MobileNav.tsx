@@ -42,7 +42,7 @@ export function MobileNav({ username, pendingCount }: { username: string; pendin
     <>
       {/* 顶部迷你导航 - 仅汉堡菜单和标题 */}
       <header
-        className="md:hidden fixed top-0 left-0 right-0 z-30 h-14 flex items-center justify-between px-4 gap-2"
+        className="lg:hidden fixed top-0 left-0 right-0 z-30 h-14 flex items-center justify-between px-4 gap-2"
         style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border)' }}
       >
         <button
@@ -70,14 +70,14 @@ export function MobileNav({ username, pendingCount }: { username: string; pendin
       {/* 抽屉菜单背景层 */}
       {open && (
         <div
-          className="md:hidden fixed inset-0 z-40 bg-black/50"
+          className="lg:hidden fixed inset-0 z-40 bg-black/50"
           onClick={() => setOpen(false)}
         />
       )}
 
       {/* 抽屉菜单 */}
       <nav
-        className={`md:hidden fixed left-0 w-72 z-40 transform transition-transform duration-300 flex flex-col ${
+        className={`lg:hidden fixed left-0 w-72 z-40 transform transition-transform duration-300 flex flex-col ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
         style={{ background: 'var(--bg-secondary)', borderRight: '1px solid var(--border)', top: '3.5rem', bottom: 0 }}

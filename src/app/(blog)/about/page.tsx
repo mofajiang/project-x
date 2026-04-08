@@ -20,7 +20,7 @@ export default async function AboutPage() {
             </div>
           )}
         </div>
-        <div className="flex justify-center gap-4">
+        <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
           {config.socialX && (
             <a href={`https://x.com/${config.socialX}`} target="_blank"
               className="px-5 py-2 rounded-full text-sm font-bold transition-colors hover:opacity-80"

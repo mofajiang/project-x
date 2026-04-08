@@ -36,7 +36,7 @@ export default async function LinksPage() {
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-primary)' }}>
-      <div className="max-w-4xl mx-auto px-4 py-12">
+      <div className="max-w-4xl mx-auto px-3 py-6 sm:px-4 sm:py-12">
         {/* 页面头部 */}
         <div className="mb-12">
           <h1 className="text-4xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
@@ -111,7 +111,7 @@ export default async function LinksPage() {
                   >
                     {link.favicon ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={link.favicon} alt={link.name} className="w-full h-full object-cover" />
+                      <img src={link.favicon} alt={link.name} loading="lazy" className="w-full h-full object-cover" />
                     ) : (
                       <span>{link.name[0]?.toUpperCase()}</span>
                     )}

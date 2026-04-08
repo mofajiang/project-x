@@ -114,24 +114,24 @@ function CommentInput({
               value={guestName}
               onChange={e => setGuestName(e.target.value)}
               maxLength={20}
-              className="w-full min-w-0 bg-transparent outline-none text-sm py-1"
-              style={{ color: 'var(--text-primary)' }}
+              className="w-full min-w-0 bg-transparent outline-none text-sm py-2 border-b"
+              style={{ color: 'var(--text-primary)', borderColor: 'var(--border)' }}
             />
             <input
               type="email"
               placeholder="邮箱（选填）"
               value={guestEmail}
               onChange={e => setGuestEmail(e.target.value)}
-              className="w-full min-w-0 bg-transparent outline-none text-sm py-1"
-              style={{ color: 'var(--text-primary)' }}
+              className="w-full min-w-0 bg-transparent outline-none text-sm py-2 border-b"
+              style={{ color: 'var(--text-primary)', borderColor: 'var(--border)' }}
             />
             <input
               type="url"
               placeholder="网站（选填）"
               value={guestWebsite}
               onChange={e => setGuestWebsite(e.target.value)}
-              className="w-full min-w-0 bg-transparent outline-none text-sm py-1"
-              style={{ color: 'var(--text-primary)' }}
+              className="w-full min-w-0 bg-transparent outline-none text-sm py-2 border-b"
+              style={{ color: 'var(--text-primary)', borderColor: 'var(--border)' }}
             />
           </div>
         )}
@@ -211,7 +211,7 @@ function CommentItem({ comment, postId, session, depth = 0, showCommentIp = fals
         {depth < 2 && (
           <button
             onClick={() => setReplying(v => !v)}
-            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[10px] transition-colors sm:px-3 sm:text-xs"
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[10px] transition-colors sm:px-3 sm:py-1.5 sm:text-xs"
             style={{ color: replying ? 'var(--accent)' : 'var(--text-secondary)', background: replying ? 'rgba(29,155,240,0.10)' : 'var(--bg-hover)' }}
           >
             <ReplyIcon />

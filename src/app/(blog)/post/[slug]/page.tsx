@@ -142,7 +142,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
         {/* 封面图 */}
         {post.coverImage && (
           <div className="rounded-2xl overflow-hidden mb-4">
-            <Image src={post.coverImage} alt={post.title} width={600} height={300} className="w-full object-cover" />
+            <Image src={post.coverImage} alt={post.title} width={600} height={300} sizes="(max-width: 640px) 100vw, 600px" className="w-full object-cover" />
           </div>
         )}
 

@@ -85,7 +85,7 @@ export default async function BlogLayout({ children }: { children: React.ReactNo
           <Sidebar siteName={config.siteName} siteLogo={siteLogo} loginMode={config.loginMode} secretClicks={config.secretClicks} loginPath={config.loginPath} navItems={navItems} session={session} avatar={avatar} displayName={displayName} handle={handle} />
         </div>
         {/* 主内容 */}
-        <main className="w-full min-h-screen border-x pb-16 md:pb-0" style={{ borderColor: 'var(--border)', maxWidth: 600, minWidth: 0 }}>
+        <main className="w-full min-h-screen md:border-x pb-16 md:pb-0" style={{ borderColor: 'var(--border)', maxWidth: 600, minWidth: 0 }}>
           {children}
         </main>
         {/* 右侧面板（桌面端） */}
