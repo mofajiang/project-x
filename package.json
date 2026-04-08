@@ -11,6 +11,9 @@
     "type-check": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.{ts,tsx,json,css,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,json,css,md}\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "prepare": "husky"
@@ -72,6 +75,7 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@types/topojson-client": "^3.1.5",
+    "@vitejs/plugin-react": "^6.0.1",
     "autoprefixer": "^10.0.1",
     "eslint": "^10.2.0",
     "husky": "^9.1.7",
@@ -81,6 +85,7 @@
     "prettier-plugin-tailwindcss": "^0.7.2",
     "prisma": "^5.10.0",
     "tailwindcss": "^3.3.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.3"
   }
 }
