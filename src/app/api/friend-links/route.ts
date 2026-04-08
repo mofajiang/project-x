@@ -27,20 +27,17 @@ export async function POST(req: NextRequest) {
       finalUrl = 'https://' + finalUrl
     }
 
-    // 检查是否已存在
-    const existing = await prisma.friendLink.findFirst({
-      where: { url: finalUrl },
-    })
+    // 并行执行：检查重复、获取 Favicon、检查互链
+    const myDomain = new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').hostname
+    const [existing, favicon, reciprocalCheck] = await Promise.all([
+      prisma.friendLink.findFirst({ where: { url: finalUrl } }),
+      userFavicon?.trim() ? Promise.resolve(userFavicon.trim()) : getFavicon(finalUrl),
+      checkFriendLinkOnTargetSite(finalUrl, myDomain),
+    ])
+
     if (existing) {
       return NextResponse.json({ error: '此链接已存在' }, { status: 400 })
     }
-
-    // 用户提供头像则直接用，否则自动抓取 Favicon
-    const favicon = userFavicon?.trim() ? userFavicon.trim() : await getFavicon(finalUrl)
-
-    // 检查互链
-    const myDomain = new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').hostname
-    const reciprocalCheck = await checkFriendLinkOnTargetSite(finalUrl, myDomain)
 
     // 创建友链记录（状态待定，需要 AI 审核）
     const link = await prisma.friendLink.create({

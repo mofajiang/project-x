@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { CarouselSlide } from '@/lib/config'
@@ -11,7 +12,7 @@ function SlideContent({ slide }: { slide: CarouselSlide }) {
     if (!slide.image) return null
     return (
       <div className="relative w-full overflow-hidden" style={{ aspectRatio: '16/9' }}>
-        <img src={slide.image} alt={slide.title || ''} className="w-full h-full object-cover" loading="lazy" />
+        <Image src={slide.image} alt={slide.title || ''} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 350px" />
         {(slide.title || slide.desc) && (
           <div className="absolute bottom-0 left-0 right-0 px-3 pb-3 pt-8"
             style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 100%)' }}>

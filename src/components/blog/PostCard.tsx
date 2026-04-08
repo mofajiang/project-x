@@ -5,13 +5,14 @@ import { useState, useMemo, memo } from 'react'
 import { relativeTime } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { InternalQuoteCard, ExternalQuoteCard } from './QuoteCard'
+import { extractQuotes as extractQuotesFn, stripMarkdown as stripMarkdownFn, type QuoteSegment } from '@/lib/post-utils'
 
 interface Post {
   id: string
   title: string
   slug: string
   excerpt: string
-  content: string
+  content?: string
   coverImage: string | null
   publishedAt: Date | null
   pinned?: boolean
@@ -20,6 +21,8 @@ interface Post {
   author: { username: string; displayName?: string | null; avatar: string | null }
   tags: { tag: { id: string; name: string; slug: string } }[]
   _count: { comments: number }
+  plainText?: string
+  quotes?: QuoteSegment[]
 }
 
 interface PostCardProps {
@@ -28,51 +31,19 @@ interface PostCardProps {
   index?: number
 }
 
-interface QuoteSegment {
-  type: 'internal' | 'external'
-  value: string
-}
-
-function extractQuotes(md: string): QuoteSegment[] {
-  const results: QuoteSegment[] = []
-  for (const line of md.split('\n')) {
-    const internal = line.match(/^::quote\[([^\]]+)\]\s*$/)
-    if (internal) { results.push({ type: 'internal', value: internal[1].trim() }); continue }
-    const external = line.match(/^::quote-url\[([^\]]+)\]\s*$/)
-    if (external) {
-      const url = external[1].trim().match(/^(\S+)/)?.[1] || external[1].trim()
-      results.push({ type: 'external', value: url })
-    }
-  }
-  return results
-}
-
-function stripMarkdown(md: string): string {
-  return md
-    .replace(/^::quote-url\[[^\]]+\]\s*$/gm, '')
-    .replace(/^::quote\[[^\]]+\]\s*$/gm, '')
-    .replace(/```[\s\S]*?```/g, '[代码]')
-    .replace(/`[^`]+`/g, '')
-    .replace(/!\[.*?\]\(.*?\)/g, '[图片]')
-    .replace(/\[([^\]]+)\]\(.*?\)/g, '$1')
-    .replace(/^#{1,6}\s+/gm, '')
-    .replace(/(\*\*|__)(.*?)\1/g, '$2')
-    .replace(/(\*|_)(.*?)\1/g, '$2')
-    .replace(/~~(.*?)~~/g, '$1')
-    .replace(/^\s*[-*+]\s+/gm, '')
-    .replace(/^\s*\d+\.\s+/gm, '')
-    .replace(/^\s*>\s+/gm, '')
-    .replace(/\n{2,}/g, '\n')
-    .trim()
-}
-
 export const PostCard = memo(function PostCard({ post, currentUserId, index = 0 }: PostCardProps) {
   const [likes, setLikes] = useState(post.likes)
   const [liked, setLiked] = useState(false)
   const [liking, setLiking] = useState(false)
   const isAuthor = currentUserId && post.authorId && currentUserId === post.authorId
-  const plainText = useMemo(() => stripMarkdown(post.content).trim(), [post.content])
-  const quotes = useMemo(() => extractQuotes(post.content), [post.content])
+  const plainText = useMemo(
+    () => post.plainText ?? (post.content ? stripMarkdownFn(post.content).trim() : ''),
+    [post.plainText, post.content]
+  )
+  const quotes = useMemo(
+    () => post.quotes ?? (post.content ? extractQuotesFn(post.content) : []),
+    [post.quotes, post.content]
+  )
 
   const handleLike = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -137,7 +108,7 @@ export const PostCard = memo(function PostCard({ post, currentUserId, index = 0 
         </div>
 
         {/* 正文内容预览（类 X 推文直接展示） */}
-        {post.content && (
+        {(plainText || quotes.length > 0) && (
             <>
               {plainText && (
                 <p className="text-sm leading-relaxed mt-1.5 line-clamp-5 whitespace-pre-line" style={{ color: 'var(--text-primary)' }}>

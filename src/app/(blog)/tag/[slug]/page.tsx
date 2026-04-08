@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { PostCard } from '@/components/blog/PostCard'
+import { stripMarkdown, extractQuotes } from '@/lib/post-utils'
 
 export const revalidate = 60
 
@@ -13,7 +14,18 @@ export default async function TagPage({ params }: { params: { slug: string } }) 
         where: { post: { published: true } },
         include: {
           post: {
-            include: {
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+              excerpt: true,
+              content: true,
+              coverImage: true,
+              publishedAt: true,
+              pinned: true,
+              views: true,
+              likes: true,
+              authorId: true,
               author: { select: { username: true, avatar: true, displayName: true } },
               tags: { select: { tag: { select: { id: true, name: true, slug: true } } } },
               _count: { select: { comments: true } },
@@ -28,6 +40,9 @@ export default async function TagPage({ params }: { params: { slug: string } }) 
 
   const postsWithDisplay = tag.posts.map(({ post }) => ({
     ...post,
+    content: undefined,
+    plainText: stripMarkdown(post.content).trim(),
+    quotes: extractQuotes(post.content),
     author: { ...post.author, displayName: post.author.displayName || '' },
   }))
 
@@ -41,7 +56,7 @@ export default async function TagPage({ params }: { params: { slug: string } }) 
         </div>
       </div>
       <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
-        {postsWithDisplay.map((post) => <PostCard key={post.id} post={post as any} />)}
+        {postsWithDisplay.map((post) => <PostCard key={post.id} post={post} />)}
       </div>
     </div>
   )

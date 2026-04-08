@@ -5,11 +5,52 @@ import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
 import rehypeRaw from 'rehype-raw'
 import DOMPurify from 'dompurify'
-import { createLowlight, common } from 'lowlight'
+import { createLowlight } from 'lowlight'
+import javascript from 'highlight.js/lib/languages/javascript'
+import typescript from 'highlight.js/lib/languages/typescript'
+import python from 'highlight.js/lib/languages/python'
+import bash from 'highlight.js/lib/languages/bash'
+import json from 'highlight.js/lib/languages/json'
+import css from 'highlight.js/lib/languages/css'
+import xml from 'highlight.js/lib/languages/xml'
+import sql from 'highlight.js/lib/languages/sql'
+import yaml from 'highlight.js/lib/languages/yaml'
+import markdown from 'highlight.js/lib/languages/markdown'
+import go from 'highlight.js/lib/languages/go'
+import rust from 'highlight.js/lib/languages/rust'
+import java from 'highlight.js/lib/languages/java'
+import cpp from 'highlight.js/lib/languages/cpp'
+import dockerfile from 'highlight.js/lib/languages/dockerfile'
+import nginx from 'highlight.js/lib/languages/nginx'
 import 'highlight.js/styles/github-dark.css'
 import { InternalQuoteCard, ExternalQuoteCard } from './QuoteCard'
 
-const lowlight = createLowlight(common)
+const lowlight = createLowlight()
+lowlight.register('javascript', javascript)
+lowlight.register('js', javascript)
+lowlight.register('typescript', typescript)
+lowlight.register('ts', typescript)
+lowlight.register('python', python)
+lowlight.register('bash', bash)
+lowlight.register('sh', bash)
+lowlight.register('shell', bash)
+lowlight.register('json', json)
+lowlight.register('css', css)
+lowlight.register('html', xml)
+lowlight.register('xml', xml)
+lowlight.register('sql', sql)
+lowlight.register('yaml', yaml)
+lowlight.register('yml', yaml)
+lowlight.register('markdown', markdown)
+lowlight.register('md', markdown)
+lowlight.register('go', go)
+lowlight.register('rust', rust)
+lowlight.register('java', java)
+lowlight.register('cpp', cpp)
+lowlight.register('c', cpp)
+lowlight.register('dockerfile', dockerfile)
+lowlight.register('docker', dockerfile)
+lowlight.register('nginx', nginx)
 
 // 解析引用语法，将特殊行转为占位符，渲染时替换为组件
 function parseQuotes(content: string): { segments: Array<{ type: 'md' | 'internal' | 'external'; content: string; url?: string; title?: string; desc?: string }> } {

@@ -3,6 +3,7 @@ import { PostCard } from '@/components/blog/PostCard'
 import { FeedTabs } from '@/components/blog/FeedTabs'
 import { QuickPost } from '@/components/blog/QuickPost'
 import { getSession } from '@/lib/auth'
+import { stripMarkdown, extractQuotes } from '@/lib/post-utils'
 
 
 export default async function HomePage({
@@ -47,6 +48,9 @@ export default async function HomePage({
   }
   const postsWithDisplay = posts.map(p => ({
     ...p,
+    content: undefined,
+    plainText: stripMarkdown(p.content).trim(),
+    quotes: extractQuotes(p.content),
     author: { ...p.author, displayName: p.author.displayName || '' },
   }))
 
