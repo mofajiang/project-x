@@ -22,20 +22,39 @@ export default async function ArchivePage() {
 
   return (
     <div>
-      <div className="sticky top-0 z-10 px-4 py-4 backdrop-blur-md" style={{ background: 'var(--bg-blur)', borderBottom: '1px solid var(--border)' }}>
-        <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>归档</h1>
-        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>共 {posts.length} 篇文章</p>
+      <div
+        className="sticky top-0 z-10 px-4 py-4 backdrop-blur-md"
+        style={{ background: 'var(--bg-blur)', borderBottom: '1px solid var(--border)' }}
+      >
+        <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+          归档
+        </h1>
+        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+          共 {posts.length} 篇文章
+        </p>
       </div>
       <div className="px-4 py-4">
         {Object.entries(grouped).map(([month, monthPosts]) => (
           <div key={month} className="mb-8">
-            <h2 className="text-lg font-bold mb-3" style={{ color: 'var(--accent)' }}>{month}</h2>
-            <div className="flex flex-col gap-2 pl-4" style={{ borderLeft: '2px solid var(--border)' }}>
-              {monthPosts.map(post => (
-                <a key={post.id} href={`/post/${post.slug}`}
-                  className="flex items-center justify-between group py-1">
-                  <span className="text-sm group-hover:underline" style={{ color: 'var(--text-primary)' }}>{post.title}</span>
-                  <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>{post.publishedAt ? formatDate(post.publishedAt) : ''}</span>
+            <h2 className="mb-3 text-lg font-bold" style={{ color: 'var(--accent)' }}>
+              {month}
+            </h2>
+            <div className="flex flex-col gap-0 pl-4" style={{ borderLeft: '2px solid var(--accent)', opacity: 0.7 }}>
+              {monthPosts.map((post) => (
+                <a
+                  key={post.id}
+                  href={`/post/${post.slug}`}
+                  className="group flex items-center justify-between py-2 transition-opacity active:opacity-60"
+                >
+                  <span
+                    className="min-w-0 flex-1 truncate pr-2 text-sm group-hover:underline"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    {post.title}
+                  </span>
+                  <span className="flex-shrink-0 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    {post.publishedAt ? formatDate(post.publishedAt) : ''}
+                  </span>
                 </a>
               ))}
             </div>

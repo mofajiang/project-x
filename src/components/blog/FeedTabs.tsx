@@ -12,21 +12,21 @@ export function FeedTabs({ active }: { active: string }) {
       className="sticky top-0 z-10 flex backdrop-blur-md"
       style={{ background: 'var(--bg-blur)', borderBottom: '1px solid var(--border)' }}
     >
-      {tabs.map(tab => (
+      {tabs.map((tab) => (
         <Link
           key={tab.key}
           href={`/?tab=${tab.key}`}
           prefetch={true}
-          className="flex-1 py-[14px] text-[15px] font-semibold relative transition-colors text-center"
+          className="relative flex-1 py-[14px] text-center text-[15px] font-semibold transition-colors"
           style={{ color: active === tab.key ? 'var(--text-primary)' : 'var(--text-secondary)' }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
         >
           {tab.label}
           {active === tab.key && (
             <span
-              className="absolute bottom-0 left-1/2 -translate-x-1/2 rounded-full"
-              style={{ background: 'var(--accent)', height: '4px', width: '56px' }}
+              className="absolute bottom-0 left-4 right-4 rounded-full"
+              style={{ background: 'var(--accent)', height: '4px' }}
             />
           )}
         </Link>
