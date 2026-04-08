@@ -3,6 +3,13 @@ import { getSession } from '@/lib/auth'
 import { AdminSidebar } from '@/components/admin/AdminSidebar'
 import { MobileNav } from '@/components/admin/MobileNav'
 import { prisma } from '@/lib/prisma'
+import { unstable_cache } from 'next/cache'
+
+const getPendingCount = unstable_cache(
+  () => prisma.comment.count({ where: { approved: false } }),
+  ['pending-comments'],
+  { revalidate: 30, tags: ['comments'] }
+)
 
 export const dynamic = 'force-dynamic'
 
@@ -10,8 +17,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const session = await getSession()
   if (!session) redirect('/')
 
-  // 获取待审核评论数
-  const pendingComments = await prisma.comment.count({ where: { approved: false } })
+  const pendingComments = await getPendingCount()
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row" style={{ background: 'var(--bg)' }}>

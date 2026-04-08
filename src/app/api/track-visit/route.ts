@@ -144,7 +144,7 @@ async function resolveProviderGeo(mode: string | undefined, clientIp: string): P
     if (!(provider in builtins)) continue
     const providerUrl = builtins[provider]
     try {
-      const response = await fetch(providerUrl, { signal: AbortSignal.timeout(5000), headers: { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0 (compatible; VisitorTracker/1.0)' } })
+      const response = await fetch(providerUrl, { signal: AbortSignal.timeout(3000), headers: { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0 (compatible; VisitorTracker/1.0)' } })
       if (!response.ok) {
         console.warn('[track-visit] provider geo fetch failed:', provider, response.status, response.statusText)
         continue

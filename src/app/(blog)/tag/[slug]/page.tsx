@@ -15,7 +15,7 @@ export default async function TagPage({ params }: { params: { slug: string } }) 
           post: {
             include: {
               author: { select: { username: true, avatar: true, displayName: true } },
-              tags: { include: { tag: true } },
+              tags: { select: { tag: { select: { id: true, name: true, slug: true } } } },
               _count: { select: { comments: true } },
             },
           },

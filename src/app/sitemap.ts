@@ -16,15 +16,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]
 
   try {
-    const posts = await prisma.post.findMany({
-      where: { published: true },
-      select: { slug: true, updatedAt: true },
-      orderBy: { publishedAt: 'desc' },
-    })
-
-    const tags = await prisma.tag.findMany({
-      select: { slug: true },
-    })
+    const [posts, tags] = await Promise.all([
+      prisma.post.findMany({
+        where: { published: true },
+        select: { slug: true, updatedAt: true },
+        orderBy: { publishedAt: 'desc' },
+      }),
+      prisma.tag.findMany({
+        select: { slug: true },
+      }),
+    ])
 
     const postRoutes: MetadataRoute.Sitemap = posts.map(post => ({
       url: `${baseUrl}/post/${post.slug}`,
