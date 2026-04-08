@@ -86,6 +86,14 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
   // 路由变化时关闭抽屉
   useEffect(() => { onClose() }, [pathname]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ESC 键关闭
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [open, onClose])
+
   // 锁定 body 滚动
   useEffect(() => {
     if (open) {

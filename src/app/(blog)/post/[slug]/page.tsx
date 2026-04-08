@@ -51,6 +51,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const post = await getPost(slugCandidates, true)
   if (!post) return {}
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const ogImage = post.coverImage || `${baseUrl}/api/og/${encodeURIComponent(post.slug)}`
   return {
     title: post.title,
     description: post.excerpt || post.content.slice(0, 160).replace(/[#*`]/g, ''),
@@ -59,7 +60,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       description: post.excerpt || post.content.slice(0, 160).replace(/[#*`]/g, ''),
       type: 'article',
       url: `${baseUrl}/post/${post.slug}`,
-      images: post.coverImage ? [{ url: post.coverImage, width: 1200, height: 630 }] : [],
+      images: [{ url: ogImage, width: 1200, height: 630 }],
       publishedTime: post.publishedAt?.toISOString(),
       modifiedTime: post.updatedAt.toISOString(),
       authors: [post.author.username],
@@ -69,7 +70,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       card: 'summary_large_image',
       title: post.title,
       description: post.excerpt || post.content.slice(0, 160).replace(/[#*`]/g, ''),
-      images: post.coverImage ? [post.coverImage] : [],
+      images: [ogImage],
     },
     alternates: {
       canonical: `${baseUrl}/post/${post.slug}`,

@@ -92,7 +92,7 @@ export const PostCard = memo(function PostCard({ post, currentUserId, index = 0 
 
   return (
     <article className="post-card px-4 py-5 transition-all duration-200 cursor-pointer" style={{ borderBottom: '1px solid var(--border)' }}>
-        <Link href={`/post/${post.slug}`} prefetch={true} className="block">
+        <Link href={`/post/${post.slug}`} prefetch={index < 3} className="block">
         {/* 作者行 */}
         <div className="flex items-center justify-between gap-2.5 mb-2.5">
           <div className="flex items-center gap-2.5 min-w-0 flex-1">

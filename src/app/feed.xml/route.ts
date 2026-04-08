@@ -31,6 +31,7 @@ export async function GET(req: Request) {
       publishedAt: true,
       createdAt: true,
       author: { select: { displayName: true, username: true } },
+      tags: { select: { tag: { select: { name: true } } } },
     },
   })
 
@@ -39,19 +40,21 @@ export async function GET(req: Request) {
     const date = (post.publishedAt || post.createdAt).toUTCString()
     const desc = post.excerpt || post.content.slice(0, 200).replace(/[#*`>\[\]]/g, '')
     const author = post.author.displayName || post.author.username
+    const categories = (post as any).tags?.map((t: any) => `\n      <category>${escapeXml(t.tag.name)}</category>`).join('') || ''
     return `
     <item>
       <title>${escapeXml(post.title)}</title>
       <link>${url}</link>
       <guid isPermaLink="true">${url}</guid>
       <description>${escapeXml(desc)}</description>
+      <content:encoded><![CDATA[${post.content}]]></content:encoded>
       <author>${escapeXml(author)}</author>
-      <pubDate>${date}</pubDate>
+      <pubDate>${date}</pubDate>${categories}
     </item>`
   }).join('')
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
     <title>${escapeXml(siteName)}</title>
     <link>${siteUrl}</link>
