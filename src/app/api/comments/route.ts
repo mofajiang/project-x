@@ -162,7 +162,8 @@ async function analyzeAndUpdateComment(
       commentData.guestWebsite,
       config.aiModelMaxTokens,
       // 透传 provider 和 baseUrl，支持自定义模型
-      config.enableCustomAiModel ? config.aiModelProvider : 'openrouter',
+      // 直接用 aiModelProvider 字段，不依赖 enableCustomAiModel（UI 可能未同步该标志位）
+      config.aiModelProvider || 'openrouter',
       config.aiModelBaseUrl || undefined
     )
 

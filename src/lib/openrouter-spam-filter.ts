@@ -59,12 +59,20 @@ export async function analyzeCommentWithAI(
   try {
     // 根据 provider 决定 API URL 和 Headers
     const isCustom = provider === 'custom' && baseUrl
-    const apiUrl = isCustom ? `${baseUrl.replace(/\/+$/, '')}/v1/chat/completions` : OPENROUTER_API_URL
+    const isGroq = provider === 'groq'
+    let apiUrl: string
+    if (isCustom) {
+      apiUrl = `${baseUrl!.replace(/\/+$/, '')}/v1/chat/completions`
+    } else if (isGroq) {
+      apiUrl = 'https://api.groq.com/openai/v1/chat/completions'
+    } else {
+      apiUrl = OPENROUTER_API_URL
+    }
     const headers: Record<string, string> = {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     }
-    if (!isCustom) {
+    if (!isCustom && !isGroq) {
       headers['HTTP-Referer'] = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
       headers['X-Title'] = 'Blog Comment Spam Filter'
     }

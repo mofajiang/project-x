@@ -42,6 +42,17 @@ export async function POST(request: NextRequest) {
           messages: [{ role: 'user', content: '测试连接' }],
           max_tokens: 10,
         }
+      } else if (provider === 'groq') {
+        url = 'https://api.groq.com/openai/v1/chat/completions'
+        headers = {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        }
+        body = {
+          model,
+          messages: [{ role: 'user', content: '测试连接' }],
+          max_tokens: 10,
+        }
       } else if (provider === 'custom') {
         // 使用 OpenAI 兼容格式（与 analyzeCommentWithAI 实际调用保持一致）
         const cleanBase = (baseUrl || '').replace(/\/+$/, '')

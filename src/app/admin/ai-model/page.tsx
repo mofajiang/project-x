@@ -17,7 +17,8 @@ interface AiConfig {
 }
 
 const PROVIDERS = [
-  { value: 'openrouter', label: 'OpenRouter (推荐)', desc: '通过 OpenRouter 接口调用各类 AI 模型' },
+  { value: 'openrouter', label: 'OpenRouter（推荐）', desc: '通过 OpenRouter 接口调用各类 AI 模型，免费模型有限速' },
+  { value: 'groq', label: 'Groq（免费·极速）', desc: '注册即可使用，每天免费大额度，速度极快，无需 OpenRouter' },
   { value: 'custom', label: '自定义接口', desc: '运行自己部署的 AI 服务（如 Ollama、LocalAI 等）' },
 ]
 
@@ -203,23 +204,86 @@ export default function AdminAiModelPage() {
                 </label>
                 <IMEInput
                   type="text"
-                  placeholder="例如 anthropic/claude-3.5-sonnet 或 openai/gpt-4-turbo"
+                  placeholder="例如 anthropic/claude-3.5-sonnet 或 google/gemma-2-9b-it:free"
                   value={config.aiModelName}
                   onValueChange={(v) => handleChange('aiModelName', v)}
                   className="w-full rounded-lg border bg-transparent px-4 py-2 outline-none"
                   style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                 />
                 <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  必须使用 OpenRouter 格式：<code>提供商/模型名</code>，如{' '}
+                  格式：<code className="font-mono">提供商/模型名</code>，如{' '}
+                  <code className="font-mono">anthropic/claude-3.5-sonnet</code>、
+                  <code className="font-mono">openai/gpt-4o-mini</code>。 ⚠️ 带 <code className="font-mono">:free</code>{' '}
+                  的免费模型受上游限速影响，频繁调用时易出现 429 错误。
                   <a
                     href="https://openrouter.ai/models"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="underline"
+                    className="ml-1 underline"
                   >
-                    查看支持的模型列表 →
+                    查看所有模型 →
                   </a>
                 </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Groq 配置 */}
+        {config.aiModelProvider === 'groq' && (
+          <div
+            className="rounded-2xl border p-6"
+            style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}
+          >
+            <h2 className="mb-4 text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+              Groq 配置
+            </h2>
+            <div
+              className="mb-4 rounded-lg px-4 py-3 text-sm"
+              style={{ background: 'color-mix(in srgb, var(--accent) 12%, transparent)', color: 'var(--text-primary)' }}
+            >
+              💡 Groq 提供<strong>免费</strong>的 Llama / Mixtral
+              等模型，速度极快，注册即可使用，每天有慷慨免费额度，无需绑定信用卡。
+              <a
+                href="https://console.groq.com/keys"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ml-1 underline"
+              >
+                获取 Groq API Key →
+              </a>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                  API Key
+                </label>
+                <IMEInput
+                  type="password"
+                  placeholder="输入 Groq API Key（gsk_...）"
+                  value={config.aiModelApiKey}
+                  onValueChange={(v) => handleChange('aiModelApiKey', v)}
+                  className="w-full rounded-lg border bg-transparent px-4 py-2 outline-none"
+                  style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                  模型名称
+                </label>
+                <select
+                  value={config.aiModelName}
+                  onChange={(e) => handleChange('aiModelName', e.target.value)}
+                  className="w-full rounded-lg border bg-transparent px-4 py-2 outline-none"
+                  style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                >
+                  <option value="llama-3.1-8b-instant">llama-3.1-8b-instant（推荐，最快）</option>
+                  <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile（更准确）</option>
+                  <option value="gemma2-9b-it">gemma2-9b-it（Google Gemma 2）</option>
+                  <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
+                </select>
               </div>
             </div>
           </div>
