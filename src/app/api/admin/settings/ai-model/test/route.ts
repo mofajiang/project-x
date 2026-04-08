@@ -1,16 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getErrorMessage } from '@/lib/converters'
+import { getSessionFromRequest } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
+  const session = await getSessionFromRequest(request)
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   try {
     const data = await request.json()
     let { provider, baseUrl, apiKey, model, timeout } = data
 
     // 如果 API Key 被掩盖（保存后前端展示的是 ***），从数据库取真实 key
+    // 使用 raw SQL 而非 prisma.siteConfig.findUnique，
+    // 避免 Prisma client 未重新生成时 aiModelApiKey 字段缺失导致读取为空
     if (!apiKey || apiKey.includes('***')) {
-      const settings = await prisma.siteConfig.findUnique({ where: { id: 'singleton' } })
-      apiKey = settings?.aiModelApiKey || ''
+      const rows = await prisma.$queryRawUnsafe<any[]>(`SELECT aiModelApiKey FROM SiteConfig WHERE id = 'singleton'`)
+      apiKey = rows[0]?.aiModelApiKey || ''
     }
 
     if (!apiKey) {
@@ -29,7 +35,7 @@ export async function POST(request: NextRequest) {
         url = 'https://openrouter.ai/api/v1/chat/completions'
         headers = {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
+          Authorization: `Bearer ${apiKey}`,
           'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
         }
         body = {

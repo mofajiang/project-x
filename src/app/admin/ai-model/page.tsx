@@ -203,14 +203,22 @@ export default function AdminAiModelPage() {
                 </label>
                 <IMEInput
                   type="text"
-                  placeholder="例如 claude-3.5-sonnet, gpt-4-turbo"
+                  placeholder="例如 anthropic/claude-3.5-sonnet 或 openai/gpt-4-turbo"
                   value={config.aiModelName}
                   onValueChange={(v) => handleChange('aiModelName', v)}
                   className="w-full rounded-lg border bg-transparent px-4 py-2 outline-none"
                   style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                 />
                 <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  填写 OpenRouter 支持的模型全名，如 claude-3.5-sonnet、gpt-4-turbo 等
+                  必须使用 OpenRouter 格式：<code>提供商/模型名</code>，如{' '}
+                  <a
+                    href="https://openrouter.ai/models"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline"
+                  >
+                    查看支持的模型列表 →
+                  </a>
                 </p>
               </div>
             </div>
