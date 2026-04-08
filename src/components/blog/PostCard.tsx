@@ -182,13 +182,15 @@ export const PostCard = memo(function PostCard({ post, currentUserId, index = 0 
         {post.tags.length > 0 && (
           <div className="mt-2.5 flex flex-wrap gap-1.5">
             {post.tags.map(({ tag }) => (
-              <span
+              <Link
                 key={tag.id}
-                className="rounded-full px-2 py-1 text-xs"
+                href={`/tag/${tag.slug}`}
+                onClick={(e) => e.stopPropagation()}
+                className="rounded-full px-2 py-1 text-xs transition-opacity active:opacity-60"
                 style={{ background: 'rgba(29,155,240,0.1)', color: 'var(--accent)' }}
               >
                 #{tag.name}
-              </span>
+              </Link>
             ))}
           </div>
         )}
