@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getErrorMessage } from '@/lib/converters'
 import { getSessionFromRequest } from '@/lib/auth'
+import { getErrorMessage } from '@/lib/converters'
 
 export async function POST(request: NextRequest) {
   const session = await getSessionFromRequest(request)
@@ -12,8 +12,7 @@ export async function POST(request: NextRequest) {
     let { provider, baseUrl, apiKey, model, timeout } = data
 
     // 如果 API Key 被掩盖（保存后前端展示的是 ***），从数据库取真实 key
-    // 使用 raw SQL 而非 prisma.siteConfig.findUnique，
-    // 避免 Prisma client 未重新生成时 aiModelApiKey 字段缺失导致读取为空
+    // 使用 raw SQL 避免 Prisma 客户端不认识动态迁移字段
     if (!apiKey || apiKey.includes('***')) {
       const rows = await prisma.$queryRawUnsafe<any[]>(`SELECT aiModelApiKey FROM SiteConfig WHERE id = 'singleton'`)
       apiKey = rows[0]?.aiModelApiKey || ''
@@ -44,7 +43,9 @@ export async function POST(request: NextRequest) {
           max_tokens: 10,
         }
       } else if (provider === 'custom') {
-        url = `${baseUrl}/api/chat`
+        // 使用 OpenAI 兼容格式（与 analyzeCommentWithAI 实际调用保持一致）
+        const cleanBase = (baseUrl || '').replace(/\/+$/, '')
+        url = `${cleanBase}/v1/chat/completions`
         headers = {
           'Content-Type': 'application/json',
         }
@@ -54,6 +55,7 @@ export async function POST(request: NextRequest) {
         body = {
           model,
           messages: [{ role: 'user', content: '测试连接' }],
+          max_tokens: 10,
           stream: false,
         }
       } else {

@@ -160,7 +160,10 @@ async function analyzeAndUpdateComment(
       commentData.guestName,
       commentData.guestEmail,
       commentData.guestWebsite,
-      config.aiModelMaxTokens
+      config.aiModelMaxTokens,
+      // 透传 provider 和 baseUrl，支持自定义模型
+      config.enableCustomAiModel ? config.aiModelProvider : 'openrouter',
+      config.aiModelBaseUrl || undefined
     )
 
     if (DEBUG) console.log('[ai-analysis-async] AI 分析完成:', { commentId, riskScore: aiResult.riskScore })

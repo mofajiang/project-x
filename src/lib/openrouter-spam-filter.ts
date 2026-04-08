@@ -15,7 +15,7 @@ const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions'
 const DEBUG = process.env.NODE_ENV === 'development'
 
 /**
- * 调用 OpenRouter API 分析评论内容
+ * 调用 OpenRouter / 自定义 AI API 分析评论内容
  * 返回垃圾评论判定和风险评分
  */
 export async function analyzeCommentWithAI(
@@ -25,7 +25,9 @@ export async function analyzeCommentWithAI(
   authorName?: string,
   authorEmail?: string,
   authorWebsite?: string,
-  maxTokens?: number
+  maxTokens?: number,
+  provider?: string,
+  baseUrl?: string
 ): Promise<SpamAnalysisResult> {
   if (DEBUG)
     console.log('[analyzeCommentWithAI] 开始调用，参数检查:', {
@@ -55,7 +57,19 @@ export async function analyzeCommentWithAI(
   }
 
   try {
-    if (DEBUG) console.log('[openrouter] 准备发送请求到:', OPENROUTER_API_URL, '模型:', model)
+    // 根据 provider 决定 API URL 和 Headers
+    const isCustom = provider === 'custom' && baseUrl
+    const apiUrl = isCustom ? `${baseUrl.replace(/\/+$/, '')}/v1/chat/completions` : OPENROUTER_API_URL
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    }
+    if (!isCustom) {
+      headers['HTTP-Referer'] = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+      headers['X-Title'] = 'Blog Comment Spam Filter'
+    }
+
+    if (DEBUG) console.log('[openrouter] 准备发送请求到:', apiUrl, '模型:', model)
 
     const systemPrompt = `你是博客评论垃圾检测系统。分析 <comment> 标签内的评论，判断是否为垃圾/低质量评论。
 评估维度：垃圾广告、骚扰攻击、机器生成、语言质量。
@@ -70,14 +84,9 @@ ${authorName ? `账户名: ${authorName}` : ''}
 ${authorEmail ? `邮箱: ${authorEmail}` : ''}
 ${authorWebsite ? `网站: ${authorWebsite}` : ''}`
 
-    const response = await fetch(OPENROUTER_API_URL, {
+    const response = await fetch(apiUrl, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
-        'X-Title': 'Blog Comment Spam Filter',
-      },
+      headers,
       body: JSON.stringify({
         model: model,
         messages: [
