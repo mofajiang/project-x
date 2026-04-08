@@ -1,44 +1,9 @@
 import { unstable_cache } from 'next/cache'
 import { prisma } from './prisma'
 import { runMigrations } from './db-migrate'
+import { toSafeNumber, toSafeBoolean, toJsonSafe, getErrorMessage } from './converters'
 
 const DEFAULT_VISITOR_STATS_DISPLAY = '["总访问","今日访问","7 日访问","14 日访问","国家数","精确坐标","国家/省份落点","最近时间"]'
-
-function toSafeNumber(value: unknown, fallback: number) {
-  if (typeof value === 'number') return Number.isFinite(value) ? value : fallback
-  if (typeof value === 'bigint') {
-    const n = Number(value)
-    return Number.isFinite(n) ? n : fallback
-  }
-  if (typeof value === 'string') {
-    const n = Number(value)
-    return Number.isFinite(n) ? n : fallback
-  }
-  return fallback
-}
-
-function toSafeBoolean(value: unknown, fallback: boolean) {
-  if (typeof value === 'boolean') return value
-  if (typeof value === 'number' || typeof value === 'bigint') return Number(value) !== 0
-  if (typeof value === 'string') {
-    const normalized = value.trim().toLowerCase()
-    if (['1', 'true', 'yes', 'on'].includes(normalized)) return true
-    if (['0', 'false', 'no', 'off'].includes(normalized)) return false
-  }
-  return fallback
-}
-
-function sanitizeBigIntDeep<T>(value: T): T {
-  return JSON.parse(
-    JSON.stringify(value, (_key, v) => {
-      if (typeof v === 'bigint') {
-        const num = Number(v)
-        return Number.isSafeInteger(num) ? num : v.toString()
-      }
-      return v
-    })
-  )
-}
 
 
 export type NavItem = {
@@ -216,7 +181,7 @@ export function parseSiteLogo(raw: string | undefined | null): SiteLogo {
 }
 
 async function fetchSiteConfig(): Promise<SiteConfig> {
-  try { await runMigrations() } catch (e: any) { console.warn('[config] runMigrations:', e?.message) }
+  try { await runMigrations() } catch (e: unknown) { console.warn('[config] runMigrations:', getErrorMessage(e)) }
   // 一次 raw SQL 读取所有字段（含动态迁移列）
   let rows: any[] = []
   try {
@@ -276,14 +241,14 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
          COALESCE(enableCustomAiModel,0) as enableCustomAiModel
          FROM SiteConfig WHERE id = 'singleton'`
       )
-    } catch (e: any) {
-      console.warn('[config] fetchSiteConfig fallback select:', e?.message)
+    } catch (e: unknown) {
+      console.warn('[config] fetchSiteConfig fallback select:', getErrorMessage(e))
       try {
         rows = await prisma.$queryRawUnsafe<any[]>(`SELECT * FROM SiteConfig WHERE id = 'singleton'`)
       } catch {}
     }
   }
-  const config: any = sanitizeBigIntDeep(rows[0] || {})
+  const config: any = toJsonSafe(rows[0] || {})
   if (!config.navItems) config.navItems = JSON.stringify(DEFAULT_NAV)
   // 若已有导航里缺少友链项，自动插入（在关于之前）
   try {

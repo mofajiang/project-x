@@ -2,22 +2,9 @@ import { ImageResponse } from 'next/og'
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSiteConfig } from '@/lib/config'
+import { buildSlugCandidates } from '@/lib/slug'
 
 export const runtime = 'nodejs'
-
-function buildSlugCandidates(input: string) {
-  const set = new Set<string>()
-  const raw = (input || '').trim()
-  if (!raw) return []
-  set.add(raw)
-  try { set.add(decodeURIComponent(raw)) } catch {}
-  try { set.add(encodeURIComponent(raw)) } catch {}
-  for (const value of Array.from(set)) {
-    set.add(value.normalize('NFC'))
-    set.add(value.normalize('NFD'))
-  }
-  return Array.from(set).filter(Boolean)
-}
 
 export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
   const slug = params.slug

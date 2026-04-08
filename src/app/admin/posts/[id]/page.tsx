@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import toast from 'react-hot-toast'
+import { getErrorMessage } from '@/lib/converters'
 import { MarkdownEditor } from '@/components/admin/MarkdownEditor'
 import { StorageImagePicker } from '@/components/admin/StorageImagePicker'
 import { IMEInput } from '@/components/ui/IMEInput'
@@ -140,8 +141,8 @@ export default function EditPostPage() {
         return { ...f, content: `${f.content}${prefix}\n![图片](${data.url})\n` }
       })
       toast.success('图片已插入正文')
-    } catch (err: any) {
-      toast.error(err?.message || '图片上传失败')
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err) || '图片上传失败')
     } finally {
       setUploadingBodyImage(false)
     }

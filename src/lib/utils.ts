@@ -29,3 +29,28 @@ export function formatViews(views: number) {
   if (views >= 1000) return `${(views / 1000).toFixed(1)}k`
   return views.toString()
 }
+
+export function formatTime(value: Date | string | null) {
+  if (!value) return '-'
+  const date = typeof value === 'string' ? new Date(value) : value
+  if (Number.isNaN(date.getTime())) return typeof value === 'string' ? value : '-'
+  return date.toLocaleString('zh-CN', { hour12: false })
+}
+
+export function formatTimeShort(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleString('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+export function formatSize(size: number) {
+  if (size < 1024) return `${size} B`
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`
+  if (size < 1024 * 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`
+  return `${(size / (1024 * 1024 * 1024)).toFixed(1)} GB`
+}

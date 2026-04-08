@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { ADMIN_PAGE_TITLE_CLASS, ADMIN_CARD_CLASS } from '@/components/admin/adminUi'
+import { getErrorMessage } from '@/lib/converters';
 
 interface Tag { id: string; name: string; slug: string; _count: { posts: number } }
 
@@ -45,8 +46,8 @@ export default function AdminTagsPage() {
       })
       setName('')
       toast.success('标签已创建')
-    } catch (error: any) {
-      toast.error(error?.message || '创建失败')
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error) || '创建失败')
     } finally {
       setSaving(false)
     }

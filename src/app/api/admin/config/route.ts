@@ -4,6 +4,7 @@ import { getSessionFromRequest } from '@/lib/auth'
 import { getSiteConfig, revalidateSiteConfig } from '@/lib/config'
 import { runMigrations } from '@/lib/db-migrate'
 import { getRequestIp, logAdminAudit } from '@/lib/admin-audit'
+import { toJsonSafe, getErrorMessage } from '@/lib/converters'
 
 const SECURITY_CONFIG_KEYS = new Set(['loginPath', 'loginMode', 'secretClicks', 'customDomain'])
 const RAW_CONFIG_COLUMNS = new Set([
@@ -23,18 +24,6 @@ function normalizeConfigValue(col: string, val: any) {
   if (col === 'secretClicks') return Math.max(1, Number(val) || 5)
   if (val === undefined || val === null) return ''
   return val
-}
-
-function toJsonSafe<T>(value: T): T {
-  return JSON.parse(
-    JSON.stringify(value, (_key, v) => {
-      if (typeof v === 'bigint') {
-        const n = Number(v)
-        return Number.isSafeInteger(n) ? n : v.toString()
-      }
-      return v
-    })
-  ) as T
 }
 
 function getConfigAuditPayload(changedKeys: string[]) {
@@ -68,7 +57,7 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  try { await runMigrations() } catch (e: any) { console.warn('[config PUT] runMigrations:', e?.message) }
+  try { await runMigrations() } catch (e: unknown) { console.warn('[config PUT] runMigrations:', getErrorMessage(e)) }
   const requestIp = getRequestIp(req)
   const data = await req.json()
   console.log('[config PUT] 收到数据:', { openrouterApiKey: data.openrouterApiKey, openrouterModel: data.openrouterModel, enableAiDetection: data.enableAiDetection })
@@ -122,8 +111,8 @@ export async function PUT(req: NextRequest) {
   // 全量使用 raw SQL，避免 Prisma Client 字段不一致导致保存失败
   try {
     await prisma.$executeRawUnsafe(`INSERT OR IGNORE INTO SiteConfig (id) VALUES ('singleton')`)
-  } catch (e: any) {
-    console.error('[config PUT] ensure SiteConfig failed:', e?.message)
+  } catch (e: unknown) {
+    console.error('[config PUT] ensure SiteConfig failed:', getErrorMessage(e))
     await logAdminAudit({
       ...auditPayload,
       status: 'failed',
@@ -131,9 +120,9 @@ export async function PUT(req: NextRequest) {
       targetId: 'singleton',
       actor: session,
       ip: requestIp,
-      metadata: { changedKeys, error: e?.message || 'ensure SiteConfig failed' },
+      metadata: { changedKeys, error: getErrorMessage(e) || 'ensure SiteConfig failed' },
     })
-    return NextResponse.json({ error: '保存失败', detail: e?.message }, { status: 500 })
+    return NextResponse.json({ error: '保存失败', detail: getErrorMessage(e) }, { status: 500 })
   }
 
   const rawUpdates: Array<{ col: string; val: any }> = []
@@ -159,8 +148,8 @@ export async function PUT(req: NextRequest) {
     for (const { col, val } of rawUpdates) {
       await prisma.$executeRawUnsafe(`UPDATE SiteConfig SET ${col} = ? WHERE id = 'singleton'`, val)
     }
-  } catch (e: any) {
-    console.error('[config PUT] raw update failed:', e?.message)
+  } catch (e: unknown) {
+    console.error('[config PUT] raw update failed:', getErrorMessage(e))
     await logAdminAudit({
       ...auditPayload,
       status: 'failed',
@@ -168,9 +157,9 @@ export async function PUT(req: NextRequest) {
       targetId: 'singleton',
       actor: session,
       ip: requestIp,
-      metadata: { changedKeys, error: e?.message || 'raw update failed' },
+      metadata: { changedKeys, error: getErrorMessage(e) || 'raw update failed' },
     })
-    return NextResponse.json({ error: '保存失败', detail: e?.message }, { status: 500 })
+    return NextResponse.json({ error: '保存失败', detail: getErrorMessage(e) }, { status: 500 })
   }
 
   await revalidateSiteConfig()

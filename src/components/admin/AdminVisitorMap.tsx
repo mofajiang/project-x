@@ -5,6 +5,7 @@ import { AdminVisitorMapSettings } from './AdminVisitorMapSettings'
 import { ClientVisitorMap } from './ClientVisitorMap'
 import { geoEquirectangular, geoGraticule10, geoPath } from 'd3-geo'
 import { feature } from 'topojson-client'
+import { getErrorMessage } from '@/lib/converters';
 
 const worldCountriesTopo = require('world-atlas/countries-110m.json')
 
@@ -241,7 +242,7 @@ function toPoint(lat: number, lon: number) {
 }
 
 export async function AdminVisitorMap() {
-  try { await runMigrations() } catch (e: any) { console.warn('[AdminVisitorMap] runMigrations:', e?.message) }
+  try { await runMigrations() } catch (e: unknown) { console.warn('[AdminVisitorMap] runMigrations:', getErrorMessage(e)) }
   let visitors: VisitorRow[] = []
   let total = 0
   let exactCount = 0
@@ -283,8 +284,8 @@ export async function AdminVisitorMap() {
     exactCount = Number(exactCountRows?.[0]?.count || 0)
     approxCount = Number(approxCountRows?.[0]?.count || 0)
     countryCount = Number(countryCountRows?.[0]?.count || 0)
-  } catch (e: any) {
-    console.warn('[AdminVisitorMap] visitor queries failed:', e?.message)
+  } catch (e: unknown) {
+    console.warn('[AdminVisitorMap] visitor queries failed:', getErrorMessage(e))
   }
   try {
     dailyRows = await prisma.$queryRawUnsafe<Array<{ day: string; count: number }>>(`
@@ -295,8 +296,8 @@ export async function AdminVisitorMap() {
       ORDER BY visitDay ASC
       LIMIT 30
     `)
-  } catch (e: any) {
-    console.warn('[AdminVisitorMap] dailyRows failed:', e?.message)
+  } catch (e: unknown) {
+    console.warn('[AdminVisitorMap] dailyRows failed:', getErrorMessage(e))
   }
   const config = await getSiteConfig()
   const sourceLabelMap: Record<string, string> = {

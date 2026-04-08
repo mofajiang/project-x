@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { runMigrations } from '@/lib/db-migrate'
 import { getClientIp, isPublicIp } from '@/lib/request-ip'
+import { getErrorMessage } from '@/lib/converters'
 
 type NormalizedGeo = {
   country: string
@@ -159,7 +160,7 @@ async function resolveProviderGeo(mode: string | undefined, clientIp: string): P
       }
       console.warn('[track-visit] provider geo response not normalized:', provider, data)
     } catch (error) {
-      console.warn('[track-visit] provider geo fetch error:', provider, error instanceof Error ? error.message : String(error))
+      console.warn('[track-visit] provider geo fetch error:', provider, getErrorMessage(error))
     }
   }
 
@@ -242,7 +243,7 @@ async function fetchRemoteGeo(endpoint: string, key: string, clientIp: string) {
     const data = await response.json()
     return normalizeRemoteGeo(data)
   } catch (error) {
-    console.warn('[track-visit] remote geo fetch error:', error instanceof Error ? error.message : String(error))
+    console.warn('[track-visit] remote geo fetch error:', getErrorMessage(error))
     return null
   }
 }

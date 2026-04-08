@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server'
 import type { JWTPayload } from './auth'
 import { runMigrations } from './db-migrate'
 import { prisma } from './prisma'
+import { getErrorMessage } from './converters';
 
 export type AdminAuditRiskLevel = 'medium' | 'high' | 'critical'
 export type AdminAuditStatus = 'success' | 'failed'
@@ -113,8 +114,8 @@ export async function logAdminAudit({
       metadata ? JSON.stringify(metadata) : '',
       new Date().toISOString()
     )
-  } catch (e: any) {
-    console.warn('[admin-audit] write failed:', e?.message)
+  } catch (e: unknown) {
+    console.warn('[admin-audit] write failed:', getErrorMessage(e))
   }
 }
 
@@ -268,8 +269,8 @@ export async function getRecentHighRiskAudits(limit = 5): Promise<DashboardRecen
     )
 
     return rows.map(mapAdminAuditRow)
-  } catch (e: any) {
-    console.warn('[admin-audit] recent high risk query failed:', e?.message)
+  } catch (e: unknown) {
+    console.warn('[admin-audit] recent high risk query failed:', getErrorMessage(e))
     return []
   }
 }
@@ -290,8 +291,8 @@ export async function getRecentFailedAudits(limit = 5): Promise<DashboardRecentF
 
     return rows.map(mapFailedAdminAuditRow)
 
-  } catch (e: any) {
-    console.warn('[admin-audit] recent failed query failed:', e?.message)
+  } catch (e: unknown) {
+    console.warn('[admin-audit] recent failed query failed:', getErrorMessage(e))
     return []
   }
 }

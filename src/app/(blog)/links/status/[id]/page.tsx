@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
+import { formatTime } from '@/lib/utils'
 
 export const metadata: Metadata = {
   title: '友链申请状态',
@@ -34,11 +35,6 @@ const STATUS_MAP: Record<string, StatusTone> = {
     bg: 'rgba(239,68,68,0.14)',
     desc: '当前申请未通过，你可以根据原因调整后再次提交。',
   },
-}
-
-function formatTime(value: Date | null) {
-  if (!value) return '-'
-  return value.toLocaleString('zh-CN', { hour12: false })
 }
 
 export default async function FriendLinkStatusPage({ params }: { params: { id: string } }) {

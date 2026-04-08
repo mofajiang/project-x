@@ -3,37 +3,12 @@ import { revalidateTag } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
 import { checkFriendLinkOnTargetSite, getFavicon } from '@/lib/friend-link-checker'
-
-function toSafeNumber(value: unknown, fallback = 0) {
-  if (typeof value === 'bigint') {
-    const n = Number(value)
-    return Number.isFinite(n) ? n : fallback
-  }
-  const n = Number(value)
-  return Number.isFinite(n) ? n : fallback
-}
-
-function toSafeBoolean(value: unknown, fallback = false) {
-  if (typeof value === 'boolean') return value
-  if (typeof value === 'number' || typeof value === 'bigint') return Number(value) !== 0
-  if (typeof value === 'string') {
-    const v = value.trim().toLowerCase()
-    if (['1', 'true', 'yes', 'on'].includes(v)) return true
-    if (['0', 'false', 'no', 'off'].includes(v)) return false
-  }
-  return fallback
-}
+import { toSafeNumber, toSafeBoolean, toJsonSafe } from '@/lib/converters'
 
 function normalizeUrl(url: string) {
   const trimmed = (url || '').trim()
   if (!trimmed) return ''
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
-}
-
-function toJsonSafe<T>(value: T): T {
-  return JSON.parse(
-    JSON.stringify(value, (_k, v) => (typeof v === 'bigint' ? Number(v) : v))
-  )
 }
 
 /**

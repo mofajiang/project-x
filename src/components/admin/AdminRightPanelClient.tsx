@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { ADMIN_CARD_CLASS, ADMIN_SUBCARD_CLASS } from './adminUi'
+import { getErrorMessage } from '@/lib/converters';
 
 
 type QuickLink = { href: string; label: string; icon: string; badge?: number }
@@ -167,8 +168,8 @@ export function AdminRightPanelClient({
       setPendingCount(count => Math.max(0, count - 1))
       toast.success(mode === 'approve' ? '评论已通过' : '评论已删除')
       router.refresh()
-    } catch (e: any) {
-      toast.error(e?.message || '处理失败')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e) || '处理失败')
     } finally {
       setActingCommentId(null)
     }

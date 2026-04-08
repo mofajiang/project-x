@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import JSZip from 'jszip'
 import toast from 'react-hot-toast'
 import { ADMIN_PAGE_TITLE_CLASS } from '@/components/admin/adminUi'
+import { getErrorMessage } from '@/lib/converters';
 
 type UploadFile = {
   name: string
@@ -124,10 +125,10 @@ export default function AdminUploadsPage() {
         }
         return next
       })
-    } catch (err: any) {
-      const msg = String(err?.message || '')
+    } catch (err: unknown) {
+      const msg = String(getErrorMessage(err) || '')
       if (!msg.includes('不支持文件列表')) {
-        toast.error(err?.message || '获取文件失败')
+        toast.error(getErrorMessage(err) || '获取文件失败')
       }
       setFiles([])
     } finally {
@@ -188,8 +189,8 @@ export default function AdminUploadsPage() {
       toast.success('存储设置已保存')
       await fetchStorageStatus()
       await fetchFiles()
-    } catch (err: any) {
-      toast.error(err?.message || '保存失败')
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err) || '保存失败')
     } finally {
       setSavingStorage(false)
     }
@@ -204,8 +205,8 @@ export default function AdminUploadsPage() {
       toast.success(data?.message || '测试成功')
       await fetchStorageStatus()
       await fetchFiles()
-    } catch (err: any) {
-      toast.error(err?.message || '测试失败')
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err) || '测试失败')
     } finally {
       setTestingStorage(false)
     }
@@ -228,8 +229,8 @@ export default function AdminUploadsPage() {
       toast.success('上传成功')
       setCustomName('')
       fetchFiles()
-    } catch (err: any) {
-      toast.error(err?.message || '上传失败')
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err) || '上传失败')
     } finally {
       setUploading(false)
     }
@@ -243,8 +244,8 @@ export default function AdminUploadsPage() {
       if (!res.ok) throw new Error(data?.error || '删除失败')
       toast.success('删除成功')
       fetchFiles()
-    } catch (err: any) {
-      toast.error(err?.message || '删除失败')
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err) || '删除失败')
     }
   }
 
@@ -271,8 +272,8 @@ export default function AdminUploadsPage() {
       setEditingName(null)
       setRenameDraft('')
       fetchFiles()
-    } catch (err: any) {
-      toast.error(err?.message || '重命名失败')
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err) || '重命名失败')
     }
   }
 
@@ -337,8 +338,8 @@ export default function AdminUploadsPage() {
       a.remove()
       URL.revokeObjectURL(url)
       toast.success(`已打包下载 ${selectedFiles.length} 个文件`)
-    } catch (err: any) {
-      toast.error(err?.message || '批量下载失败')
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err) || '批量下载失败')
     } finally {
       setBatchDownloading(false)
     }

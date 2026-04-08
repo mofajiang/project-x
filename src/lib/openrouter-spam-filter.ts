@@ -1,3 +1,4 @@
+import { getErrorMessage } from './converters';
 /**
  * OpenRouter AI 垃圾评论检测
  * 使用 Claude 模型进行内容分析
@@ -143,7 +144,7 @@ ${authorWebsite ? `网站: ${authorWebsite}` : ''}`
     try {
       if (DEBUG) console.log('[openrouter] 尝试直接解析 JSON...')
       result = JSON.parse(jsonStr.trim())
-    } catch (parseErr: any) {
+    } catch (parseErr: unknown) {
       if (DEBUG) console.log('[openrouter] 直接解析失败，尝试提取 JSON 对象...')
       const start = jsonStr.indexOf('{')
       const end = jsonStr.lastIndexOf('}')
@@ -152,13 +153,13 @@ ${authorWebsite ? `网站: ${authorWebsite}` : ''}`
           jsonStr = jsonStr.substring(start, end + 1)
           if (DEBUG) console.log('[openrouter] 提取的 JSON:', jsonStr.substring(0, 100), '...')
           result = JSON.parse(jsonStr)
-        } catch (extractErr: any) {
+        } catch (extractErr: unknown) {
           console.error('[openrouter] ❌ JSON 提取和解析都失败:', {
-            originalError: parseErr.message,
-            extractError: extractErr.message,
+            originalError: getErrorMessage(parseErr),
+            extractError: getErrorMessage(extractErr),
             failedContent: jsonStr.substring(0, 200)
           })
-          throw new Error(`JSON 解析失败: ${extractErr.message}`)
+          throw new Error(`JSON 解析失败: ${getErrorMessage(extractErr)}`)
         }
       } else {
         console.error('[openrouter] ❌ 未找到有效的 JSON 对象')
@@ -177,12 +178,12 @@ ${authorWebsite ? `网站: ${authorWebsite}` : ''}`
     }
     if (DEBUG) console.log('[openrouter] ✅ 最终返回结果:', normalized)
     return normalized
-  } catch (error: any) {
-    console.error('[spam-filter] ❌ AI 分析异常:', error?.message || error)
+  } catch (error: unknown) {
+    console.error('[spam-filter] ❌ AI 分析异常:', getErrorMessage(error) || error)
     return {
       isSpam: false,
       riskScore: 0,
-      riskReasons: [error?.message || 'AI 分析异常'],
+      riskReasons: [getErrorMessage(error) || 'AI 分析异常'],
       confidence: 0,
     }
   }

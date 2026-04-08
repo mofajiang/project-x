@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionFromRequest } from '@/lib/auth'
 import { getStorageProvider, safeName } from '@/lib/storage'
+import { getErrorMessage } from '@/lib/converters'
 
 function mimeByExt(ext: string) {
   const map: Record<string, string> = {
@@ -52,14 +53,14 @@ export async function PUT(req: NextRequest, { params }: { params: { name: string
   let file
   try {
     file = await storage.renameFile(oldName, nextName)
-  } catch (error: any) {
-    if (error?.message === 'NOT_SUPPORTED') {
+  } catch (error: unknown) {
+    if (getErrorMessage(error) === 'NOT_SUPPORTED') {
       return NextResponse.json({ error: '当前存储不支持重命名' }, { status: 400 })
     }
-    if (error?.code === 'ENOENT') {
+    if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') {
       return NextResponse.json({ error: '原文件不存在' }, { status: 404 })
     }
-    if (error?.message === 'FILE_EXISTS') {
+    if (getErrorMessage(error) === 'FILE_EXISTS') {
       return NextResponse.json({ error: '新文件名已存在' }, { status: 400 })
     }
     return NextResponse.json({ error: '重命名失败' }, { status: 500 })
@@ -82,8 +83,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { name: str
   try {
     await storage.deleteFile(safe)
     return NextResponse.json({ ok: true })
-  } catch (error: any) {
-    if (error?.message === 'NOT_SUPPORTED') {
+  } catch (error: unknown) {
+    if (getErrorMessage(error) === 'NOT_SUPPORTED') {
       return NextResponse.json({ error: '当前存储不支持删除' }, { status: 400 })
     }
     return NextResponse.json({ error: '删除失败或文件不存在' }, { status: 404 })

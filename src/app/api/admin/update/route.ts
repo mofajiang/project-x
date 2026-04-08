@@ -3,6 +3,7 @@ import { getSessionFromRequest } from '@/lib/auth'
 import { execSync, spawnSync } from 'child_process'
 import { revalidatePath } from 'next/cache'
 import { getRequestIp, logAdminAudit } from '@/lib/admin-audit'
+import { getErrorMessage } from '@/lib/converters';
 
 
 const REPO = 'mofajiang/project-x'
@@ -123,9 +124,9 @@ export async function POST(req: NextRequest) {
         try {
           const pullOut = execSync(`git pull origin ${branch}`, { cwd, encoding: 'utf8', stdio: 'pipe', timeout: 60000 })
           send(`✅ git pull 完成\n${pullOut.trim()}`)
-        } catch (e: any) {
-          await recordAudit('failed', '执行系统更新失败：git pull 未完成', { stage: 'git-pull', error: e?.message || 'git pull failed' })
-          sendError(`❌ git pull 失败：${e.message}`)
+        } catch (e: unknown) {
+          await recordAudit('failed', '执行系统更新失败：git pull 未完成', { stage: 'git-pull', error: getErrorMessage(e) || 'git pull failed' })
+          sendError(`❌ git pull 失败：${getErrorMessage(e)}`)
           sendDone(false)
           return
         }
@@ -158,9 +159,9 @@ export async function POST(req: NextRequest) {
         await recordAudit('success', '执行系统更新完成', { branch })
         send('✅ 更新全部完成！页面将自动刷新。')
         sendDone(true)
-      } catch (e: any) {
-        await recordAudit('failed', '执行系统更新失败：出现未知错误', { stage: 'unknown', error: e?.message || 'unknown error' })
-        sendError(`❌ 未知错误：${e.message}`)
+      } catch (e: unknown) {
+        await recordAudit('failed', '执行系统更新失败：出现未知错误', { stage: 'unknown', error: getErrorMessage(e) || 'unknown error' })
+        sendError(`❌ 未知错误：${getErrorMessage(e)}`)
         sendDone(false)
       }
     }

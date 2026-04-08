@@ -3,6 +3,7 @@ import { getSessionFromRequest } from '@/lib/auth'
 import { getRequestIp, logAdminAudit } from '@/lib/admin-audit'
 import fs from 'fs'
 import path from 'path'
+import { getErrorMessage } from '@/lib/converters';
 
 
 const ENV_PATH = path.join(process.cwd(), '.env')
@@ -85,7 +86,7 @@ export async function PUT(req: NextRequest) {
       metadata: { changedKeys },
     })
     return NextResponse.json({ ok: true, ...readSmtpConfig() }, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } })
-  } catch (e: any) {
+  } catch (e: unknown) {
     await logAdminAudit({
       action: 'smtp.updated',
       summary: `${summary} 失败`,
@@ -95,9 +96,9 @@ export async function PUT(req: NextRequest) {
       targetId: 'smtp',
       actor: session,
       ip: requestIp,
-      metadata: { changedKeys, error: e?.message || 'write env failed' },
+      metadata: { changedKeys, error: getErrorMessage(e) || 'write env failed' },
     })
-    return NextResponse.json({ error: e.message }, { status: 500, headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } })
+    return NextResponse.json({ error: getErrorMessage(e) }, { status: 500, headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } })
   }
 }
 
@@ -131,7 +132,7 @@ export async function POST(req: NextRequest) {
       html: '<p>恭喜！你的博客邮件通知功能已配置成功。</p>',
     })
     return NextResponse.json({ ok: true })
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+  } catch (e: unknown) {
+    return NextResponse.json({ error: getErrorMessage(e) }, { status: 500 })
   }
 }

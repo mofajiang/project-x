@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
+import { getErrorMessage } from '@/lib/converters';
 
 type UploadFile = {
   name: string
@@ -46,8 +47,8 @@ export function StorageImagePicker({ onSelect, buttonText = '从云存储选择'
       const data = await res.json().catch(() => null)
       if (!res.ok) throw new Error(data?.error || '读取文件失败')
       setFiles(Array.isArray(data?.files) ? data.files : [])
-    } catch (err: any) {
-      const msg = err?.message || '读取文件失败'
+    } catch (err: unknown) {
+      const msg = getErrorMessage(err) || '读取文件失败'
       setError(msg)
       toast.error(msg)
     } finally {

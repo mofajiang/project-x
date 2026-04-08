@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
 import { runMigrations } from '@/lib/db-migrate'
 import { getRequestIp, logAdminAudit } from '@/lib/admin-audit'
+import { getErrorMessage } from '@/lib/converters';
 
 
 export async function DELETE(req: NextRequest) {
@@ -26,7 +27,7 @@ export async function DELETE(req: NextRequest) {
       metadata: { deleted },
     })
     return NextResponse.json({ ok: true, deleted })
-  } catch (e: any) {
+  } catch (e: unknown) {
     await logAdminAudit({
       action: 'visitor.logs.cleared',
       summary: '清空访客日志失败',
@@ -36,8 +37,8 @@ export async function DELETE(req: NextRequest) {
       targetId: 'all',
       actor: session,
       ip: requestIp,
-      metadata: { error: e?.message || 'unknown error' },
+      metadata: { error: getErrorMessage(e) || 'unknown error' },
     })
-    return NextResponse.json({ error: e?.message || '删除失败' }, { status: 500 })
+    return NextResponse.json({ error: getErrorMessage(e) || '删除失败' }, { status: 500 })
   }
 }

@@ -3,6 +3,7 @@
  * 无需手动执行 prisma db push
  */
 import { prisma } from './prisma'
+import { getErrorMessage } from './converters';
 
 let migrated = false
 let migratePromise: Promise<void> | null = null
@@ -16,8 +17,8 @@ async function addColumn(table: string, column: string, definition: string, labe
     if (rows.length > 0) return // 列已存在，跳过
     await prisma.$executeRawUnsafe(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`)
     console.log(`[migrate] ${label} 添加成功`)
-  } catch (e: any) {
-    console.warn(`[migrate] ${label}:`, e?.message)
+  } catch (e: unknown) {
+    console.warn(`[migrate] ${label}:`, getErrorMessage(e))
   }
 }
 
@@ -25,9 +26,9 @@ async function createTable(sql: string, label: string) {
   try {
     await prisma.$executeRawUnsafe(sql)
     console.log(`[migrate] ${label} 创建成功`)
-  } catch (e: any) {
-    if (!e?.message?.includes('already exists')) {
-      console.warn(`[migrate] ${label}:`, e?.message)
+  } catch (e: unknown) {
+    if (!getErrorMessage(e).includes('already exists')) {
+      console.warn(`[migrate] ${label}:`, getErrorMessage(e))
     }
   }
 }
@@ -36,8 +37,8 @@ async function createIndex(table: string, index: string, columns: string, label:
   try {
     await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS ${index} ON ${table}(${columns})`)
     console.log(`[migrate] ${label} 创建成功`)
-  } catch (e: any) {
-    console.warn(`[migrate] ${label}:`, e?.message)
+  } catch (e: unknown) {
+    console.warn(`[migrate] ${label}:`, getErrorMessage(e))
   }
 }
 

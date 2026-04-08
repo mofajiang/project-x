@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getErrorMessage } from '@/lib/converters'
 
 export async function POST(request: NextRequest) {
   try {
@@ -71,12 +72,12 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         )
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       clearTimeout(timeoutId)
-      if (error.name === 'AbortError') {
+      if (error instanceof DOMException && error.name === 'AbortError') {
         return NextResponse.json({ error: '请求超时' }, { status: 408 })
       }
-      return NextResponse.json({ error: `连接失败: ${error.message}` }, { status: 400 })
+      return NextResponse.json({ error: `连接失败: ${getErrorMessage(error)}` }, { status: 400 })
     }
   } catch (error) {
     console.error('Test connection error:', error)

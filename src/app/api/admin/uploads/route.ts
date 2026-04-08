@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionFromRequest } from '@/lib/auth'
 import { extOf, getStorageProvider } from '@/lib/storage'
+import { getErrorMessage } from '@/lib/converters';
 
 const MAX_SIZE = 50 * 1024 * 1024
 const ALLOWED_EXTS = new Set([
@@ -19,8 +20,8 @@ export async function GET(req: NextRequest) {
   let files
   try {
     files = await storage.listFiles()
-  } catch (error: any) {
-    if (error?.message === 'NOT_SUPPORTED') {
+  } catch (error: unknown) {
+    if (getErrorMessage(error) === 'NOT_SUPPORTED') {
       return NextResponse.json({ error: '当前存储不支持文件列表，请在存储设置切换到本地或 S3。' }, { status: 400 })
     }
     return NextResponse.json({ error: '获取文件列表失败' }, { status: 500 })
@@ -56,8 +57,8 @@ export async function POST(req: NextRequest) {
       fileName: customNameRaw || undefined,
       ensureUnique: true,
     })
-  } catch (error: any) {
-    if (error?.message === 'INVALID_NAME') {
+  } catch (error: unknown) {
+    if (getErrorMessage(error) === 'INVALID_NAME') {
       return NextResponse.json({ error: '文件名不合法' }, { status: 400 })
     }
     return NextResponse.json({ error: '上传失败' }, { status: 500 })

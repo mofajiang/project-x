@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionFromRequest } from '@/lib/auth'
 import { getStorageProvider, getStorageStatus } from '@/lib/storage'
+import { getErrorMessage } from '@/lib/converters';
 
 export async function POST(req: NextRequest) {
   const session = await getSessionFromRequest(req)
@@ -44,12 +45,12 @@ export async function POST(req: NextRequest) {
       message: '存储连接测试通过',
       status,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (savedName && status.capabilities.delete) {
       try {
         await storage.deleteFile(savedName)
       } catch {}
     }
-    return NextResponse.json({ error: error?.message || '存储连接测试失败', status }, { status: 500 })
+    return NextResponse.json({ error: getErrorMessage(error) || '存储连接测试失败', status }, { status: 500 })
   }
 }

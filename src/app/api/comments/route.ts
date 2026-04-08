@@ -8,6 +8,7 @@ import { getClientIp } from '@/lib/request-ip'
 import { analyzeCommentWithAI, quickSpamCheck } from '@/lib/openrouter-spam-filter'
 import { revalidateTag } from 'next/cache'
 import { rateLimit } from '@/lib/rate-limit'
+import { getErrorMessage } from '@/lib/converters';
 
 export async function POST(req: NextRequest) {
   await runMigrations()
@@ -73,16 +74,16 @@ export async function POST(req: NextRequest) {
   let comment
   try {
     comment = await prisma.comment.create({ data: commentData })
-  } catch (e: any) {
+  } catch (e: unknown) {
     // guestName 列可能尚未迁移，降级去掉该字段重试
-    if (e?.message?.includes('guestName') || e?.message?.includes('guestEmail') || e?.message?.includes('guestWebsite') || e?.message?.includes('ip') || e?.message?.includes('no such column')) {
+    if (getErrorMessage(e).includes('guestName') || getErrorMessage(e).includes('guestEmail') || getErrorMessage(e).includes('guestWebsite') || getErrorMessage(e).includes('ip') || getErrorMessage(e).includes('no such column')) {
       delete commentData.guestName
       delete commentData.guestEmail
       delete commentData.guestWebsite
       delete commentData.ip
       comment = await prisma.comment.create({ data: commentData })
     } else {
-      console.error('[comment create]', e?.message)
+      console.error('[comment create]', getErrorMessage(e))
       return NextResponse.json({ error: '评论提交失败，请重试' }, { status: 500 })
     }
   }
@@ -94,7 +95,7 @@ export async function POST(req: NextRequest) {
   if (quickCheck.shouldAnalyze || config.enableAiDetection) {
     // 使用 Promise 不等待，后台异步处理
     analyzeAndUpdateComment(comment.id, content.trim(), config, commentData, session).catch((err: any) => 
-      console.error('[ai-detection-async] 后台处理失败:', err?.message)
+      console.error('[ai-detection-async] 后台处理失败:', getErrorMessage(err))
     )
   }
 
@@ -179,8 +180,8 @@ async function analyzeAndUpdateComment(
     })
     
     console.log('[ai-analysis-async] ✅ 评论已更新:', { commentId, riskScore: aiResult.riskScore, approved })
-  } catch (error: any) {
-    console.error('[ai-analysis-async] ❌ 后台分析失败:', error?.message)
+  } catch (error: unknown) {
+    console.error('[ai-analysis-async] ❌ 后台分析失败:', getErrorMessage(error))
     // 失败时只更新错误状态，不影响已保存的评论
     try {
       await prisma.comment.update({

@@ -5,6 +5,7 @@ import { getSiteConfig, type SiteConfig } from '@/lib/config'
 import { runMigrations } from '@/lib/db-migrate'
 import { checkLicense } from '@/lib/license'
 import { prisma } from '@/lib/prisma'
+import { getErrorMessage } from './converters';
 
 
 
@@ -135,8 +136,8 @@ async function getDashboardLicenseStatus(currentHost: string): Promise<Dashboard
       checkLicense(currentHost).then(authorized => authorized ? 'authorized' as const : 'unauthorized' as const),
       new Promise<DashboardLicenseStatus>(resolve => setTimeout(() => resolve('unknown'), 2500)),
     ])
-  } catch (e: any) {
-    console.warn('[admin-dashboard] licenseStatus:', e?.message)
+  } catch (e: unknown) {
+    console.warn('[admin-dashboard] licenseStatus:', getErrorMessage(e))
     return 'unknown'
   }
 }
@@ -247,8 +248,8 @@ async function safeQuery<T>(label: string, query: Promise<T>, fallback: T): Prom
 
   try {
     return await query
-  } catch (e: any) {
-    console.warn(`[admin-dashboard] ${label}:`, e?.message)
+  } catch (e: unknown) {
+    console.warn(`[admin-dashboard] ${label}:`, getErrorMessage(e))
     return fallback
   }
 }
@@ -256,8 +257,8 @@ async function safeQuery<T>(label: string, query: Promise<T>, fallback: T): Prom
 export async function getAdminDashboardData(currentHost = ''): Promise<AdminDashboardData> {
   try {
     await runMigrations()
-  } catch (e: any) {
-    console.warn('[admin-dashboard] runMigrations:', e?.message)
+  } catch (e: unknown) {
+    console.warn('[admin-dashboard] runMigrations:', getErrorMessage(e))
   }
 
   const normalizedHost = normalizeDashboardHost(currentHost)
