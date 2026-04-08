@@ -102,11 +102,23 @@ ${authorWebsite ? `网站: ${authorWebsite}` : ''}`
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
+      const errMsg = `API 错误: ${response.status} ${response.statusText}`
       console.error('[openrouter] ❌ API 错误状态 ' + response.status + ':', JSON.stringify(errorData))
+
+      // 429 限速：返回特殊标记，让调用方保持评论为待审状态而不是放行
+      if (response.status === 429) {
+        return {
+          isSpam: false,
+          riskScore: -1, // -1 表示限速/未完成，调用方应保持原有待审状态
+          riskReasons: ['AI 限速，稍后重试'],
+          confidence: 0,
+        }
+      }
+
       return {
         isSpam: false,
         riskScore: 0,
-        riskReasons: [`API 错误: ${response.status} ${response.statusText}`],
+        riskReasons: [errMsg],
         confidence: 0,
       }
     }

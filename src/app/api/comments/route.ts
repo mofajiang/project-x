@@ -170,6 +170,17 @@ async function analyzeAndUpdateComment(
 
     // 根据强度等级和 AI 风险评分决定是否自动通过/隐藏
     let approved: boolean | undefined = undefined
+
+    // riskScore = -1 表示 AI 限速（429）：不更新 approved，保持原有待审状态
+    if (aiResult.riskScore === -1) {
+      if (DEBUG) console.log('[ai-analysis-async] ⚠️ AI 限速(429)，评论保持待审状态')
+      await prisma.comment.update({
+        where: { id: commentId },
+        data: { riskReasons: JSON.stringify(['AI 限速，待人工审核']) },
+      })
+      return
+    }
+
     const reviewStrength = (config.aiReviewStrength || 'balanced') as 'lenient' | 'balanced' | 'strict'
     const thresholdMap: Record<'lenient' | 'balanced' | 'strict', number> = {
       lenient: 30, // 宽松：风险分 < 30 自动通过
