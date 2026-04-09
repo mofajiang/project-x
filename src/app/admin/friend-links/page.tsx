@@ -60,13 +60,44 @@ export default function AdminFriendLinksPage() {
   const [createForm, setCreateForm] = useState<LinkForm>(EMPTY_FORM)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<LinkForm>(EMPTY_FORM)
+  const [sidebarFriendLinksCollapsed, setSidebarFriendLinksCollapsed] = useState(false)
+  const [savingCollapsed, setSavingCollapsed] = useState(false)
 
   const limit = 20
+
+  useEffect(() => {
+    fetch('/api/admin/config', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data) setSidebarFriendLinksCollapsed(!!data.sidebarFriendLinksCollapsed)
+      })
+      .catch(() => {})
+  }, [])
+
+  const saveCollapsedSetting = async () => {
+    setSavingCollapsed(true)
+    try {
+      const res = await fetch('/api/admin/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sidebarFriendLinksCollapsed }),
+      })
+      if (res.ok) {
+        toast.success('设置已保存')
+      } else {
+        toast.error('保存失败')
+      }
+    } catch {
+      toast.error('保存失败')
+    } finally {
+      setSavingCollapsed(false)
+    }
+  }
 
   const filteredLinks = useMemo(() => {
     const k = keyword.trim().toLowerCase()
     if (!k) return links
-    return links.filter(link => {
+    return links.filter((link) => {
       const name = (link.name || '').toLowerCase()
       const url = (link.url || '').toLowerCase()
       const desc = (link.description || '').toLowerCase()
@@ -84,7 +115,7 @@ export default function AdminFriendLinksPage() {
       const data = await res.json()
       const nextLinks = Array.isArray(data.links) ? data.links : []
       setLinks(nextLinks)
-      setOrderDrafts(prev => {
+      setOrderDrafts((prev) => {
         const next: Record<string, string> = {}
         for (const item of nextLinks) {
           const keep = prev[item.id]
@@ -294,7 +325,9 @@ export default function AdminFriendLinksPage() {
       description: link.description || '',
       favicon: link.favicon || '',
       email: link.email || '',
-      status: (['pending', 'approved', 'rejected'].includes(link.status) ? link.status : 'pending') as LinkForm['status'],
+      status: (['pending', 'approved', 'rejected'].includes(link.status)
+        ? link.status
+        : 'pending') as LinkForm['status'],
       sortOrder: String(link.sortOrder ?? 0),
       showInSidebar: !!link.showInSidebar,
     })
@@ -354,29 +387,47 @@ export default function AdminFriendLinksPage() {
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto">
-      <div className="sticky top-0 z-20 flex items-center justify-end gap-2 px-3 py-2 rounded-2xl mb-4 -mx-1" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', backdropFilter: 'blur(8px)' }}>
-        <Link href="/links" className="px-3 py-1.5 rounded-full text-xs font-medium hidden sm:block" style={{ background: 'var(--bg-hover)', color: 'var(--accent)' }}>
+    <div className="mx-auto w-full max-w-7xl">
+      <div
+        className="sticky top-0 z-20 -mx-1 mb-4 flex items-center justify-end gap-2 rounded-2xl px-3 py-2"
+        style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', backdropFilter: 'blur(8px)' }}
+      >
+        <Link
+          href="/links"
+          className="hidden rounded-full px-3 py-1.5 text-xs font-medium sm:block"
+          style={{ background: 'var(--bg-hover)', color: 'var(--accent)' }}
+        >
           前台友链页
         </Link>
         <button
-          onClick={() => { setCreating(true); setCreateForm(EMPTY_FORM) }}
-          className="px-4 py-2 rounded-full text-sm font-bold"
+          onClick={() => {
+            setCreating(true)
+            setCreateForm(EMPTY_FORM)
+          }}
+          className="rounded-full px-4 py-2 text-sm font-bold"
           style={{ background: 'var(--accent)', color: '#fff' }}
-        >+ 添加</button>
+        >
+          + 添加
+        </button>
       </div>
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-3">
-        <section className="rounded-2xl p-3" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-          <div className="rounded-2xl p-2.5 mb-2.5 flex flex-col md:flex-row gap-2 md:items-center md:justify-between" style={{ background: 'linear-gradient(135deg, rgba(29,155,240,0.15), rgba(16,185,129,0.08))' }}>
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_340px]">
+        <section
+          className="rounded-2xl p-3"
+          style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
+        >
+          <div
+            className="mb-2.5 flex flex-col gap-2 rounded-2xl p-2.5 md:flex-row md:items-center md:justify-between"
+            style={{ background: 'linear-gradient(135deg, rgba(29,155,240,0.15), rgba(16,185,129,0.08))' }}
+          >
             <div className="flex flex-wrap gap-2">
-              {['pending', 'approved', 'rejected', 'all'].map(s => (
+              {['pending', 'approved', 'rejected', 'all'].map((s) => (
                 <button
                   key={s}
                   onClick={() => {
                     setStatus(s)
                     setPage(1)
                   }}
-                  className="px-2.5 py-1.5 rounded-lg text-xs font-medium"
+                  className="rounded-lg px-2.5 py-1.5 text-xs font-medium"
                   style={{
                     background: status === s ? 'var(--accent)' : 'var(--bg-secondary)',
                     color: status === s ? '#fff' : 'var(--text-primary)',
@@ -393,297 +444,363 @@ export default function AdminFriendLinksPage() {
             </div>
           </div>
 
-          <div className="rounded-xl p-2 mb-2" style={{ background: 'var(--bg-hover)' }}>
+          <div className="mb-2 rounded-xl p-2" style={{ background: 'var(--bg-hover)' }}>
             <input
               value={keyword}
-              onChange={e => setKeyword(e.target.value)}
+              onChange={(e) => setKeyword(e.target.value)}
               placeholder="搜索名称 / URL / 简介"
-              className="w-full px-3 py-1.5 rounded-lg border bg-transparent outline-none text-sm"
+              className="w-full rounded-lg border bg-transparent px-3 py-1.5 text-sm outline-none"
               style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
             />
           </div>
 
           {loading ? (
-            <div className="py-12 text-center" style={{ color: 'var(--text-secondary)' }}>加载中...</div>
+            <div className="py-12 text-center" style={{ color: 'var(--text-secondary)' }}>
+              加载中...
+            </div>
           ) : filteredLinks.length === 0 ? (
-            <div className="py-12 text-center" style={{ color: 'var(--text-secondary)' }}>暂无友链</div>
+            <div className="py-12 text-center" style={{ color: 'var(--text-secondary)' }}>
+              暂无友链
+            </div>
           ) : (
             <div className="space-y-2">
-              {filteredLinks.map(link => (
-            <div
-              key={link.id}
-              className="rounded-xl p-3 border"
-              style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}
-            >
-              <div className="flex items-start justify-between gap-3">
-                {/* 左侧信息 */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <div
-                      className="w-9 h-9 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center font-bold text-xs"
-                      style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
-                    >
-                      {link.favicon ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={link.favicon} alt={link.name} className="w-full h-full object-cover" loading="lazy" />
-                      ) : (
-                        <span>{link.name[0]?.toUpperCase()}</span>
+              {filteredLinks.map((link) => (
+                <div
+                  key={link.id}
+                  className="rounded-xl border p-3"
+                  style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    {/* 左侧信息 */}
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1.5 flex items-center gap-2">
+                        <div
+                          className="flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-xs font-bold"
+                          style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+                        >
+                          {link.favicon ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={link.favicon}
+                              alt={link.name}
+                              className="h-full w-full object-cover"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <span>{link.name[0]?.toUpperCase()}</span>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="truncate font-bold" style={{ color: 'var(--text-primary)' }}>
+                            {link.name}
+                          </h3>
+                          <p className="truncate text-xs" style={{ color: 'var(--text-secondary)' }}>
+                            <a href={link.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                              {link.url}
+                            </a>
+                          </p>
+                        </div>
+                      </div>
+
+                      {link.description && (
+                        <p className="mb-1.5 line-clamp-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                          {link.description}
+                        </p>
+                      )}
+
+                      {/* 标签 */}
+                      <div className="flex flex-wrap gap-1.5">
+                        {link.hasReciprocal && (
+                          <span
+                            className="rounded-full px-2 py-0.5 text-[11px]"
+                            style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e' }}
+                          >
+                            ✓ 已互链
+                          </span>
+                        )}
+                        {link.status === 'rejected' && (
+                          <span
+                            className="rounded-full px-2 py-0.5 text-[11px]"
+                            style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}
+                          >
+                            ✕ 已拒绝
+                          </span>
+                        )}
+                        <span
+                          className="rounded-full px-2 py-0.5 text-[11px]"
+                          style={{ background: 'rgba(100,116,139,0.1)', color: '#64748b' }}
+                        >
+                          AI 评分: {link.aiScore}
+                        </span>
+                        <span
+                          className="rounded-full px-2 py-0.5 text-[11px]"
+                          style={{ background: 'rgba(29,155,240,0.1)', color: 'var(--accent)' }}
+                        >
+                          排序权重: {link.sortOrder}
+                        </span>
+                        <span
+                          className="rounded-full px-2 py-0.5 text-[11px]"
+                          style={{
+                            background: link.showInSidebar ? 'rgba(34,197,94,0.1)' : 'rgba(100,116,139,0.1)',
+                            color: link.showInSidebar ? '#22c55e' : '#64748b',
+                          }}
+                        >
+                          {link.showInSidebar ? '侧栏显示' : '仅友链页显示'}
+                        </span>
+                        <span className="px-2 py-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                          {new Date(link.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+
+                      {link.rejectionReason && (
+                        <p
+                          className="mt-2 rounded p-2 text-xs"
+                          style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}
+                        >
+                          拒绝原因: {link.rejectionReason}
+                        </p>
                       )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold truncate" style={{ color: 'var(--text-primary)' }}>
-                        {link.name}
-                      </h3>
-                      <p className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>
-                        <a href={link.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                          {link.url}
-                        </a>
-                      </p>
+
+                    {/* 右侧操作 */}
+                    <div className="grid w-[172px] flex-shrink-0 grid-cols-2 gap-1.5">
+                      <div className="col-span-2 flex items-center gap-1.5">
+                        <input
+                          type="number"
+                          value={orderDrafts[link.id] ?? String(link.sortOrder)}
+                          onChange={(e) => setOrderDrafts((prev) => ({ ...prev, [link.id]: e.target.value }))}
+                          className="w-20 rounded-lg border bg-transparent px-2 py-1.5 text-xs outline-none"
+                          style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                          title="手动设置排序权重"
+                        />
+                        <button
+                          onClick={() => handleSetOrder(link.id)}
+                          disabled={savingOrderId === link.id}
+                          className="flex-1 rounded-lg px-2 py-1.5 text-xs transition-all disabled:opacity-60"
+                          style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+                        >
+                          {savingOrderId === link.id ? '保存中' : '保存'}
+                        </button>
+                      </div>
+                      <div className="col-span-2 grid grid-cols-2 gap-1.5">
+                        <button
+                          onClick={() => handleChangeOrder(link.id, 1)}
+                          className="rounded-lg px-2 py-1.5 text-xs transition-all"
+                          style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+                          title="上移"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          onClick={() => handleChangeOrder(link.id, -1)}
+                          className="rounded-lg px-2 py-1.5 text-xs transition-all"
+                          style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+                          title="下移"
+                        >
+                          ↓
+                        </button>
+                      </div>
+                      {link.status === 'pending' && (
+                        <>
+                          <button
+                            onClick={() => handleApprove(link.id)}
+                            className="rounded-lg px-2 py-1.5 text-xs font-medium text-white transition-all hover:opacity-80"
+                            style={{ background: '#22c55e' }}
+                          >
+                            批准
+                          </button>
+                          <button
+                            onClick={() => setRejectingId(link.id)}
+                            className="rounded-lg px-2 py-1.5 text-xs font-medium text-white transition-all hover:opacity-80"
+                            style={{ background: '#ef4444' }}
+                          >
+                            拒绝
+                          </button>
+                          <button
+                            onClick={() => handleAiReview(link.id)}
+                            disabled={reviewingId === link.id}
+                            className="col-span-2 rounded-lg px-2 py-1.5 text-xs font-medium text-white transition-all hover:opacity-80 disabled:opacity-60"
+                            style={{ background: '#f59e0b' }}
+                          >
+                            {reviewingId === link.id ? '审核中...' : '🤖 AI 审核'}
+                          </button>
+                        </>
+                      )}
+                      <button
+                        onClick={() => openEdit(link)}
+                        className="col-span-2 rounded-lg px-2 py-1.5 text-xs transition-all"
+                        style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+                      >
+                        编辑
+                      </button>
+                      <button
+                        onClick={() => handleToggleSidebar(link.id, !link.showInSidebar)}
+                        className="col-span-2 rounded-lg px-2 py-1.5 text-xs transition-all"
+                        style={{
+                          background: link.showInSidebar ? 'rgba(100,116,139,0.15)' : 'rgba(34,197,94,0.12)',
+                          color: link.showInSidebar ? '#475569' : '#16a34a',
+                        }}
+                      >
+                        {link.showInSidebar ? '侧栏隐藏' : '侧栏显示'}
+                      </button>
+                      <button
+                        onClick={() => handleRecheck(link.id)}
+                        className="col-span-2 rounded-lg px-2 py-1.5 text-xs transition-all"
+                        style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+                      >
+                        重新检查互链
+                      </button>
+                      <button
+                        onClick={() => handleDelete(link.id)}
+                        className="col-span-2 rounded-lg px-2 py-1.5 text-xs font-medium text-white transition-all hover:opacity-80"
+                        style={{ background: '#64748b' }}
+                      >
+                        删除
+                      </button>
                     </div>
                   </div>
 
-                  {link.description && (
-                    <p className="text-xs mb-1.5 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
-                      {link.description}
-                    </p>
-                  )}
-
-                  {/* 标签 */}
-                  <div className="flex flex-wrap gap-1.5">
-                    {link.hasReciprocal && (
-                      <span
-                        className="text-[11px] px-2 py-0.5 rounded-full"
-                        style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e' }}
-                      >
-                        ✓ 已互链
-                      </span>
-                    )}
-                    {link.status === 'rejected' && (
-                      <span
-                        className="text-[11px] px-2 py-0.5 rounded-full"
-                        style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}
-                      >
-                        ✕ 已拒绝
-                      </span>
-                    )}
-                    <span
-                      className="text-[11px] px-2 py-0.5 rounded-full"
-                      style={{ background: 'rgba(100,116,139,0.1)', color: '#64748b' }}
-                    >
-                      AI 评分: {link.aiScore}
-                    </span>
-                    <span
-                      className="text-[11px] px-2 py-0.5 rounded-full"
-                      style={{ background: 'rgba(29,155,240,0.1)', color: 'var(--accent)' }}
-                    >
-                      排序权重: {link.sortOrder}
-                    </span>
-                    <span
-                      className="text-[11px] px-2 py-0.5 rounded-full"
-                      style={{ background: link.showInSidebar ? 'rgba(34,197,94,0.1)' : 'rgba(100,116,139,0.1)', color: link.showInSidebar ? '#22c55e' : '#64748b' }}
-                    >
-                      {link.showInSidebar ? '侧栏显示' : '仅友链页显示'}
-                    </span>
-                    <span className="text-xs px-2 py-1" style={{ color: 'var(--text-secondary)' }}>
-                      {new Date(link.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-
-                  {link.rejectionReason && (
-                    <p className="text-xs mt-2 p-2 rounded" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
-                      拒绝原因: {link.rejectionReason}
-                    </p>
-                  )}
-                </div>
-
-                {/* 右侧操作 */}
-                <div className="grid grid-cols-2 gap-1.5 w-[172px] flex-shrink-0">
-                  <div className="col-span-2 flex items-center gap-1.5">
-                    <input
-                      type="number"
-                      value={orderDrafts[link.id] ?? String(link.sortOrder)}
-                      onChange={e => setOrderDrafts(prev => ({ ...prev, [link.id]: e.target.value }))}
-                      className="w-20 px-2 py-1.5 rounded-lg text-xs border bg-transparent outline-none"
-                      style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-                      title="手动设置排序权重"
-                    />
-                    <button
-                      onClick={() => handleSetOrder(link.id)}
-                      disabled={savingOrderId === link.id}
-                      className="flex-1 px-2 py-1.5 rounded-lg text-xs transition-all disabled:opacity-60"
-                      style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
-                    >
-                      {savingOrderId === link.id ? '保存中' : '保存'}
-                    </button>
-                  </div>
-                  <div className="col-span-2 grid grid-cols-2 gap-1.5">
-                    <button
-                      onClick={() => handleChangeOrder(link.id, 1)}
-                      className="px-2 py-1.5 rounded-lg text-xs transition-all"
-                      style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
-                      title="上移"
-                    >
-                      ↑
-                    </button>
-                    <button
-                      onClick={() => handleChangeOrder(link.id, -1)}
-                      className="px-2 py-1.5 rounded-lg text-xs transition-all"
-                      style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
-                      title="下移"
-                    >
-                      ↓
-                    </button>
-                  </div>
-                  {link.status === 'pending' && (
-                    <>
-                      <button
-                        onClick={() => handleApprove(link.id)}
-                        className="px-2 py-1.5 rounded-lg text-xs font-medium text-white transition-all hover:opacity-80"
-                        style={{ background: '#22c55e' }}
-                      >
-                        批准
-                      </button>
-                      <button
-                        onClick={() => setRejectingId(link.id)}
-                        className="px-2 py-1.5 rounded-lg text-xs font-medium text-white transition-all hover:opacity-80"
-                        style={{ background: '#ef4444' }}
-                      >
-                        拒绝
-                      </button>
-                      <button
-                        onClick={() => handleAiReview(link.id)}
-                        disabled={reviewingId === link.id}
-                        className="col-span-2 px-2 py-1.5 rounded-lg text-xs font-medium text-white transition-all hover:opacity-80 disabled:opacity-60"
-                        style={{ background: '#f59e0b' }}
-                      >
-                        {reviewingId === link.id ? '审核中...' : '🤖 AI 审核'}
-                      </button>
-                    </>
-                  )}
-                  <button
-                    onClick={() => openEdit(link)}
-                    className="col-span-2 px-2 py-1.5 rounded-lg text-xs transition-all"
-                    style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
-                  >
-                    编辑
-                  </button>
-                  <button
-                    onClick={() => handleToggleSidebar(link.id, !link.showInSidebar)}
-                    className="col-span-2 px-2 py-1.5 rounded-lg text-xs transition-all"
-                    style={{
-                      background: link.showInSidebar ? 'rgba(100,116,139,0.15)' : 'rgba(34,197,94,0.12)',
-                      color: link.showInSidebar ? '#475569' : '#16a34a',
-                    }}
-                  >
-                    {link.showInSidebar ? '侧栏隐藏' : '侧栏显示'}
-                  </button>
-                  <button
-                    onClick={() => handleRecheck(link.id)}
-                    className="col-span-2 px-2 py-1.5 rounded-lg text-xs transition-all"
-                    style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
-                  >
-                    重新检查互链
-                  </button>
-                  <button
-                    onClick={() => handleDelete(link.id)}
-                    className="col-span-2 px-2 py-1.5 rounded-lg text-xs font-medium text-white transition-all hover:opacity-80"
-                    style={{ background: '#64748b' }}
-                  >
-                    删除
-                  </button>
-                </div>
-              </div>
-
-              {/* 拒绝原因输入框 */}
-              {rejectingId === link.id && (
-                <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
-                  <input
-                    type="text"
-                    placeholder="输入拒绝原因..."
-                    value={rejectReason}
-                    onChange={e => setRejectReason(e.target.value)}
-                    className="w-full px-3 py-1.5 rounded-lg bg-transparent outline-none border text-sm mb-2"
-                    style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleReject(link.id)}
-                      className="flex-1 px-4 py-1.5 rounded-lg text-sm font-medium text-white"
-                      style={{ background: '#ef4444' }}
-                    >
-                      确认拒绝
-                    </button>
-                    <button
-                      onClick={() => {
-                        setRejectingId(null)
-                        setRejectReason('')
-                      }}
-                      className="flex-1 px-4 py-1.5 rounded-lg text-sm"
-                      style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
-                    >
-                      取消
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {editingId === link.id && (
-                <div className="mt-3 pt-3 border-t space-y-2" style={{ borderColor: 'var(--border)' }}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <input value={editForm.name} onChange={e => setEditForm(v => ({ ...v, name: e.target.value }))} placeholder="名称"
-                      className="px-3 py-1.5 rounded-lg bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
-                    <input value={editForm.url} onChange={e => setEditForm(v => ({ ...v, url: e.target.value }))} placeholder="https://example.com"
-                      className="px-3 py-1.5 rounded-lg bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
-                    <input value={editForm.description} onChange={e => setEditForm(v => ({ ...v, description: e.target.value }))} placeholder="简介（可选）"
-                      className="px-3 py-1.5 rounded-lg bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
-                    <div className="flex items-center gap-2">
-                      <input value={editForm.favicon} onChange={e => setEditForm(v => ({ ...v, favicon: e.target.value }))} placeholder="头像URL（可选）"
-                        className="flex-1 px-3 py-1.5 rounded-lg bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
-                      <StorageImagePicker
-                        buttonText="选择"
-                        onSelect={(url) => setEditForm(v => ({ ...v, favicon: url }))}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                  {/* 拒绝原因输入框 */}
+                  {rejectingId === link.id && (
+                    <div className="mt-3 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
+                      <input
+                        type="text"
+                        placeholder="输入拒绝原因..."
+                        value={rejectReason}
+                        onChange={(e) => setRejectReason(e.target.value)}
+                        className="mb-2 w-full rounded-lg border bg-transparent px-3 py-1.5 text-sm outline-none"
+                        style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                       />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleReject(link.id)}
+                          className="flex-1 rounded-lg px-4 py-1.5 text-sm font-medium text-white"
+                          style={{ background: '#ef4444' }}
+                        >
+                          确认拒绝
+                        </button>
+                        <button
+                          onClick={() => {
+                            setRejectingId(null)
+                            setRejectReason('')
+                          }}
+                          className="flex-1 rounded-lg px-4 py-1.5 text-sm"
+                          style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+                        >
+                          取消
+                        </button>
+                      </div>
                     </div>
-                    <input value={editForm.email} onChange={e => setEditForm(v => ({ ...v, email: e.target.value }))} placeholder="邮箱（可选）"
-                      className="px-3 py-1.5 rounded-lg bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
-                    <input value={editForm.sortOrder} onChange={e => setEditForm(v => ({ ...v, sortOrder: e.target.value }))} placeholder="排序权重"
-                      className="px-3 py-1.5 rounded-lg bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <label className="text-sm" style={{ color: 'var(--text-secondary)' }}>状态</label>
-                    <select value={editForm.status} onChange={e => setEditForm(v => ({ ...v, status: e.target.value as LinkForm['status'] }))}
-                      className="px-3 py-1.5 rounded-lg bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}>
-                      <option value="approved">已通过</option>
-                      <option value="pending">待审核</option>
-                      <option value="rejected">已拒绝</option>
-                    </select>
-                    <label className="inline-flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                      <input type="checkbox" checked={editForm.showInSidebar} onChange={e => setEditForm(v => ({ ...v, showInSidebar: e.target.checked }))} />
-                      在右侧栏显示
-                    </label>
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => handleUpdateBasic(link.id)} className="px-4 py-1.5 rounded-lg text-sm text-white" style={{ background: 'var(--accent)' }}>
-                      保存编辑
-                    </button>
-                    <button onClick={() => setEditingId(null)} className="px-4 py-1.5 rounded-lg text-sm" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
-                      取消
-                    </button>
-                  </div>
+                  )}
+
+                  {editingId === link.id && (
+                    <div className="mt-3 space-y-2 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
+                      <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                        <input
+                          value={editForm.name}
+                          onChange={(e) => setEditForm((v) => ({ ...v, name: e.target.value }))}
+                          placeholder="名称"
+                          className="rounded-lg border bg-transparent px-3 py-1.5 text-sm outline-none"
+                          style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                        />
+                        <input
+                          value={editForm.url}
+                          onChange={(e) => setEditForm((v) => ({ ...v, url: e.target.value }))}
+                          placeholder="https://example.com"
+                          className="rounded-lg border bg-transparent px-3 py-1.5 text-sm outline-none"
+                          style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                        />
+                        <input
+                          value={editForm.description}
+                          onChange={(e) => setEditForm((v) => ({ ...v, description: e.target.value }))}
+                          placeholder="简介（可选）"
+                          className="rounded-lg border bg-transparent px-3 py-1.5 text-sm outline-none"
+                          style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                        />
+                        <div className="flex items-center gap-2">
+                          <input
+                            value={editForm.favicon}
+                            onChange={(e) => setEditForm((v) => ({ ...v, favicon: e.target.value }))}
+                            placeholder="头像URL（可选）"
+                            className="flex-1 rounded-lg border bg-transparent px-3 py-1.5 text-sm outline-none"
+                            style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                          />
+                          <StorageImagePicker
+                            buttonText="选择"
+                            onSelect={(url) => setEditForm((v) => ({ ...v, favicon: url }))}
+                            className="rounded-lg px-3 py-1.5 text-xs font-medium"
+                          />
+                        </div>
+                        <input
+                          value={editForm.email}
+                          onChange={(e) => setEditForm((v) => ({ ...v, email: e.target.value }))}
+                          placeholder="邮箱（可选）"
+                          className="rounded-lg border bg-transparent px-3 py-1.5 text-sm outline-none"
+                          style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                        />
+                        <input
+                          value={editForm.sortOrder}
+                          onChange={(e) => setEditForm((v) => ({ ...v, sortOrder: e.target.value }))}
+                          placeholder="排序权重"
+                          className="rounded-lg border bg-transparent px-3 py-1.5 text-sm outline-none"
+                          style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                        />
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <label className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                          状态
+                        </label>
+                        <select
+                          value={editForm.status}
+                          onChange={(e) => setEditForm((v) => ({ ...v, status: e.target.value as LinkForm['status'] }))}
+                          className="rounded-lg border bg-transparent px-3 py-1.5 text-sm outline-none"
+                          style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                        >
+                          <option value="approved">已通过</option>
+                          <option value="pending">待审核</option>
+                          <option value="rejected">已拒绝</option>
+                        </select>
+                        <label
+                          className="inline-flex items-center gap-2 text-sm"
+                          style={{ color: 'var(--text-secondary)' }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={editForm.showInSidebar}
+                            onChange={(e) => setEditForm((v) => ({ ...v, showInSidebar: e.target.checked }))}
+                          />
+                          在右侧栏显示
+                        </label>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleUpdateBasic(link.id)}
+                          className="rounded-lg px-4 py-1.5 text-sm text-white"
+                          style={{ background: 'var(--accent)' }}
+                        >
+                          保存编辑
+                        </button>
+                        <button
+                          onClick={() => setEditingId(null)}
+                          className="rounded-lg px-4 py-1.5 text-sm"
+                          style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+                        >
+                          取消
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          ))}
+              ))}
             </div>
           )}
 
           {total > limit && (
-            <div className="flex items-center justify-center gap-3 mt-4">
+            <div className="mt-4 flex items-center justify-center gap-3">
               <button
                 onClick={() => fetchLinks(Math.max(1, page - 1))}
                 disabled={page === 1}
-                className="px-4 py-1.5 rounded-xl disabled:opacity-50 text-sm"
+                className="rounded-xl px-4 py-1.5 text-sm disabled:opacity-50"
                 style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
               >
                 上一页
@@ -694,7 +811,7 @@ export default function AdminFriendLinksPage() {
               <button
                 onClick={() => fetchLinks(Math.min(Math.ceil(total / limit), page + 1))}
                 disabled={page >= Math.ceil(total / limit)}
-                className="px-4 py-1.5 rounded-xl disabled:opacity-50 text-sm"
+                className="rounded-xl px-4 py-1.5 text-sm disabled:opacity-50"
                 style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
               >
                 下一页
@@ -703,47 +820,141 @@ export default function AdminFriendLinksPage() {
           )}
         </section>
 
-        <aside className="rounded-2xl p-3 h-fit sticky top-3" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-          <h2 className="text-base font-bold mb-2" style={{ color: 'var(--text-primary)' }}>手动新增友链</h2>
+        <aside
+          className="sticky top-3 h-fit rounded-2xl p-3"
+          style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
+        >
+          <h2 className="mb-2 text-base font-bold" style={{ color: 'var(--text-primary)' }}>
+            手动新增友链
+          </h2>
           <div className="space-y-2">
-            <input value={createForm.name} onChange={e => setCreateForm(v => ({ ...v, name: e.target.value }))} placeholder="名称"
-              className="w-full px-3 py-1.5 rounded-xl bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
-            <input value={createForm.url} onChange={e => setCreateForm(v => ({ ...v, url: e.target.value }))} placeholder="https://example.com"
-              className="w-full px-3 py-1.5 rounded-xl bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
-            <input value={createForm.description} onChange={e => setCreateForm(v => ({ ...v, description: e.target.value }))} placeholder="简介（可选）"
-              className="w-full px-3 py-1.5 rounded-xl bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+            <input
+              value={createForm.name}
+              onChange={(e) => setCreateForm((v) => ({ ...v, name: e.target.value }))}
+              placeholder="名称"
+              className="w-full rounded-xl border bg-transparent px-3 py-1.5 text-sm outline-none"
+              style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+            />
+            <input
+              value={createForm.url}
+              onChange={(e) => setCreateForm((v) => ({ ...v, url: e.target.value }))}
+              placeholder="https://example.com"
+              className="w-full rounded-xl border bg-transparent px-3 py-1.5 text-sm outline-none"
+              style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+            />
+            <input
+              value={createForm.description}
+              onChange={(e) => setCreateForm((v) => ({ ...v, description: e.target.value }))}
+              placeholder="简介（可选）"
+              className="w-full rounded-xl border bg-transparent px-3 py-1.5 text-sm outline-none"
+              style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+            />
             <div className="flex items-center gap-2">
-              <input value={createForm.favicon} onChange={e => setCreateForm(v => ({ ...v, favicon: e.target.value }))} placeholder="头像URL（可选）"
-                className="flex-1 px-3 py-1.5 rounded-xl bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+              <input
+                value={createForm.favicon}
+                onChange={(e) => setCreateForm((v) => ({ ...v, favicon: e.target.value }))}
+                placeholder="头像URL（可选）"
+                className="flex-1 rounded-xl border bg-transparent px-3 py-1.5 text-sm outline-none"
+                style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+              />
               <StorageImagePicker
                 buttonText="选择"
-                onSelect={(url) => setCreateForm(v => ({ ...v, favicon: url }))}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                onSelect={(url) => setCreateForm((v) => ({ ...v, favicon: url }))}
+                className="rounded-lg px-3 py-1.5 text-xs font-medium"
               />
             </div>
-            <input value={createForm.email} onChange={e => setCreateForm(v => ({ ...v, email: e.target.value }))} placeholder="邮箱（可选）"
-              className="w-full px-3 py-1.5 rounded-xl bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
-            <input value={createForm.sortOrder} onChange={e => setCreateForm(v => ({ ...v, sortOrder: e.target.value }))} placeholder="排序权重"
-              className="w-full px-3 py-1.5 rounded-xl bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+            <input
+              value={createForm.email}
+              onChange={(e) => setCreateForm((v) => ({ ...v, email: e.target.value }))}
+              placeholder="邮箱（可选）"
+              className="w-full rounded-xl border bg-transparent px-3 py-1.5 text-sm outline-none"
+              style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+            />
+            <input
+              value={createForm.sortOrder}
+              onChange={(e) => setCreateForm((v) => ({ ...v, sortOrder: e.target.value }))}
+              placeholder="排序权重"
+              className="w-full rounded-xl border bg-transparent px-3 py-1.5 text-sm outline-none"
+              style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+            />
           </div>
 
           <div className="mt-2.5 space-y-2">
-            <select value={createForm.status} onChange={e => setCreateForm(v => ({ ...v, status: e.target.value as LinkForm['status'] }))}
-              className="w-full px-3 py-1.5 rounded-xl bg-transparent border outline-none text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}>
+            <select
+              value={createForm.status}
+              onChange={(e) => setCreateForm((v) => ({ ...v, status: e.target.value as LinkForm['status'] }))}
+              className="w-full rounded-xl border bg-transparent px-3 py-1.5 text-sm outline-none"
+              style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+            >
               <option value="approved">已通过</option>
               <option value="pending">待审核</option>
               <option value="rejected">已拒绝</option>
             </select>
             <label className="inline-flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
-              <input type="checkbox" checked={createForm.showInSidebar} onChange={e => setCreateForm(v => ({ ...v, showInSidebar: e.target.checked }))} />
+              <input
+                type="checkbox"
+                checked={createForm.showInSidebar}
+                onChange={(e) => setCreateForm((v) => ({ ...v, showInSidebar: e.target.checked }))}
+              />
               在右侧栏显示
             </label>
-            <button onClick={handleCreate} disabled={creating}
-              className="w-full px-4 py-1.5 rounded-xl text-white text-sm font-medium disabled:opacity-60" style={{ background: 'var(--accent)' }}>
+            <button
+              onClick={handleCreate}
+              disabled={creating}
+              className="w-full rounded-xl px-4 py-1.5 text-sm font-medium text-white disabled:opacity-60"
+              style={{ background: 'var(--accent)' }}
+            >
               {creating ? '创建中...' : '新增友链'}
             </button>
           </div>
         </aside>
+
+        {/* 友链设置 */}
+        <div
+          className="h-fit rounded-2xl p-3"
+          style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
+        >
+          <h2 className="mb-3 text-base font-bold" style={{ color: 'var(--text-primary)' }}>
+            友链设置
+          </h2>
+          <div
+            className="flex items-center justify-between gap-3 rounded-xl p-3"
+            style={{ background: 'var(--bg-hover)' }}
+          >
+            <div>
+              <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                🔗 右侧栏友链默认折叠
+              </p>
+              <p className="mt-0.5 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                开启后，右侧栏底部的友情链接区域默认收起，访客可手动展开
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={sidebarFriendLinksCollapsed}
+              onClick={() => setSidebarFriendLinksCollapsed((v) => !v)}
+              className="relative ml-2 inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full transition-colors duration-200"
+              style={{
+                background: sidebarFriendLinksCollapsed ? 'var(--accent)' : 'var(--bg-secondary)',
+                border: '1px solid var(--border)',
+              }}
+            >
+              <span
+                className="inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200"
+                style={{ margin: '2px', transform: sidebarFriendLinksCollapsed ? 'translateX(20px)' : 'translateX(0)' }}
+              />
+            </button>
+          </div>
+          <button
+            onClick={saveCollapsedSetting}
+            disabled={savingCollapsed}
+            className="mt-3 w-full rounded-xl px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+            style={{ background: 'var(--accent)' }}
+          >
+            {savingCollapsed ? '保存中...' : '保存友链设置'}
+          </button>
+        </div>
       </div>
     </div>
   )
