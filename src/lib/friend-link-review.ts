@@ -49,6 +49,16 @@ async function callAiModel(
   let headers: Record<string, string>
   let body: any
 
+  const commonBody = {
+    model: config.aiModelName,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: prompt },
+    ],
+    max_tokens: toSafeNumber(config.aiModelMaxTokens, AI_DEFAULTS.MAX_TOKENS),
+    temperature: 0.3,
+  }
+
   if (config.aiModelProvider === 'openrouter') {
     url = 'https://openrouter.ai/api/v1/chat/completions'
     headers = {
@@ -56,33 +66,27 @@ async function callAiModel(
       Authorization: `Bearer ${config.aiModelApiKey}`,
       'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
     }
-    body = {
-      model: config.aiModelName,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: prompt },
-      ],
-      max_tokens: toSafeNumber(config.aiModelMaxTokens, AI_DEFAULTS.MAX_TOKENS),
-      temperature: 0.3,
-    }
-  } else if (config.aiModelProvider === 'custom') {
-    url = `${config.aiModelBaseUrl}/api/chat`
+    body = commonBody
+  } else if (config.aiModelProvider === 'groq') {
+    url = 'https://api.groq.com/openai/v1/chat/completions'
     headers = {
       'Content-Type': 'application/json',
+      Authorization: `Bearer ${config.aiModelApiKey}`,
     }
+    body = commonBody
+  } else if (config.aiModelProvider === 'ollama') {
+    url = `${(config.aiModelBaseUrl || 'http://localhost:11434').replace(/\/+$/, '')}/api/chat`
+    headers = { 'Content-Type': 'application/json' }
+    body = { ...commonBody, stream: false }
+  } else if (config.aiModelProvider === 'custom') {
+    url = `${(config.aiModelBaseUrl || '').replace(/\/+$/, '')}/v1/chat/completions`
+    headers = { 'Content-Type': 'application/json' }
     if (config.aiModelApiKey) {
       headers['Authorization'] = `Bearer ${config.aiModelApiKey}`
     }
-    body = {
-      model: config.aiModelName,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: prompt },
-      ],
-      stream: false,
-    }
+    body = commonBody
   } else {
-    throw new Error('Unknown AI provider')
+    throw new Error(`Unknown AI provider: ${config.aiModelProvider}`)
   }
 
   try {
