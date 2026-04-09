@@ -6,6 +6,7 @@ import { getErrorMessage } from '@/lib/converters'
 import { MarkdownEditor } from '@/components/admin/MarkdownEditor'
 import { StorageImagePicker } from '@/components/admin/StorageImagePicker'
 import { VoiceInput } from '@/components/admin/VoiceInput'
+import { PostPolish } from '@/components/admin/PostPolish'
 import { IMEInput } from '@/components/ui/IMEInput'
 import { ADMIN_PAGE_TITLE_CLASS } from '@/components/admin/adminUi'
 
@@ -275,7 +276,11 @@ export default function EditPostPage() {
                       return { ...f, content: `${f.content}${prefix}${text}\n` }
                     })
                   }}
-                />
+                />{' '}
+                <PostPolish
+                  content={form.content}
+                  onApply={(polished) => updateForm((f) => ({ ...f, content: polished }))}
+                />{' '}
               </div>
               <input
                 ref={bodyImageInputRef}
