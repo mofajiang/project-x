@@ -3,8 +3,8 @@ import { prisma } from './prisma'
 import { runMigrations } from './db-migrate'
 import { toSafeNumber, toSafeBoolean, toJsonSafe, getErrorMessage } from './converters'
 
-const DEFAULT_VISITOR_STATS_DISPLAY = '["总访问","今日访问","7 日访问","14 日访问","国家数","精确坐标","国家/省份落点","最近时间"]'
-
+const DEFAULT_VISITOR_STATS_DISPLAY =
+  '["总访问","今日访问","7 日访问","14 日访问","国家数","精确坐标","国家/省份落点","最近时间"]'
 
 export type NavItem = {
   label: string
@@ -43,11 +43,11 @@ export type CarouselSlideType = 'image' | 'text' | 'markdown'
 export type CarouselSlide = {
   slideType?: CarouselSlideType // 默认 'image'
   // image 类型
-  image?: string    // 图片 URL
+  image?: string // 图片 URL
   // 通用
-  title?: string    // 标题
-  desc?: string     // 描述 / 纯文本内容（text 类型）
-  link?: string     // 跳转链接
+  title?: string // 标题
+  desc?: string // 描述 / 纯文本内容（text 类型）
+  link?: string // 跳转链接
   // markdown 类型
   markdown?: string // Markdown 内容
 }
@@ -55,18 +55,18 @@ export type CarouselSlide = {
 export type RightPanelWidget = {
   type: WidgetType
   enabled: boolean
-  mobileVisible?: boolean   // 是否在手机端侧栏显示
-  title?: string        // 自定义标题（覆盖默认）
-  content?: string      // type=custom 时的内容
-  links?: FriendLink[]  // type=links 时的友情链接列表
+  mobileVisible?: boolean // 是否在手机端侧栏显示
+  title?: string // 自定义标题（覆盖默认）
+  content?: string // type=custom 时的内容
+  links?: FriendLink[] // type=links 时的友情链接列表
   slides?: CarouselSlide[] // type=carousel 时的轮播内容
-  interval?: number     // type=carousel 自动播放间隔（毫秒），默认 3000
+  interval?: number // type=carousel 自动播放间隔（毫秒），默认 3000
 }
 
 export const DEFAULT_WIDGETS: RightPanelWidget[] = [
-  { type: 'search',   enabled: true, mobileVisible: false },
-  { type: 'about',    enabled: true, mobileVisible: true },
-  { type: 'tags',     enabled: true, mobileVisible: true },
+  { type: 'search', enabled: true, mobileVisible: false },
+  { type: 'about', enabled: true, mobileVisible: true },
+  { type: 'tags', enabled: true, mobileVisible: true },
   { type: 'hotPosts', enabled: true, mobileVisible: true },
 ]
 
@@ -80,7 +80,7 @@ function normalizeWidget(widget: RightPanelWidget): RightPanelWidget {
 export function parseWidgets(raw: string | undefined | null): RightPanelWidget[] {
   try {
     const parsed = JSON.parse(raw || '')
-    if (Array.isArray(parsed)) return parsed.map(item => normalizeWidget(item as RightPanelWidget))
+    if (Array.isArray(parsed)) return parsed.map((item) => normalizeWidget(item as RightPanelWidget))
   } catch {}
   return DEFAULT_WIDGETS.map(normalizeWidget)
 }
@@ -146,6 +146,7 @@ export type SiteConfig = {
   storageS3ForcePathStyle: boolean
   storagePublicBaseUrl: string
   storageSmmsToken: string
+  sidebarFriendLinksCollapsed: boolean
 }
 
 export const DEFAULT_NAV: NavItem[] = [
@@ -181,7 +182,11 @@ export function parseSiteLogo(raw: string | undefined | null): SiteLogo {
 }
 
 async function fetchSiteConfig(): Promise<SiteConfig> {
-  try { await runMigrations() } catch (e: unknown) { console.warn('[config] runMigrations:', getErrorMessage(e)) }
+  try {
+    await runMigrations()
+  } catch (e: unknown) {
+    console.warn('[config] runMigrations:', getErrorMessage(e))
+  }
   // 一次 raw SQL 读取所有字段（含动态迁移列）
   let rows: any[] = []
   try {
@@ -253,8 +258,8 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
   // 若已有导航里缺少友链项，自动插入（在关于之前）
   try {
     const navArr: NavItem[] = JSON.parse(config.navItems)
-    if (Array.isArray(navArr) && !navArr.some(item => item.href === '/links')) {
-      const aboutIdx = navArr.findIndex(item => item.href === '/about')
+    if (Array.isArray(navArr) && !navArr.some((item) => item.href === '/links')) {
+      const aboutIdx = navArr.findIndex((item) => item.href === '/about')
       const linksItem: NavItem = { label: '友链', href: '/links', icon: 'link' }
       if (aboutIdx >= 0) navArr.splice(aboutIdx, 0, linksItem)
       else navArr.push(linksItem)
@@ -269,7 +274,12 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
   if (!config.secretClicks) config.secretClicks = 5
   if (!config.visitorGeoMode) config.visitorGeoMode = 'ip9'
   if (['xxapi', 'tencent', 'uapis'].includes(config.visitorGeoMode)) config.visitorGeoMode = 'custom'
-  if (!['offline', 'ip9', 'ipwho', 'ipapi', 'ipinfo', 'ip-api', 'geolocation-db', 'custom'].includes(config.visitorGeoMode)) config.visitorGeoMode = 'ip9'
+  if (
+    !['offline', 'ip9', 'ipwho', 'ipapi', 'ipinfo', 'ip-api', 'geolocation-db', 'custom'].includes(
+      config.visitorGeoMode
+    )
+  )
+    config.visitorGeoMode = 'ip9'
   if (!config.visitorGeoKey) config.visitorGeoKey = ''
   if (!config.visitorGeoEndpoint) config.visitorGeoEndpoint = ''
   if (!config.visitorStatsDisplay) config.visitorStatsDisplay = DEFAULT_VISITOR_STATS_DISPLAY
@@ -278,18 +288,21 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
   if (config.enableAiDetection === undefined || config.enableAiDetection === null) config.enableAiDetection = true
   if (config.aiAutoApprove === undefined || config.aiAutoApprove === null) config.aiAutoApprove = true
   if (!config.aiReviewStrength) config.aiReviewStrength = 'balanced'
-  if (config.emailSubjectNewComment === undefined || config.emailSubjectNewComment === null) config.emailSubjectNewComment = ''
+  if (config.emailSubjectNewComment === undefined || config.emailSubjectNewComment === null)
+    config.emailSubjectNewComment = ''
   if (config.emailSubjectReply === undefined || config.emailSubjectReply === null) config.emailSubjectReply = ''
-  if (config.emailSubjectApproved === undefined || config.emailSubjectApproved === null) config.emailSubjectApproved = ''
+  if (config.emailSubjectApproved === undefined || config.emailSubjectApproved === null)
+    config.emailSubjectApproved = ''
   if (config.emailSenderName === undefined || config.emailSenderName === null) config.emailSenderName = ''
-  
+
   // SQLite 存的是 0/1 整数，需转换为布尔值
   config.showCommentIp = toSafeBoolean(config.showCommentIp, false)
   config.commentApproval = toSafeBoolean(config.commentApproval, true)
   config.enableAiDetection = toSafeBoolean(config.enableAiDetection, true)
   config.aiAutoApprove = toSafeBoolean(config.aiAutoApprove, true)
   config.secretClicks = toSafeNumber(config.secretClicks, 5)
-  if (typeof config.loginPath === 'string' && !config.loginPath.startsWith('/')) config.loginPath = `/${config.loginPath}`
+  if (typeof config.loginPath === 'string' && !config.loginPath.startsWith('/'))
+    config.loginPath = `/${config.loginPath}`
 
   if (!config.copyright) config.copyright = ''
   if (!config.defaultTheme) config.defaultTheme = 'dark'
@@ -300,7 +313,8 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
   if (!config.storageS3AccessKeyId) config.storageS3AccessKeyId = ''
   if (!config.storageS3SecretAccessKey) config.storageS3SecretAccessKey = ''
   if (!config.storageS3Prefix) config.storageS3Prefix = 'uploads/'
-  if (config.storagePublicBaseUrl === undefined || config.storagePublicBaseUrl === null) config.storagePublicBaseUrl = ''
+  if (config.storagePublicBaseUrl === undefined || config.storagePublicBaseUrl === null)
+    config.storagePublicBaseUrl = ''
   if (config.storageSmmsToken === undefined || config.storageSmmsToken === null) config.storageSmmsToken = ''
   config.storageS3ForcePathStyle = toSafeBoolean(config.storageS3ForcePathStyle, false)
   // 新 AI 模型字段默认值
@@ -313,14 +327,14 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
   config.aiModelMaxTokens = toSafeNumber(config.aiModelMaxTokens, 2000)
   config.aiModelTimeout = toSafeNumber(config.aiModelTimeout, 30)
   config.enableCustomAiModel = toSafeBoolean(config.enableCustomAiModel, false)
+  config.sidebarFriendLinksCollapsed = toSafeBoolean(config.sidebarFriendLinksCollapsed, false)
   return config as SiteConfig
 }
 
-export const getSiteConfig = unstable_cache(
-  fetchSiteConfig,
-  ['site-config'],
-  { revalidate: 300, tags: ['site-config'] }
-)
+export const getSiteConfig = unstable_cache(fetchSiteConfig, ['site-config'], {
+  revalidate: 300,
+  tags: ['site-config'],
+})
 
 // 保存设置后调用此函数使缓存失效
 export async function revalidateSiteConfig() {

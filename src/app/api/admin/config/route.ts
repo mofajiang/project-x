@@ -126,6 +126,8 @@ export async function PUT(req: NextRequest) {
   const copyright = data.copyright ?? null
   const defaultTheme = data.defaultTheme ?? null
   const customDomain = data.customDomain !== undefined ? (data.customDomain ?? '') : null
+  const sidebarFriendLinksCollapsed =
+    data.sidebarFriendLinksCollapsed !== undefined ? data.sidebarFriendLinksCollapsed : null
   delete data.siteIcon
   delete data.siteLogo
   delete data.rightPanelWidgets
@@ -137,6 +139,7 @@ export async function PUT(req: NextRequest) {
   delete data.copyright
   delete data.defaultTheme
   delete data.customDomain
+  delete data.sidebarFriendLinksCollapsed
 
   // SQLite 存的是 0/1 整数，Prisma schema 要求 Boolean，需显式转换
   if (data.showCommentIp !== undefined) data.showCommentIp = Boolean(data.showCommentIp)
@@ -179,6 +182,8 @@ export async function PUT(req: NextRequest) {
   if (copyright !== null) rawUpdates.push({ col: 'copyright', val: copyright })
   if (defaultTheme !== null) rawUpdates.push({ col: 'defaultTheme', val: defaultTheme })
   if (customDomain !== null) rawUpdates.push({ col: 'customDomain', val: customDomain })
+  if (sidebarFriendLinksCollapsed !== null)
+    rawUpdates.push({ col: 'sidebarFriendLinksCollapsed', val: sidebarFriendLinksCollapsed ? 1 : 0 })
 
   try {
     for (const { col, val } of rawUpdates) {

@@ -135,6 +135,7 @@ export default function SettingsPage() {
     storageS3ForcePathStyle: false,
     storagePublicBaseUrl: '',
     storageSmmsToken: '',
+    sidebarFriendLinksCollapsed: false,
   })
   const [defaultTheme, setDefaultTheme] = useState<'dark' | 'light'>('dark')
   const [navItems, setNavItems] = useState<NavItem[]>(DEFAULT_NAV)
@@ -176,6 +177,7 @@ export default function SettingsPage() {
       commentApproval: data.commentApproval ?? true,
       showCommentIp: data.showCommentIp ?? false,
       copyright: data.copyright || '',
+      sidebarFriendLinksCollapsed: !!data.sidebarFriendLinksCollapsed,
       emailSubjectNewComment: data.emailSubjectNewComment || '',
       emailSubjectReply: data.emailSubjectReply || '',
       emailSubjectApproved: data.emailSubjectApproved || '',
@@ -1802,6 +1804,40 @@ export default function SettingsPage() {
                     </div>
                   ))}
                 </div>
+
+                {/* 友情链接折叠设置 */}
+                <div
+                  className="mt-4 flex items-center justify-between rounded-xl px-4 py-3"
+                  style={{ background: 'var(--bg-hover)' }}
+                >
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                      右侧栏友情链接默认折叠
+                    </span>
+                    <span className="mt-0.5 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                      开启后，右侧栏底部的友情链接区域默认收起，访客可手动展开
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={config.sidebarFriendLinksCollapsed}
+                    onClick={() =>
+                      setConfig((c) => ({ ...c, sidebarFriendLinksCollapsed: !c.sidebarFriendLinksCollapsed }))
+                    }
+                    className="relative ml-4 inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full transition-colors duration-200"
+                    style={{ background: config.sidebarFriendLinksCollapsed ? 'var(--accent)' : 'var(--bg-secondary)' }}
+                  >
+                    <span
+                      className="inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200"
+                      style={{
+                        margin: '2px',
+                        transform: config.sidebarFriendLinksCollapsed ? 'translateX(20px)' : 'translateX(0)',
+                      }}
+                    />
+                  </button>
+                </div>
+
                 <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>
                   修改后点击底部「保存设置」生效
                 </p>
