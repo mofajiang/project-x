@@ -21,6 +21,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { label: '上传管理', href: '/admin/uploads', icon: '🗂️', group: 'appearance' },
   { label: '导航与组件', href: '/admin/navigation', icon: '🧭', group: 'appearance' },
   { label: 'AI 模型管理', href: '/admin/ai-model', icon: '🤖', group: 'system' },
+  { label: '系统日志', href: '/admin/logs', icon: '📋', group: 'system' },
   { label: '安全设置', href: '/admin/security', icon: '🔒', group: 'system' },
   { label: '站点设置', href: '/admin/settings', icon: '⚙️', group: 'system' },
 ]

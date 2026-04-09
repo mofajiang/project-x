@@ -9,6 +9,7 @@ import { analyzeCommentWithAI, quickSpamCheck } from '@/lib/openrouter-spam-filt
 import { revalidateTag } from 'next/cache'
 import { rateLimit } from '@/lib/rate-limit'
 import { getErrorMessage } from '@/lib/converters'
+import { syslog } from '@/lib/syslog'
 
 const DEBUG = process.env.NODE_ENV === 'development'
 
@@ -179,6 +180,7 @@ async function analyzeAndUpdateComment(
         where: { id: commentId },
         data: { riskReasons: JSON.stringify(['AI 限速，待人工审核']) },
       })
+      syslog.warn('ai', 'AI 限速 (429)，评论保持待审', { commentId }).catch(() => {})
       return
     }
 
@@ -219,8 +221,21 @@ async function analyzeAndUpdateComment(
     })
 
     if (DEBUG) console.log('[ai-analysis-async] ✅ 评论已更新:', { commentId, riskScore: aiResult.riskScore, approved })
+
+    // 写入结构化日志
+    const logLevel = aiResult.riskScore >= 70 ? 'warn' : 'info'
+    const action = approved === false ? '自动隐藏' : approved === true ? '自动通过' : '待人工审核'
+    syslog[logLevel]('ai', `AI 审核完成 [${action}] 风险分=${aiResult.riskScore}`, {
+      commentId,
+      riskScore: aiResult.riskScore,
+      riskReasons: aiResult.riskReasons,
+      confidence: aiResult.confidence,
+      approved,
+      model: config.aiModelName || config.openrouterModel,
+    }).catch(() => {})
   } catch (error: unknown) {
     console.error('[ai-analysis-async] ❌ 后台分析失败:', getErrorMessage(error))
+    syslog.error('ai', `AI 分析异常: ${getErrorMessage(error)}`, { commentId }).catch(() => {})
     // 失败时只更新错误状态，不影响已保存的评论
     try {
       await prisma.comment.update({

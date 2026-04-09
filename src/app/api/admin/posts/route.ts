@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
 import { slugify } from '@/lib/utils'
 import { revalidateTag } from 'next/cache'
+import { syslog } from '@/lib/syslog'
 
 export async function GET(req: NextRequest) {
   const session = await getSessionFromRequest(req)
@@ -25,7 +26,10 @@ export async function GET(req: NextRequest) {
       orderBy: [{ pinned: 'desc' }, { createdAt: 'desc' }],
       skip: (page - 1) * limit,
       take: limit,
-      include: { tags: { select: { tag: { select: { id: true, name: true, slug: true } } } }, _count: { select: { comments: true } } },
+      include: {
+        tags: { select: { tag: { select: { id: true, name: true, slug: true } } } },
+        _count: { select: { comments: true } },
+      },
     }),
     prisma.post.count({ where }),
   ])
@@ -63,5 +67,8 @@ export async function POST(req: NextRequest) {
     },
   })
   revalidateTag('posts')
+  syslog
+    .info('post', `文章${published ? '发布' : '保存为草稿'}: ${title}`, { postId: post.id, slug: post.slug })
+    .catch(() => {})
   return NextResponse.json(post)
 }
