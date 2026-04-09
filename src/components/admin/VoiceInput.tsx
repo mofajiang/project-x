@@ -70,7 +70,9 @@ export function VoiceInput({ onInsertContent }: Props) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     recognition.onerror = (event: any) => {
       setRecording(false)
-      if (event.error !== 'aborted' && event.error !== 'no-speech') {
+      if (event.error === 'not-allowed' || event.error === 'permission-denied') {
+        toast.error('麦克风权限被拒绝，请在浏览器地址栏允许麦克风访问（需 HTTPS 或 localhost）')
+      } else if (event.error !== 'aborted' && event.error !== 'no-speech') {
         toast.error('语音识别错误: ' + event.error)
       }
     }
@@ -183,7 +185,7 @@ export function VoiceInput({ onInsertContent }: Props) {
                 </button>
               )}
               <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                {recording ? '录音中，点击停止' : '点击麦克风开始录音，仅支持 Chrome / Edge'}
+                {recording ? '录音中，点击停止' : '点击麦克风开始录音（仅 Chrome / Edge，需允许麦克风权限）'}
               </p>
             </div>
 
