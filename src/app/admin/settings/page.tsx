@@ -754,6 +754,40 @@ export default function SettingsPage() {
               style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}
             />
           </div>
+
+          {/* 友情链接折叠设置 */}
+          <div
+            className={`${mobileCardClass} flex items-center justify-between gap-3`}
+            style={{ background: 'var(--bg-secondary)' }}
+          >
+            <div className="flex flex-col">
+              <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>
+                🔗 右侧栏友链折叠
+              </h2>
+              <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>
+                开启后，右侧栏底部的友情链接区域默认收起，访客可手动展开
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={config.sidebarFriendLinksCollapsed}
+              onClick={() => setConfig((c) => ({ ...c, sidebarFriendLinksCollapsed: !c.sidebarFriendLinksCollapsed }))}
+              className="relative ml-2 inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full transition-colors duration-200"
+              style={{
+                background: config.sidebarFriendLinksCollapsed ? 'var(--accent)' : 'var(--bg-secondary)',
+                border: '1px solid var(--border)',
+              }}
+            >
+              <span
+                className="inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200"
+                style={{
+                  margin: '2px',
+                  transform: config.sidebarFriendLinksCollapsed ? 'translateX(20px)' : 'translateX(0)',
+                }}
+              />
+            </button>
+          </div>
         </div>
 
         {/* 右列 */}
@@ -1803,39 +1837,6 @@ export default function SettingsPage() {
                       )}
                     </div>
                   ))}
-                </div>
-
-                {/* 友情链接折叠设置 */}
-                <div
-                  className="mt-4 flex items-center justify-between rounded-xl px-4 py-3"
-                  style={{ background: 'var(--bg-hover)' }}
-                >
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                      右侧栏友情链接默认折叠
-                    </span>
-                    <span className="mt-0.5 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                      开启后，右侧栏底部的友情链接区域默认收起，访客可手动展开
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={config.sidebarFriendLinksCollapsed}
-                    onClick={() =>
-                      setConfig((c) => ({ ...c, sidebarFriendLinksCollapsed: !c.sidebarFriendLinksCollapsed }))
-                    }
-                    className="relative ml-4 inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full transition-colors duration-200"
-                    style={{ background: config.sidebarFriendLinksCollapsed ? 'var(--accent)' : 'var(--bg-secondary)' }}
-                  >
-                    <span
-                      className="inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200"
-                      style={{
-                        margin: '2px',
-                        transform: config.sidebarFriendLinksCollapsed ? 'translateX(20px)' : 'translateX(0)',
-                      }}
-                    />
-                  </button>
                 </div>
 
                 <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>
