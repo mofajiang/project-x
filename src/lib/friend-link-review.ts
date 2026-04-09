@@ -4,6 +4,7 @@ import { fetchWithTimeout, sleep } from '@/lib/fetch-utils'
 import type { AiModelConfig } from '@/lib/config'
 import { toSafeNumber, getErrorMessage } from '@/lib/converters'
 import { AI_DEFAULTS } from '@/lib/constants'
+import { syslog } from '@/lib/syslog'
 
 const DEBUG = process.env.NODE_ENV === 'development'
 
@@ -256,6 +257,16 @@ ${link.description ? `描述�?{link.description}` : ''}
   })
 
   revalidateTag('approved-friend-links')
+
+  const logMsg =
+    finalStatus === 'approved'
+      ? `友链 AI 审核通过: ${link.name} (评分 ${reviewResult.score}/100)`
+      : finalStatus === 'rejected'
+        ? `友链 AI 审核拒绝: ${link.name} (评分 ${reviewResult.score}/100)`
+        : `友链 AI 审核完成，等待人工: ${link.name} (评分 ${reviewResult.score}/100)`
+  syslog
+    .info('friendlink', logMsg, { linkId, score: reviewResult.score, recommendation: reviewResult.recommendation })
+    .catch(() => {})
 
   return reviewResult
 }

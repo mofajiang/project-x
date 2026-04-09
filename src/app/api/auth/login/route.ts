@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getSiteConfig } from '@/lib/config'
 import { signJWT } from '@/lib/auth'
 import { runMigrations } from '@/lib/db-migrate'
+import { syslog } from '@/lib/syslog'
 import bcrypt from 'bcryptjs'
 
 export async function POST(req: NextRequest) {
@@ -11,9 +12,7 @@ export async function POST(req: NextRequest) {
   const now = Date.now()
 
   // 检查锁定（SQLite 持久化，重启不丢失）
-  const rows = await prisma.$queryRawUnsafe<any[]>(
-    `SELECT count, lockedUntil FROM LoginFailure WHERE ip = ?`, ip
-  )
+  const rows = await prisma.$queryRawUnsafe<any[]>(`SELECT count, lockedUntil FROM LoginFailure WHERE ip = ?`, ip)
   const fail = rows[0]
   if (fail && fail.lockedUntil > now) {
     const mins = Math.ceil((fail.lockedUntil - now) / 60000)
@@ -44,14 +43,19 @@ export async function POST(req: NextRequest) {
       `INSERT INTO LoginFailure (ip, count, lockedUntil, updatedAt)
        VALUES (?, ?, ?, ?)
        ON CONFLICT(ip) DO UPDATE SET count=excluded.count, lockedUntil=excluded.lockedUntil, updatedAt=excluded.updatedAt`,
-      ip, resetCount, newLocked, now
+      ip,
+      resetCount,
+      newLocked,
+      now
     )
+    syslog.warn('auth', `登录失败: ${username}`, { ip }).catch(() => {})
     return NextResponse.json({ error: '用户名或密码错误' }, { status: 401 })
   }
 
   // 清除失败记录
   await prisma.$executeRawUnsafe(`DELETE FROM LoginFailure WHERE ip = ?`, ip)
 
+  syslog.info('auth', `登录成功: ${user.username}`, { ip }).catch(() => {})
   const token = await signJWT({ userId: user.id, username: user.username })
 
   // 根据实际协议决定 secure 标志：

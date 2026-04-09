@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
 import { checkFriendLinkOnTargetSite, getFavicon } from '@/lib/friend-link-checker'
 import { toSafeNumber, toSafeBoolean, toJsonSafe } from '@/lib/converters'
+import { syslog } from '@/lib/syslog'
 
 function normalizeUrl(url: string) {
   const trimmed = (url || '').trim()
@@ -51,10 +52,7 @@ export async function GET(req: NextRequest) {
               limit,
               offset
             ),
-            prisma.$queryRawUnsafe<any[]>(
-              `SELECT COUNT(*) AS total FROM FriendLink WHERE status = ?`,
-              status
-            ),
+            prisma.$queryRawUnsafe<any[]>(`SELECT COUNT(*) AS total FROM FriendLink WHERE status = ?`, status),
           ]
         : [
             prisma.$queryRawUnsafe<any[]>(
@@ -126,7 +124,7 @@ export async function POST(req: NextRequest) {
     const existing = await prisma.friendLink.findFirst({ where: { url } })
     if (existing) return NextResponse.json({ error: '该链接已存在' }, { status: 400 })
 
-    const favicon = faviconInput || await getFavicon(url)
+    const favicon = faviconInput || (await getFavicon(url))
 
     const link = await prisma.friendLink.create({
       data: {
@@ -178,16 +176,14 @@ export async function PUT(req: NextRequest) {
         },
       })
       revalidateTag('approved-friend-links')
+      syslog.info('friendlink', `友链已批准: ${link.name} (${link.url})`, { id }).catch(() => {})
       return NextResponse.json({
         message: '已批准',
         link,
       })
     } else if (action === 'reject') {
       if (!rejectionReason) {
-        return NextResponse.json(
-          { error: '请提供拒绝原因' },
-          { status: 400 }
-        )
+        return NextResponse.json({ error: '请提供拒绝原因' }, { status: 400 })
       }
 
       const link = await prisma.friendLink.update({
@@ -198,6 +194,7 @@ export async function PUT(req: NextRequest) {
         },
       })
       revalidateTag('approved-friend-links')
+      syslog.info('friendlink', `友链已拒绝: ${link.name} (${link.url}) — ${rejectionReason}`, { id }).catch(() => {})
       return NextResponse.json({
         message: '已拒绝',
         link,
@@ -303,7 +300,7 @@ export async function PUT(req: NextRequest) {
       if (!nextName) return NextResponse.json({ error: '名称不能为空' }, { status: 400 })
       if (!nextUrl) return NextResponse.json({ error: 'URL 不能为空' }, { status: 400 })
 
-      const nextFavicon = nextFaviconInput || await getFavicon(nextUrl)
+      const nextFavicon = nextFaviconInput || (await getFavicon(nextUrl))
 
       const updated = await prisma.friendLink.update({
         where: { id },
@@ -319,7 +316,7 @@ export async function PUT(req: NextRequest) {
             ? {
                 status: nextStatus,
                 approvedAt: nextStatus === 'approved' ? new Date() : null,
-                rejectionReason: nextStatus === 'rejected' ? (rejectionReason || payload?.rejectionReason || '') : null,
+                rejectionReason: nextStatus === 'rejected' ? rejectionReason || payload?.rejectionReason || '' : null,
               }
             : {}),
         },
@@ -355,7 +352,7 @@ export async function DELETE(req: NextRequest) {
 
     await prisma.friendLink.delete({ where: { id } })
     revalidateTag('approved-friend-links')
-
+    syslog.info('friendlink', `友链已删除: id=${id}`).catch(() => {})
     return NextResponse.json({ message: '已删除' })
   } catch (error) {
     console.error('[Admin FriendLinks Delete Error]', error)

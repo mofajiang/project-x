@@ -6,6 +6,7 @@ import { sendCommentApprovedNotification, sendReplyNotification } from '@/lib/ma
 import { runMigrations } from '@/lib/db-migrate'
 import { getSiteConfig } from '@/lib/config'
 import { revalidateTag } from 'next/cache'
+import { syslog } from '@/lib/syslog'
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
@@ -92,6 +93,15 @@ export async function PUT(req: NextRequest) {
 
   const comment = await prisma.comment.update({ where: { id }, data: { approved } })
   revalidateTag('comments')
+  syslog
+    .info(
+      'comment',
+      approved
+        ? `评论已通过审核: ${before?.guestName || '登录用户'}`
+        : `评论已搁置待审: ${before?.guestName || '登录用户'}`,
+      { commentId: id }
+    )
+    .catch(() => {})
 
   // 审核通过后发邮件通知
   if (approved && before) {
@@ -144,5 +154,6 @@ export async function DELETE(req: NextRequest) {
   const { id } = await req.json()
   await prisma.comment.delete({ where: { id } })
   revalidateTag('comments')
+  syslog.info('comment', `评论已删除: id=${id}`).catch(() => {})
   return NextResponse.json({ ok: true })
 }

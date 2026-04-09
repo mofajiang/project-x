@@ -4,7 +4,7 @@ import { getSessionFromRequest } from '@/lib/auth'
 import { getRequestIp, logAdminAudit } from '@/lib/admin-audit'
 import { slugify } from '@/lib/utils'
 import { revalidateTag } from 'next/cache'
-
+import { syslog } from '@/lib/syslog'
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getSessionFromRequest(req)
@@ -39,9 +39,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (published) {
     if (existingPost?.published && existingPost?.publishedAt) {
       // 已发布状态：保留原发布时间（除非用户显式修改）
-      finalPublishedAt = publishedAt && new Date(publishedAt).getTime() !== new Date(existingPost.publishedAt).getTime()
-        ? new Date(publishedAt)
-        : existingPost.publishedAt
+      finalPublishedAt =
+        publishedAt && new Date(publishedAt).getTime() !== new Date(existingPost.publishedAt).getTime()
+          ? new Date(publishedAt)
+          : existingPost.publishedAt
     } else {
       // 未发布状态转发布：使用传入的时间或当前时间
       finalPublishedAt = publishedAt ? new Date(publishedAt) : new Date()
@@ -71,6 +72,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     },
   })
   revalidateTag('posts')
+  syslog.info('post', `文章${published ? '已发布' : '已保存为草稿'}: ${title}`, { postId: params.id }).catch(() => {})
   return NextResponse.json(post)
 }
 
@@ -123,4 +125,3 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   revalidateTag('posts')
   return NextResponse.json({ ok: true })
 }
-
