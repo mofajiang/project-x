@@ -20,10 +20,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const pendingComments = await getPendingCount()
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row" style={{ background: 'var(--bg)' }}>
+    <div className="flex h-screen flex-col overflow-hidden lg:flex-row" style={{ background: 'var(--bg)' }}>
       <AdminSidebar username={session.username} />
       <MobileNav username={session.username} pendingCount={pendingComments} />
-      <main className="flex-1 min-h-screen min-w-0 p-3 lg:p-4 overflow-y-auto overflow-x-hidden pt-[70px] lg:pt-4 pb-4" style={{ borderLeft: '1px solid var(--border)' }}>
+      <main
+        className="h-full min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-3 pb-8 pt-[70px] lg:p-4 lg:pt-4"
+        style={{ borderLeft: '1px solid var(--border)' }}
+      >
         {children}
       </main>
     </div>
