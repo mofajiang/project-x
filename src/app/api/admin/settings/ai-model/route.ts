@@ -16,18 +16,29 @@ async function ensureSiteConfigExists() {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function rowToConfig(row: Record<string, any>) {
-  const apiKey: string = row.aiModelApiKey || ''
+  const maskKey = (k: string) => (k ? k.substring(0, 8) + '***' : '')
   return {
     enableCustomAiModel: Boolean(Number(row.enableCustomAiModel)),
     aiModelProvider: row.aiModelProvider || 'openrouter',
     aiModelName: row.aiModelName || '',
     aiModelBaseUrl: row.aiModelBaseUrl || '',
-    aiModelApiKey: apiKey ? apiKey.substring(0, 10) + '***' : '',
+    aiModelApiKey: maskKey(row.aiModelApiKey || ''),
+    groqApiKey: maskKey(row.groqApiKey || ''),
+    openrouterApiKey: maskKey(row.openrouterApiKey || ''),
     aiModelMaxTokens: Number(row.aiModelMaxTokens) || 2000,
     aiModelTimeout: Number(row.aiModelTimeout) || 30,
     enableAiDetection: Boolean(Number(row.enableAiDetection)),
     aiReviewStrength: row.aiReviewStrength || 'balanced',
     aiAutoApprove: Boolean(Number(row.aiAutoApprove)),
+    // 各功能独立配置
+    commentAiProvider: row.commentAiProvider || '',
+    commentAiModel: row.commentAiModel || '',
+    friendLinkAiProvider: row.friendLinkAiProvider || '',
+    friendLinkAiModel: row.friendLinkAiModel || '',
+    voicePolishAiProvider: row.voicePolishAiProvider || '',
+    voicePolishAiModel: row.voicePolishAiModel || '',
+    postPolishAiProvider: row.postPolishAiProvider || '',
+    postPolishAiModel: row.postPolishAiModel || '',
   }
 }
 
@@ -37,11 +48,21 @@ const DEFAULT_CONFIG = {
   aiModelName: '',
   aiModelBaseUrl: '',
   aiModelApiKey: '',
+  groqApiKey: '',
+  openrouterApiKey: '',
   aiModelMaxTokens: 2000,
   aiModelTimeout: 30,
   enableAiDetection: false,
   aiReviewStrength: 'balanced',
   aiAutoApprove: false,
+  commentAiProvider: '',
+  commentAiModel: '',
+  friendLinkAiProvider: '',
+  friendLinkAiModel: '',
+  voicePolishAiProvider: '',
+  voicePolishAiModel: '',
+  postPolishAiProvider: '',
+  postPolishAiModel: '',
 }
 
 export async function GET(request: NextRequest) {
@@ -55,8 +76,13 @@ export async function GET(request: NextRequest) {
     // 使用 raw SQL 读取，避免 Prisma 客户端版本不匹配时静默忽略字段
     const rows = await prisma.$queryRawUnsafe<any[]>(
       `SELECT enableCustomAiModel, aiModelProvider, aiModelName, aiModelBaseUrl,
-              aiModelApiKey, aiModelMaxTokens, aiModelTimeout,
-              enableAiDetection, aiReviewStrength, aiAutoApprove
+              aiModelApiKey, groqApiKey, openrouterApiKey,
+              aiModelMaxTokens, aiModelTimeout,
+              enableAiDetection, aiReviewStrength, aiAutoApprove,
+              COALESCE(commentAiProvider,'') as commentAiProvider, COALESCE(commentAiModel,'') as commentAiModel,
+              COALESCE(friendLinkAiProvider,'') as friendLinkAiProvider, COALESCE(friendLinkAiModel,'') as friendLinkAiModel,
+              COALESCE(voicePolishAiProvider,'') as voicePolishAiProvider, COALESCE(voicePolishAiModel,'') as voicePolishAiModel,
+              COALESCE(postPolishAiProvider,'') as postPolishAiProvider, COALESCE(postPolishAiModel,'') as postPolishAiModel
        FROM SiteConfig WHERE id = 'singleton'`
     )
 
@@ -91,11 +117,19 @@ export async function POST(request: NextRequest) {
     }
 
     // 如果 API Key 被掩盖（***），从数据库读取真实值
-    let apiKey = String(data.aiModelApiKey || '')
-    if (!apiKey || apiKey.includes('***')) {
-      const rows = await prisma.$queryRawUnsafe<any[]>(`SELECT aiModelApiKey FROM SiteConfig WHERE id = 'singleton'`)
-      apiKey = rows[0]?.aiModelApiKey || ''
+    const resolveKey = async (submitted: string, dbField: string): Promise<string> => {
+      if (!submitted || submitted.includes('***')) {
+        const rows = await prisma.$queryRawUnsafe<any[]>(`SELECT ${dbField} FROM SiteConfig WHERE id = 'singleton'`)
+        return rows[0]?.[dbField] || ''
+      }
+      return String(submitted)
     }
+
+    const [apiKey, groqApiKey, openrouterApiKey] = await Promise.all([
+      resolveKey(data.aiModelApiKey, 'aiModelApiKey'),
+      resolveKey(data.groqApiKey, 'groqApiKey'),
+      resolveKey(data.openrouterApiKey, 'openrouterApiKey'),
+    ])
 
     const maxTokens = Math.max(
       100,
@@ -110,19 +144,34 @@ export async function POST(request: NextRequest) {
     await prisma.$executeRawUnsafe(
       `UPDATE SiteConfig SET
          enableCustomAiModel = ?, aiModelProvider = ?, aiModelName = ?,
-         aiModelBaseUrl = ?, aiModelApiKey = ?, aiModelMaxTokens = ?,
-         aiModelTimeout = ?, enableAiDetection = ?, aiReviewStrength = ?, aiAutoApprove = ?
+         aiModelBaseUrl = ?, aiModelApiKey = ?, groqApiKey = ?, openrouterApiKey = ?,
+         aiModelMaxTokens = ?, aiModelTimeout = ?,
+         enableAiDetection = ?, aiReviewStrength = ?, aiAutoApprove = ?,
+         commentAiProvider = ?, commentAiModel = ?,
+         friendLinkAiProvider = ?, friendLinkAiModel = ?,
+         voicePolishAiProvider = ?, voicePolishAiModel = ?,
+         postPolishAiProvider = ?, postPolishAiModel = ?
        WHERE id = 'singleton'`,
       data.enableCustomAiModel ? 1 : 0,
       String(data.aiModelProvider),
       String(data.aiModelName || ''),
       String(data.aiModelBaseUrl || ''),
       apiKey,
+      groqApiKey,
+      openrouterApiKey,
       maxTokens,
       timeout,
       data.enableAiDetection ? 1 : 0,
       String(data.aiReviewStrength || 'balanced'),
-      data.aiAutoApprove ? 1 : 0
+      data.aiAutoApprove ? 1 : 0,
+      String(data.commentAiProvider || ''),
+      String(data.commentAiModel || ''),
+      String(data.friendLinkAiProvider || ''),
+      String(data.friendLinkAiModel || ''),
+      String(data.voicePolishAiProvider || ''),
+      String(data.voicePolishAiModel || ''),
+      String(data.postPolishAiProvider || ''),
+      String(data.postPolishAiModel || '')
     )
 
     if (process.env.NODE_ENV === 'development')
@@ -138,8 +187,13 @@ export async function POST(request: NextRequest) {
     // 读取刚保存的数据返回给前端
     const rows = await prisma.$queryRawUnsafe<any[]>(
       `SELECT enableCustomAiModel, aiModelProvider, aiModelName, aiModelBaseUrl,
-              aiModelApiKey, aiModelMaxTokens, aiModelTimeout,
-              enableAiDetection, aiReviewStrength, aiAutoApprove
+              aiModelApiKey, groqApiKey, openrouterApiKey,
+              aiModelMaxTokens, aiModelTimeout,
+              enableAiDetection, aiReviewStrength, aiAutoApprove,
+              COALESCE(commentAiProvider,'') as commentAiProvider, COALESCE(commentAiModel,'') as commentAiModel,
+              COALESCE(friendLinkAiProvider,'') as friendLinkAiProvider, COALESCE(friendLinkAiModel,'') as friendLinkAiModel,
+              COALESCE(voicePolishAiProvider,'') as voicePolishAiProvider, COALESCE(voicePolishAiModel,'') as voicePolishAiModel,
+              COALESCE(postPolishAiProvider,'') as postPolishAiProvider, COALESCE(postPolishAiModel,'') as postPolishAiModel
        FROM SiteConfig WHERE id = 'singleton'`
     )
 

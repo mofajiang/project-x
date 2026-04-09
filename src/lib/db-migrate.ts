@@ -257,6 +257,36 @@ export async function runMigrations() {
         `INTEGER NOT NULL DEFAULT 0`,
         'sidebarFriendLinksCollapsed (友链折叠)'
       )
+      // 各功能独立 AI 配置
+      await addColumn('SiteConfig', 'groqApiKey', `TEXT NOT NULL DEFAULT ''`, 'groqApiKey (Groq专属密钥)')
+      await addColumn('SiteConfig', 'commentAiProvider', `TEXT NOT NULL DEFAULT ''`, 'commentAiProvider (评论审核AI)')
+      await addColumn('SiteConfig', 'commentAiModel', `TEXT NOT NULL DEFAULT ''`, 'commentAiModel (评论审核模型)')
+      await addColumn(
+        'SiteConfig',
+        'friendLinkAiProvider',
+        `TEXT NOT NULL DEFAULT ''`,
+        'friendLinkAiProvider (友链审核AI)'
+      )
+      await addColumn('SiteConfig', 'friendLinkAiModel', `TEXT NOT NULL DEFAULT ''`, 'friendLinkAiModel (友链审核模型)')
+      await addColumn(
+        'SiteConfig',
+        'voicePolishAiProvider',
+        `TEXT NOT NULL DEFAULT ''`,
+        'voicePolishAiProvider (语音润色AI)'
+      )
+      await addColumn(
+        'SiteConfig',
+        'voicePolishAiModel',
+        `TEXT NOT NULL DEFAULT ''`,
+        'voicePolishAiModel (语音润色模型)'
+      )
+      await addColumn(
+        'SiteConfig',
+        'postPolishAiProvider',
+        `TEXT NOT NULL DEFAULT ''`,
+        'postPolishAiProvider (文章润色AI)'
+      )
+      await addColumn('SiteConfig', 'postPolishAiModel', `TEXT NOT NULL DEFAULT ''`, 'postPolishAiModel (文章润色模型)')
       migrated = true
     })().finally(() => {
       migratePromise = null

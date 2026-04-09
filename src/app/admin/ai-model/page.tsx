@@ -14,13 +14,41 @@ interface AiConfig {
   enableAiDetection: boolean
   aiReviewStrength: string
   aiAutoApprove: boolean
+  // 分 provider 的 API Keys
+  groqApiKey: string
+  openrouterApiKey: string
+  // 各功能独立模型配置
+  commentAiProvider: string
+  commentAiModel: string
+  friendLinkAiProvider: string
+  friendLinkAiModel: string
+  voicePolishAiProvider: string
+  voicePolishAiModel: string
+  postPolishAiProvider: string
+  postPolishAiModel: string
 }
 
-const PROVIDERS = [
-  { value: 'openrouter', label: 'OpenRouter（推荐）', desc: '通过 OpenRouter 接口调用各类 AI 模型，免费模型有限速' },
-  { value: 'groq', label: 'Groq（免费·极速）', desc: '注册即可使用，每天免费大额度，速度极快，无需 OpenRouter' },
-  { value: 'custom', label: '自定义接口', desc: '运行自己部署的 AI 服务（如 Ollama、LocalAI 等）' },
+const GROQ_PRESET_MODELS = [
+  { value: 'llama-3.1-8b-instant', label: 'llama-3.1-8b-instant（推荐，最快）' },
+  { value: 'llama-3.3-70b-versatile', label: 'llama-3.3-70b-versatile（更准确）' },
+  { value: 'gemma2-9b-it', label: 'gemma2-9b-it（Google Gemma 2）' },
+  { value: 'mixtral-8x7b-32768', label: 'mixtral-8x7b-32768' },
+  { value: 'compound-beta', label: 'compound-beta（Groq 工具调用）' },
 ]
+
+const PROVIDERS_FOR_FN = [
+  { value: '', label: '跟随全局默认' },
+  { value: 'groq', label: 'Groq' },
+  { value: 'openrouter', label: 'OpenRouter' },
+  { value: 'custom', label: '自定义接口' },
+]
+
+const FUNCTIONS = [
+  { key: 'comment', label: '评论审核', providerKey: 'commentAiProvider', modelKey: 'commentAiModel' },
+  { key: 'friendLink', label: '友链审核', providerKey: 'friendLinkAiProvider', modelKey: 'friendLinkAiModel' },
+  { key: 'voicePolish', label: '语音润色', providerKey: 'voicePolishAiProvider', modelKey: 'voicePolishAiModel' },
+  { key: 'postPolish', label: '文章润色', providerKey: 'postPolishAiProvider', modelKey: 'postPolishAiModel' },
+] as const
 
 export default function AdminAiModelPage() {
   const [config, setConfig] = useState<AiConfig | null>(null)
@@ -42,23 +70,19 @@ export default function AdminAiModelPage() {
         const error = await res.json()
         toast.error(error.error || '加载配置失败')
       }
-    } catch (error) {
-      console.error('Fetch error:', error)
+    } catch {
       toast.error('加载配置失败')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleChange = (field: keyof AiConfig, value: string | number | boolean) => {
-    if (config) {
-      setConfig({ ...config, [field]: value })
-    }
+  const set = (field: keyof AiConfig, value: string | number | boolean) => {
+    if (config) setConfig({ ...config, [field]: value })
   }
 
   const handleSave = async () => {
     if (!config) return
-
     setSaving(true)
     try {
       const res = await fetch('/api/admin/settings/ai-model', {
@@ -66,10 +90,8 @@ export default function AdminAiModelPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config),
       })
-
       if (res.ok) {
-        const savedConfig = await res.json()
-        setConfig(savedConfig)
+        setConfig(await res.json())
         toast.success('配置已保存')
       } else {
         const err = await res.json()
@@ -83,11 +105,10 @@ export default function AdminAiModelPage() {
   }
 
   const handleTestConnection = async () => {
-    if (!config?.aiModelApiKey) {
+    if (!config?.aiModelApiKey && !config?.groqApiKey && !config?.openrouterApiKey) {
       toast.error('请先填写 API Key')
       return
     }
-
     setTestingConnection(true)
     try {
       const res = await fetch('/api/admin/settings/ai-model/test', {
@@ -96,32 +117,34 @@ export default function AdminAiModelPage() {
         body: JSON.stringify({
           provider: config.aiModelProvider,
           baseUrl: config.aiModelBaseUrl,
-          apiKey: config.aiModelApiKey,
+          apiKey:
+            config.aiModelProvider === 'groq'
+              ? config.groqApiKey || config.aiModelApiKey
+              : config.aiModelProvider === 'openrouter'
+                ? config.openrouterApiKey || config.aiModelApiKey
+                : config.aiModelApiKey,
           model: config.aiModelName,
           timeout: config.aiModelTimeout,
         }),
       })
-
       const data = await res.json()
-      if (res.ok) {
-        toast.success('连接成功！')
-      } else {
-        toast.error(data.error || '连接失败')
-      }
-    } catch (error) {
+      if (res.ok) toast.success('连接成功！')
+      else toast.error(data.error || '连接失败')
+    } catch {
       toast.error('测试出错')
     } finally {
       setTestingConnection(false)
     }
   }
 
-  if (loading) {
-    return <div style={{ color: 'var(--text-secondary)' }}>加载中...</div>
-  }
+  if (loading) return <div style={{ color: 'var(--text-secondary)' }}>加载中...</div>
+  if (!config) return <div style={{ color: 'var(--text-secondary)' }}>无法加载配置</div>
 
-  if (!config) {
-    return <div style={{ color: 'var(--text-secondary)' }}>无法加载配置</div>
-  }
+  const cardStyle = { background: 'var(--bg-secondary)', borderColor: 'var(--border)' }
+  const inputClass = 'w-full rounded-lg border bg-transparent px-4 py-2 outline-none'
+  const inputStyle = { borderColor: 'var(--border)', color: 'var(--text-primary)' }
+  const labelClass = 'mb-1 block text-sm font-medium'
+  const labelStyle = { color: 'var(--text-secondary)' }
 
   return (
     <div className="mx-auto w-full max-w-4xl">
@@ -130,236 +153,251 @@ export default function AdminAiModelPage() {
       </h1>
 
       <div className="space-y-8">
-        {/* 模型提供商选择 */}
-        <div
-          className="rounded-2xl border p-6"
-          style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}
-        >
-          <h2 className="mb-4 text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-            选择模型提供商
+        {/* API 密钥 */}
+        <div className="rounded-2xl border p-6" style={cardStyle}>
+          <h2 className="mb-1 text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+            API 密钥
           </h2>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {PROVIDERS.map((provider) => (
-              <button
-                key={provider.value}
-                onClick={() => handleChange('aiModelProvider', provider.value)}
-                className={`rounded-xl border-2 p-4 text-left transition-all ${
-                  config.aiModelProvider === provider.value ? 'border-accent' : 'border-transparent'
-                }`}
-                style={{
-                  background: 'var(--bg-hover)',
-                  borderColor: config.aiModelProvider === provider.value ? 'var(--accent)' : 'var(--border)',
-                }}
-              >
-                <p className="font-bold" style={{ color: 'var(--text-primary)' }}>
-                  {provider.label}
-                </p>
-                <p className="mt-1 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  {provider.desc}
-                </p>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* OpenRouter 配置 */}
-        {config.aiModelProvider === 'openrouter' && (
-          <div
-            className="rounded-2xl border p-6"
-            style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}
-          >
-            <h2 className="mb-4 text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-              OpenRouter 配置
-            </h2>
-
-            <div className="space-y-4">
-              <div>
-                <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                  API Key
-                </label>
-                <IMEInput
-                  type="password"
-                  placeholder="输入 OpenRouter API Key"
-                  value={config.aiModelApiKey}
-                  onValueChange={(v) => handleChange('aiModelApiKey', v)}
-                  className="w-full rounded-lg border bg-transparent px-4 py-2 outline-none"
-                  style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-                />
-                <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  <a
-                    href="https://openrouter.ai/settings/keys"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline"
-                  >
-                    获取 API Key →
-                  </a>
-                </p>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                  模型名称
-                </label>
-                <IMEInput
-                  type="text"
-                  placeholder="例如 anthropic/claude-3.5-sonnet 或 google/gemma-2-9b-it:free"
-                  value={config.aiModelName}
-                  onValueChange={(v) => handleChange('aiModelName', v)}
-                  className="w-full rounded-lg border bg-transparent px-4 py-2 outline-none"
-                  style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-                />
-                <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  格式：<code className="font-mono">提供商/模型名</code>，如{' '}
-                  <code className="font-mono">anthropic/claude-3.5-sonnet</code>、
-                  <code className="font-mono">openai/gpt-4o-mini</code>。 ⚠️ 带 <code className="font-mono">:free</code>{' '}
-                  的免费模型受上游限速影响，频繁调用时易出现 429 错误。
-                  <a
-                    href="https://openrouter.ai/models"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="ml-1 underline"
-                  >
-                    查看所有模型 →
-                  </a>
-                </p>
-              </div>
+          <p className="mb-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
+            按服务商填写密钥，下方各功能可选择要使用的服务商。
+          </p>
+          <div className="space-y-4">
+            {/* Groq */}
+            <div>
+              <label className={labelClass} style={labelStyle}>
+                Groq API Key
+              </label>
+              <IMEInput
+                type="password"
+                placeholder="gsk_..."
+                value={config.groqApiKey}
+                onValueChange={(v) => set('groqApiKey', v)}
+                className={inputClass}
+                style={inputStyle}
+              />
+              <p className="mt-1 text-xs" style={{ color: 'var(--text-tertiary, var(--text-secondary))' }}>
+                免费·极速 —{' '}
+                <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="underline">
+                  获取 Groq API Key →
+                </a>
+              </p>
             </div>
-          </div>
-        )}
-
-        {/* Groq 配置 */}
-        {config.aiModelProvider === 'groq' && (
-          <div
-            className="rounded-2xl border p-6"
-            style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}
-          >
-            <h2 className="mb-4 text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-              Groq 配置
-            </h2>
-            <div
-              className="mb-4 rounded-lg px-4 py-3 text-sm"
-              style={{ background: 'color-mix(in srgb, var(--accent) 12%, transparent)', color: 'var(--text-primary)' }}
-            >
-              💡 Groq 提供<strong>免费</strong>的 Llama / Mixtral
-              等模型，速度极快，注册即可使用，每天有慷慨免费额度，无需绑定信用卡。
-              <a
-                href="https://console.groq.com/keys"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ml-1 underline"
-              >
-                获取 Groq API Key →
-              </a>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                  API Key
-                </label>
-                <IMEInput
-                  type="password"
-                  placeholder="输入 Groq API Key（gsk_...）"
-                  value={config.aiModelApiKey}
-                  onValueChange={(v) => handleChange('aiModelApiKey', v)}
-                  className="w-full rounded-lg border bg-transparent px-4 py-2 outline-none"
-                  style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                  模型名称
-                </label>
-                <select
-                  value={config.aiModelName}
-                  onChange={(e) => handleChange('aiModelName', e.target.value)}
-                  className="w-full rounded-lg border bg-transparent px-4 py-2 outline-none"
-                  style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+            {/* OpenRouter */}
+            <div>
+              <label className={labelClass} style={labelStyle}>
+                OpenRouter API Key
+              </label>
+              <IMEInput
+                type="password"
+                placeholder="sk-or-..."
+                value={config.openrouterApiKey || config.aiModelApiKey}
+                onValueChange={(v) => set('openrouterApiKey', v)}
+                className={inputClass}
+                style={inputStyle}
+              />
+              <p className="mt-1 text-xs" style={{ color: 'var(--text-tertiary, var(--text-secondary))' }}>
+                <a
+                  href="https://openrouter.ai/settings/keys"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
                 >
-                  <option value="llama-3.1-8b-instant">llama-3.1-8b-instant（推荐，最快）</option>
-                  <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile（更准确）</option>
-                  <option value="gemma2-9b-it">gemma2-9b-it（Google Gemma 2）</option>
-                  <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
-                </select>
-              </div>
+                  获取 OpenRouter API Key →
+                </a>
+              </p>
             </div>
-          </div>
-        )}
-
-        {/* 自定义接口配置 */}
-        {config.aiModelProvider === 'custom' && (
-          <div
-            className="rounded-2xl border p-6"
-            style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}
-          >
-            <h2 className="mb-4 text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-              自定义接口配置
-            </h2>
-
-            <div className="space-y-4">
+            {/* Custom */}
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                  基础 URL
+                <label className={labelClass} style={labelStyle}>
+                  自定义接口地址
                 </label>
                 <IMEInput
                   type="url"
                   placeholder="http://localhost:11434"
                   value={config.aiModelBaseUrl}
-                  onValueChange={(v) => handleChange('aiModelBaseUrl', v)}
-                  className="w-full rounded-lg border bg-transparent px-4 py-2 outline-none"
-                  style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-                />
-                <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  例如 Ollama: http://localhost:11434
-                </p>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                  模型名称
-                </label>
-                <IMEInput
-                  type="text"
-                  placeholder="llama2, mistral, 等"
-                  value={config.aiModelName}
-                  onValueChange={(v) => handleChange('aiModelName', v)}
-                  className="w-full rounded-lg border bg-transparent px-4 py-2 outline-none"
-                  style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                  onValueChange={(v) => set('aiModelBaseUrl', v)}
+                  className={inputClass}
+                  style={inputStyle}
                 />
               </div>
-
               <div>
-                <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                  API Key（可选）
+                <label className={labelClass} style={labelStyle}>
+                  自定义接口 API Key（可选）
                 </label>
                 <IMEInput
                   type="password"
-                  placeholder="留空如果接口不需要认证"
+                  placeholder="留空则不鉴权"
                   value={config.aiModelApiKey}
-                  onValueChange={(v) => handleChange('aiModelApiKey', v)}
-                  className="w-full rounded-lg border bg-transparent px-4 py-2 outline-none"
-                  style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                  onValueChange={(v) => set('aiModelApiKey', v)}
+                  className={inputClass}
+                  style={inputStyle}
                 />
               </div>
             </div>
           </div>
-        )}
+        </div>
+
+        {/* 默认模型 */}
+        <div className="rounded-2xl border p-6" style={cardStyle}>
+          <h2 className="mb-1 text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+            全局默认模型
+          </h2>
+          <p className="mb-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
+            当各功能未单独指定服务商时，使用此默认配置。
+          </p>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label className={labelClass} style={labelStyle}>
+                默认服务商
+              </label>
+              <select
+                value={config.aiModelProvider}
+                onChange={(e) => set('aiModelProvider', e.target.value)}
+                className={inputClass}
+                style={inputStyle}
+              >
+                <option value="groq">Groq</option>
+                <option value="openrouter">OpenRouter</option>
+                <option value="custom">自定义接口</option>
+              </select>
+            </div>
+            <div>
+              <label className={labelClass} style={labelStyle}>
+                默认模型名称
+              </label>
+              {config.aiModelProvider === 'groq' ? (
+                <>
+                  <select
+                    value={config.aiModelName}
+                    onChange={(e) => set('aiModelName', e.target.value)}
+                    className={inputClass}
+                    style={inputStyle}
+                  >
+                    {GROQ_PRESET_MODELS.map((m) => (
+                      <option key={m.value} value={m.value}>
+                        {m.label}
+                      </option>
+                    ))}
+                    {!GROQ_PRESET_MODELS.find((m) => m.value === config.aiModelName) && config.aiModelName && (
+                      <option value={config.aiModelName}>{config.aiModelName}（自定义）</option>
+                    )}
+                  </select>
+                  <IMEInput
+                    type="text"
+                    placeholder="或手动输入模型 ID"
+                    value={config.aiModelName}
+                    onValueChange={(v) => set('aiModelName', v)}
+                    className={`mt-2 ${inputClass}`}
+                    style={inputStyle}
+                  />
+                </>
+              ) : (
+                <IMEInput
+                  type="text"
+                  placeholder={config.aiModelProvider === 'openrouter' ? 'anthropic/claude-3.5-sonnet' : 'llama2'}
+                  value={config.aiModelName}
+                  onValueChange={(v) => set('aiModelName', v)}
+                  className={inputClass}
+                  style={inputStyle}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* 各功能独立配置 */}
+        <div className="rounded-2xl border p-6" style={cardStyle}>
+          <h2 className="mb-1 text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+            各功能模型配置
+          </h2>
+          <p className="mb-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
+            可为每个功能单独选择服务商和模型。留空则使用全局默认。
+          </p>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {FUNCTIONS.map(({ label, providerKey, modelKey }) => {
+              const provider = config[providerKey] as string
+              const model = config[modelKey] as string
+              return (
+                <div key={providerKey} className="rounded-xl border p-4" style={{ borderColor: 'var(--border)' }}>
+                  <p className="mb-3 font-semibold" style={{ color: 'var(--text-primary)' }}>
+                    {label}
+                  </p>
+                  <div className="space-y-2">
+                    <div>
+                      <label className={labelClass} style={labelStyle}>
+                        服务商
+                      </label>
+                      <select
+                        value={provider}
+                        onChange={(e) => set(providerKey, e.target.value)}
+                        className={inputClass}
+                        style={inputStyle}
+                      >
+                        {PROVIDERS_FOR_FN.map((p) => (
+                          <option key={p.value} value={p.value}>
+                            {p.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={labelClass} style={labelStyle}>
+                        模型
+                      </label>
+                      {provider === 'groq' ? (
+                        <>
+                          <select
+                            value={model}
+                            onChange={(e) => set(modelKey, e.target.value)}
+                            className={inputClass}
+                            style={inputStyle}
+                          >
+                            <option value="">（跟随全局默认）</option>
+                            {GROQ_PRESET_MODELS.map((m) => (
+                              <option key={m.value} value={m.value}>
+                                {m.label}
+                              </option>
+                            ))}
+                            {!GROQ_PRESET_MODELS.find((m) => m.value === model) && model && (
+                              <option value={model}>{model}（自定义）</option>
+                            )}
+                          </select>
+                          <IMEInput
+                            type="text"
+                            placeholder="或手动输入 Groq 模型 ID"
+                            value={model}
+                            onValueChange={(v) => set(modelKey, v)}
+                            className={`mt-2 ${inputClass}`}
+                            style={inputStyle}
+                          />
+                        </>
+                      ) : (
+                        <IMEInput
+                          type="text"
+                          placeholder="留空则使用全局默认模型"
+                          value={model}
+                          onValueChange={(v) => set(modelKey, v)}
+                          className={inputClass}
+                          style={inputStyle}
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
 
         {/* 高级配置 */}
-        <div
-          className="rounded-2xl border p-6"
-          style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}
-        >
+        <div className="rounded-2xl border p-6" style={cardStyle}>
           <h2 className="mb-4 text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
             高级配置
           </h2>
-
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+              <label className={labelClass} style={labelStyle}>
                 最大 Token 数
               </label>
               <input
@@ -369,18 +407,17 @@ export default function AdminAiModelPage() {
                 value={isNaN(config.aiModelMaxTokens) ? '' : config.aiModelMaxTokens}
                 onChange={(e) => {
                   const v = parseInt(e.target.value)
-                  handleChange('aiModelMaxTokens', isNaN(v) ? 2000 : v)
+                  set('aiModelMaxTokens', isNaN(v) ? 2000 : v)
                 }}
-                className="w-full rounded-lg border bg-transparent px-4 py-2 outline-none"
-                style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                className={inputClass}
+                style={inputStyle}
               />
               <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
                 模型回应的最大长度限制
               </p>
             </div>
-
             <div>
-              <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+              <label className={labelClass} style={labelStyle}>
                 超时时间（秒）
               </label>
               <input
@@ -390,33 +427,26 @@ export default function AdminAiModelPage() {
                 value={isNaN(config.aiModelTimeout) ? '' : config.aiModelTimeout}
                 onChange={(e) => {
                   const v = parseInt(e.target.value)
-                  handleChange('aiModelTimeout', isNaN(v) ? 30 : v)
+                  set('aiModelTimeout', isNaN(v) ? 30 : v)
                 }}
-                className="w-full rounded-lg border bg-transparent px-4 py-2 outline-none"
-                style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                className={inputClass}
+                style={inputStyle}
               />
-              <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                请求超时限制
-              </p>
             </div>
           </div>
         </div>
 
         {/* AI 审核设置 */}
-        <div
-          className="rounded-2xl border p-6"
-          style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}
-        >
+        <div className="rounded-2xl border p-6" style={cardStyle}>
           <h2 className="mb-4 text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
             AI 审核设置
           </h2>
-
           <div className="space-y-4">
             <label className="flex items-center gap-3">
               <input
                 type="checkbox"
                 checked={config.enableAiDetection}
-                onChange={(e) => handleChange('enableAiDetection', e.target.checked)}
+                onChange={(e) => set('enableAiDetection', e.target.checked)}
                 className="h-4 w-4 cursor-pointer rounded"
                 style={{ accentColor: 'var(--accent)' }}
               />
@@ -426,26 +456,25 @@ export default function AdminAiModelPage() {
             {config.enableAiDetection && (
               <>
                 <div>
-                  <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                  <label className={labelClass} style={labelStyle}>
                     审核强度
                   </label>
                   <select
                     value={config.aiReviewStrength}
-                    onChange={(e) => handleChange('aiReviewStrength', e.target.value)}
-                    className="w-full rounded-lg border bg-transparent px-4 py-2 outline-none"
-                    style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                    onChange={(e) => set('aiReviewStrength', e.target.value)}
+                    className={inputClass}
+                    style={inputStyle}
                   >
                     <option value="lenient">宽松 - 较少拦截，可能漏过一些违规</option>
                     <option value="balanced">均衡 - 推荐使用</option>
                     <option value="strict">严格 - 较严格审核，可能误杀</option>
                   </select>
                 </div>
-
                 <label className="flex items-center gap-3">
                   <input
                     type="checkbox"
                     checked={config.aiAutoApprove}
-                    onChange={(e) => handleChange('aiAutoApprove', e.target.checked)}
+                    onChange={(e) => set('aiAutoApprove', e.target.checked)}
                     className="h-4 w-4 cursor-pointer rounded"
                     style={{ accentColor: 'var(--accent)' }}
                   />
@@ -468,17 +497,14 @@ export default function AdminAiModelPage() {
               opacity: testingConnection || saving ? 0.5 : 1,
             }}
           >
-            {testingConnection ? '测试中...' : '测试连接'}
+            {testingConnection ? '测试中...' : '测试默认连接'}
           </button>
 
           <button
             onClick={handleSave}
             disabled={saving}
             className="rounded-lg px-8 py-3 font-bold text-white transition-all"
-            style={{
-              background: 'var(--accent)',
-              opacity: saving ? 0.5 : 1,
-            }}
+            style={{ background: 'var(--accent)', opacity: saving ? 0.5 : 1 }}
           >
             {saving ? '保存中...' : '保存配置'}
           </button>

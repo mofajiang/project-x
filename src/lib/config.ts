@@ -147,6 +147,15 @@ export type SiteConfig = {
   storagePublicBaseUrl: string
   storageSmmsToken: string
   sidebarFriendLinksCollapsed: boolean
+  groqApiKey: string
+  commentAiProvider: string
+  commentAiModel: string
+  friendLinkAiProvider: string
+  friendLinkAiModel: string
+  voicePolishAiProvider: string
+  voicePolishAiModel: string
+  postPolishAiProvider: string
+  postPolishAiModel: string
 }
 
 export const DEFAULT_NAV: NavItem[] = [
@@ -213,7 +222,12 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
        COALESCE(aiModelBaseUrl,'') as aiModelBaseUrl,
        COALESCE(aiModelMaxTokens,2000) as aiModelMaxTokens,
        COALESCE(aiModelTimeout,30) as aiModelTimeout,
-       COALESCE(enableCustomAiModel,0) as enableCustomAiModel
+       COALESCE(enableCustomAiModel,0) as enableCustomAiModel,
+       COALESCE(groqApiKey,'') as groqApiKey,
+       COALESCE(commentAiProvider,'') as commentAiProvider, COALESCE(commentAiModel,'') as commentAiModel,
+       COALESCE(friendLinkAiProvider,'') as friendLinkAiProvider, COALESCE(friendLinkAiModel,'') as friendLinkAiModel,
+       COALESCE(voicePolishAiProvider,'') as voicePolishAiProvider, COALESCE(voicePolishAiModel,'') as voicePolishAiModel,
+       COALESCE(postPolishAiProvider,'') as postPolishAiProvider, COALESCE(postPolishAiModel,'') as postPolishAiModel
        FROM SiteConfig WHERE id = 'singleton'`
     )
   } catch {}
@@ -243,7 +257,12 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
          COALESCE(aiModelBaseUrl,'') as aiModelBaseUrl,
          COALESCE(aiModelMaxTokens,2000) as aiModelMaxTokens,
          COALESCE(aiModelTimeout,30) as aiModelTimeout,
-         COALESCE(enableCustomAiModel,0) as enableCustomAiModel
+         COALESCE(enableCustomAiModel,0) as enableCustomAiModel,
+         COALESCE(groqApiKey,'') as groqApiKey,
+         COALESCE(commentAiProvider,'') as commentAiProvider, COALESCE(commentAiModel,'') as commentAiModel,
+         COALESCE(friendLinkAiProvider,'') as friendLinkAiProvider, COALESCE(friendLinkAiModel,'') as friendLinkAiModel,
+         COALESCE(voicePolishAiProvider,'') as voicePolishAiProvider, COALESCE(voicePolishAiModel,'') as voicePolishAiModel,
+         COALESCE(postPolishAiProvider,'') as postPolishAiProvider, COALESCE(postPolishAiModel,'') as postPolishAiModel
          FROM SiteConfig WHERE id = 'singleton'`
       )
     } catch (e: unknown) {
@@ -328,6 +347,15 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
   config.aiModelTimeout = toSafeNumber(config.aiModelTimeout, 30)
   config.enableCustomAiModel = toSafeBoolean(config.enableCustomAiModel, false)
   config.sidebarFriendLinksCollapsed = toSafeBoolean(config.sidebarFriendLinksCollapsed, false)
+  if (!config.groqApiKey) config.groqApiKey = ''
+  if (!config.commentAiProvider) config.commentAiProvider = ''
+  if (!config.commentAiModel) config.commentAiModel = ''
+  if (!config.friendLinkAiProvider) config.friendLinkAiProvider = ''
+  if (!config.friendLinkAiModel) config.friendLinkAiModel = ''
+  if (!config.voicePolishAiProvider) config.voicePolishAiProvider = ''
+  if (!config.voicePolishAiModel) config.voicePolishAiModel = ''
+  if (!config.postPolishAiProvider) config.postPolishAiProvider = ''
+  if (!config.postPolishAiModel) config.postPolishAiModel = ''
   return config as SiteConfig
 }
 

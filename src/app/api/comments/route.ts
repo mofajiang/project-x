@@ -156,17 +156,21 @@ async function analyzeAndUpdateComment(
 
     const aiResult = await analyzeCommentWithAI(
       content,
-      // 优先使用新字段 aiModelApiKey，如为空则回退到旧字段 openrouterApiKey
-      config.aiModelApiKey || config.openrouterApiKey,
-      // 优先使用新字段 aiModelName，如为空则回退到旧字段 openrouterModel
-      config.aiModelName || config.openrouterModel,
+      // 按评论功能解析 API Key：优先用对应 provider 的专属 key
+      (() => {
+        const provider = config.commentAiProvider || config.aiModelProvider || 'openrouter'
+        if (provider === 'groq') return config.groqApiKey || config.aiModelApiKey
+        if (provider === 'openrouter') return config.openrouterApiKey || config.aiModelApiKey
+        return config.aiModelApiKey
+      })(),
+      // 优先使用评论专用模型，回退到全局模型
+      config.commentAiModel || config.aiModelName || config.openrouterModel,
       commentData.guestName,
       commentData.guestEmail,
       commentData.guestWebsite,
       config.aiModelMaxTokens,
-      // 透传 provider 和 baseUrl，支持自定义模型
-      // 直接用 aiModelProvider 字段，不依赖 enableCustomAiModel（UI 可能未同步该标志位）
-      config.aiModelProvider || 'openrouter',
+      // 评论功能专用 provider 优先，回退到全局
+      config.commentAiProvider || config.aiModelProvider || 'openrouter',
       config.aiModelBaseUrl || undefined
     )
 
