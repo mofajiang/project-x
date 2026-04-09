@@ -61,7 +61,9 @@ export async function POST(req: NextRequest) {
     postId,
     authorId: session?.userId || null,
     parentId: parentId || null,
-    approved: session ? true : !config.commentApproval,
+    // 启用 AI 检测时，访客评论先挂起（false）等待 AI 异步分析后再决定最终状态
+    // 避免评论「创建即通过」导致 AI 审核形同虚设
+    approved: session ? true : config.enableAiDetection ? false : !config.commentApproval,
     ip,
     riskScore: quickCheck.localRiskScore,
     riskReasons: JSON.stringify(quickCheck.localRiskScore > 0 ? ['本地检查中...'] : []),
@@ -193,17 +195,33 @@ async function analyzeAndUpdateComment(
     const autoApproveThreshold = thresholdMap[reviewStrength] || 20
 
     if (!session) {
-      // 访客评论：支持自动通过和自动隐藏
+      // 访客评论：三段式决策
       if (aiResult.riskScore >= 70) {
-        approved = false // 高风险自动隐藏
+        // ① 高风险 → 自动拒绝
+        approved = false
         if (DEBUG) console.log('[ai-analysis-async] ⚠️ 高风险评论自动隐藏')
       } else if (config.aiAutoApprove && aiResult.riskScore < autoApproveThreshold) {
-        approved = true // 低风险且启用自动通过，则自动通过
+        // ② 低风险 + 启用自动通过 → 通过
+        approved = true
         if (DEBUG)
           console.log(
             '[ai-analysis-async] ✅ 安全评论自动通过 (评审强度:',
             reviewStrength,
             ', 阈值:',
+            autoApproveThreshold,
+            ')'
+          )
+      } else {
+        // ③ 中等风险（threshold~70），或未启用 aiAutoApprove → 回落到人工审核开关
+        // 若 commentApproval=false（不需人工审核），低风险也放行；否则保持 false 待审
+        approved = !config.commentApproval && aiResult.riskScore < autoApproveThreshold
+        if (DEBUG)
+          console.log(
+            '[ai-analysis-async] ℹ️ 中等风险/未开启自动通过，依据 commentApproval 决定:',
+            approved,
+            '(riskScore:',
+            aiResult.riskScore,
+            'threshold:',
             autoApproveThreshold,
             ')'
           )
