@@ -186,18 +186,24 @@ async function analyzeAndUpdateComment(
       return
     }
 
-    // riskScore = 0 + riskReasons 包含配置缺失提示，说明 AI 未实际执行分析（key/model 未配置）
-    // 此时应保持待审，不能依据 0 分放行
+    // riskScore = 0 且 riskReasons 包含配置缺失提示，或 riskReasons 为空数组
+    // 均说明 AI 未实际完成有效分析，应保持待审，不能依据 0 分放行
     const isAiSkipped =
-      aiResult.riskScore === 0 && aiResult.riskReasons.some((r) => r.includes('未配置') || r.includes('not configured'))
+      aiResult.riskScore === 0 &&
+      (aiResult.riskReasons.length === 0 ||
+        aiResult.riskReasons.some((r) => r.includes('未配置') || r.includes('not configured')))
     if (isAiSkipped) {
-      if (DEBUG) console.log('[ai-analysis-async] ⚠️ AI 未执行（配置缺失），评论保持待审状态')
+      if (DEBUG)
+        console.log('[ai-analysis-async] ⚠️ AI 未返回有效分析结果（配置缺失或 reasons 为空），评论保持待审状态')
       await prisma.comment.update({
         where: { id: commentId },
         data: { riskReasons: JSON.stringify(aiResult.riskReasons) },
       })
       syslog
-        .warn('ai', 'AI 未执行（配置缺失），评论保持待审', { commentId, reasons: aiResult.riskReasons })
+        .warn('ai', 'AI 未返回有效分析（配置缺失或 reasons 为空），评论保持待审', {
+          commentId,
+          reasons: aiResult.riskReasons,
+        })
         .catch(() => {})
       return
     }
