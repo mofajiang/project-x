@@ -113,10 +113,12 @@ async function callAiModel(
         total: data.usage.total_tokens,
       })
     }
-    if (config.aiModelProvider === 'openrouter') {
-      return data.choices[0].message.content
+    // openrouter / groq / custom 均为 OpenAI 兼容格式（choices[0].message.content）
+    // ollama 原生 API 返回 { message: { content } }
+    if (config.aiModelProvider === 'ollama') {
+      return data.message?.content ?? ''
     }
-    return data.message.content || data.content
+    return data.choices?.[0]?.message?.content ?? ''
   } catch (error: unknown) {
     throw new Error(`AI model call failed: ${getErrorMessage(error)}`)
   }
