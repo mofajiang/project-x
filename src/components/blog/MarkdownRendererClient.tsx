@@ -102,10 +102,10 @@ function parseQuotes(content: string): {
   return { segments }
 }
 
-// 将 HTML 内容按 data-quote-url 节点拆分
-function parseHtmlQuotes(html: string): Array<{ type: 'html' | 'quote-url'; content: string }> {
-  const segments: Array<{ type: 'html' | 'quote-url'; content: string }> = []
-  const re = /<div\s+data-quote-url="([^"]*)"[^>]*>[\s\S]*?<\/div>/g
+// 将 HTML 内容按 data-quote-url / data-quote-post 节点拆分
+function parseHtmlQuotes(html: string): Array<{ type: 'html' | 'quote-url' | 'quote-post'; content: string }> {
+  const segments: Array<{ type: 'html' | 'quote-url' | 'quote-post'; content: string }> = []
+  const re = /<div\s+(data-quote-url|data-quote-post)="([^"]*)"[^>]*>[\s\S]*?<\/div>/g
   let lastIndex = 0
   let m: RegExpExecArray | null
   while ((m = re.exec(html)) !== null) {
@@ -113,7 +113,9 @@ function parseHtmlQuotes(html: string): Array<{ type: 'html' | 'quote-url'; cont
       const chunk = html.slice(lastIndex, m.index)
       if (chunk.trim()) segments.push({ type: 'html', content: chunk })
     }
-    if (m[1]) segments.push({ type: 'quote-url', content: m[1] })
+    if (m[2]) {
+      segments.push({ type: m[1] === 'data-quote-url' ? 'quote-url' : 'quote-post', content: m[2] })
+    }
     lastIndex = m.index + m[0].length
   }
   if (lastIndex < html.length) {
@@ -127,16 +129,14 @@ export default function MarkdownRendererClient({ content }: { content: string })
   const isHtml = content.trimStart().startsWith('<')
   if (isHtml) {
     const htmlSegments = parseHtmlQuotes(content)
-    if (htmlSegments.some((s) => s.type === 'quote-url')) {
+    if (htmlSegments.some((s) => s.type === 'quote-url' || s.type === 'quote-post')) {
       return (
         <div className="prose-x">
-          {htmlSegments.map((seg, i) =>
-            seg.type === 'quote-url' ? (
-              <ExternalQuoteCard key={i} url={seg.content} />
-            ) : (
-              <div key={i} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(seg.content) }} />
-            )
-          )}
+          {htmlSegments.map((seg, i) => {
+            if (seg.type === 'quote-url') return <ExternalQuoteCard key={i} url={seg.content} />
+            if (seg.type === 'quote-post') return <InternalQuoteCard key={i} slug={seg.content} />
+            return <div key={i} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(seg.content) }} />
+          })}
         </div>
       )
     }

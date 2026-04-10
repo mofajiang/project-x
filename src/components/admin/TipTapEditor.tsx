@@ -15,7 +15,7 @@ import Placeholder from '@tiptap/extension-placeholder'
 import Underline from '@tiptap/extension-underline'
 import TextAlign from '@tiptap/extension-text-align'
 import { TextStyle } from '@tiptap/extension-text-style'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 // QuoteUrl NodeView（编辑器内展示）
 function QuoteUrlNodeView({ node, deleteNode }: NodeViewProps) {
@@ -82,6 +82,87 @@ const QuoteUrl = Node.create({
   },
 })
 
+// QuotePost NodeView（编辑器内展示）
+function QuotePostNodeView({ node, deleteNode }: NodeViewProps) {
+  const slug = (node.attrs as { slug: string }).slug
+  const [preview, setPreview] = useState<{
+    title: string
+    author: { username: string; displayName?: string | null }
+  } | null>(null)
+
+  useEffect(() => {
+    fetch(`/api/posts/preview?slug=${encodeURIComponent(slug)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data) setPreview(data)
+      })
+      .catch(() => null)
+  }, [slug])
+
+  return (
+    <NodeViewWrapper>
+      <div
+        contentEditable={false}
+        className="my-2 flex items-center justify-between rounded-xl px-4 py-3"
+        style={{ border: '1px solid var(--accent)', background: 'var(--bg-secondary)', cursor: 'default' }}
+      >
+        <div className="flex min-w-0 items-center gap-2">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            style={{ flexShrink: 0, color: 'var(--accent)' }}
+          >
+            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+            <path d="m15 5 4 4" />
+          </svg>
+          <span className="truncate text-xs" style={{ color: 'var(--text-primary)' }}>
+            {preview
+              ? `${preview.author.displayName || preview.author.username}：${preview.title}`
+              : `站内引用：${slug}`}
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={() => deleteNode()}
+          className="ml-3 flex-shrink-0 rounded px-1.5 py-0.5 text-xs hover:bg-white/10"
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          ✕
+        </button>
+      </div>
+    </NodeViewWrapper>
+  )
+}
+
+// QuotePost TipTap 扩展
+const QuotePost = Node.create({
+  name: 'quotePost',
+  group: 'block',
+  atom: true,
+  draggable: true,
+  addAttributes() {
+    return { slug: { default: '' } }
+  },
+  parseHTML() {
+    return [
+      {
+        tag: 'div[data-quote-post]',
+        getAttrs: (el) => ({ slug: (el as HTMLElement).getAttribute('data-quote-post') || '' }),
+      },
+    ]
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ['div', mergeAttributes({ 'data-quote-post': HTMLAttributes.slug })]
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(QuotePostNodeView)
+  },
+})
+
 interface Props {
   value: string
   onChange: (html: string) => void
@@ -96,6 +177,33 @@ const ACTIVE = 'bg-white/15'
 export function TipTapEditor({ value, onChange, placeholder = '开始写作...', minHeight = 400, onImageUpload }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // QuotePost 搜索弹窗状态
+  const [quotePickerOpen, setQuotePickerOpen] = useState(false)
+  const [quotePickerQuery, setQuotePickerQuery] = useState('')
+  const [quotePickerResults, setQuotePickerResults] = useState<{ slug: string; title: string; excerpt: string }[]>([])
+  const [quotePickerLoading, setQuotePickerLoading] = useState(false)
+  const quotePickerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (!quotePickerOpen) return
+    if (!quotePickerQuery.trim()) {
+      setQuotePickerResults([])
+      return
+    }
+    setQuotePickerLoading(true)
+    if (quotePickerTimerRef.current) clearTimeout(quotePickerTimerRef.current)
+    quotePickerTimerRef.current = setTimeout(() => {
+      fetch(`/api/search?q=${encodeURIComponent(quotePickerQuery)}`)
+        .then((r) => (r.ok ? r.json() : []))
+        .then((data) => setQuotePickerResults(Array.isArray(data) ? data : []))
+        .catch(() => setQuotePickerResults([]))
+        .finally(() => setQuotePickerLoading(false))
+    }, 300)
+    return () => {
+      if (quotePickerTimerRef.current) clearTimeout(quotePickerTimerRef.current)
+    }
+  }, [quotePickerQuery, quotePickerOpen])
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -108,6 +216,7 @@ export function TipTapEditor({ value, onChange, placeholder = '开始写作...',
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       TextStyle,
       QuoteUrl,
+      QuotePost,
     ],
     content: value,
     onUpdate({ editor }) {
@@ -171,6 +280,14 @@ export function TipTapEditor({ value, onChange, placeholder = '开始写作...',
       .focus()
       .insertContent({ type: 'quoteUrl', attrs: { url: url.trim() } })
       .run()
+  }
+
+  const insertQuotePost = (slug: string) => {
+    if (!editor) return
+    editor.chain().focus().insertContent({ type: 'quotePost', attrs: { slug } }).run()
+    setQuotePickerOpen(false)
+    setQuotePickerQuery('')
+    setQuotePickerResults([])
   }
 
   if (!editor) return null
@@ -307,6 +424,21 @@ export function TipTapEditor({ value, onChange, placeholder = '开始写作...',
           </svg>
         </button>
         <button
+          className={`${TOOLBAR_BTN} ${quotePickerOpen ? ACTIVE : ''}`}
+          title="引用站内帖子"
+          onClick={(e) => {
+            e.preventDefault()
+            setQuotePickerOpen((v) => !v)
+            setQuotePickerQuery('')
+            setQuotePickerResults([])
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+            <path d="m15 5 4 4" />
+          </svg>
+        </button>
+        <button
           className={TOOLBAR_BTN}
           title="插入图片"
           onClick={(e) => {
@@ -384,6 +516,78 @@ export function TipTapEditor({ value, onChange, placeholder = '开始写作...',
           </button>
         </div>
       </BubbleMenu>
+
+      {/* QuotePost 搜索面板 */}
+      {quotePickerOpen && (
+        <div className="border-b" style={{ borderColor: 'var(--border)', background: 'var(--bg-secondary)' }}>
+          <div className="flex items-center gap-2 border-b px-3 py-2" style={{ borderColor: 'var(--border)' }}>
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              style={{ color: 'var(--accent)', flexShrink: 0 }}
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.35-4.35" />
+            </svg>
+            <input
+              autoFocus
+              type="text"
+              placeholder="搜索站内帖子，按标题或内容..."
+              value={quotePickerQuery}
+              onChange={(e) => setQuotePickerQuery(e.target.value)}
+              className="flex-1 bg-transparent text-sm outline-none"
+              style={{ color: 'var(--text-primary)' }}
+            />
+            <button
+              type="button"
+              onClick={() => setQuotePickerOpen(false)}
+              className="rounded px-1.5 py-0.5 text-xs hover:bg-white/10"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              关闭
+            </button>
+          </div>
+          <div className="max-h-56 overflow-y-auto">
+            {quotePickerLoading && (
+              <div className="px-4 py-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                搜索中...
+              </div>
+            )}
+            {!quotePickerLoading && !quotePickerQuery.trim() && (
+              <div className="px-4 py-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                输入关键词搜索帖子
+              </div>
+            )}
+            {!quotePickerLoading && quotePickerQuery.trim() && quotePickerResults.length === 0 && (
+              <div className="px-4 py-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                未找到相关帖子
+              </div>
+            )}
+            {quotePickerResults.map((r) => (
+              <button
+                key={r.slug}
+                type="button"
+                onClick={() => insertQuotePost(r.slug)}
+                className="w-full px-4 py-2.5 text-left transition-colors hover:bg-white/5"
+                style={{ borderBottom: '1px solid var(--border)' }}
+              >
+                <div className="truncate text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                  {r.title}
+                </div>
+                {r.excerpt && (
+                  <div className="mt-0.5 truncate text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    {r.excerpt}
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 编辑区 */}
       <div

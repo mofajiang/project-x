@@ -7,10 +7,14 @@ export function extractQuotes(md: string): QuoteSegment[] {
   const results: QuoteSegment[] = []
   // HTML content from TipTap
   if (md.trimStart().startsWith('<')) {
-    const re = /<div\s+data-quote-url="([^"]+)"[^>]*>/g
+    const reUrl = /<div\s+data-quote-url="([^"]+)"[^>]*>/g
+    const rePost = /<div\s+data-quote-post="([^"]+)"[^>]*>/g
     let m: RegExpExecArray | null
-    while ((m = re.exec(md)) !== null) {
+    while ((m = reUrl.exec(md)) !== null) {
       results.push({ type: 'external', value: m[1] })
+    }
+    while ((m = rePost.exec(md)) !== null) {
+      results.push({ type: 'internal', value: m[1] })
     }
     return results
   }
