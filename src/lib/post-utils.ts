@@ -5,6 +5,15 @@ export interface QuoteSegment {
 
 export function extractQuotes(md: string): QuoteSegment[] {
   const results: QuoteSegment[] = []
+  // HTML content from TipTap
+  if (md.trimStart().startsWith('<')) {
+    const re = /<div\s+data-quote-url="([^"]+)"[^>]*>/g
+    let m: RegExpExecArray | null
+    while ((m = re.exec(md)) !== null) {
+      results.push({ type: 'external', value: m[1] })
+    }
+    return results
+  }
   for (const line of md.split('\n')) {
     const internal = line.match(/^::quote\[([^\]]+)\]\s*$/)
     if (internal) {
