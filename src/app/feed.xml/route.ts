@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma'
 import { getSiteConfig } from '@/lib/config'
 import { NextResponse } from 'next/server'
+import { runMigrations } from '@/lib/db-migrate'
+import { getPostUrl } from '@/lib/post-link'
 
 export const revalidate = 3600
 
@@ -14,6 +16,7 @@ function escapeXml(str: string) {
 }
 
 export async function GET(req: Request) {
+  await runMigrations()
   const config = await getSiteConfig()
   const siteUrl =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || `https://${req.headers.get('host') || 'localhost'}`
@@ -26,6 +29,7 @@ export async function GET(req: Request) {
     take: 20,
     select: {
       title: true,
+      publicId: true,
       slug: true,
       excerpt: true,
       content: true,
@@ -38,7 +42,7 @@ export async function GET(req: Request) {
 
   const items = posts
     .map((post) => {
-      const url = `${siteUrl}/post/${post.slug}`
+      const url = getPostUrl(post, siteUrl)
       const date = (post.publishedAt || post.createdAt).toUTCString()
       const desc = post.excerpt || post.content.slice(0, 200).replace(/[#*`>\[\]]/g, '')
       const author = post.author.displayName || post.author.username

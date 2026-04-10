@@ -1,15 +1,25 @@
 import { prisma } from '@/lib/prisma'
+import { runMigrations } from '@/lib/db-migrate'
 import { formatDate } from '@/lib/utils'
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
+import { getPostPath } from '@/lib/post-link'
 
 export const revalidate = 60
 
 export default async function ArchivePage() {
+  await runMigrations()
   const posts = await prisma.post.findMany({
     where: { published: true },
     orderBy: [{ pinned: 'desc' }, { publishedAt: 'desc' }],
-    select: { id: true, title: true, slug: true, publishedAt: true },
+    select: {
+      id: true,
+      publicId: true,
+      title: true,
+      slug: true,
+      publishedAt: true,
+      author: { select: { username: true } },
+    },
   })
 
   // 按年月分组
@@ -43,7 +53,7 @@ export default async function ArchivePage() {
               {monthPosts.map((post) => (
                 <a
                   key={post.id}
-                  href={`/post/${post.slug}`}
+                  href={getPostPath(post)}
                   className="group flex items-center justify-between py-2 transition-opacity active:opacity-60"
                 >
                   <span

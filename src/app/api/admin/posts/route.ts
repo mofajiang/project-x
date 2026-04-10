@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
+import { runMigrations } from '@/lib/db-migrate'
 import { slugify } from '@/lib/utils'
 import { revalidateTag } from 'next/cache'
 import { syslog } from '@/lib/syslog'
@@ -8,6 +9,7 @@ import { syslog } from '@/lib/syslog'
 export async function GET(req: NextRequest) {
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  await runMigrations()
 
   const { searchParams } = new URL(req.url)
   const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
@@ -40,12 +42,18 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  await runMigrations()
 
   const { title, content, excerpt, coverImage, published, tags, publishedAt, threadId, threadOrder } = await req.json()
   const slug = slugify(title) + '-' + Date.now()
+  const rows = await prisma.$queryRawUnsafe<{ nextId: number }[]>(
+    `SELECT COALESCE(MAX(publicId), 0) + 1 as nextId FROM Post`
+  )
+  const publicId = Number(rows[0]?.nextId) || 1
 
   const post = await prisma.post.create({
     data: {
+      publicId,
       title,
       slug,
       content,

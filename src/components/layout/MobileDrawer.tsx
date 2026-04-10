@@ -2,6 +2,7 @@
 import DOMPurify from 'dompurify'
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { getPostPath } from '@/lib/post-link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useLogout } from '@/hooks/useLogout'
@@ -12,29 +13,70 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import type { NavItemDef } from './Sidebar'
 
 const IconHome = ({ filled }: { filled?: boolean }) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={filled ? 0 : 1.75}>
-    {filled ? <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" /> : <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />}
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill={filled ? 'currentColor' : 'none'}
+    stroke="currentColor"
+    strokeWidth={filled ? 0 : 1.75}
+  >
+    {filled ? (
+      <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+    ) : (
+      <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+    )}
   </svg>
 )
 const IconArchive = ({ filled }: { filled?: boolean }) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.75">
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill={filled ? 'currentColor' : 'none'}
+    stroke="currentColor"
+    strokeWidth="1.75"
+  >
     <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
   </svg>
 )
 const IconTag = ({ filled }: { filled?: boolean }) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.75">
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill={filled ? 'currentColor' : 'none'}
+    stroke="currentColor"
+    strokeWidth="1.75"
+  >
     <path d="M7 7h.01M3 3h8l9 9a2 2 0 010 2.828l-5.172 5.172a2 2 0 01-2.828 0L3 11V3z" />
   </svg>
 )
 const IconUser = ({ filled }: { filled?: boolean }) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.75">
-    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" />
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill={filled ? 'currentColor' : 'none'}
+    stroke="currentColor"
+    strokeWidth="1.75"
+  >
+    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
   </svg>
 )
 
 const IconLink = ({ filled }: { filled?: boolean }) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.75">
-    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill={filled ? 'currentColor' : 'none'}
+    stroke="currentColor"
+    strokeWidth="1.75"
+  >
+    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
   </svg>
 )
 
@@ -69,27 +111,61 @@ interface Props {
   widgets?: RightPanelWidget[]
   copyright?: string
   topTags?: { id: string; name: string; slug: string; posts: number }[]
-  hotPosts?: { id: string; title: string; slug: string; views: number }[]
-  approvedFriendLinks?: { id: string; name: string; url: string; description?: string | null; favicon?: string | null }[]
+  hotPosts?: {
+    id: string
+    publicId?: number | null
+    title: string
+    slug: string
+    views: number
+    author?: { username: string }
+  }[]
+  approvedFriendLinks?: {
+    id: string
+    name: string
+    url: string
+    description?: string | null
+    favicon?: string | null
+  }[]
 }
 
-export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, session, avatar, displayName = '', handle = '', siteDesc = '', social = { x: '', github: '', email: '' }, widgets = [], copyright = '', topTags = [], hotPosts = [], approvedFriendLinks = [] }: Props) {
-  const items = (navItems && navItems.length > 0) ? navItems : DEFAULT_NAV
+export function MobileDrawer({
+  open,
+  onClose,
+  onLogoClick,
+  siteLogo,
+  navItems,
+  session,
+  avatar,
+  displayName = '',
+  handle = '',
+  siteDesc = '',
+  social = { x: '', github: '', email: '' },
+  widgets = [],
+  copyright = '',
+  topTags = [],
+  hotPosts = [],
+  approvedFriendLinks = [],
+}: Props) {
+  const items = navItems && navItems.length > 0 ? navItems : DEFAULT_NAV
   const primaryItems = items.slice(0, 4)
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
   const drawerRef = useRef<HTMLDivElement>(null)
-  const enabledWidgets = widgets.filter(w => w.enabled && w.mobileVisible !== false)
+  const enabledWidgets = widgets.filter((w) => w.enabled && w.mobileVisible !== false)
   const logoValue = (siteLogo?.value || '✕').trim() || '✕'
   const isLogoImage = siteLogo?.type === 'image' && isImageSource(logoValue)
 
   // 路由变化时关闭抽屉
-  useEffect(() => { onClose() }, [pathname]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    onClose()
+  }, [pathname]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ESC 键关闭
   useEffect(() => {
     if (!open) return
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [open, onClose])
@@ -102,7 +178,9 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
       document.body.style.overflow = ''
       setMenuOpen(false)
     }
-    return () => { document.body.style.overflow = '' }
+    return () => {
+      document.body.style.overflow = ''
+    }
   }, [open])
 
   const doLogout = useLogout()
@@ -126,7 +204,7 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
       {/* 抽屉主体 — 从左侧滑入 */}
       <div
         ref={drawerRef}
-        className="absolute left-0 top-0 h-full w-[min(84vw,20rem)] flex flex-col py-2.5 px-3"
+        className="absolute left-0 top-0 flex h-full w-[min(84vw,20rem)] flex-col px-3 py-2.5"
         style={{
           background: 'var(--bg)',
           borderRight: '1px solid var(--border)',
@@ -134,13 +212,15 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-center pb-3 px-1">
+        <div className="flex items-center justify-center px-1 pb-3">
           <button
             type="button"
             onClick={onLogoClick || onClose}
-            className={isLogoImage
-              ? "w-9 h-9 px-1.5 rounded-full flex items-center justify-center text-[22px] font-black transition-colors select-none overflow-hidden"
-              : "min-w-[2.5rem] h-10 px-3 rounded-full flex items-center justify-center text-[22px] font-black transition-colors select-none overflow-hidden"}
+            className={
+              isLogoImage
+                ? 'flex h-9 w-9 select-none items-center justify-center overflow-hidden rounded-full px-1.5 text-[22px] font-black transition-colors'
+                : 'flex h-10 min-w-[2.5rem] select-none items-center justify-center overflow-hidden rounded-full px-3 text-[22px] font-black transition-colors'
+            }
             style={{ color: 'var(--text-primary)' }}
             title="首页"
             aria-label="返回首页"
@@ -148,17 +228,21 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
             {isLogoImage ? (
               <Image src={logoValue} alt="首页" width={18} height={18} className="flex-none object-contain" />
             ) : (
-              <span className={siteLogo?.type === 'text' ? 'text-[18px] font-black leading-none' : 'text-[22px] leading-none'}>
+              <span
+                className={
+                  siteLogo?.type === 'text' ? 'text-[18px] font-black leading-none' : 'text-[22px] leading-none'
+                }
+              >
                 {logoValue}
               </span>
             )}
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto pr-1 space-y-4">
+        <div className="flex-1 space-y-4 overflow-y-auto pr-1">
           {/* 主入口 */}
-          <section className="px-1 space-y-1.5">
-            <div className="rounded-3xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
+          <section className="space-y-1.5 px-1">
+            <div className="overflow-hidden rounded-3xl" style={{ border: '1px solid var(--border)' }}>
               {primaryItems.map((item, index) => {
                 const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href)
                 const Icon = ICON_MAP[item.icon] || IconHome
@@ -166,27 +250,42 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
                   <Link
                     key={item.href}
                     href={item.href}
-                    className="flex items-center gap-3 px-4 py-3.5 transition-colors touch-active"
+                    className="touch-active flex items-center gap-3 px-4 py-3.5 transition-colors"
                     style={{
                       color: 'var(--text-primary)',
                       borderTop: index === 0 ? 'none' : '1px solid var(--border)',
                     }}
                   >
-                    <span className="flex-shrink-0 text-[var(--text-secondary)]"><Icon filled={active} /></span>
-                    <span className="flex-1 text-[15px]" style={{ fontWeight: active ? 700 : 500 }}>{item.label}</span>
-                    {active && <span className="w-2.5 h-2.5 rounded-full" style={{ background: 'var(--accent)' }} />}
+                    <span className="flex-shrink-0 text-[var(--text-secondary)]">
+                      <Icon filled={active} />
+                    </span>
+                    <span className="flex-1 text-[15px]" style={{ fontWeight: active ? 700 : 500 }}>
+                      {item.label}
+                    </span>
+                    {active && <span className="h-2.5 w-2.5 rounded-full" style={{ background: 'var(--accent)' }} />}
                   </Link>
                 )
               })}
 
               {session && (
                 <button
-                  onClick={() => { onClose(); window.dispatchEvent(new Event('open-compose')) }}
-                  className="flex items-center justify-between gap-3 w-full px-4 py-3.5 text-left transition-colors touch-active"
+                  onClick={() => {
+                    onClose()
+                    window.dispatchEvent(new Event('open-compose'))
+                  }}
+                  className="touch-active flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors"
                   style={{ color: 'var(--text-primary)', borderTop: '1px solid var(--border)' }}
                 >
-                  <span className="flex items-center gap-3 min-w-0">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--text-secondary)' }}>
+                  <span className="flex min-w-0 items-center gap-3">
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
                       <path d="M12 5v14M5 12h14" />
                     </svg>
                     <span className="text-[15px] font-medium">写文章</span>
@@ -198,29 +297,73 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
 
           {/* Widget 信息流 — 独立卡片 + 折叠 */}
           {enabledWidgets.length > 0 && (
-            <section className="px-1 pb-1 space-y-2">
+            <section className="space-y-2 px-1 pb-1">
               {enabledWidgets.map((widget, index) => {
-                const title = widget.title?.trim() || ({ search: '搜索', about: '关于我', tags: '热门标签', hotPosts: '热门文章', custom: '自定义文本', links: '自定义链接', carousel: '轮播图' } as Record<string, string>)[widget.type]
+                const title =
+                  widget.title?.trim() ||
+                  (
+                    {
+                      search: '搜索',
+                      about: '关于我',
+                      tags: '热门标签',
+                      hotPosts: '热门文章',
+                      custom: '自定义文本',
+                      links: '自定义链接',
+                      carousel: '轮播图',
+                    } as Record<string, string>
+                  )[widget.type]
                 const cardCls = 'group rounded-2xl overflow-hidden'
                 const cardStyle = { border: '1px solid var(--border)' }
                 const summaryCls = 'flex cursor-pointer list-none items-center justify-between px-4 py-3'
                 const chevron = (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="transition-transform duration-200 group-open:rotate-180 shrink-0" style={{ color: 'var(--text-secondary)' }}>
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    className="shrink-0 transition-transform duration-200 group-open:rotate-180"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
                     <path d="M6 9l6 6 6-6" />
                   </svg>
                 )
 
                 if (widget.type === 'search') {
                   return (
-                    <Link key={`search-${index}`} href="/search"
-                      className="flex items-center justify-between gap-3 px-4 py-3 rounded-2xl transition-colors touch-active"
+                    <Link
+                      key={`search-${index}`}
+                      href="/search"
+                      className="touch-active flex items-center justify-between gap-3 rounded-2xl px-4 py-3 transition-colors"
                       style={{ border: '1px solid var(--border)', color: 'var(--text-primary)' }}
                     >
                       <span className="flex items-center gap-2.5">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--text-secondary)' }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                        <svg
+                          width="15"
+                          height="15"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          style={{ color: 'var(--text-secondary)' }}
+                        >
+                          <circle cx="11" cy="11" r="8" />
+                          <path d="m21 21-4.35-4.35" />
+                        </svg>
                         <span className="text-sm font-medium">站内搜索</span>
                       </span>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: 'var(--accent)' }}><path d="M9 18l6-6-6-6"/></svg>
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        style={{ color: 'var(--accent)' }}
+                      >
+                        <path d="M9 18l6-6-6-6" />
+                      </svg>
                     </Link>
                   )
                 }
@@ -230,16 +373,50 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
                   return (
                     <details key={`about-${index}`} className={cardCls} style={cardStyle}>
                       <summary className={summaryCls}>
-                        <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{title}</span>
+                        <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                          {title}
+                        </span>
                         {chevron}
                       </summary>
                       <div className="px-4 pb-3 pt-2.5" style={{ borderTop: '1px solid var(--border)' }}>
-                        {siteDesc && <p className="text-xs leading-relaxed mb-2" style={{ color: 'var(--text-primary)' }}>{siteDesc}</p>}
+                        {siteDesc && (
+                          <p className="mb-2 text-xs leading-relaxed" style={{ color: 'var(--text-primary)' }}>
+                            {siteDesc}
+                          </p>
+                        )}
                         {(social.x || social.github || social.email) && (
                           <div className="flex flex-wrap gap-2">
-                            {social.x && <a href={`https://x.com/${social.x}`} target="_blank" rel="noopener noreferrer" className="text-[10px] px-2 py-1 rounded-full font-bold" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>𝕏 @{social.x}</a>}
-                            {social.github && <a href={`https://github.com/${social.github}`} target="_blank" rel="noopener noreferrer" className="text-[10px] px-2 py-1 rounded-full font-bold" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>GitHub</a>}
-                            {social.email && <a href={`mailto:${social.email}`} className="text-[10px] px-2 py-1 rounded-full font-bold" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>邮件</a>}
+                            {social.x && (
+                              <a
+                                href={`https://x.com/${social.x}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="rounded-full px-2 py-1 text-[10px] font-bold"
+                                style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+                              >
+                                𝕏 @{social.x}
+                              </a>
+                            )}
+                            {social.github && (
+                              <a
+                                href={`https://github.com/${social.github}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="rounded-full px-2 py-1 text-[10px] font-bold"
+                                style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+                              >
+                                GitHub
+                              </a>
+                            )}
+                            {social.email && (
+                              <a
+                                href={`mailto:${social.email}`}
+                                className="rounded-full px-2 py-1 text-[10px] font-bold"
+                                style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+                              >
+                                邮件
+                              </a>
+                            )}
                           </div>
                         )}
                       </div>
@@ -252,14 +429,21 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
                   return (
                     <details key={`tags-${index}`} className={cardCls} style={cardStyle}>
                       <summary className={summaryCls}>
-                        <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{title}</span>
+                        <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                          {title}
+                        </span>
                         {chevron}
                       </summary>
                       <div className="px-4 pb-3 pt-2.5" style={{ borderTop: '1px solid var(--border)' }}>
                         <div className="flex flex-wrap gap-1.5">
-                          {topTags.slice(0, 8).map(tag => (
-                            <Link key={tag.id} href={`/tag/${tag.slug}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
-                              <span className="truncate max-w-[8.5rem]">#{tag.name}</span>
+                          {topTags.slice(0, 8).map((tag) => (
+                            <Link
+                              key={tag.id}
+                              href={`/tag/${tag.slug}`}
+                              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium"
+                              style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+                            >
+                              <span className="max-w-[8.5rem] truncate">#{tag.name}</span>
                               <span style={{ color: 'var(--text-secondary)' }}>{tag.posts}</span>
                             </Link>
                           ))}
@@ -274,17 +458,26 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
                   return (
                     <details key={`hot-${index}`} className={cardCls} style={cardStyle}>
                       <summary className={summaryCls}>
-                        <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{title}</span>
+                        <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                          {title}
+                        </span>
                         {chevron}
                       </summary>
                       <div style={{ borderTop: '1px solid var(--border)' }}>
                         {hotPosts.slice(0, 5).map((post, idx) => (
-                          <Link key={post.id} href={`/post/${post.slug}`}
-                            className="flex items-center justify-between gap-3 px-4 py-2.5 transition-colors touch-active"
-                            style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--border)', color: 'var(--text-primary)' }}
+                          <Link
+                            key={post.id}
+                            href={getPostPath(post)}
+                            className="touch-active flex items-center justify-between gap-3 px-4 py-2.5 transition-colors"
+                            style={{
+                              borderTop: idx === 0 ? 'none' : '1px solid var(--border)',
+                              color: 'var(--text-primary)',
+                            }}
                           >
-                            <span className="text-xs font-medium truncate leading-5">{post.title}</span>
-                            <span className="text-[10px] shrink-0" style={{ color: 'var(--text-secondary)' }}>{post.views}阅</span>
+                            <span className="truncate text-xs font-medium leading-5">{post.title}</span>
+                            <span className="shrink-0 text-[10px]" style={{ color: 'var(--text-secondary)' }}>
+                              {post.views}阅
+                            </span>
                           </Link>
                         ))}
                       </div>
@@ -297,35 +490,61 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
                   return (
                     <details key={`custom-${index}`} className={cardCls} style={cardStyle}>
                       <summary className={summaryCls}>
-                        <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{title || '自定义'}</span>
+                        <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                          {title || '自定义'}
+                        </span>
                         {chevron}
                       </summary>
-                      <div className="px-4 pb-3 pt-2.5 text-xs leading-relaxed whitespace-pre-wrap" style={{ borderTop: '1px solid var(--border)', color: 'var(--text-primary)' }}>{widget.content}</div>
+                      <div
+                        className="whitespace-pre-wrap px-4 pb-3 pt-2.5 text-xs leading-relaxed"
+                        style={{ borderTop: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                      >
+                        {widget.content}
+                      </div>
                     </details>
                   )
                 }
 
                 if (widget.type === 'links') {
-                  const links: FriendLink[] = (widget.links || [])
+                  const links: FriendLink[] = widget.links || []
                   if (!links.length) return null
                   return (
                     <details key={`links-${index}`} className={cardCls} style={cardStyle}>
                       <summary className={summaryCls}>
-                        <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{title}</span>
+                        <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                          {title}
+                        </span>
                         {chevron}
                       </summary>
                       <div style={{ borderTop: '1px solid var(--border)' }}>
                         {links.slice(0, 6).map((link, idx) => (
-                          <a key={idx} href={link.url} target="_blank" rel="noopener noreferrer"
-                            className="flex items-center gap-3 px-4 py-2.5 transition-colors touch-active"
+                          <a
+                            key={idx}
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="touch-active flex items-center gap-3 px-4 py-2.5 transition-colors"
                             style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--border)' }}
                           >
-                            <div className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center shrink-0" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
-                              {link.avatar ? <img src={link.avatar} alt={link.label} className="w-full h-full object-cover" /> : <span className="text-xs font-bold">{link.label[0]?.toUpperCase()}</span>}
+                            <div
+                              className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full"
+                              style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+                            >
+                              {link.avatar ? (
+                                <img src={link.avatar} alt={link.label} className="h-full w-full object-cover" />
+                              ) : (
+                                <span className="text-xs font-bold">{link.label[0]?.toUpperCase()}</span>
+                              )}
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>{link.label}</p>
-                              {link.desc && <p className="text-[10px] truncate" style={{ color: 'var(--text-secondary)' }}>{link.desc}</p>}
+                              <p className="truncate text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
+                                {link.label}
+                              </p>
+                              {link.desc && (
+                                <p className="truncate text-[10px]" style={{ color: 'var(--text-secondary)' }}>
+                                  {link.desc}
+                                </p>
+                              )}
                             </div>
                           </a>
                         ))}
@@ -341,14 +560,39 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
                   return (
                     <details key={`carousel-${index}`} className={cardCls} style={cardStyle}>
                       <summary className={summaryCls}>
-                        <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{title}</span>
+                        <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                          {title}
+                        </span>
                         {chevron}
                       </summary>
-                      <div className="px-4 pb-3 pt-2.5 flex items-start gap-3" style={{ borderTop: '1px solid var(--border)' }}>
-                        {first.image && <img src={first.image} alt={first.title || title} className="w-14 h-14 object-cover rounded-xl shrink-0" />}
+                      <div
+                        className="flex items-start gap-3 px-4 pb-3 pt-2.5"
+                        style={{ borderTop: '1px solid var(--border)' }}
+                      >
+                        {first.image && (
+                          <img
+                            src={first.image}
+                            alt={first.title || title}
+                            className="h-14 w-14 shrink-0 rounded-xl object-cover"
+                          />
+                        )}
                         <div className="min-w-0 flex-1">
-                          {first.title && <p className="text-xs font-medium leading-5 truncate" style={{ color: 'var(--text-primary)' }}>{first.title}</p>}
-                          {(first.desc || first.markdown) && <p className="text-[10px] leading-relaxed line-clamp-2" style={{ color: 'var(--text-secondary)' }}>{first.desc || first.markdown}</p>}
+                          {first.title && (
+                            <p
+                              className="truncate text-xs font-medium leading-5"
+                              style={{ color: 'var(--text-primary)' }}
+                            >
+                              {first.title}
+                            </p>
+                          )}
+                          {(first.desc || first.markdown) && (
+                            <p
+                              className="line-clamp-2 text-[10px] leading-relaxed"
+                              style={{ color: 'var(--text-secondary)' }}
+                            >
+                              {first.desc || first.markdown}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </details>
@@ -359,25 +603,53 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
               })}
 
               {approvedFriendLinks.length > 0 && (
-                <details className="group rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
+                <details className="group overflow-hidden rounded-2xl" style={{ border: '1px solid var(--border)' }}>
                   <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3">
-                    <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>友情链接</span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="transition-transform duration-200 group-open:rotate-180 shrink-0" style={{ color: 'var(--text-secondary)' }}>
+                    <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                      友情链接
+                    </span>
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      className="shrink-0 transition-transform duration-200 group-open:rotate-180"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
                       <path d="M6 9l6 6 6-6" />
                     </svg>
                   </summary>
                   <div style={{ borderTop: '1px solid var(--border)' }}>
                     {approvedFriendLinks.slice(0, 8).map((link, idx) => (
-                      <a key={link.id || idx} href={link.url} target="_blank" rel="noopener noreferrer"
-                        className="flex items-center gap-3 px-4 py-2.5 transition-colors touch-active"
+                      <a
+                        key={link.id || idx}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="touch-active flex items-center gap-3 px-4 py-2.5 transition-colors"
                         style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--border)' }}
                       >
-                        <div className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center shrink-0" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
-                          {link.favicon ? <img src={link.favicon} alt={link.name} className="w-full h-full object-cover" /> : <span className="text-xs font-bold">{link.name[0]?.toUpperCase()}</span>}
+                        <div
+                          className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full"
+                          style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+                        >
+                          {link.favicon ? (
+                            <img src={link.favicon} alt={link.name} className="h-full w-full object-cover" />
+                          ) : (
+                            <span className="text-xs font-bold">{link.name[0]?.toUpperCase()}</span>
+                          )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>{link.name}</p>
-                          {link.description && <p className="text-[10px] truncate" style={{ color: 'var(--text-secondary)' }}>{link.description}</p>}
+                          <p className="truncate text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
+                            {link.name}
+                          </p>
+                          {link.description && (
+                            <p className="truncate text-[10px]" style={{ color: 'var(--text-secondary)' }}>
+                              {link.description}
+                            </p>
+                          )}
                         </div>
                       </a>
                     ))}
@@ -386,39 +658,57 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
               )}
 
               {copyright && (
-                <div className="px-2 text-[10px] leading-relaxed opacity-75" style={{ color: 'var(--text-secondary)' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(copyright) }} />
+                <div
+                  className="px-2 text-[10px] leading-relaxed opacity-75"
+                  style={{ color: 'var(--text-secondary)' }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(copyright) }}
+                />
               )}
             </section>
           )}
         </div>
 
         {session && (
-          <div className="mt-2 pt-1.5 border-t relative" style={{ borderColor: 'var(--border)' }}>
+          <div className="relative mt-2 border-t pt-1.5" style={{ borderColor: 'var(--border)' }}>
             <button
               type="button"
-              onClick={() => setMenuOpen(v => !v)}
+              onClick={() => setMenuOpen((v) => !v)}
               aria-label="打开账号菜单"
-              className="flex items-center gap-2 w-full px-1.5 py-1.25 rounded-full transition-colors touch-active"
+              className="py-1.25 touch-active flex w-full items-center gap-2 rounded-full px-1.5 transition-colors"
               style={{ color: 'var(--text-primary)' }}
             >
               <div
-                className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center font-bold text-[12px]"
+                className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-[12px] font-bold"
                 style={{ background: 'var(--accent)', color: '#fff' }}
               >
-                {avatar
-                  ? <img src={avatar} alt={session.username} className="w-full h-full object-cover" />
-                  : session.username[0]?.toUpperCase()}
+                {avatar ? (
+                  <img src={avatar} alt={session.username} className="h-full w-full object-cover" />
+                ) : (
+                  session.username[0]?.toUpperCase()
+                )}
               </div>
-              <div className="flex flex-col items-start min-w-0 flex-1 pr-1">
-                <span className="text-[12.5px] font-semibold truncate w-full leading-4" style={{ color: 'var(--text-primary)' }}>
+              <div className="flex min-w-0 flex-1 flex-col items-start pr-1">
+                <span
+                  className="w-full truncate text-[12.5px] font-semibold leading-4"
+                  style={{ color: 'var(--text-primary)' }}
+                >
                   {displayName || handle || session.username}
                 </span>
-                <span className="text-[9px] truncate w-full leading-4" style={{ color: 'var(--text-secondary)' }}>
+                <span className="w-full truncate text-[9px] leading-4" style={{ color: 'var(--text-secondary)' }}>
                   @{handle || session.username}
                 </span>
               </div>
-              <svg className="flex-shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style={{ color: 'var(--text-secondary)' }}>
-                <circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" />
+              <svg
+                className="flex-shrink-0"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                <circle cx="5" cy="12" r="2" />
+                <circle cx="12" cy="12" r="2" />
+                <circle cx="19" cy="12" r="2" />
               </svg>
             </button>
 
@@ -427,28 +717,51 @@ export function MobileDrawer({ open, onClose, onLogoClick, siteLogo, navItems, s
               <div className="mt-1.5 overflow-hidden" style={{ borderTop: '1px solid var(--border)' }}>
                 <Link
                   href="/admin"
-                  onClick={() => { setMenuOpen(false); onClose() }}
-                  className="flex items-center gap-3 px-0.5 py-2.5 text-sm font-medium transition-colors touch-active"
+                  onClick={() => {
+                    setMenuOpen(false)
+                    onClose()
+                  }}
+                  className="touch-active flex items-center gap-3 px-0.5 py-2.5 text-sm font-medium transition-colors"
                   style={{ color: 'var(--text-primary)' }}
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--text-secondary)' }}>
-                    <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
-                    <rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    <rect x="3" y="3" width="7" height="7" />
+                    <rect x="14" y="3" width="7" height="7" />
+                    <rect x="14" y="14" width="7" height="7" />
+                    <rect x="3" y="14" width="7" height="7" />
                   </svg>
                   后台控制台
                 </Link>
                 <div style={{ borderTop: '1px solid var(--border)' }} />
-                <div className="flex items-center justify-between px-0.5 py-2.5 touch-active">
-                  <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>切换主题</span>
-                  <ThemeToggle className="w-8 h-8" />
+                <div className="touch-active flex items-center justify-between px-0.5 py-2.5">
+                  <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                    切换主题
+                  </span>
+                  <ThemeToggle className="h-8 w-8" />
                 </div>
                 <div style={{ borderTop: '1px solid var(--border)' }} />
                 <button
                   onClick={logout}
-                  className="flex items-center gap-3 px-0.5 py-2.5 text-sm font-medium w-full text-left transition-colors touch-active"
+                  className="touch-active flex w-full items-center gap-3 px-0.5 py-2.5 text-left text-sm font-medium transition-colors"
                   style={{ color: 'var(--text-primary)' }}
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--text-secondary)' }}>
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
                     <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
                     <polyline points="16 17 21 12 16 7" />
                     <line x1="21" y1="12" x2="9" y2="12" />

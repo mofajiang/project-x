@@ -1,5 +1,7 @@
 import { MetadataRoute } from 'next'
 import { prisma } from '@/lib/prisma'
+import { runMigrations } from '@/lib/db-migrate'
+import { getPostUrl } from '@/lib/post-link'
 
 export const revalidate = 3600
 
@@ -16,10 +18,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]
 
   try {
+    await runMigrations()
     const [posts, tags] = await Promise.all([
       prisma.post.findMany({
         where: { published: true },
-        select: { slug: true, updatedAt: true },
+        select: { slug: true, publicId: true, updatedAt: true, author: { select: { username: true } } },
         orderBy: { publishedAt: 'desc' },
       }),
       prisma.tag.findMany({
@@ -27,14 +30,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }),
     ])
 
-    const postRoutes: MetadataRoute.Sitemap = posts.map(post => ({
-      url: `${baseUrl}/post/${post.slug}`,
+    const postRoutes: MetadataRoute.Sitemap = posts.map((post) => ({
+      url: getPostUrl(post, baseUrl),
       lastModified: post.updatedAt,
       changeFrequency: 'monthly',
       priority: 0.9,
     }))
 
-    const tagRoutes: MetadataRoute.Sitemap = tags.map(tag => ({
+    const tagRoutes: MetadataRoute.Sitemap = tags.map((tag) => ({
       url: `${baseUrl}/tag/${tag.slug}`,
       lastModified: new Date(),
       changeFrequency: 'weekly',

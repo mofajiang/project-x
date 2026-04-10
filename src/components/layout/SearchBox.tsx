@@ -2,13 +2,16 @@
 import Link from 'next/link'
 import { useState, useEffect, useRef } from 'react'
 import { useIMEInput } from '@/hooks/useIMEInput'
+import { getPostPath } from '@/lib/post-link'
 
 type SearchResult = {
   id: string
+  publicId: number | null
   title: string
   slug: string
   excerpt: string
   publishedAt: string | null
+  author: { username: string }
 }
 
 export function SearchBox() {
@@ -135,7 +138,7 @@ export function SearchBox() {
           {results.map((post) => (
             <Link
               key={post.id}
-              href={`/post/${post.slug}`}
+              href={getPostPath(post)}
               onClick={() => {
                 setFocused(false)
                 setValue('')

@@ -43,6 +43,17 @@ async function createIndex(table: string, index: string, columns: string, label:
   }
 }
 
+async function executeStatement(sql: string, label: string) {
+  try {
+    await prisma.$executeRawUnsafe(sql)
+    console.log(`[migrate] ${label} 创建成功`)
+  } catch (e: unknown) {
+    if (!getErrorMessage(e).includes('already exists')) {
+      console.warn(`[migrate] ${label}:`, getErrorMessage(e))
+    }
+  }
+}
+
 export async function runMigrations() {
   if (migrated) return
   if (!migratePromise) {
@@ -298,7 +309,18 @@ export async function runMigrations() {
       // Thread（帖子串联）
       await addColumn('Post', 'threadId', `TEXT`, 'threadId (Thread 分组 ID)')
       await addColumn('Post', 'threadOrder', `INTEGER NOT NULL DEFAULT 0`, 'threadOrder (Thread 内排序)')
+      await addColumn('Post', 'publicId', `INTEGER`, 'publicId (公开数字 ID)')
+      try {
+        await prisma.$executeRawUnsafe(`UPDATE Post SET publicId = rowid WHERE publicId IS NULL`)
+        console.log('[migrate] publicId 回填成功')
+      } catch (e: unknown) {
+        console.warn('[migrate] publicId 回填:', getErrorMessage(e))
+      }
       await createIndex('Post', 'idx_post_threadId', 'threadId', 'Post threadId index')
+      await executeStatement(
+        `CREATE UNIQUE INDEX IF NOT EXISTS idx_post_publicId_unique ON Post(publicId) WHERE publicId IS NOT NULL`,
+        'Post publicId unique index'
+      )
       migrated = true
     })().finally(() => {
       migratePromise = null

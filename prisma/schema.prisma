@@ -23,6 +23,7 @@ model User {
 
 model Post {
   id          String    @id @default(cuid())
+  publicId    Int?      @unique
   title       String
   slug        String    @unique
   content     String

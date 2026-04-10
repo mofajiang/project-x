@@ -4,10 +4,12 @@ import { prisma } from '@/lib/prisma'
 import { PostCard } from '@/components/blog/PostCard'
 import { stripMarkdown, extractQuotes } from '@/lib/post-utils'
 import { buildSlugCandidates } from '@/lib/slug'
+import { runMigrations } from '@/lib/db-migrate'
 
 export const revalidate = 60
 
 export default async function TagPage({ params }: { params: { slug: string } }) {
+  await runMigrations()
   const slugCandidates = buildSlugCandidates(params.slug)
   const tag = await prisma.tag.findFirst({
     where: { slug: { in: slugCandidates } },
@@ -18,6 +20,7 @@ export default async function TagPage({ params }: { params: { slug: string } }) 
           post: {
             select: {
               id: true,
+              publicId: true,
               title: true,
               slug: true,
               excerpt: true,

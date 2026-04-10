@@ -10,6 +10,7 @@ import { revalidateTag } from 'next/cache'
 import { rateLimit } from '@/lib/rate-limit'
 import { getErrorMessage } from '@/lib/converters'
 import { syslog } from '@/lib/syslog'
+import { getPostUrl } from '@/lib/post-link'
 
 const DEBUG = process.env.NODE_ENV === 'development'
 
@@ -117,10 +118,13 @@ export async function POST(req: NextRequest) {
     // 异步发送通知，不阻塞响应
     ;(async () => {
       try {
-        const post = await prisma.post.findUnique({ where: { id: postId }, select: { title: true, slug: true } })
+        const post = await prisma.post.findUnique({
+          where: { id: postId },
+          select: { title: true, slug: true, publicId: true, author: { select: { username: true } } },
+        })
         if (post) {
           const commenterName = session?.username || commentData.guestName || '匿名访客'
-          const postUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000') + '/post/' + post.slug
+          const postUrl = getPostUrl(post, process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000')
           await sendNewCommentNotification({
             postTitle: post.title,
             postUrl,

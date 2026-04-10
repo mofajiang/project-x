@@ -1,10 +1,12 @@
 import DOMPurify from 'isomorphic-dompurify'
 import { unstable_cache } from 'next/cache'
 import { prisma } from '@/lib/prisma'
+import { runMigrations } from '@/lib/db-migrate'
 import { SearchBox } from './SearchBox'
 import { CarouselWidget } from './CarouselWidget'
 import type { RightPanelWidget, FriendLink } from '@/lib/config'
 import { getSiteConfig } from '@/lib/config'
+import { getPostPath } from '@/lib/post-link'
 
 const getTopTags = unstable_cache(
   () =>
@@ -23,7 +25,14 @@ const getHotPosts = unstable_cache(
       where: { published: true },
       orderBy: [{ pinned: 'desc' }, { views: 'desc' }],
       take: 5,
-      select: { id: true, title: true, slug: true, views: true },
+      select: {
+        id: true,
+        publicId: true,
+        title: true,
+        slug: true,
+        views: true,
+        author: { select: { username: true } },
+      },
     }),
   ['hot-posts'],
   { revalidate: 120 }
@@ -63,6 +72,7 @@ const DEFAULT_TITLES: Record<string, string> = {
 }
 
 export async function RightPanel({ siteDesc, social, widgets = [], copyright = '' }: Props) {
+  await runMigrations()
   const enabledWidgets = widgets.filter((w) => w.enabled)
   const needTags = enabledWidgets.some((w) => w.type === 'tags')
   const needHotPosts = enabledWidgets.some((w) => w.type === 'hotPosts')
@@ -181,7 +191,7 @@ export async function RightPanel({ siteDesc, social, widgets = [], copyright = '
                 {hotPosts.map((post, idx) => (
                   <a
                     key={post.id}
-                    href={`/post/${post.slug}`}
+                    href={getPostPath(post)}
                     className="group flex items-center justify-between px-4 py-3 transition-colors hover:bg-white/5"
                   >
                     <div className="flex min-w-0 flex-1 flex-col">

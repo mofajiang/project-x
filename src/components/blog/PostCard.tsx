@@ -3,6 +3,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useMemo, memo } from 'react'
 import { relativeTime } from '@/lib/utils'
+import { getPostPath } from '@/lib/post-link'
 import toast from 'react-hot-toast'
 import { InternalQuoteCard, ExternalQuoteCard } from './QuoteCard'
 import { extractQuotes as extractQuotesFn, stripMarkdown as stripMarkdownFn, type QuoteSegment } from '@/lib/post-utils'
@@ -12,6 +13,7 @@ interface Post {
   id: string
   title: string
   slug: string
+  publicId?: number | null
   excerpt: string
   content?: string
   coverImage: string | null
@@ -71,7 +73,7 @@ export const PostCard = memo(function PostCard({ post, currentUserId, index = 0 
       className="post-card cursor-pointer transition-all duration-200 active:opacity-90"
       style={{ borderBottom: '1px solid var(--border)' }}
     >
-      <Link href={`/post/${post.slug}`} prefetch={index < 3} className="block px-4 py-3">
+      <Link href={getPostPath(post)} prefetch={index < 3} className="block px-4 py-3">
         <div className="flex gap-3">
           {/* 头像列 */}
           <div className="flex-shrink-0 pt-0.5">

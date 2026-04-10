@@ -8,9 +8,11 @@ import { getSiteConfig, parseNavItems, parseSiteLogo, parseWidgets } from '@/lib
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { unstable_cache } from 'next/cache'
+import { runMigrations } from '@/lib/db-migrate'
 
 const getSidebarData = unstable_cache(
   async () => {
+    await runMigrations()
     const [topTags, hotPosts, approvedFriendLinks] = await Promise.all([
       prisma.tag.findMany({
         orderBy: { posts: { _count: 'desc' } },
@@ -21,9 +23,18 @@ const getSidebarData = unstable_cache(
         where: { published: true },
         orderBy: [{ pinned: 'desc' }, { views: 'desc' }],
         take: 5,
-        select: { id: true, title: true, slug: true, views: true },
+        select: {
+          id: true,
+          publicId: true,
+          title: true,
+          slug: true,
+          views: true,
+          author: { select: { username: true } },
+        },
       }),
-      prisma.$queryRawUnsafe<Array<{ id: string; name: string; url: string; description: string | null; favicon: string | null }>>(
+      prisma.$queryRawUnsafe<
+        Array<{ id: string; name: string; url: string; description: string | null; favicon: string | null }>
+      >(
         `SELECT id, name, url, description, favicon
          FROM FriendLink
          WHERE status = 'approved' AND COALESCE(showInSidebar, 1) = 1
@@ -49,7 +60,7 @@ export default async function BlogLayout({ children }: { children: React.ReactNo
   const session = await getSession()
   const { topTags, hotPosts, approvedFriendLinks } = await getSidebarData()
 
-  const mobileTopTags = topTags.map(tag => ({ id: tag.id, name: tag.name, slug: tag.slug, posts: tag._count.posts }))
+  const mobileTopTags = topTags.map((tag) => ({ id: tag.id, name: tag.name, slug: tag.slug, posts: tag._count.posts }))
   let avatar: string | null = null
   let displayName: string = ''
   let handle: string = session?.username || ''
@@ -89,18 +100,37 @@ export default async function BlogLayout({ children }: { children: React.ReactNo
         approvedFriendLinks={approvedFriendLinks}
       />
 
-      <div className="max-w-[1280px] mx-auto flex justify-center">
+      <div className="mx-auto flex max-w-[1280px] justify-center">
         {/* 左侧导航（桌面端） */}
-        <div className="hidden md:flex w-[72px] xl:w-[240px] flex-shrink-0">
-          <Sidebar siteName={config.siteName} siteLogo={siteLogo} loginMode={config.loginMode} secretClicks={config.secretClicks} loginPath={config.loginPath} navItems={navItems} session={session} avatar={avatar} displayName={displayName} handle={handle} />
+        <div className="hidden w-[72px] flex-shrink-0 md:flex xl:w-[240px]">
+          <Sidebar
+            siteName={config.siteName}
+            siteLogo={siteLogo}
+            loginMode={config.loginMode}
+            secretClicks={config.secretClicks}
+            loginPath={config.loginPath}
+            navItems={navItems}
+            session={session}
+            avatar={avatar}
+            displayName={displayName}
+            handle={handle}
+          />
         </div>
         {/* 主内容 */}
-        <main className="w-full min-h-screen md:border-x pb-16 md:pb-0" style={{ borderColor: 'var(--border)', maxWidth: 600, minWidth: 0 }}>
+        <main
+          className="min-h-screen w-full pb-16 md:border-x md:pb-0"
+          style={{ borderColor: 'var(--border)', maxWidth: 600, minWidth: 0 }}
+        >
           {children}
         </main>
         {/* 右侧面板（桌面端） */}
-        <div className="hidden lg:flex w-[350px] flex-shrink-0">
-          <RightPanel siteDesc={config.siteDesc} social={{ x: config.socialX, github: config.socialGithub, email: config.socialEmail }} widgets={widgets} copyright={config.copyright || ''} />
+        <div className="hidden w-[350px] flex-shrink-0 lg:flex">
+          <RightPanel
+            siteDesc={config.siteDesc}
+            social={{ x: config.socialX, github: config.socialGithub, email: config.socialEmail }}
+            widgets={widgets}
+            copyright={config.copyright || ''}
+          />
         </div>
       </div>
 

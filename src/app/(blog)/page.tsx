@@ -60,6 +60,7 @@ export default async function HomePage({ searchParams }: { searchParams: { tab?:
     orderBy: tab === 'hot' ? [{ pinned: 'desc' }, { views: 'desc' }] : [{ pinned: 'desc' }, { publishedAt: 'desc' }],
     select: {
       id: true,
+      publicId: true,
       title: true,
       slug: true,
       excerpt: true,

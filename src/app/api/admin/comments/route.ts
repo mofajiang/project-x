@@ -7,6 +7,7 @@ import { runMigrations } from '@/lib/db-migrate'
 import { getSiteConfig } from '@/lib/config'
 import { revalidateTag } from 'next/cache'
 import { syslog } from '@/lib/syslog'
+import { getPostUrl } from '@/lib/post-link'
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
@@ -36,7 +37,7 @@ export async function GET(req: NextRequest) {
       take: pageSize,
       include: {
         author: { select: { username: true } },
-        post: { select: { title: true, slug: true } },
+        post: { select: { title: true, slug: true, publicId: true, author: { select: { username: true } } } },
       },
     }),
     prisma.comment.count({ where }),
@@ -62,11 +63,12 @@ export async function PUT(req: NextRequest) {
   // 查出完整评论信息用于发邮件（guestEmail 为动态迁移列，用 raw 查询）
   const rows = await prisma.$queryRawUnsafe<any[]>(
     `SELECT c.id, c.content, c.guestName, c.guestEmail, c.ip, c.parentId,
-            p.title as postTitle, p.slug as postSlug,
+                 p.title as postTitle, p.slug as postSlug, p.publicId as postPublicId, pu.username as postUsername,
             par.guestEmail as parentGuestEmail, par.guestName as parentGuestName,
             u.email as parentUserEmail, u.username as parentUsername
      FROM Comment c
      JOIN Post p ON p.id = c.postId
+               JOIN User pu ON pu.id = p.authorId
      LEFT JOIN Comment par ON par.id = c.parentId
      LEFT JOIN User u ON u.id = par.authorId
      WHERE c.id = ?`,
@@ -78,7 +80,12 @@ export async function PUT(req: NextRequest) {
         guestName: rows[0].guestName,
         guestEmail: rows[0].guestEmail,
         ip: rows[0].ip,
-        post: { title: rows[0].postTitle, slug: rows[0].postSlug },
+        post: {
+          title: rows[0].postTitle,
+          slug: rows[0].postSlug,
+          publicId: rows[0].postPublicId == null ? null : Number(rows[0].postPublicId),
+          author: { username: rows[0].postUsername },
+        },
         parent: rows[0].parentId
           ? {
               guestEmail: rows[0].parentGuestEmail,
@@ -105,7 +112,7 @@ export async function PUT(req: NextRequest) {
 
   // 审核通过后发邮件通知
   if (approved && before) {
-    const postUrl = `${baseUrl}/post/${before.post.slug}`
+    const postUrl = getPostUrl(before.post, baseUrl)
     const postTitle = before.post.title
     const emailConfig = await getSiteConfig().catch(() => null)
 

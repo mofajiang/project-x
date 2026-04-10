@@ -3,13 +3,16 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { formatDate } from '@/lib/utils'
+import { getPostPath } from '@/lib/post-link'
 
 type PostResult = {
   id: string
+  publicId: number | null
   title: string
   slug: string
   excerpt: string | null
   publishedAt: string | null
+  author: { username: string }
 }
 
 const IconSearch = () => (
@@ -158,7 +161,7 @@ export default function SearchPage() {
             {results.map((post) => (
               <Link
                 key={post.id}
-                href={`/post/${post.slug}`}
+                href={getPostPath(post)}
                 className="-mx-1 flex flex-col gap-1.5 rounded-lg px-1 py-3.5 transition-opacity active:opacity-70"
               >
                 <span className="text-[15px] font-semibold" style={{ color: 'var(--text-primary)' }}>
