@@ -5,7 +5,7 @@ import { reviewFriendLinkById } from '@/lib/friend-link-review'
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, url, description, email, favicon: userFavicon } = await req.json()
+    const { name, url, description, email, favicon: userFavicon, rssUrl } = await req.json()
 
     // 基础验证
     if (!name || !name.trim()) {
@@ -53,6 +53,11 @@ export async function POST(req: NextRequest) {
         reciprocalCheckTime: new Date(),
       },
     })
+
+    // 保存 rssUrl（raw SQL，因 rssUrl 列通过迁移添加，不在 Prisma schema）
+    if (rssUrl?.trim()) {
+      await prisma.$executeRawUnsafe(`UPDATE FriendLink SET rssUrl = ? WHERE id = ?`, rssUrl.trim(), link.id)
+    }
 
     // 自动后台触发 AI 审核（不阻塞提交响应）
     ;(async () => {
