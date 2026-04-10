@@ -147,6 +147,7 @@ export type SiteConfig = {
   storagePublicBaseUrl: string
   storageSmmsToken: string
   sidebarFriendLinksCollapsed: boolean
+  enableFriendCircle: boolean
   groqApiKey: string
   commentAiProvider: string
   commentAiModel: string
@@ -227,7 +228,8 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
        COALESCE(commentAiProvider,'') as commentAiProvider, COALESCE(commentAiModel,'') as commentAiModel,
        COALESCE(friendLinkAiProvider,'') as friendLinkAiProvider, COALESCE(friendLinkAiModel,'') as friendLinkAiModel,
        COALESCE(voicePolishAiProvider,'') as voicePolishAiProvider, COALESCE(voicePolishAiModel,'') as voicePolishAiModel,
-       COALESCE(postPolishAiProvider,'') as postPolishAiProvider, COALESCE(postPolishAiModel,'') as postPolishAiModel
+       COALESCE(postPolishAiProvider,'') as postPolishAiProvider, COALESCE(postPolishAiModel,'') as postPolishAiModel,
+       COALESCE(enableFriendCircle,0) as enableFriendCircle
        FROM SiteConfig WHERE id = 'singleton'`
     )
   } catch {}
@@ -262,7 +264,8 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
          COALESCE(commentAiProvider,'') as commentAiProvider, COALESCE(commentAiModel,'') as commentAiModel,
          COALESCE(friendLinkAiProvider,'') as friendLinkAiProvider, COALESCE(friendLinkAiModel,'') as friendLinkAiModel,
          COALESCE(voicePolishAiProvider,'') as voicePolishAiProvider, COALESCE(voicePolishAiModel,'') as voicePolishAiModel,
-         COALESCE(postPolishAiProvider,'') as postPolishAiProvider, COALESCE(postPolishAiModel,'') as postPolishAiModel
+         COALESCE(postPolishAiProvider,'') as postPolishAiProvider, COALESCE(postPolishAiModel,'') as postPolishAiModel,
+         COALESCE(enableFriendCircle,0) as enableFriendCircle
          FROM SiteConfig WHERE id = 'singleton'`
       )
     } catch (e: unknown) {
@@ -347,6 +350,7 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
   config.aiModelTimeout = toSafeNumber(config.aiModelTimeout, 30)
   config.enableCustomAiModel = toSafeBoolean(config.enableCustomAiModel, false)
   config.sidebarFriendLinksCollapsed = toSafeBoolean(config.sidebarFriendLinksCollapsed, false)
+  config.enableFriendCircle = toSafeBoolean(config.enableFriendCircle, false)
   if (!config.groqApiKey) config.groqApiKey = ''
   if (!config.commentAiProvider) config.commentAiProvider = ''
   if (!config.commentAiModel) config.commentAiModel = ''

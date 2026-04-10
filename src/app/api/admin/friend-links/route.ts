@@ -39,6 +39,7 @@ export async function GET(req: NextRequest) {
                       COALESCE(aiScore, 0) AS aiScore,
                       COALESCE(sortOrder, 0) AS sortOrder,
                       COALESCE(showInSidebar, 1) AS showInSidebar,
+                      COALESCE(rssUrl, '') AS rssUrl,
                       createdAt
                FROM FriendLink
                WHERE status = ?
@@ -63,6 +64,7 @@ export async function GET(req: NextRequest) {
                       COALESCE(aiScore, 0) AS aiScore,
                       COALESCE(sortOrder, 0) AS sortOrder,
                       COALESCE(showInSidebar, 1) AS showInSidebar,
+                      COALESCE(rssUrl, '') AS rssUrl,
                       createdAt
                FROM FriendLink
                ORDER BY COALESCE(sortOrder, 0) DESC,
@@ -85,6 +87,7 @@ export async function GET(req: NextRequest) {
       aiScore: toSafeNumber(item.aiScore, 0),
       sortOrder: toSafeNumber(item.sortOrder, 0),
       showInSidebar: Boolean(toSafeNumber(item.showInSidebar, 1)),
+      rssUrl: String(item.rssUrl || ''),
     }))
     const total = toSafeNumber(totalRaw?.[0]?.total, 0)
 
@@ -117,6 +120,7 @@ export async function POST(req: NextRequest) {
     const status = ['pending', 'approved', 'rejected'].includes(body?.status) ? body.status : 'approved'
     const showInSidebar = toSafeBoolean(body?.showInSidebar, true)
     const sortOrder = Math.trunc(toSafeNumber(body?.sortOrder, 0))
+    const rssUrl = (body?.rssUrl || '').trim()
 
     if (!name) return NextResponse.json({ error: '名称不能为空' }, { status: 400 })
     if (!url) return NextResponse.json({ error: 'URL 不能为空' }, { status: 400 })
@@ -140,8 +144,13 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    // rssUrl 是迁移添加的动态列，用 raw SQL 写入
+    if (rssUrl) {
+      await prisma.$executeRawUnsafe(`UPDATE FriendLink SET rssUrl = ? WHERE id = ?`, rssUrl, link.id)
+    }
+
     revalidateTag('approved-friend-links')
-    return NextResponse.json(toJsonSafe(link))
+    return NextResponse.json({ ...toJsonSafe(link), rssUrl })
   } catch (error) {
     console.error('[Admin FriendLinks Create Error]', error)
     return NextResponse.json({ error: '创建失败' }, { status: 500 })
@@ -296,6 +305,7 @@ export async function PUT(req: NextRequest) {
         : null
       const nextShowInSidebar = toSafeBoolean(payload?.showInSidebar, true)
       const nextSortOrder = Math.trunc(toSafeNumber(payload?.sortOrder, 0))
+      const nextRssUrl = String(payload?.rssUrl ?? '').trim()
 
       if (!nextName) return NextResponse.json({ error: '名称不能为空' }, { status: 400 })
       if (!nextUrl) return NextResponse.json({ error: 'URL 不能为空' }, { status: 400 })
@@ -322,8 +332,11 @@ export async function PUT(req: NextRequest) {
         },
       })
 
+      // rssUrl 是迁移添加的动态列，用 raw SQL 写入
+      await prisma.$executeRawUnsafe(`UPDATE FriendLink SET rssUrl = ? WHERE id = ?`, nextRssUrl, id)
+
       revalidateTag('approved-friend-links')
-      return NextResponse.json(toJsonSafe(updated))
+      return NextResponse.json({ ...toJsonSafe(updated), rssUrl: nextRssUrl })
     }
 
     return NextResponse.json({ error: '无效的操作' }, { status: 400 })

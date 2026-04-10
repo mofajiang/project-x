@@ -287,6 +287,14 @@ export async function runMigrations() {
         'postPolishAiProvider (文章润色AI)'
       )
       await addColumn('SiteConfig', 'postPolishAiModel', `TEXT NOT NULL DEFAULT ''`, 'postPolishAiModel (文章润色模型)')
+      // 博友圈功能
+      await addColumn(
+        'SiteConfig',
+        'enableFriendCircle',
+        `INTEGER NOT NULL DEFAULT 0`,
+        'enableFriendCircle (博友圈开关)'
+      )
+      await addColumn('FriendLink', 'rssUrl', `TEXT NOT NULL DEFAULT ''`, 'rssUrl (RSS 订阅地址)')
       migrated = true
     })().finally(() => {
       migratePromise = null

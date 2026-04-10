@@ -19,6 +19,7 @@ interface FriendLink {
   aiScore: number
   sortOrder: number
   showInSidebar: boolean
+  rssUrl: string
   createdAt: string
 }
 
@@ -31,6 +32,7 @@ type LinkForm = {
   status: 'pending' | 'approved' | 'rejected'
   sortOrder: string
   showInSidebar: boolean
+  rssUrl: string
 }
 
 const EMPTY_FORM: LinkForm = {
@@ -42,6 +44,7 @@ const EMPTY_FORM: LinkForm = {
   status: 'approved',
   sortOrder: '0',
   showInSidebar: true,
+  rssUrl: '',
 }
 
 export default function AdminFriendLinksPage() {
@@ -61,6 +64,7 @@ export default function AdminFriendLinksPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<LinkForm>(EMPTY_FORM)
   const [sidebarFriendLinksCollapsed, setSidebarFriendLinksCollapsed] = useState(false)
+  const [enableFriendCircle, setEnableFriendCircle] = useState(false)
   const [savingCollapsed, setSavingCollapsed] = useState(false)
 
   const limit = 20
@@ -69,7 +73,10 @@ export default function AdminFriendLinksPage() {
     fetch('/api/admin/config', { cache: 'no-store' })
       .then((r) => r.json())
       .then((data) => {
-        if (data) setSidebarFriendLinksCollapsed(!!data.sidebarFriendLinksCollapsed)
+        if (data) {
+          setSidebarFriendLinksCollapsed(!!data.sidebarFriendLinksCollapsed)
+          setEnableFriendCircle(!!data.enableFriendCircle)
+        }
       })
       .catch(() => {})
   }, [])
@@ -80,7 +87,7 @@ export default function AdminFriendLinksPage() {
       const res = await fetch('/api/admin/config', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sidebarFriendLinksCollapsed }),
+        body: JSON.stringify({ sidebarFriendLinksCollapsed, enableFriendCircle }),
       })
       if (res.ok) {
         toast.success('设置已保存')
@@ -330,6 +337,7 @@ export default function AdminFriendLinksPage() {
         : 'pending') as LinkForm['status'],
       sortOrder: String(link.sortOrder ?? 0),
       showInSidebar: !!link.showInSidebar,
+      rssUrl: link.rssUrl || '',
     })
   }
 
@@ -772,6 +780,14 @@ export default function AdminFriendLinksPage() {
                           在右侧栏显示
                         </label>
                       </div>
+                      <input
+                        type="url"
+                        placeholder="RSS 订阅地址（可选，用于博友圈）"
+                        value={editForm.rssUrl}
+                        onChange={(e) => setEditForm((v) => ({ ...v, rssUrl: e.target.value }))}
+                        className="w-full rounded-lg border bg-transparent px-3 py-1.5 text-sm outline-none"
+                        style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                      />
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleUpdateBasic(link.id)}
@@ -898,6 +914,14 @@ export default function AdminFriendLinksPage() {
               />
               在右侧栏显示
             </label>
+            <input
+              type="url"
+              placeholder="RSS 订阅地址（可选，用于博友圈）"
+              value={createForm.rssUrl}
+              onChange={(e) => setCreateForm((v) => ({ ...v, rssUrl: e.target.value }))}
+              className="w-full rounded-xl border bg-transparent px-3 py-1.5 text-sm outline-none"
+              style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+            />
             <button
               onClick={handleCreate}
               disabled={creating}
@@ -943,6 +967,35 @@ export default function AdminFriendLinksPage() {
               <span
                 className="inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200"
                 style={{ margin: '2px', transform: sidebarFriendLinksCollapsed ? 'translateX(20px)' : 'translateX(0)' }}
+              />
+            </button>
+          </div>
+          <div
+            className="flex items-center justify-between gap-3 rounded-xl p-3"
+            style={{ background: 'var(--bg-hover)' }}
+          >
+            <div>
+              <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                📡 博友圈
+              </p>
+              <p className="mt-0.5 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                开启后，首页显示「博友圈」Tab，聚合友链的 RSS 最新内容
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={enableFriendCircle}
+              onClick={() => setEnableFriendCircle((v) => !v)}
+              className="relative ml-2 inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full transition-colors duration-200"
+              style={{
+                background: enableFriendCircle ? 'var(--accent)' : 'var(--bg-secondary)',
+                border: '1px solid var(--border)',
+              }}
+            >
+              <span
+                className="inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200"
+                style={{ margin: '2px', transform: enableFriendCircle ? 'translateX(20px)' : 'translateX(0)' }}
               />
             </button>
           </div>

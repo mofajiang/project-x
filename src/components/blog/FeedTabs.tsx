@@ -1,12 +1,13 @@
 'use client'
 import Link from 'next/link'
 
-const tabs = [
+const BASE_TABS = [
   { key: 'latest', label: '最新' },
   { key: 'hot', label: '热门' },
 ]
 
-export function FeedTabs({ active }: { active: string }) {
+export function FeedTabs({ active, showFriendCircle = false }: { active: string; showFriendCircle?: boolean }) {
+  const tabs = showFriendCircle ? [...BASE_TABS, { key: 'friends', label: '博友圈' }] : BASE_TABS
   return (
     <div
       className="sticky top-0 z-10 flex backdrop-blur-md"
