@@ -38,3 +38,15 @@ export function stripMarkdown(md: string): string {
     .replace(/\n{2,}/g, '\n')
     .trim()
 }
+
+/** 从 Markdown 内容中提取所有图片 URL（最多 9 张） */
+export function extractImages(md: string): string[] {
+  if (!md) return []
+  const urls: string[] = []
+  const re = /!\[.*?\]\((https?:\/\/[^)\s]+)\)/g
+  let m: RegExpExecArray | null
+  while ((m = re.exec(md)) !== null && urls.length < 9) {
+    urls.push(m[1])
+  }
+  return urls
+}

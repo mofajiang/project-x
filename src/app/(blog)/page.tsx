@@ -4,7 +4,7 @@ import { FeedTabs } from '@/components/blog/FeedTabs'
 import { FriendCircleList } from '@/components/blog/FriendCircleList'
 import { QuickPost } from '@/components/blog/QuickPost'
 import { getSession } from '@/lib/auth'
-import { stripMarkdown, extractQuotes } from '@/lib/post-utils'
+import { stripMarkdown, extractQuotes, extractImages } from '@/lib/post-utils'
 import { runMigrations } from '@/lib/db-migrate'
 
 export default async function HomePage({ searchParams }: { searchParams: { tab?: string } }) {
@@ -72,6 +72,7 @@ export default async function HomePage({ searchParams }: { searchParams: { tab?:
     content: undefined,
     plainText: stripMarkdown(p.content).trim(),
     quotes: extractQuotes(p.content),
+    images: extractImages(p.content),
     author: { ...p.author, displayName: p.author.displayName || '' },
   }))
 
