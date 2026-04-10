@@ -40,8 +40,23 @@ export default async function HomePage({ searchParams }: { searchParams: { tab?:
     )
   }
 
+  // 排除 Thread 中序号非最小的续集帖子，每个 Thread 只在首页展示第一条
+  let excludePostIds: string[] = []
+  try {
+    const excludeRows = await prisma.$queryRawUnsafe<{ id: string }[]>(`
+      SELECT p.id FROM Post p
+      WHERE p.threadId IS NOT NULL
+        AND p.threadOrder > (SELECT MIN(p2.threadOrder) FROM Post p2 WHERE p2.threadId = p.threadId AND p2.published = 1)
+        AND p.published = 1
+    `)
+    excludePostIds = excludeRows.map((r) => r.id)
+  } catch {}
+
   const posts = await prisma.post.findMany({
-    where: { published: true },
+    where: {
+      published: true,
+      ...(excludePostIds.length > 0 ? { id: { notIn: excludePostIds } } : {}),
+    },
     orderBy: tab === 'hot' ? [{ pinned: 'desc' }, { views: 'desc' }] : [{ pinned: 'desc' }, { publishedAt: 'desc' }],
     select: {
       id: true,
