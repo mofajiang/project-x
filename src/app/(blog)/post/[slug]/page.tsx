@@ -10,6 +10,8 @@ import { getSession } from '@/lib/auth'
 import { getSiteConfig } from '@/lib/config'
 import { buildSlugCandidates } from '@/lib/slug'
 import Image from 'next/image'
+import { extractImages } from '@/lib/post-utils'
+import { MomentsImageGrid } from '@/components/blog/MomentsImageGrid'
 
 const getPost = cache(async (slugCandidates: string[], requirePublished: boolean) => {
   return prisma.post.findFirst({
@@ -176,8 +178,8 @@ export default async function PostPage({ params }: { params: { slug: string } })
           {post.title}
         </h1>
 
-        {/* 封面图 */}
-        {post.coverImage && (
+        {/* 封面图（仅在无内嵌图片时显示） */}
+        {post.coverImage && extractImages(post.content).length === 0 && (
           <div className="mb-5 aspect-[16/9] overflow-hidden rounded-2xl">
             <Image
               src={post.coverImage}
@@ -212,8 +214,15 @@ export default async function PostPage({ params }: { params: { slug: string } })
 
         {/* 正文 */}
         <div className="mb-6">
-          <MarkdownRenderer content={post.content} />
+          <MarkdownRenderer content={post.content.replace(/!\[.*?\]\(https?:\/\/[^)\s]+\)/g, '')} />
         </div>
+
+        {/* 图片（朋友圈网格展示） */}
+        {extractImages(post.content).length > 0 && (
+          <div className="mb-6">
+            <MomentsImageGrid images={extractImages(post.content)} title={post.title} priority />
+          </div>
+        )}
 
         {/* 时间 & 浏览 */}
         <div

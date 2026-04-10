@@ -6,6 +6,7 @@ import { relativeTime } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { InternalQuoteCard, ExternalQuoteCard } from './QuoteCard'
 import { extractQuotes as extractQuotesFn, stripMarkdown as stripMarkdownFn, type QuoteSegment } from '@/lib/post-utils'
+import { MomentsImageGrid } from './MomentsImageGrid'
 
 interface Post {
   id: string
@@ -30,56 +31,6 @@ interface PostCardProps {
   post: Post & { authorId?: string }
   currentUserId?: string
   index?: number
-}
-
-/** 微信朋友圈风格图片网格 */
-function MomentsImageGrid({ images, title, priority }: { images: string[]; title: string; priority?: boolean }) {
-  const count = images.length
-  // 1 张：宽图，2:3 或正方形
-  if (count === 1) {
-    return (
-      <div className="mt-2.5 overflow-hidden rounded-2xl" style={{ border: '1px solid var(--border)', maxWidth: 280 }}>
-        <Image
-          src={images[0]}
-          alt={title}
-          width={280}
-          height={280}
-          className="h-full w-full object-cover"
-          style={{ aspectRatio: '1/1' }}
-          priority={priority}
-          sizes="280px"
-          quality={85}
-        />
-      </div>
-    )
-  }
-  // 2-9 张：最多 3 列的网格
-  const cols = count === 4 ? 2 : Math.min(count, 3)
-  return (
-    <div
-      className="mt-2.5 grid gap-1 overflow-hidden rounded-2xl"
-      style={{
-        gridTemplateColumns: `repeat(${cols}, 1fr)`,
-        border: '1px solid var(--border)',
-        maxWidth: cols === 2 ? 200 : 270,
-      }}
-    >
-      {images.map((src, i) => (
-        <div key={i} className="overflow-hidden" style={{ aspectRatio: '1/1' }}>
-          <Image
-            src={src}
-            alt={`${title} ${i + 1}`}
-            width={90}
-            height={90}
-            className="h-full w-full object-cover"
-            priority={priority && i < 3}
-            sizes="90px"
-            quality={80}
-          />
-        </div>
-      ))}
-    </div>
-  )
 }
 
 export const PostCard = memo(function PostCard({ post, currentUserId, index = 0 }: PostCardProps) {
