@@ -21,6 +21,15 @@ export function extractQuotes(md: string): QuoteSegment[] {
 }
 
 export function stripMarkdown(md: string): string {
+  if (md.trimStart().startsWith('<')) {
+    // HTML content from TipTap
+    return md
+      .replace(/<img[^>]*>/gi, '[图片]')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&[a-z]+;/gi, ' ')
+      .replace(/\s{2,}/g, ' ')
+      .trim()
+  }
   return md
     .replace(/^::quote-url\[[^\]]+\]\s*$/gm, '')
     .replace(/^::quote\[[^\]]+\]\s*$/gm, '')
@@ -39,10 +48,19 @@ export function stripMarkdown(md: string): string {
     .trim()
 }
 
-/** 从 Markdown 内容中提取所有图片 URL（最多 9 张） */
+/** 从 Markdown 或 HTML 内容中提取所有图片 URL（最多 9 张） */
 export function extractImages(md: string): string[] {
   if (!md) return []
   const urls: string[] = []
+  if (md.trimStart().startsWith('<')) {
+    // HTML content from TipTap
+    const re = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi
+    let m: RegExpExecArray | null
+    while ((m = re.exec(md)) !== null && urls.length < 9) {
+      if (!urls.includes(m[1])) urls.push(m[1])
+    }
+    return urls
+  }
   const re = /!\[.*?\]\((https?:\/\/[^)\s]+)\)/g
   let m: RegExpExecArray | null
   while ((m = re.exec(md)) !== null && urls.length < 9) {

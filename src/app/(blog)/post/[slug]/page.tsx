@@ -214,7 +214,13 @@ export default async function PostPage({ params }: { params: { slug: string } })
 
         {/* 正文 */}
         <div className="mb-6">
-          <MarkdownRenderer content={post.content.replace(/!\[.*?\]\(https?:\/\/[^)\s]+\)/g, '')} />
+          <MarkdownRenderer
+            content={
+              post.content.trimStart().startsWith('<')
+                ? post.content.replace(/<img[^>]*>/gi, '')
+                : post.content.replace(/!\[.*?\]\(https?:\/\/[^)\s]+\)/g, '')
+            }
+          />
         </div>
 
         {/* 图片（朋友圈网格展示） */}

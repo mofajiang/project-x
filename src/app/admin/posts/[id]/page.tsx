@@ -3,7 +3,7 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { getErrorMessage } from '@/lib/converters'
-import { MarkdownEditor } from '@/components/admin/MarkdownEditor'
+import { TipTapEditor } from '@/components/admin/TipTapEditor'
 import { StorageImagePicker } from '@/components/admin/StorageImagePicker'
 import { VoiceInput } from '@/components/admin/VoiceInput'
 import { PostPolish } from '@/components/admin/PostPolish'
@@ -28,10 +28,8 @@ export default function EditPostPage() {
   })
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const [uploadingBodyImage, setUploadingBodyImage] = useState(false)
   const [hasDraft, setHasDraft] = useState(false)
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const bodyImageInputRef = useRef<HTMLInputElement | null>(null)
   const coverInputRef = useRef<HTMLInputElement | null>(null)
 
   // 自动保存草稿到 localStorage
@@ -149,29 +147,13 @@ export default function EditPostPage() {
     if (data.url) updateForm((f) => ({ ...f, coverImage: data.url }))
   }
 
-  const uploadBodyImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (!file) return
-
-    setUploadingBodyImage(true)
-    try {
-      const fd = new FormData()
-      fd.append('file', file)
-      const res = await fetch('/api/upload', { method: 'POST', body: fd })
-      const data = await res.json().catch(() => null)
-      if (!res.ok || !data?.url) throw new Error(data?.error || '上传失败')
-
-      updateForm((f) => {
-        const prefix = f.content && !f.content.endsWith('\n') ? '\n' : ''
-        return { ...f, content: `${f.content}${prefix}\n![图片](${data.url})\n` }
-      })
-      toast.success('图片已插入正文')
-    } catch (err: unknown) {
-      toast.error(getErrorMessage(err) || '图片上传失败')
-    } finally {
-      setUploadingBodyImage(false)
-    }
+  const uploadImageForTipTap = async (file: File): Promise<string> => {
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await fetch('/api/upload', { method: 'POST', body: fd })
+    const data = await res.json().catch(() => null)
+    if (!res.ok || !data?.url) throw new Error(data?.error || '上传失败')
+    return data.url
   }
 
   return (
@@ -245,52 +227,32 @@ export default function EditPostPage() {
             style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
           >
             <label className="mb-3 block text-xs font-medium sm:text-sm" style={{ color: 'var(--text-secondary)' }}>
-              正文内容 - Markdown / GFM *
+              正文内容 *
             </label>
-            <div className="mb-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => bodyImageInputRef.current?.click()}
-                  disabled={uploadingBodyImage}
-                  className="rounded-lg px-4 py-2 text-xs font-medium disabled:opacity-60 sm:rounded-full sm:text-sm"
-                  style={{ background: 'var(--bg)', color: 'var(--accent)', border: '1px solid var(--border)' }}
-                >
-                  {uploadingBodyImage ? '上传中...' : '上传正文图片并插入'}
-                </button>
-                <StorageImagePicker
-                  buttonText="从云存储插入"
-                  onSelect={(url) => {
-                    updateForm((f) => {
-                      const prefix = f.content && !f.content.endsWith('\n') ? '\n' : ''
-                      return { ...f, content: `${f.content}${prefix}\n![图片](${url})\n` }
-                    })
-                    toast.success('已插入云存储图片')
-                  }}
-                  className="rounded-lg px-4 py-2 text-xs font-medium sm:rounded-full sm:text-sm"
-                />
-                <VoiceInput
-                  onInsertContent={(text) => {
-                    updateForm((f) => {
-                      const prefix = f.content && !f.content.endsWith('\n') ? '\n' : ''
-                      return { ...f, content: `${f.content}${prefix}${text}\n` }
-                    })
-                  }}
-                />{' '}
-                <PostPolish
-                  content={form.content}
-                  onApply={(polished) => updateForm((f) => ({ ...f, content: polished }))}
-                />{' '}
-              </div>
-              <input
-                ref={bodyImageInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={uploadBodyImage}
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <StorageImagePicker
+                buttonText="从云存储插入图片"
+                onSelect={(url) => {
+                  updateForm((f) => ({ ...f, content: f.content + `<img src="${url}" alt="图片" />` }))
+                  toast.success('已插入云存储图片')
+                }}
+                className="rounded-lg px-4 py-2 text-xs font-medium sm:rounded-full sm:text-sm"
               />
+              <VoiceInput
+                onInsertContent={(text) => {
+                  updateForm((f) => ({ ...f, content: f.content + `<p>${text}</p>` }))
+                }}
+              />{' '}
+              <PostPolish
+                content={form.content}
+                onApply={(polished) => updateForm((f) => ({ ...f, content: polished }))}
+              />{' '}
             </div>
-            <MarkdownEditor value={form.content} onChange={(v) => updateForm((f) => ({ ...f, content: v }))} />
+            <TipTapEditor
+              value={form.content}
+              onChange={(v) => updateForm((f) => ({ ...f, content: v }))}
+              onImageUpload={uploadImageForTipTap}
+            />
           </section>
 
           <section
@@ -298,14 +260,8 @@ export default function EditPostPage() {
             style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
           >
             <p className="mb-2 text-[10px] font-medium sm:text-xs" style={{ color: 'var(--text-secondary)' }}>
-              📝 支持语法：
+              � 提示：可粘贴图片快速插入，支持 Markdown 语法快捷键（如 **粗体**、# 标题等）
             </p>
-            <div className="grid grid-cols-2 gap-2 text-[10px] sm:text-xs" style={{ color: 'var(--text-secondary)' }}>
-              <div>**粗体** / *斜体* / `代码`</div>
-              <div># 标题 / - 列表 / &gt; 引用</div>
-              <div>[链接](url) / ![图片](url)</div>
-              <div>::quote[slug] / ::quote-url[url]</div>
-            </div>
           </section>
         </main>
 
