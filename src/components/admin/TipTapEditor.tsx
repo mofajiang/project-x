@@ -1,5 +1,13 @@
 'use client'
-import { useEditor, EditorContent, BubbleMenu } from '@tiptap/react'
+import {
+  useEditor,
+  EditorContent,
+  BubbleMenu,
+  NodeViewWrapper,
+  ReactNodeViewRenderer,
+  type NodeViewProps,
+} from '@tiptap/react'
+import { Node, mergeAttributes } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
 import Link from '@tiptap/extension-link'
@@ -8,6 +16,71 @@ import Underline from '@tiptap/extension-underline'
 import TextAlign from '@tiptap/extension-text-align'
 import { TextStyle } from '@tiptap/extension-text-style'
 import { useEffect, useRef } from 'react'
+
+// QuoteUrl NodeView（编辑器内展示）
+function QuoteUrlNodeView({ node, deleteNode }: NodeViewProps) {
+  const url = (node.attrs as { url: string }).url
+  return (
+    <NodeViewWrapper>
+      <div
+        contentEditable={false}
+        className="my-2 flex items-center justify-between rounded-xl px-4 py-3"
+        style={{ border: '1px solid var(--border)', background: 'var(--bg-secondary)', cursor: 'default' }}
+      >
+        <div className="flex min-w-0 items-center gap-2">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            style={{ flexShrink: 0, color: 'var(--accent)' }}
+          >
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+          </svg>
+          <span className="truncate text-xs" style={{ color: 'var(--text-secondary)' }}>
+            引用卡片：{url}
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={() => deleteNode()}
+          className="ml-3 flex-shrink-0 rounded px-1.5 py-0.5 text-xs hover:bg-white/10"
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          ✕
+        </button>
+      </div>
+    </NodeViewWrapper>
+  )
+}
+
+// QuoteUrl TipTap 扩展
+const QuoteUrl = Node.create({
+  name: 'quoteUrl',
+  group: 'block',
+  atom: true,
+  draggable: true,
+  addAttributes() {
+    return { url: { default: '' } }
+  },
+  parseHTML() {
+    return [
+      {
+        tag: 'div[data-quote-url]',
+        getAttrs: (el) => ({ url: (el as HTMLElement).getAttribute('data-quote-url') || '' }),
+      },
+    ]
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ['div', mergeAttributes({ 'data-quote-url': HTMLAttributes.url })]
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(QuoteUrlNodeView)
+  },
+})
 
 interface Props {
   value: string
@@ -34,6 +107,7 @@ export function TipTapEditor({ value, onChange, placeholder = '开始写作...',
       Placeholder.configure({ placeholder }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       TextStyle,
+      QuoteUrl,
     ],
     content: value,
     onUpdate({ editor }) {
@@ -86,6 +160,17 @@ export function TipTapEditor({ value, onChange, placeholder = '开始写作...',
       return
     }
     editor.chain().focus().setLink({ href: url }).run()
+  }
+
+  const insertQuoteUrl = () => {
+    if (!editor) return
+    const url = window.prompt('输入要引用的外部链接 URL')
+    if (!url?.trim()) return
+    editor
+      .chain()
+      .focus()
+      .insertContent({ type: 'quoteUrl', attrs: { url: url.trim() } })
+      .run()
   }
 
   if (!editor) return null
@@ -202,11 +287,23 @@ export function TipTapEditor({ value, onChange, placeholder = '开始写作...',
           </svg>
         </button>
         <span className="mx-0.5 w-px self-stretch" style={{ background: 'var(--border)' }} />
-        {/* 链接 & 图片 */}
+        {/* 链接 & 图片 & 引用卡片 */}
         <button {...b(setLink, editor.isActive('link'))} title="链接">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
             <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+          </svg>
+        </button>
+        <button
+          className={TOOLBAR_BTN}
+          title="插入外部引用卡片"
+          onClick={(e) => {
+            e.preventDefault()
+            insertQuoteUrl()
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
         </button>
         <button

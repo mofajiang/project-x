@@ -53,23 +53,43 @@ lowlight.register('docker', dockerfile)
 lowlight.register('nginx', nginx)
 
 // 解析引用语法，将特殊行转为占位符，渲染时替换为组件
-function parseQuotes(content: string): { segments: Array<{ type: 'md' | 'internal' | 'external'; content: string; url?: string; title?: string; desc?: string }> } {
+function parseQuotes(content: string): {
+  segments: Array<{
+    type: 'md' | 'internal' | 'external'
+    content: string
+    url?: string
+    title?: string
+    desc?: string
+  }>
+} {
   const lines = content.split('\n')
-  const segments: Array<{ type: 'md' | 'internal' | 'external'; content: string; url?: string; title?: string; desc?: string }> = []
+  const segments: Array<{
+    type: 'md' | 'internal' | 'external'
+    content: string
+    url?: string
+    title?: string
+    desc?: string
+  }> = []
   let mdBuffer: string[] = []
 
   for (const line of lines) {
     // ::quote[slug] — 站内文章引用
     const internalMatch = line.match(/^::quote\[([^\]]+)\]\s*$/)
     if (internalMatch) {
-      if (mdBuffer.length) { segments.push({ type: 'md', content: mdBuffer.join('\n') }); mdBuffer = [] }
+      if (mdBuffer.length) {
+        segments.push({ type: 'md', content: mdBuffer.join('\n') })
+        mdBuffer = []
+      }
       segments.push({ type: 'internal', content: internalMatch[1].trim() })
       continue
     }
     // ::quote-url[url] or ::quote-url[url "title" "desc"]
     const externalMatch = line.match(/^::quote-url\[([^\]]+)\]\s*$/)
     if (externalMatch) {
-      if (mdBuffer.length) { segments.push({ type: 'md', content: mdBuffer.join('\n') }); mdBuffer = [] }
+      if (mdBuffer.length) {
+        segments.push({ type: 'md', content: mdBuffer.join('\n') })
+        mdBuffer = []
+      }
       const raw = externalMatch[1].trim()
       // 格式: url "title" "desc"
       const parts = raw.match(/^(\S+)(?:\s+"([^"]+)")?(?:\s+"([^"]+)")?/)
@@ -82,9 +102,44 @@ function parseQuotes(content: string): { segments: Array<{ type: 'md' | 'interna
   return { segments }
 }
 
+// 将 HTML 内容按 data-quote-url 节点拆分
+function parseHtmlQuotes(html: string): Array<{ type: 'html' | 'quote-url'; content: string }> {
+  const segments: Array<{ type: 'html' | 'quote-url'; content: string }> = []
+  const re = /<div\s+data-quote-url="([^"]*)"[^>]*>[\s\S]*?<\/div>/g
+  let lastIndex = 0
+  let m: RegExpExecArray | null
+  while ((m = re.exec(html)) !== null) {
+    if (m.index > lastIndex) {
+      const chunk = html.slice(lastIndex, m.index)
+      if (chunk.trim()) segments.push({ type: 'html', content: chunk })
+    }
+    if (m[1]) segments.push({ type: 'quote-url', content: m[1] })
+    lastIndex = m.index + m[0].length
+  }
+  if (lastIndex < html.length) {
+    const chunk = html.slice(lastIndex)
+    if (chunk.trim()) segments.push({ type: 'html', content: chunk })
+  }
+  return segments
+}
+
 export default function MarkdownRendererClient({ content }: { content: string }) {
   const isHtml = content.trimStart().startsWith('<')
   if (isHtml) {
+    const htmlSegments = parseHtmlQuotes(content)
+    if (htmlSegments.some((s) => s.type === 'quote-url')) {
+      return (
+        <div className="prose-x">
+          {htmlSegments.map((seg, i) =>
+            seg.type === 'quote-url' ? (
+              <ExternalQuoteCard key={i} url={seg.content} />
+            ) : (
+              <div key={i} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(seg.content) }} />
+            )
+          )}
+        </div>
+      )
+    }
     return <div className="prose-x" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }} />
   }
 
