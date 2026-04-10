@@ -68,6 +68,23 @@ export default async function PostPage({ params }: { params: { slug: string } })
 
   const postWithDisplay = { ...post, author: { ...post.author, displayName: post.author.displayName || '' } }
 
+  // 获取 threadId 及完整 Thread 上下文
+  type ThreadPost = { id: string; slug: string; title: string; content: string; threadOrder: number }
+  let threadPosts: ThreadPost[] = []
+  try {
+    const threadRow = await prisma.$queryRawUnsafe<{ threadId: string | null; threadOrder: number }[]>(
+      `SELECT threadId, threadOrder FROM Post WHERE id = ?`,
+      post.id
+    )
+    const threadId = threadRow[0]?.threadId
+    if (threadId) {
+      threadPosts = await prisma.$queryRawUnsafe<ThreadPost[]>(
+        `SELECT id, slug, title, content, threadOrder FROM Post WHERE threadId = ? AND published = 1 ORDER BY threadOrder ASC, publishedAt ASC`,
+        threadId
+      )
+    }
+  } catch {}
+
   // 浏览量非阻塞更新，不等待结果
   prisma.post.update({ where: { id: post.id }, data: { views: { increment: 1 } } }).catch(() => {})
 
@@ -135,6 +152,99 @@ export default async function PostPage({ params }: { params: { slug: string } })
       </div>
 
       <article className="px-4 pt-6">
+        {/* Thread 上下文导航 */}
+        {threadPosts.length > 1 && (
+          <div className="mb-5 overflow-hidden rounded-2xl" style={{ border: '1px solid var(--border)' }}>
+            <div
+              className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-bold"
+              style={{
+                background: 'var(--bg-secondary)',
+                color: 'var(--accent)',
+                borderBottom: '1px solid var(--border)',
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M4 4h16v2H4V4zm2 4h12v2H6V8zm-2 4h16v2H4v-2zm2 4h12v2H6v-2z" />
+              </svg>
+              Thread · {threadPosts.length} 条
+            </div>
+            {threadPosts.map((tp, i) => {
+              const isCurrent = tp.id === post.id
+              return (
+                <div key={tp.id} className="relative">
+                  {/* 连接线（非最后一条） */}
+                  {i < threadPosts.length - 1 && (
+                    <div
+                      className="absolute left-[19px] top-[44px] z-0 w-0.5"
+                      style={{ background: 'var(--border)', height: 'calc(100% - 44px)' }}
+                    />
+                  )}
+                  {isCurrent ? (
+                    <div className="relative z-10 flex gap-3 px-4 py-3" style={{ background: 'rgba(29,155,240,0.06)' }}>
+                      <div
+                        className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold ring-2"
+                        style={{ background: 'var(--bg-secondary)', outline: '2px solid var(--accent)' }}
+                      >
+                        {postWithDisplay.author.avatar ? (
+                          <Image
+                            src={postWithDisplay.author.avatar}
+                            alt=""
+                            width={32}
+                            height={32}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span style={{ color: 'var(--text-secondary)' }}>
+                            {postWithDisplay.author.username[0]?.toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold" style={{ color: 'var(--accent)' }}>
+                          {tp.threadOrder}. {tp.title || tp.content.replace(/<[^>]*>/g, '').slice(0, 60)}
+                        </p>
+                        <p className="mt-0.5 text-xs" style={{ color: 'var(--accent)', opacity: 0.7 }}>
+                          当前阅读
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <Link
+                      href={`/post/${tp.slug}`}
+                      className="relative z-10 flex gap-3 px-4 py-3 transition-colors hover:bg-white/5"
+                      style={{ display: 'flex' }}
+                    >
+                      <div
+                        className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold"
+                        style={{ background: 'var(--bg-secondary)' }}
+                      >
+                        {postWithDisplay.author.avatar ? (
+                          <Image
+                            src={postWithDisplay.author.avatar}
+                            alt=""
+                            width={32}
+                            height={32}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span style={{ color: 'var(--text-secondary)' }}>
+                            {postWithDisplay.author.username[0]?.toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-2 text-sm" style={{ color: 'var(--text-primary)' }}>
+                          {tp.threadOrder}. {tp.title || tp.content.replace(/<[^>]*>/g, '').slice(0, 60)}
+                        </p>
+                      </div>
+                    </Link>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+
         {/* 作者信息 */}
         <div className="mb-5 flex items-center gap-3">
           <div

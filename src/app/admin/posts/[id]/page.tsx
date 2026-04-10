@@ -25,6 +25,8 @@ export default function EditPostPage() {
     tags: '',
     pinned: false,
     publishedAt: '',
+    threadId: '',
+    threadOrder: 1,
   })
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -70,6 +72,8 @@ export default function EditPostPage() {
               publishedAt: data.publishedAt ? new Date(data.publishedAt).toISOString().slice(0, 16) : '',
               tags: (data.tags || []).map((t: { tag: { name: string } }) => t.tag.name).join(', '),
               pinned: data.pinned || false,
+              threadId: data.threadId || '',
+              threadOrder: data.threadOrder ?? 1,
             }
             // 检查是否有未保存的草稿
             const saved = localStorage.getItem(DRAFT_KEY)
@@ -117,6 +121,8 @@ export default function EditPostPage() {
       published: publish !== undefined ? publish : form.published,
       tags: tagsArr,
       publishedAt: form.publishedAt ? new Date(form.publishedAt).toISOString() : null,
+      threadId: form.threadId.trim() || null,
+      threadOrder: form.threadOrder,
     }
     const url = isNew ? '/api/admin/posts' : `/api/admin/posts/${params.id}`
     const method = isNew ? 'POST' : 'PUT'
@@ -368,6 +374,63 @@ export default function EditPostPage() {
                 <div className="rounded-lg p-2" style={{ background: 'var(--bg)' }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={form.coverImage} alt="封面预览" className="h-36 w-full rounded object-cover" />
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Thread 设置 */}
+          <section
+            className="rounded-2xl p-4"
+            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
+          >
+            <h2 className="mb-3 text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+              Thread 设置
+            </h2>
+            <div className="flex flex-col gap-3">
+              <div>
+                <label className="mb-1 block text-xs" style={{ color: 'var(--text-secondary)' }}>
+                  Thread ID
+                </label>
+                <div className="flex gap-1">
+                  <IMEInput
+                    type="text"
+                    placeholder="留空则不属于任何 Thread"
+                    value={form.threadId}
+                    onValueChange={(v) => updateForm((f) => ({ ...f, threadId: v }))}
+                    className="min-w-0 flex-1 rounded-lg border bg-transparent px-2 py-1.5 text-xs outline-none"
+                    style={{ color: 'var(--text-primary)', borderColor: 'var(--border)' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const id = crypto.randomUUID()
+                      updateForm((f) => ({ ...f, threadId: id }))
+                    }}
+                    className="flex-shrink-0 rounded-lg px-2 py-1.5 text-xs transition-colors hover:opacity-80"
+                    style={{ background: 'var(--accent)', color: '#fff' }}
+                    title="生成新 Thread ID"
+                  >
+                    新建
+                  </button>
+                </div>
+                <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                  同一 Thread ID 的帖子会串联展示
+                </p>
+              </div>
+              {form.threadId.trim() && (
+                <div>
+                  <label className="mb-1 block text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    Thread 内顺序
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={form.threadOrder}
+                    onChange={(e) => updateForm((f) => ({ ...f, threadOrder: parseInt(e.target.value) || 1 }))}
+                    className="w-full rounded-lg border bg-transparent px-2 py-1.5 text-xs outline-none"
+                    style={{ color: 'var(--text-primary)', borderColor: 'var(--border)' }}
+                  />
                 </div>
               )}
             </div>

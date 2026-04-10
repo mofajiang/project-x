@@ -295,6 +295,10 @@ export async function runMigrations() {
         'enableFriendCircle (博友圈开关)'
       )
       await addColumn('FriendLink', 'rssUrl', `TEXT NOT NULL DEFAULT ''`, 'rssUrl (RSS 订阅地址)')
+      // Thread（帖子串联）
+      await addColumn('Post', 'threadId', `TEXT`, 'threadId (Thread 分组 ID)')
+      await addColumn('Post', 'threadOrder', `INTEGER NOT NULL DEFAULT 0`, 'threadOrder (Thread 内排序)')
+      await createIndex('Post', 'idx_post_threadId', 'threadId', 'Post threadId index')
       migrated = true
     })().finally(() => {
       migratePromise = null

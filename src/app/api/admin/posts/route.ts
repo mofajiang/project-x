@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { title, content, excerpt, coverImage, published, tags, publishedAt } = await req.json()
+  const { title, content, excerpt, coverImage, published, tags, publishedAt, threadId, threadOrder } = await req.json()
   const slug = slugify(title) + '-' + Date.now()
 
   const post = await prisma.post.create({
@@ -67,6 +67,15 @@ export async function POST(req: NextRequest) {
     },
   })
   revalidateTag('posts')
+  // 保存 threadId / threadOrder（raw SQL）
+  if (threadId?.trim()) {
+    await prisma.$executeRawUnsafe(
+      `UPDATE Post SET threadId = ?, threadOrder = ? WHERE id = ?`,
+      threadId.trim(),
+      typeof threadOrder === 'number' ? threadOrder : 1,
+      post.id
+    )
+  }
   syslog
     .info('post', `文章${published ? '发布' : '保存为草稿'}: ${title}`, { postId: post.id, slug: post.slug })
     .catch(() => {})

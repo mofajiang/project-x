@@ -20,7 +20,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { title, content, excerpt, coverImage, published, tags, publishedAt, pinned } = await req.json()
+  const { title, content, excerpt, coverImage, published, tags, publishedAt, pinned, threadId, threadOrder } =
+    await req.json()
 
   // 查询现有文章，判断是否已发布过
   const existingPost = await prisma.post.findUnique({
@@ -72,6 +73,13 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     },
   })
   revalidateTag('posts')
+  // 保存 threadId / threadOrder（raw SQL，因字段通过迁移添加，不在 Prisma schema）
+  await prisma.$executeRawUnsafe(
+    `UPDATE Post SET threadId = ?, threadOrder = ? WHERE id = ?`,
+    threadId?.trim() || null,
+    typeof threadOrder === 'number' ? threadOrder : 1,
+    params.id
+  )
   syslog.info('post', `文章${published ? '已发布' : '已保存为草稿'}: ${title}`, { postId: params.id }).catch(() => {})
   return NextResponse.json(post)
 }
