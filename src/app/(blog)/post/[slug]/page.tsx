@@ -152,211 +152,299 @@ export default async function PostPage({ params }: { params: { slug: string } })
       </div>
 
       <article className="px-4 pt-6">
-        {/* Thread 上下文导航 */}
-        {threadPosts.length > 1 && (
-          <div className="mb-5 overflow-hidden rounded-2xl" style={{ border: '1px solid var(--border)' }}>
-            <div
-              className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-bold"
-              style={{
-                background: 'var(--bg-secondary)',
-                color: 'var(--accent)',
-                borderBottom: '1px solid var(--border)',
-              }}
-            >
+        {threadPosts.length > 1 ? (
+          /* X 风格连接线 Thread 视图 */
+          <>
+            {/* Thread 标题行 */}
+            <div className="mb-4 flex items-center gap-2 text-sm font-bold" style={{ color: 'var(--accent)' }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M4 4h16v2H4V4zm2 4h12v2H6V8zm-2 4h16v2H4v-2zm2 4h12v2H6v-2z" />
               </svg>
               Thread · {threadPosts.length} 条
             </div>
+
             {threadPosts.map((tp, i) => {
               const isCurrent = tp.id === post.id
+              const isLast = i === threadPosts.length - 1
+              const previewText = tp.content
+                .replace(/<[^>]*>/g, '')
+                .replace(/[#*`[\]!]/g, '')
+                .trim()
+                .slice(0, 150)
+
               return (
-                <div key={tp.id} className="relative">
-                  {/* 连接线（非最后一条） */}
-                  {i < threadPosts.length - 1 && (
+                <div key={tp.id} className="flex gap-3">
+                  {/* 头像列 + 连接线 */}
+                  <div className="flex w-10 flex-shrink-0 flex-col items-center">
                     <div
-                      className="absolute left-[19px] top-[44px] z-0 w-0.5"
-                      style={{ background: 'var(--border)', height: 'calc(100% - 44px)' }}
-                    />
-                  )}
-                  {isCurrent ? (
-                    <div className="relative z-10 flex gap-3 px-4 py-3" style={{ background: 'rgba(29,155,240,0.06)' }}>
-                      <div
-                        className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold ring-2"
-                        style={{ background: 'var(--bg-secondary)', outline: '2px solid var(--accent)' }}
-                      >
-                        {postWithDisplay.author.avatar ? (
-                          <Image
-                            src={postWithDisplay.author.avatar}
-                            alt=""
-                            width={32}
-                            height={32}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <span style={{ color: 'var(--text-secondary)' }}>
-                            {postWithDisplay.author.username[0]?.toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold" style={{ color: 'var(--accent)' }}>
-                          {tp.threadOrder}. {tp.title || tp.content.replace(/<[^>]*>/g, '').slice(0, 60)}
-                        </p>
-                        <p className="mt-0.5 text-xs" style={{ color: 'var(--accent)', opacity: 0.7 }}>
-                          当前阅读
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <Link
-                      href={`/post/${tp.slug}`}
-                      className="relative z-10 flex gap-3 px-4 py-3 transition-colors hover:bg-white/5"
-                      style={{ display: 'flex' }}
+                      className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold"
+                      style={{
+                        background: 'var(--bg-secondary)',
+                        boxShadow: '0 0 0 1px var(--border)',
+                        ...(isCurrent ? { outline: '2px solid var(--accent)', outlineOffset: '1px' } : {}),
+                      }}
                     >
-                      <div
-                        className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold"
-                        style={{ background: 'var(--bg-secondary)' }}
-                      >
-                        {postWithDisplay.author.avatar ? (
-                          <Image
-                            src={postWithDisplay.author.avatar}
-                            alt=""
-                            width={32}
-                            height={32}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <span style={{ color: 'var(--text-secondary)' }}>
-                            {postWithDisplay.author.username[0]?.toUpperCase()}
-                          </span>
+                      {postWithDisplay.author.avatar ? (
+                        <Image
+                          src={postWithDisplay.author.avatar}
+                          alt=""
+                          width={40}
+                          height={40}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span style={{ color: 'var(--text-secondary)' }}>
+                          {postWithDisplay.author.username[0]?.toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    {!isLast && (
+                      <div className="my-1 w-0.5 flex-1" style={{ background: 'var(--border)', minHeight: 20 }} />
+                    )}
+                  </div>
+
+                  {/* 内容区 */}
+                  <div className={`min-w-0 flex-1 ${isLast ? 'pb-2' : 'pb-5'}`}>
+                    {/* 作者行 */}
+                    <div className="mb-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-0">
+                      <span className="text-[15px] font-bold" style={{ color: 'var(--text-primary)' }}>
+                        {postWithDisplay.author.displayName || postWithDisplay.author.username}
+                      </span>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="var(--accent)" className="flex-shrink-0">
+                        <path d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91C1.88 9.33 1 10.57 1 12s.88 2.67 2.19 3.34c-.46 1.39-.2 2.9.81 3.91s2.52 1.26 3.91.8c.66 1.31 1.91 2.19 3.34 2.19s2.67-.88 3.33-2.19c1.4.46 2.91.2 3.92-.81s1.26-2.52.8-3.91C21.37 14.67 22.25 13.43 22.25 12zm-6.07-1.73l-3.5 4.67a.75.75 0 01-1.14.09l-2-2a.75.75 0 011.06-1.06l1.41 1.41 2.96-3.95a.75.75 0 011.21.84z" />
+                      </svg>
+                      <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                        @{postWithDisplay.author.username}
+                      </span>
+                      {isCurrent && (
+                        <span
+                          className="rounded-full px-2 py-0.5 text-xs font-medium"
+                          style={{ background: 'rgba(29,155,240,0.12)', color: 'var(--accent)' }}
+                        >
+                          当前
+                        </span>
+                      )}
+                    </div>
+
+                    {isCurrent ? (
+                      /* 当前帖子完整内容 */
+                      <>
+                        {post.title && (
+                          <h1 className="mb-3 text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                            {post.title}
+                          </h1>
                         )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="line-clamp-2 text-sm" style={{ color: 'var(--text-primary)' }}>
-                          {tp.threadOrder}. {tp.title || tp.content.replace(/<[^>]*>/g, '').slice(0, 60)}
-                        </p>
-                      </div>
-                    </Link>
-                  )}
+                        {post.coverImage && extractImages(post.content).length === 0 && (
+                          <div className="mb-5 aspect-[16/9] overflow-hidden rounded-2xl">
+                            <Image
+                              src={post.coverImage}
+                              alt={post.title}
+                              width={600}
+                              height={338}
+                              sizes="(max-width: 640px) 100vw, 600px"
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                        )}
+                        {post.tags.length > 0 && (
+                          <div className="mb-5 flex flex-wrap gap-2">
+                            {post.tags.map(({ tag }) => (
+                              <Link
+                                key={tag.id}
+                                href={`/tag/${tag.slug}`}
+                                className="rounded-full px-3 py-1 text-sm transition-opacity hover:opacity-80"
+                                style={{
+                                  background: 'rgba(29,155,240,0.1)',
+                                  color: 'var(--accent)',
+                                  border: '1px solid rgba(29,155,240,0.2)',
+                                }}
+                              >
+                                #{tag.name}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                        <div className="mb-6">
+                          <MarkdownRenderer
+                            content={
+                              post.content.trimStart().startsWith('<')
+                                ? post.content.replace(/<img[^>]*>/gi, '')
+                                : post.content
+                                    .replace(/!\[.*?\]\(https?:\/\/[^)\s]+\)/g, '')
+                                    .replace(/<img[^>]*>/gi, '')
+                            }
+                          />
+                        </div>
+                        {extractImages(post.content).length > 0 && (
+                          <div className="mb-6">
+                            <MomentsImageGrid images={extractImages(post.content)} title={post.title} priority />
+                          </div>
+                        )}
+                        <div
+                          className="-mx-4 flex items-center gap-4 border-y px-4 py-3 text-sm"
+                          style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+                        >
+                          <span>{post.publishedAt ? formatDate(post.publishedAt) : ''}</span>
+                          <span className="flex items-center gap-1">
+                            <svg
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                            >
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                              <circle cx="12" cy="12" r="3" />
+                            </svg>
+                            {post.views + 1} 次浏览
+                          </span>
+                        </div>
+                        <PostActions postId={post.id} likes={post.likes} commentCount={post._count.comments} />
+                      </>
+                    ) : (
+                      /* 其他帖子：紧凑预览 + 跳转链接 */
+                      <Link href={`/post/${tp.slug}`} className="group block">
+                        {tp.title && (
+                          <p
+                            className="mb-1 text-[15px] font-semibold group-hover:underline"
+                            style={{ color: 'var(--text-primary)' }}
+                          >
+                            {tp.title}
+                          </p>
+                        )}
+                        {previewText && (
+                          <p className="line-clamp-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                            {previewText.length >= 150 ? previewText + '…' : previewText}
+                          </p>
+                        )}
+                        <span className="mt-1 block text-xs" style={{ color: 'var(--accent)' }}>
+                          查看全文 →
+                        </span>
+                      </Link>
+                    )}
+                  </div>
                 </div>
               )
             })}
-          </div>
-        )}
+          </>
+        ) : (
+          /* 普通单帖子视图 */
+          <>
+            {/* 作者信息 */}
+            <div className="mb-5 flex items-center gap-3">
+              <div
+                className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-base font-bold"
+                style={{ background: 'var(--bg-secondary)', boxShadow: '0 0 0 1px var(--border)' }}
+              >
+                {postWithDisplay.author.avatar ? (
+                  <Image
+                    src={postWithDisplay.author.avatar}
+                    alt={postWithDisplay.author.username}
+                    width={44}
+                    height={44}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span style={{ color: 'var(--text-secondary)' }}>
+                    {postWithDisplay.author.username[0]?.toUpperCase()}
+                  </span>
+                )}
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-[15px] font-bold" style={{ color: 'var(--text-primary)' }}>
+                    {postWithDisplay.author.displayName || postWithDisplay.author.username}
+                  </p>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--accent)" className="flex-shrink-0">
+                    <path d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91C1.88 9.33 1 10.57 1 12s.88 2.67 2.19 3.34c-.46 1.39-.2 2.9.81 3.91s2.52 1.26 3.91.8c.66 1.31 1.91 2.19 3.34 2.19s2.67-.88 3.33-2.19c1.4.46 2.91.2 3.92-.81s1.26-2.52.8-3.91C21.37 14.67 22.25 13.43 22.25 12zm-6.07-1.73l-3.5 4.67a.75.75 0 01-1.14.09l-2-2a.75.75 0 011.06-1.06l1.41 1.41 2.96-3.95a.75.75 0 011.21.84z" />
+                  </svg>
+                  <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    @{postWithDisplay.author.username}
+                  </span>
+                </div>
+                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  {post.publishedAt ? formatDate(post.publishedAt) : ''}
+                </p>
+              </div>
+            </div>
 
-        {/* 作者信息 */}
-        <div className="mb-5 flex items-center gap-3">
-          <div
-            className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-base font-bold"
-            style={{ background: 'var(--bg-secondary)', boxShadow: '0 0 0 1px var(--border)' }}
-          >
-            {postWithDisplay.author.avatar ? (
-              <Image
-                src={postWithDisplay.author.avatar}
-                alt={postWithDisplay.author.username}
-                width={44}
-                height={44}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <span style={{ color: 'var(--text-secondary)' }}>
-                {postWithDisplay.author.username[0]?.toUpperCase()}
-              </span>
+            {/* 标题 */}
+            <h1 className="mb-3 text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+              {post.title}
+            </h1>
+
+            {/* 封面图（仅在无内嵌图片时显示） */}
+            {post.coverImage && extractImages(post.content).length === 0 && (
+              <div className="mb-5 aspect-[16/9] overflow-hidden rounded-2xl">
+                <Image
+                  src={post.coverImage}
+                  alt={post.title}
+                  width={600}
+                  height={338}
+                  sizes="(max-width: 640px) 100vw, 600px"
+                  className="h-full w-full object-cover"
+                />
+              </div>
             )}
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <p className="text-[15px] font-bold" style={{ color: 'var(--text-primary)' }}>
-                {postWithDisplay.author.displayName || postWithDisplay.author.username}
-              </p>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--accent)" className="flex-shrink-0">
-                <path d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91C1.88 9.33 1 10.57 1 12s.88 2.67 2.19 3.34c-.46 1.39-.2 2.9.81 3.91s2.52 1.26 3.91.8c.66 1.31 1.91 2.19 3.34 2.19s2.67-.88 3.33-2.19c1.4.46 2.91.2 3.92-.81s1.26-2.52.8-3.91C21.37 14.67 22.25 13.43 22.25 12zm-6.07-1.73l-3.5 4.67a.75.75 0 01-1.14.09l-2-2a.75.75 0 011.06-1.06l1.41 1.41 2.96-3.95a.75.75 0 011.21.84z" />
-              </svg>
-              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                @{postWithDisplay.author.username}
+
+            {/* 标签 */}
+            {post.tags.length > 0 && (
+              <div className="mb-5 flex flex-wrap gap-2">
+                {post.tags.map(({ tag }) => (
+                  <Link
+                    key={tag.id}
+                    href={`/tag/${tag.slug}`}
+                    className="rounded-full px-3 py-1 text-sm transition-opacity hover:opacity-80"
+                    style={{
+                      background: 'rgba(29,155,240,0.1)',
+                      color: 'var(--accent)',
+                      border: '1px solid rgba(29,155,240,0.2)',
+                    }}
+                  >
+                    #{tag.name}
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            {/* 正文 */}
+            <div className="mb-6">
+              <MarkdownRenderer
+                content={
+                  post.content.trimStart().startsWith('<')
+                    ? post.content.replace(/<img[^>]*>/gi, '')
+                    : post.content.replace(/!\[.*?\]\(https?:\/\/[^)\s]+\)/g, '').replace(/<img[^>]*>/gi, '') // <img> tags in markdown (old StorageImagePicker)
+                }
+              />
+            </div>
+
+            {/* 图片（朋友圈网格展示） */}
+            {extractImages(post.content).length > 0 && (
+              <div className="mb-6">
+                <MomentsImageGrid images={extractImages(post.content)} title={post.title} priority />
+              </div>
+            )}
+
+            {/* 时间 & 浏览 */}
+            <div
+              className="-mx-4 flex items-center gap-4 border-y px-4 py-3 text-sm"
+              style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+            >
+              <span>{post.publishedAt ? formatDate(post.publishedAt) : ''}</span>
+              <span className="flex items-center gap-1">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                {post.views + 1} 次浏览
               </span>
             </div>
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-              {post.publishedAt ? formatDate(post.publishedAt) : ''}
-            </p>
-          </div>
-        </div>
 
-        {/* 标题 */}
-        <h1 className="mb-3 text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-          {post.title}
-        </h1>
-
-        {/* 封面图（仅在无内嵌图片时显示） */}
-        {post.coverImage && extractImages(post.content).length === 0 && (
-          <div className="mb-5 aspect-[16/9] overflow-hidden rounded-2xl">
-            <Image
-              src={post.coverImage}
-              alt={post.title}
-              width={600}
-              height={338}
-              sizes="(max-width: 640px) 100vw, 600px"
-              className="h-full w-full object-cover"
-            />
-          </div>
+            {/* 操作栏 */}
+            <PostActions postId={post.id} likes={post.likes} commentCount={post._count.comments} />
+          </>
         )}
-
-        {/* 标签 */}
-        {post.tags.length > 0 && (
-          <div className="mb-5 flex flex-wrap gap-2">
-            {post.tags.map(({ tag }) => (
-              <Link
-                key={tag.id}
-                href={`/tag/${tag.slug}`}
-                className="rounded-full px-3 py-1 text-sm transition-opacity hover:opacity-80"
-                style={{
-                  background: 'rgba(29,155,240,0.1)',
-                  color: 'var(--accent)',
-                  border: '1px solid rgba(29,155,240,0.2)',
-                }}
-              >
-                #{tag.name}
-              </Link>
-            ))}
-          </div>
-        )}
-
-        {/* 正文 */}
-        <div className="mb-6">
-          <MarkdownRenderer
-            content={
-              post.content.trimStart().startsWith('<')
-                ? post.content.replace(/<img[^>]*>/gi, '')
-                : post.content.replace(/!\[.*?\]\(https?:\/\/[^)\s]+\)/g, '').replace(/<img[^>]*>/gi, '') // <img> tags in markdown (old StorageImagePicker)
-            }
-          />
-        </div>
-
-        {/* 图片（朋友圈网格展示） */}
-        {extractImages(post.content).length > 0 && (
-          <div className="mb-6">
-            <MomentsImageGrid images={extractImages(post.content)} title={post.title} priority />
-          </div>
-        )}
-
-        {/* 时间 & 浏览 */}
-        <div
-          className="-mx-4 flex items-center gap-4 border-y px-4 py-3 text-sm"
-          style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
-        >
-          <span>{post.publishedAt ? formatDate(post.publishedAt) : ''}</span>
-          <span className="flex items-center gap-1">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-              <circle cx="12" cy="12" r="3" />
-            </svg>
-            {post.views + 1} 次浏览
-          </span>
-        </div>
-
-        {/* 操作栏 */}
-        <PostActions postId={post.id} likes={post.likes} commentCount={post._count.comments} />
       </article>
 
       {/* 评论区 */}

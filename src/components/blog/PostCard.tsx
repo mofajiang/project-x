@@ -215,6 +215,13 @@ export const PostCard = memo(function PostCard({ post, currentUserId, index = 0 
               </div>
             )}
 
+            {/* Thread 查看链接 */}
+            {post.threadId && post.threadCount && post.threadCount > 1 && (
+              <div className="mt-2 text-[13px]" style={{ color: 'var(--accent)' }}>
+                查看完整 Thread（{post.threadCount} 条）
+              </div>
+            )}
+
             {/* 操作栏 */}
             <div className="-ml-2 mt-2 flex items-center gap-1">
               <span
