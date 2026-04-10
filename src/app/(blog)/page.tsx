@@ -1,11 +1,10 @@
 import { prisma } from '@/lib/prisma'
 import { PostCard } from '@/components/blog/PostCard'
 import { FeedTabs } from '@/components/blog/FeedTabs'
-import { FriendFeedCard } from '@/components/blog/FriendFeedCard'
+import { FriendCircleList } from '@/components/blog/FriendCircleList'
 import { QuickPost } from '@/components/blog/QuickPost'
 import { getSession } from '@/lib/auth'
 import { stripMarkdown, extractQuotes } from '@/lib/post-utils'
-import { fetchFriendFeeds, type FriendFeedSource } from '@/lib/rss-fetcher'
 import { runMigrations } from '@/lib/db-migrate'
 
 export default async function HomePage({ searchParams }: { searchParams: { tab?: string } }) {
@@ -23,24 +22,8 @@ export default async function HomePage({ searchParams }: { searchParams: { tab?:
     enableFriendCircle = cfgRows.length > 0 && Boolean(Number(cfgRows[0].enableFriendCircle))
   } catch {}
 
-  // 博友圈 Tab
+  // 博友圈 Tab —— 使用客户端组件异步加载，避免阻塞页面渲染
   if (tab === 'friends' && enableFriendCircle) {
-    const links = await prisma
-      .$queryRawUnsafe<any[]>(
-        `SELECT name, url, COALESCE(rssUrl,'') as rssUrl, COALESCE(favicon,'') as favicon
-       FROM FriendLink WHERE status = 'approved' ORDER BY sortOrder DESC, createdAt ASC`
-      )
-      .catch(() => [])
-
-    const sources: FriendFeedSource[] = (links as any[]).map((l) => ({
-      name: l.name as string,
-      url: l.url as string,
-      rssUrl: (l.rssUrl as string) || undefined,
-      favicon: (l.favicon as string) || undefined,
-    }))
-
-    const items = await fetchFriendFeeds(sources)
-
     if (session) {
       try {
         const rows = await prisma.$queryRawUnsafe<any[]>(`SELECT avatar FROM User WHERE id = ?`, session.userId)
@@ -52,15 +35,7 @@ export default async function HomePage({ searchParams }: { searchParams: { tab?:
       <div>
         <FeedTabs active={tab} showFriendCircle={enableFriendCircle} />
         {session && <QuickPost avatar={avatar} username={session.username} />}
-        <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
-          {items.length === 0 ? (
-            <div className="py-20 text-center" style={{ color: 'var(--text-secondary)' }}>
-              暂无博友圈内容，请先在后台为友链添加 RSS 地址，并确保博友圈功能已启用。
-            </div>
-          ) : (
-            items.map((item, i) => <FriendFeedCard key={`${item.link}-${i}`} item={item} />)
-          )}
-        </div>
+        <FriendCircleList />
       </div>
     )
   }
