@@ -20,26 +20,57 @@ function Avatar({ name, url, size = 36 }: { name: string; url: string | null; si
   const [err, setErr] = useState(false)
   return (
     <div
-      className="rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center font-bold"
-      style={{ width: size, height: size, background: 'var(--bg-secondary)', border: '1px solid var(--border)', fontSize: size * 0.4, color: 'var(--accent)' }}
+      className="flex flex-shrink-0 items-center justify-center overflow-hidden rounded-full font-bold"
+      style={{
+        width: size,
+        height: size,
+        background: 'var(--bg-secondary)',
+        border: '1px solid var(--border)',
+        fontSize: size * 0.4,
+        color: 'var(--accent)',
+      }}
     >
-      {url && !err
-        ? <Image src={url} alt={name} width={size} height={size} className="object-cover w-full h-full" onError={() => setErr(true)} />
-        : name.charAt(0).toUpperCase()}
+      {url && !err ? (
+        <Image
+          src={url}
+          alt={name}
+          width={size}
+          height={size}
+          className="h-full w-full object-cover"
+          onError={() => setErr(true)}
+        />
+      ) : (
+        name.charAt(0).toUpperCase()
+      )}
     </div>
   )
 }
 
 function ReplyIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M10 9V5l-7 7 7 7v-4c7 0 11 2 11 7 0-8-4-13-11-13z" />
     </svg>
   )
 }
 
 function CommentInput({
-  session, postId, parentId, placeholder, onDone, onCancel, defaultExpanded,
+  session,
+  postId,
+  parentId,
+  placeholder,
+  onDone,
+  onCancel,
+  defaultExpanded,
 }: {
   session: JWTPayload | null
   postId: string
@@ -101,36 +132,36 @@ function CommentInput({
   }
 
   return (
-    <div className="flex gap-2.5 min-w-0 overflow-hidden sm:gap-3">
+    <div className="flex min-w-0 gap-2.5 overflow-hidden sm:gap-3">
       <div className="flex-shrink-0 pt-2">
-        <Avatar name={session?.username || (guestName || '?')} url={null} size={36} />
+        <Avatar name={session?.username || guestName || '?'} url={null} size={36} />
       </div>
-      <div className="flex-1 min-w-0 overflow-hidden pt-1.5">
+      <div className="min-w-0 flex-1 overflow-hidden pt-1.5">
         {!session && expanded && (
           <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
             <input
               type="text"
               placeholder="昵称（必填）"
               value={guestName}
-              onChange={e => setGuestName(e.target.value)}
+              onChange={(e) => setGuestName(e.target.value)}
               maxLength={20}
-              className="w-full min-w-0 bg-transparent outline-none text-sm py-2 border-b"
+              className="w-full min-w-0 border-b bg-transparent py-2 text-sm outline-none"
               style={{ color: 'var(--text-primary)', borderColor: 'var(--border)' }}
             />
             <input
               type="email"
               placeholder="邮箱（选填）"
               value={guestEmail}
-              onChange={e => setGuestEmail(e.target.value)}
-              className="w-full min-w-0 bg-transparent outline-none text-sm py-2 border-b"
+              onChange={(e) => setGuestEmail(e.target.value)}
+              className="w-full min-w-0 border-b bg-transparent py-2 text-sm outline-none"
               style={{ color: 'var(--text-primary)', borderColor: 'var(--border)' }}
             />
             <input
               type="url"
               placeholder="网站（选填）"
               value={guestWebsite}
-              onChange={e => setGuestWebsite(e.target.value)}
-              className="w-full min-w-0 bg-transparent outline-none text-sm py-2 border-b"
+              onChange={(e) => setGuestWebsite(e.target.value)}
+              className="w-full min-w-0 border-b bg-transparent py-2 text-sm outline-none"
               style={{ color: 'var(--text-primary)', borderColor: 'var(--border)' }}
             />
           </div>
@@ -148,7 +179,12 @@ function CommentInput({
 
         {expanded && (
           <div className="mt-3 flex items-center justify-between gap-2">
-            <span className="text-[11px] tabular-nums sm:text-xs" style={{ color: text.length > 1800 ? '#f4212e' : 'var(--text-secondary)' }}>{text.length}/2000</span>
+            <span
+              className="text-[11px] tabular-nums sm:text-xs"
+              style={{ color: text.length > 1800 ? '#f4212e' : 'var(--text-secondary)' }}
+            >
+              {text.length}/2000
+            </span>
             <button
               onClick={submit}
               disabled={loading || !text.trim()}
@@ -165,54 +201,100 @@ function CommentInput({
   )
 }
 
-function CommentItem({ comment, postId, session, depth = 0, showCommentIp = false }: {
+function CommentItem({
+  comment,
+  postId,
+  session,
+  depth = 0,
+  showCommentIp = false,
+  replyToName,
+}: {
   comment: Comment
   postId: string
   session: JWTPayload | null
   depth?: number
   showCommentIp?: boolean
+  replyToName?: string
 }) {
   const [replying, setReplying] = useState(false)
   const name = comment.author?.username || comment.guestName || '匿名'
-  const faviconUrl = !comment.author && comment.guestWebsite
-    ? (() => { try { const host = new URL(comment.guestWebsite).hostname; return `https://www.google.com/s2/favicons?domain=${host}&sz=64` } catch { return null } })()
-    : null
+  const faviconUrl =
+    !comment.author && comment.guestWebsite
+      ? (() => {
+          try {
+            const host = new URL(comment.guestWebsite).hostname
+            return `https://www.google.com/s2/favicons?domain=${host}&sz=64`
+          } catch {
+            return null
+          }
+        })()
+      : null
   const avatar = comment.author?.avatar || faviconUrl
 
   return (
-    <div className="flex gap-2 py-2.5 sm:gap-2.5 sm:py-3">
-      <div className="flex flex-col items-center flex-shrink-0" style={{ width: 32 }}>
-        <Avatar name={name} url={avatar} size={32} />
+    <div className="flex gap-2.5 py-3 sm:gap-3 sm:py-4">
+      <div className="flex flex-shrink-0 flex-col items-center" style={{ width: 36 }}>
+        <Avatar name={name} url={avatar} size={36} />
         {(comment.replies.length > 0 || replying) && (
-          <div className="flex-1 w-px mt-1" style={{ background: 'var(--comment-thread-line)', minHeight: 12 }} />
+          <div className="mt-1 w-px flex-1" style={{ background: 'var(--border)', minHeight: 12 }} />
         )}
       </div>
 
-      <div className="flex-1 min-w-0 pb-0.5 sm:pb-1">
-        <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-          <span className="text-[12px] font-bold sm:text-sm" style={{ color: 'var(--text-primary)' }}>
+      <div className="min-w-0 flex-1 pb-0.5">
+        <div className="mb-1 flex flex-wrap items-center gap-x-1.5 gap-y-0">
+          <span className="text-[13px] font-bold sm:text-sm" style={{ color: 'var(--text-primary)' }}>
             {comment.guestWebsite ? (
-              <a href={comment.guestWebsite} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>{name}</a>
-            ) : name}
+              <a
+                href={comment.guestWebsite}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: 'var(--accent)' }}
+              >
+                {name}
+              </a>
+            ) : (
+              name
+            )}
           </span>
           {!comment.author && (
-            <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>访客</span>
+            <span
+              className="rounded px-1 py-0.5 text-[10px]"
+              style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}
+            >
+              访客
+            </span>
           )}
           {showCommentIp && comment.ip && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(29,155,240,0.08)', color: 'var(--accent)' }} title={comment.ip}>
+            <span
+              className="rounded-full px-1.5 py-0.5 text-[10px]"
+              style={{ background: 'rgba(29,155,240,0.08)', color: 'var(--accent)' }}
+              title={comment.ip}
+            >
               IP {comment.ip}
             </span>
           )}
-          <span className="text-[10px] leading-4 sm:text-xs" style={{ color: 'var(--text-secondary)' }}>· {relativeTime(comment.createdAt)}</span>
+          <span className="text-[11px] leading-4" style={{ color: 'var(--text-secondary)' }}>
+            · {relativeTime(comment.createdAt)}
+          </span>
         </div>
 
-        <p className="mb-2 text-[13px] sm:text-[14px]" style={{ color: 'var(--text-primary)', lineHeight: '1.55' }}>{comment.content}</p>
+        <p className="mb-2 text-[13px] leading-relaxed sm:text-sm" style={{ color: 'var(--text-primary)' }}>
+          {replyToName && (
+            <span className="mr-1 font-medium" style={{ color: 'var(--accent)' }}>
+              @{replyToName}
+            </span>
+          )}
+          {comment.content}
+        </p>
 
         {depth < 2 && (
           <button
-            onClick={() => setReplying(v => !v)}
-            className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[10px] transition-colors sm:px-3 sm:py-1.5 sm:text-xs"
-            style={{ color: replying ? 'var(--accent)' : 'var(--text-secondary)', background: replying ? 'rgba(29,155,240,0.10)' : 'var(--bg-hover)' }}
+            onClick={() => setReplying((v) => !v)}
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs transition-colors"
+            style={{
+              color: replying ? 'var(--accent)' : 'var(--text-secondary)',
+              background: replying ? 'rgba(29,155,240,0.10)' : 'transparent',
+            }}
           >
             <ReplyIcon />
             回复
@@ -220,7 +302,7 @@ function CommentItem({ comment, postId, session, depth = 0, showCommentIp = fals
         )}
 
         {replying && (
-          <div className="mt-3 sm:mt-4">
+          <div className="mt-3">
             <CommentInput
               session={session}
               postId={postId}
@@ -234,8 +316,8 @@ function CommentItem({ comment, postId, session, depth = 0, showCommentIp = fals
         )}
 
         {comment.replies.length > 0 && (
-          <div className="mt-2.5 space-y-2 border-l pl-2.5 sm:mt-3 sm:pl-3" style={{ borderColor: 'var(--comment-thread-line)' }}>
-            {comment.replies.map(reply => (
+          <div className="mt-3 space-y-0.5">
+            {comment.replies.map((reply) => (
               <CommentItem
                 key={reply.id}
                 comment={reply}
@@ -243,6 +325,7 @@ function CommentItem({ comment, postId, session, depth = 0, showCommentIp = fals
                 session={session}
                 depth={depth + 1}
                 showCommentIp={showCommentIp}
+                replyToName={name}
               />
             ))}
           </div>
@@ -268,20 +351,33 @@ export function CommentSection({
     return initial.map(normalize)
   })
 
+  const totalCount = comments.reduce((sum, c) => sum + 1 + (c.replies?.length || 0), 0)
+
   return (
-    <section className="px-4 pt-2 pb-4 sm:px-5 sm:pt-2 sm:pb-5">
-      <div className="py-3 sm:py-4">
-        <CommentInput session={session} postId={postId} placeholder="说点什么..." onDone={() => {}} />
+    <section className="px-4 pb-6 pt-2 sm:px-5">
+      {/* 评论标头 */}
+      <div
+        className="-mx-4 flex items-center gap-3 px-4 py-3 sm:-mx-5 sm:px-5"
+        style={{ borderBottom: '1px solid var(--border)' }}
+      >
+        <h2 className="text-[17px] font-bold" style={{ color: 'var(--text-primary)' }}>
+          {totalCount > 0 ? `${totalCount} 条评论` : '评论'}
+        </h2>
       </div>
 
-      <div aria-hidden="true" className="-mx-4 sm:-mx-5 h-px mb-3 sm:mb-4" style={{ background: 'var(--border)' }} />
+      {/* 评论输入框 */}
+      <div className="py-4" style={{ borderBottom: '1px solid var(--border)' }}>
+        <CommentInput session={session} postId={postId} placeholder="发表评论..." onDone={() => {}} />
+      </div>
 
       {comments.length === 0 ? (
-        <p className="py-8 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>暂无评论，来说点什么吧</p>
+        <p className="py-10 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
+          暂无评论，来说点什么吧
+        </p>
       ) : (
-        <div className="space-y-2.5 sm:space-y-3">
-          {comments.map(comment => (
-            <div key={comment.id}>
+        <div className="divide-y" style={{ '--tw-divide-opacity': 1 } as React.CSSProperties}>
+          {comments.map((comment) => (
+            <div key={comment.id} style={{ borderColor: 'var(--border)' }}>
               <CommentItem comment={comment} postId={postId} session={session} showCommentIp={showCommentIp} />
             </div>
           ))}
