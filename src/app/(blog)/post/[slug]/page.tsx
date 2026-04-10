@@ -218,7 +218,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
             content={
               post.content.trimStart().startsWith('<')
                 ? post.content.replace(/<img[^>]*>/gi, '')
-                : post.content.replace(/!\[.*?\]\(https?:\/\/[^)\s]+\)/g, '')
+                : post.content.replace(/!\[.*?\]\(https?:\/\/[^)\s]+\)/g, '').replace(/<img[^>]*>/gi, '') // <img> tags in markdown (old StorageImagePicker)
             }
           />
         </div>

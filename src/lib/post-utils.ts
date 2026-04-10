@@ -45,6 +45,7 @@ export function stripMarkdown(md: string): string {
     .replace(/```[\s\S]*?```/g, '[代码]')
     .replace(/`[^`]+`/g, '')
     .replace(/!\[.*?\]\(.*?\)/g, '[图片]')
+    .replace(/<img[^>]*>/gi, '') // HTML <img> tags in markdown
     .replace(/\[([^\]]+)\]\(.*?\)/g, '$1')
     .replace(/^#{1,6}\s+/gm, '')
     .replace(/(\*\*|__)(.*?)\1/g, '$2')
@@ -73,7 +74,12 @@ export function extractImages(md: string): string[] {
   const re = /!\[.*?\]\((https?:\/\/[^)\s]+)\)/g
   let m: RegExpExecArray | null
   while ((m = re.exec(md)) !== null && urls.length < 9) {
-    urls.push(m[1])
+    if (!urls.includes(m[1])) urls.push(m[1])
+  }
+  // Also handle <img src="..."> tags mixed into markdown (old StorageImagePicker)
+  const htmlRe = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi
+  while ((m = htmlRe.exec(md)) !== null && urls.length < 9) {
+    if (!urls.includes(m[1])) urls.push(m[1])
   }
   return urls
 }
