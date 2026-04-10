@@ -137,7 +137,6 @@ async function fetchOneFeed(source: FriendFeedSource): Promise<FeedItem[]> {
 
   try {
     const res = await fetch(rssUrl, {
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FriendCircleBot/1.0)' },
       next: { revalidate: 3600 }, // Next.js 1 小时缓存
     })

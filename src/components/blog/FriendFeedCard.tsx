@@ -1,3 +1,4 @@
+'use client'
 import Link from 'next/link'
 import { relativeTime } from '@/lib/utils'
 import type { FeedItem } from '@/lib/rss-fetcher'
