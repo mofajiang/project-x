@@ -31,6 +31,10 @@ export default function EditPostPage() {
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [hasDraft, setHasDraft] = useState(false)
+  const [threads, setThreads] = useState<{ threadId: string; count: number; firstTitle: string; nextOrder: number }[]>(
+    []
+  )
+  const [showThreadPicker, setShowThreadPicker] = useState(false)
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const coverInputRef = useRef<HTMLInputElement | null>(null)
 
@@ -104,6 +108,16 @@ export default function EditPostPage() {
       if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
     }
   }, [isNew, params.id, DRAFT_KEY])
+
+  // 加载已有 Thread 列表
+  useEffect(() => {
+    fetch('/api/admin/threads')
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setThreads(data)
+      })
+      .catch(() => {})
+  }, [])
 
   const clearDraft = () => {
     localStorage.removeItem(DRAFT_KEY)
@@ -405,7 +419,8 @@ export default function EditPostPage() {
                     type="button"
                     onClick={() => {
                       const id = crypto.randomUUID()
-                      updateForm((f) => ({ ...f, threadId: id }))
+                      updateForm((f) => ({ ...f, threadId: id, threadOrder: 1 }))
+                      setShowThreadPicker(false)
                     }}
                     className="flex-shrink-0 rounded-lg px-2 py-1.5 text-xs transition-colors hover:opacity-80"
                     style={{ background: 'var(--accent)', color: '#fff' }}
@@ -413,8 +428,64 @@ export default function EditPostPage() {
                   >
                     新建
                   </button>
+                  {form.threadId.trim() && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        updateForm((f) => ({ ...f, threadId: '', threadOrder: 1 }))
+                        setShowThreadPicker(false)
+                      }}
+                      className="flex-shrink-0 rounded-lg px-2 py-1.5 text-xs transition-colors hover:opacity-80"
+                      style={{ background: 'rgba(249,24,128,0.12)', color: 'var(--red)' }}
+                      title="移出 Thread"
+                    >
+                      清除
+                    </button>
+                  )}
                 </div>
-                <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                {/* 从已有 Thread 选择 */}
+                {threads.length > 0 && (
+                  <div className="mt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowThreadPicker((v) => !v)}
+                      className="text-xs underline-offset-2 hover:underline"
+                      style={{ color: 'var(--accent)' }}
+                    >
+                      {showThreadPicker ? '▲ 收起' : '▼ 从已有 Thread 选择'}
+                    </button>
+                    {showThreadPicker && (
+                      <div
+                        className="mt-2 flex max-h-48 flex-col gap-1 overflow-y-auto rounded-lg p-1"
+                        style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}
+                      >
+                        {threads.map((t) => (
+                          <button
+                            key={t.threadId}
+                            type="button"
+                            onClick={() => {
+                              updateForm((f) => ({ ...f, threadId: t.threadId, threadOrder: t.nextOrder }))
+                              setShowThreadPicker(false)
+                            }}
+                            className="flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors hover:bg-white/5"
+                            style={{
+                              outline: form.threadId === t.threadId ? '1px solid var(--accent)' : 'none',
+                              background: form.threadId === t.threadId ? 'rgba(29,155,240,0.08)' : 'transparent',
+                            }}
+                          >
+                            <span className="min-w-0 flex-1 truncate" style={{ color: 'var(--text-primary)' }}>
+                              {t.firstTitle}
+                            </span>
+                            <span className="flex-shrink-0 text-[10px]" style={{ color: 'var(--text-secondary)' }}>
+                              {t.count} 条
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                <p className="mt-1.5 text-xs" style={{ color: 'var(--text-secondary)' }}>
                   同一 Thread ID 的帖子会串联展示
                 </p>
               </div>
@@ -431,6 +502,9 @@ export default function EditPostPage() {
                     className="w-full rounded-lg border bg-transparent px-2 py-1.5 text-xs outline-none"
                     style={{ color: 'var(--text-primary)', borderColor: 'var(--border)' }}
                   />
+                  <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    已有 Thread 中下一序号已自动填入
+                  </p>
                 </div>
               )}
             </div>
