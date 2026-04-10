@@ -118,11 +118,6 @@ export const PostCard = memo(function PostCard({ post, currentUserId, index = 0 
                 <span className="flex-shrink-0 text-sm leading-5" style={{ color: 'var(--text-secondary)' }}>
                   · {post.publishedAt ? relativeTime(post.publishedAt) : '草稿'}
                 </span>
-                {post.threadId && post.threadCount && post.threadCount > 1 && (
-                  <span className="flex-shrink-0 text-sm font-medium leading-5" style={{ color: 'var(--accent)' }}>
-                    · Thread {post.threadCount} 条
-                  </span>
-                )}
               </div>
               {isAuthor && (
                 <Link
