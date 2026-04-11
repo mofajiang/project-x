@@ -28,6 +28,7 @@ export async function PUT(req: NextRequest) {
     scheduleMinutes: Number(body.scheduleMinutes) || 180,
     autoPublish: Boolean(body.autoPublish),
     useAi: Boolean(body.useAi),
+    standardMarkdown: body.standardMarkdown !== undefined ? Boolean(body.standardMarkdown) : undefined,
     prompt: String(body.prompt || ''),
     maxItems: Number(body.maxItems) || 12,
     keepDays: Number(body.keepDays) || 14,

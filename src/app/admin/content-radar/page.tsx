@@ -24,6 +24,7 @@ type RadarConfig = {
   scheduleMinutes: number
   autoPublish: boolean
   useAi: boolean
+  standardMarkdown: boolean
   prompt: string
   lastRunAt: string
   lastStatus: string
@@ -82,6 +83,7 @@ const EMPTY_STATUS: RadarStatus = {
     scheduleMinutes: 180,
     autoPublish: true,
     useAi: true,
+    standardMarkdown: true,
     prompt: '',
     lastRunAt: '',
     lastStatus: '',
@@ -624,9 +626,19 @@ export default function AdminContentRadarPage() {
                     />
                     使用 AI 生成日报文案
                   </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={status.config.standardMarkdown}
+                      onChange={(e) => setConfig('standardMarkdown', e.target.checked)}
+                      style={{ accentColor: 'var(--accent)' }}
+                    />
+                    按标准 Markdown 输出
+                  </label>
                 </div>
                 <p className="mt-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  未配置 AI 时会自动回退到模板生成，不会中断抓取流程。
+                  开启后会优先输出标准 Markdown 标题、列表和 Markdown
+                  链接，减少裸链接或长段文本把内容区域撑出边框的问题。
                 </p>
               </div>
               <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>

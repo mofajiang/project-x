@@ -335,6 +335,12 @@ export async function runMigrations() {
       )
       await addColumn('SiteConfig', 'keywordRadarAutoPublish', `INTEGER NOT NULL DEFAULT 1`, 'keywordRadarAutoPublish')
       await addColumn('SiteConfig', 'keywordRadarUseAi', `INTEGER NOT NULL DEFAULT 1`, 'keywordRadarUseAi')
+      await addColumn(
+        'SiteConfig',
+        'keywordRadarStandardMarkdown',
+        `INTEGER NOT NULL DEFAULT 1`,
+        'keywordRadarStandardMarkdown'
+      )
       await addColumn('SiteConfig', 'keywordRadarPrompt', `TEXT NOT NULL DEFAULT ''`, 'keywordRadarPrompt')
       await addColumn('SiteConfig', 'keywordRadarLastRunAt', `TEXT NOT NULL DEFAULT ''`, 'keywordRadarLastRunAt')
       await addColumn('SiteConfig', 'keywordRadarLastStatus', `TEXT NOT NULL DEFAULT ''`, 'keywordRadarLastStatus')

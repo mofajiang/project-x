@@ -37,6 +37,7 @@ export type KeywordRadarConfig = {
   scheduleMinutes: number
   autoPublish: boolean
   useAi: boolean
+  standardMarkdown: boolean
   prompt: string
   lastRunAt: string
   lastStatus: string
@@ -99,6 +100,7 @@ const DEFAULT_CONFIG: KeywordRadarConfig = {
   scheduleMinutes: 180,
   autoPublish: true,
   useAi: true,
+  standardMarkdown: true,
   prompt: '',
   lastRunAt: '',
   lastStatus: '',
@@ -148,6 +150,10 @@ function rowToConfig(row: KeywordRadarRow | undefined): KeywordRadarConfig {
     scheduleMinutes: Math.max(15, Number(row.keywordRadarScheduleMinutes) || DEFAULT_CONFIG.scheduleMinutes),
     autoPublish: Boolean(Number(row.keywordRadarAutoPublish) || 0),
     useAi: Boolean(Number(row.keywordRadarUseAi) || 0),
+    standardMarkdown:
+      row.keywordRadarStandardMarkdown === undefined
+        ? DEFAULT_CONFIG.standardMarkdown
+        : Boolean(Number(row.keywordRadarStandardMarkdown) || 0),
     prompt: String(row.keywordRadarPrompt || ''),
     lastRunAt: String(row.keywordRadarLastRunAt || ''),
     lastStatus: String(row.keywordRadarLastStatus || ''),
@@ -540,6 +546,10 @@ function makeDigestMarker(dateKey: string) {
   return `<!-- keyword-radar:${dateKey} -->`
 }
 
+function formatRadarLink(url: string, label = '查看原文') {
+  return `[${label}](${url})`
+}
+
 const BROWSER_USER_AGENTS = [
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
@@ -743,6 +753,7 @@ export async function getKeywordRadarConfig(): Promise<KeywordRadarConfig> {
       COALESCE(keywordRadarScheduleMinutes, 180) as keywordRadarScheduleMinutes,
       COALESCE(keywordRadarAutoPublish, 1) as keywordRadarAutoPublish,
       COALESCE(keywordRadarUseAi, 1) as keywordRadarUseAi,
+      COALESCE(keywordRadarStandardMarkdown, 1) as keywordRadarStandardMarkdown,
       COALESCE(keywordRadarPrompt, '') as keywordRadarPrompt,
       COALESCE(keywordRadarLastRunAt, '') as keywordRadarLastRunAt,
       COALESCE(keywordRadarLastStatus, '') as keywordRadarLastStatus,
@@ -781,6 +792,7 @@ export async function saveKeywordRadarConfig(input: Partial<KeywordRadarConfig>)
     webhookUrl: input.webhookUrl !== undefined ? String(input.webhookUrl || '') : current.webhookUrl,
     webhookEnabled: input.webhookEnabled !== undefined ? Boolean(input.webhookEnabled) : current.webhookEnabled,
     scheduleMinutes: Math.max(15, Number(input.scheduleMinutes ?? current.scheduleMinutes) || 180),
+    standardMarkdown: input.standardMarkdown !== undefined ? Boolean(input.standardMarkdown) : current.standardMarkdown,
     maxItems: Math.max(3, Math.min(30, Number(input.maxItems ?? current.maxItems) || 12)),
     keepDays: Math.max(1, Math.min(90, Number(input.keepDays ?? current.keepDays) || 14)),
   }
@@ -795,6 +807,7 @@ export async function saveKeywordRadarConfig(input: Partial<KeywordRadarConfig>)
       keywordRadarScheduleMinutes = ?,
       keywordRadarAutoPublish = ?,
       keywordRadarUseAi = ?,
+      keywordRadarStandardMarkdown = ?,
       keywordRadarPrompt = ?,
       keywordRadarMaxItems = ?,
       keywordRadarKeepDays = ?,
@@ -812,6 +825,7 @@ export async function saveKeywordRadarConfig(input: Partial<KeywordRadarConfig>)
     next.scheduleMinutes,
     next.autoPublish ? 1 : 0,
     next.useAi ? 1 : 0,
+    next.standardMarkdown ? 1 : 0,
     next.prompt,
     next.maxItems,
     next.keepDays,
@@ -887,7 +901,7 @@ function fallbackDigestMarkdown(items: FeedItem[], config: KeywordRadarConfig, d
         `- 来源：${item.source || '未知来源'}`,
         `- 发布时间：${item.publishedAt ? item.publishedAt.replace('T', ' ').slice(0, 16) : '未知'}`,
         item.summary ? `- 摘要：${item.summary}` : '',
-        `- 原文：${item.link}`,
+        `- 原文：${config.standardMarkdown ? formatRadarLink(item.link) : item.link}`,
       ]
         .filter(Boolean)
         .join('\n')
@@ -942,7 +956,8 @@ async function aiDigestMarkdown(items: FeedItem[], config: KeywordRadarConfig, d
 4. 不要编造未提供的事实，不要扩展成大段空话。
 5. 不输出 YAML，不输出代码块围栏。
 6. 文风简洁、像站长日报。
-7. 第一行必须保留这个标记且不要改动：${marker}`
+7. 第一行必须保留这个标记且不要改动：${marker}
+8. ${config.standardMarkdown ? '必须使用标准 Markdown 语法输出，只使用标题、段落、列表、强调和 Markdown 链接；不要输出 HTML 标签、表格、裸链接或超长连续文本。所有外链都写成 [文字](链接) 形式。' : '保持清晰可读的 Markdown 结构。'}`
 
   const userPrompt = `${config.prompt ? `${config.prompt}\n\n` : ''}关键词：${config.keywords.join('、')}\n标签：${config.tags.join('、')}\n日期：${formatDateLabel(dateKey)}\n\n线索如下：\n\n${payload}`
 
