@@ -134,14 +134,14 @@ export default function AdminLogsPage() {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setAutoRefresh((v) => !v)}
-            className={`rounded-xl px-4 py-2 text-sm font-medium transition-colors ${autoRefresh ? 'bg-green-500/20 text-green-400' : ''}`}
+            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${autoRefresh ? 'bg-green-500/20 text-green-400' : ''}`}
             style={!autoRefresh ? { background: 'var(--bg-hover)', color: 'var(--text-secondary)' } : {}}
           >
             {autoRefresh ? '🔄 自动刷新中' : '🔄 自动刷新'}
           </button>
           <button
             onClick={fetchLogs}
-            className="rounded-xl px-4 py-2 text-sm font-medium"
+            className="rounded-full px-4 py-2 text-sm font-medium"
             style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}
           >
             手动刷新
@@ -149,7 +149,7 @@ export default function AdminLogsPage() {
           {tab === 'app' && (
             <button
               onClick={handleClear}
-              className="rounded-xl px-4 py-2 text-sm font-medium text-red-400"
+              className="rounded-full px-4 py-2 text-sm font-medium text-red-400"
               style={{ background: 'rgba(239,68,68,0.1)' }}
             >
               清空日志
@@ -178,7 +178,7 @@ export default function AdminLogsPage() {
           <select
             value={filterLevel}
             onChange={(e) => setFilterLevel(e.target.value as LogLevel | '')}
-            className="rounded-lg border bg-transparent px-3 py-1.5 text-sm outline-none"
+            className="x-admin-input rounded-xl px-3 py-1.5 text-sm outline-none"
             style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
           >
             <option value="">全部级别</option>
@@ -190,7 +190,7 @@ export default function AdminLogsPage() {
           <select
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value as LogCategory | '')}
-            className="rounded-lg border bg-transparent px-3 py-1.5 text-sm outline-none"
+            className="x-admin-input rounded-xl px-3 py-1.5 text-sm outline-none"
             style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
           >
             <option value="">全部类别</option>
@@ -206,7 +206,7 @@ export default function AdminLogsPage() {
             placeholder="搜索日志..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="rounded-lg border bg-transparent px-3 py-1.5 text-sm outline-none"
+            className="x-admin-input rounded-xl px-3 py-1.5 text-sm outline-none"
             style={{ borderColor: 'var(--border)', color: 'var(--text-primary)', minWidth: 180 }}
           />
 
@@ -224,7 +224,7 @@ export default function AdminLogsPage() {
             placeholder="PM2 应用名（留空自动探测）"
             value={appName}
             onChange={(e) => setAppName(e.target.value)}
-            className="rounded-lg border bg-transparent px-3 py-1.5 text-sm outline-none"
+            className="x-admin-input rounded-xl px-3 py-1.5 text-sm outline-none"
             style={{ borderColor: 'var(--border)', color: 'var(--text-primary)', minWidth: 220 }}
           />
           {pm2Path && (

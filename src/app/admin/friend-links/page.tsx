@@ -457,7 +457,7 @@ export default function AdminFriendLinksPage() {
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               placeholder="搜索名称 / URL / 简介"
-              className="w-full rounded-lg border bg-transparent px-3 py-1.5 text-sm outline-none"
+              className="x-admin-input w-full rounded-xl px-3 py-1.5 text-sm outline-none"
               style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
             />
           </div>
@@ -676,7 +676,7 @@ export default function AdminFriendLinksPage() {
                         placeholder="输入拒绝原因..."
                         value={rejectReason}
                         onChange={(e) => setRejectReason(e.target.value)}
-                        className="mb-2 w-full rounded-lg border bg-transparent px-3 py-1.5 text-sm outline-none"
+                        className="x-admin-input mb-2 w-full rounded-xl px-3 py-1.5 text-sm outline-none"
                         style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                       />
                       <div className="flex gap-2">
@@ -708,21 +708,21 @@ export default function AdminFriendLinksPage() {
                           value={editForm.name}
                           onChange={(e) => setEditForm((v) => ({ ...v, name: e.target.value }))}
                           placeholder="名称"
-                          className="rounded-lg border bg-transparent px-3 py-1.5 text-sm outline-none"
+                          className="x-admin-input rounded-xl px-3 py-1.5 text-sm outline-none"
                           style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                         />
                         <input
                           value={editForm.url}
                           onChange={(e) => setEditForm((v) => ({ ...v, url: e.target.value }))}
                           placeholder="https://example.com"
-                          className="rounded-lg border bg-transparent px-3 py-1.5 text-sm outline-none"
+                          className="x-admin-input rounded-xl px-3 py-1.5 text-sm outline-none"
                           style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                         />
                         <input
                           value={editForm.description}
                           onChange={(e) => setEditForm((v) => ({ ...v, description: e.target.value }))}
                           placeholder="简介（可选）"
-                          className="rounded-lg border bg-transparent px-3 py-1.5 text-sm outline-none"
+                          className="x-admin-input rounded-xl px-3 py-1.5 text-sm outline-none"
                           style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                         />
                         <div className="flex items-center gap-2">
@@ -730,7 +730,7 @@ export default function AdminFriendLinksPage() {
                             value={editForm.favicon}
                             onChange={(e) => setEditForm((v) => ({ ...v, favicon: e.target.value }))}
                             placeholder="头像URL（可选）"
-                            className="flex-1 rounded-lg border bg-transparent px-3 py-1.5 text-sm outline-none"
+                            className="x-admin-input flex-1 rounded-xl px-3 py-1.5 text-sm outline-none"
                             style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                           />
                           <StorageImagePicker
@@ -743,14 +743,14 @@ export default function AdminFriendLinksPage() {
                           value={editForm.email}
                           onChange={(e) => setEditForm((v) => ({ ...v, email: e.target.value }))}
                           placeholder="邮箱（可选）"
-                          className="rounded-lg border bg-transparent px-3 py-1.5 text-sm outline-none"
+                          className="x-admin-input rounded-xl px-3 py-1.5 text-sm outline-none"
                           style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                         />
                         <input
                           value={editForm.sortOrder}
                           onChange={(e) => setEditForm((v) => ({ ...v, sortOrder: e.target.value }))}
                           placeholder="排序权重"
-                          className="rounded-lg border bg-transparent px-3 py-1.5 text-sm outline-none"
+                          className="x-admin-input rounded-xl px-3 py-1.5 text-sm outline-none"
                           style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                         />
                       </div>
@@ -761,7 +761,7 @@ export default function AdminFriendLinksPage() {
                         <select
                           value={editForm.status}
                           onChange={(e) => setEditForm((v) => ({ ...v, status: e.target.value as LinkForm['status'] }))}
-                          className="rounded-lg border bg-transparent px-3 py-1.5 text-sm outline-none"
+                          className="x-admin-input rounded-xl px-3 py-1.5 text-sm outline-none"
                           style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                         >
                           <option value="approved">已通过</option>
@@ -785,7 +785,7 @@ export default function AdminFriendLinksPage() {
                         placeholder="RSS 订阅地址（可选，用于博友圈）"
                         value={editForm.rssUrl}
                         onChange={(e) => setEditForm((v) => ({ ...v, rssUrl: e.target.value }))}
-                        className="w-full rounded-lg border bg-transparent px-3 py-1.5 text-sm outline-none"
+                        className="x-admin-input w-full rounded-xl px-3 py-1.5 text-sm outline-none"
                         style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                       />
                       <div className="flex gap-2">
@@ -848,21 +848,21 @@ export default function AdminFriendLinksPage() {
               value={createForm.name}
               onChange={(e) => setCreateForm((v) => ({ ...v, name: e.target.value }))}
               placeholder="名称"
-              className="w-full rounded-xl border bg-transparent px-3 py-1.5 text-sm outline-none"
+              className="x-admin-input w-full rounded-xl px-3 py-1.5 text-sm outline-none"
               style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
             />
             <input
               value={createForm.url}
               onChange={(e) => setCreateForm((v) => ({ ...v, url: e.target.value }))}
               placeholder="https://example.com"
-              className="w-full rounded-xl border bg-transparent px-3 py-1.5 text-sm outline-none"
+              className="x-admin-input w-full rounded-xl px-3 py-1.5 text-sm outline-none"
               style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
             />
             <input
               value={createForm.description}
               onChange={(e) => setCreateForm((v) => ({ ...v, description: e.target.value }))}
               placeholder="简介（可选）"
-              className="w-full rounded-xl border bg-transparent px-3 py-1.5 text-sm outline-none"
+              className="x-admin-input w-full rounded-xl px-3 py-1.5 text-sm outline-none"
               style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
             />
             <div className="flex items-center gap-2">
@@ -870,7 +870,7 @@ export default function AdminFriendLinksPage() {
                 value={createForm.favicon}
                 onChange={(e) => setCreateForm((v) => ({ ...v, favicon: e.target.value }))}
                 placeholder="头像URL（可选）"
-                className="flex-1 rounded-xl border bg-transparent px-3 py-1.5 text-sm outline-none"
+                className="x-admin-input flex-1 rounded-xl px-3 py-1.5 text-sm outline-none"
                 style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
               />
               <StorageImagePicker
@@ -883,14 +883,14 @@ export default function AdminFriendLinksPage() {
               value={createForm.email}
               onChange={(e) => setCreateForm((v) => ({ ...v, email: e.target.value }))}
               placeholder="邮箱（可选）"
-              className="w-full rounded-xl border bg-transparent px-3 py-1.5 text-sm outline-none"
+              className="x-admin-input w-full rounded-xl px-3 py-1.5 text-sm outline-none"
               style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
             />
             <input
               value={createForm.sortOrder}
               onChange={(e) => setCreateForm((v) => ({ ...v, sortOrder: e.target.value }))}
               placeholder="排序权重"
-              className="w-full rounded-xl border bg-transparent px-3 py-1.5 text-sm outline-none"
+              className="x-admin-input w-full rounded-xl px-3 py-1.5 text-sm outline-none"
               style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
             />
           </div>
@@ -899,7 +899,7 @@ export default function AdminFriendLinksPage() {
             <select
               value={createForm.status}
               onChange={(e) => setCreateForm((v) => ({ ...v, status: e.target.value as LinkForm['status'] }))}
-              className="w-full rounded-xl border bg-transparent px-3 py-1.5 text-sm outline-none"
+              className="x-admin-input w-full rounded-xl px-3 py-1.5 text-sm outline-none"
               style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
             >
               <option value="approved">已通过</option>
@@ -919,7 +919,7 @@ export default function AdminFriendLinksPage() {
               placeholder="RSS 订阅地址（可选，用于博友圈）"
               value={createForm.rssUrl}
               onChange={(e) => setCreateForm((v) => ({ ...v, rssUrl: e.target.value }))}
-              className="w-full rounded-xl border bg-transparent px-3 py-1.5 text-sm outline-none"
+              className="x-admin-input w-full rounded-xl px-3 py-1.5 text-sm outline-none"
               style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
             />
             <button

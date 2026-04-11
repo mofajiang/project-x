@@ -120,7 +120,7 @@ export default function SecurityPage() {
               value={config.loginPath}
               onChange={(e) => setConfig((c) => ({ ...c, loginPath: e.target.value }))}
               placeholder="/your-secret-path"
-              className="w-full rounded-2xl px-3 py-2 text-sm outline-none"
+              className="x-admin-input w-full rounded-xl px-3 py-2 text-sm outline-none"
               style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}
             />
             <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
@@ -145,7 +145,7 @@ export default function SecurityPage() {
               max={20}
               value={config.secretClicks}
               onChange={(e) => setConfig((c) => ({ ...c, secretClicks: Number(e.target.value) }))}
-              className="w-28 rounded-2xl px-3 py-2 text-sm outline-none sm:w-24"
+              className="x-admin-input w-28 rounded-xl px-3 py-2 text-sm outline-none sm:w-24"
               style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}
             />
           </div>
@@ -172,7 +172,7 @@ export default function SecurityPage() {
             placeholder="旧密码"
             value={oldPassword}
             onChange={(e) => setOldPassword(e.target.value)}
-            className="w-full rounded-2xl px-3 py-2 text-sm outline-none"
+            className="x-admin-input w-full rounded-xl px-3 py-2 text-sm outline-none"
             style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}
           />
           <input
@@ -180,7 +180,7 @@ export default function SecurityPage() {
             placeholder="新密码（至少8位）"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            className="w-full rounded-2xl px-3 py-2 text-sm outline-none"
+            className="x-admin-input w-full rounded-xl px-3 py-2 text-sm outline-none"
             style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}
           />
           <button

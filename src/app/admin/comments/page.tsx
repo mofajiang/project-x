@@ -172,7 +172,7 @@ export default function AdminCommentsPage() {
           value={search}
           onChange={(e) => handleSearch(e.target.value)}
           placeholder="搜索评论内容、用户名或 IP"
-          className="w-full rounded-xl px-3 py-2 text-sm outline-none"
+          className="x-admin-input w-full rounded-xl px-3 py-2 text-sm outline-none"
           style={{ background: 'var(--bg-hover)', border: '1px solid transparent', color: 'var(--text-primary)' }}
         />
       </div>
