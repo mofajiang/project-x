@@ -16,11 +16,13 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(50, parseInt(searchParams.get('limit') || '20'))
   const search = searchParams.get('search') || ''
   const status = searchParams.get('status') || 'all' // all | published | draft
+  const tag = searchParams.get('tag') || '' // tag slug
 
   const where: Record<string, unknown> = {}
   if (search) where.title = { contains: search }
   if (status === 'published') where.published = true
   if (status === 'draft') where.published = false
+  if (tag) where.tags = { some: { tag: { slug: tag } } }
 
   const [posts, total] = await Promise.all([
     prisma.post.findMany({

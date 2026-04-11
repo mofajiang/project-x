@@ -35,11 +35,22 @@ export default function AdminPostsPage() {
   const [status, setStatus] = useState('all')
   const [page, setPage] = useState(1)
   const [searchInput, setSearchInput] = useState('')
+  const [tag, setTag] = useState('')
+  const [allTags, setAllTags] = useState<{ id: string; name: string; slug: string; _count: { posts: number } }[]>([])
 
-  const fetchPosts = useCallback(async (p: number, s: string, st: string) => {
+  useEffect(() => {
+    fetch('/api/admin/tags')
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d)) setAllTags(d)
+      })
+      .catch(() => {})
+  }, [])
+
+  const fetchPosts = useCallback(async (p: number, s: string, st: string, tg: string) => {
     setLoading(true)
     try {
-      const params = new URLSearchParams({ page: String(p), search: s, status: st })
+      const params = new URLSearchParams({ page: String(p), search: s, status: st, tag: tg })
       const res = await fetch(`/api/admin/posts?${params}`)
       const json = await res.json()
       if (json && Array.isArray(json.posts)) {
@@ -55,8 +66,8 @@ export default function AdminPostsPage() {
   }, [])
 
   useEffect(() => {
-    fetchPosts(page, search, status)
-  }, [page, search, status, fetchPosts])
+    fetchPosts(page, search, status, tag)
+  }, [page, search, status, tag, fetchPosts])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -67,6 +78,11 @@ export default function AdminPostsPage() {
   const handleStatus = (s: string) => {
     setPage(1)
     setStatus(s)
+  }
+
+  const handleTag = (t: string) => {
+    setPage(1)
+    setTag(t)
   }
 
   const statusTabs = [
@@ -215,10 +231,38 @@ export default function AdminPostsPage() {
             </button>
           ))}
         </div>
+        {allTags.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <button
+              onClick={() => handleTag('')}
+              className="rounded-full px-3 py-1 text-xs font-medium transition-colors"
+              style={{
+                background: tag === '' ? 'var(--accent)' : 'var(--bg-hover)',
+                color: tag === '' ? '#fff' : 'var(--text-secondary)',
+              }}
+            >
+              全部标签
+            </button>
+            {allTags.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => handleTag(tag === t.slug ? '' : t.slug)}
+                className="rounded-full px-3 py-1 text-xs font-medium transition-colors"
+                style={{
+                  background: tag === t.slug ? 'var(--accent)' : 'var(--bg-hover)',
+                  color: tag === t.slug ? '#fff' : 'var(--text-secondary)',
+                }}
+              >
+                #{t.name} <span style={{ opacity: 0.6 }}>{t._count.posts}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="mb-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
         共 {data.total} 篇{search && `（搜索「${search}」）`}
+        {tag && `（标签「${allTags.find((t) => t.slug === tag)?.name ?? tag}」）`}
       </div>
 
       {loading ? (
