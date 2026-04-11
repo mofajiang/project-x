@@ -1485,11 +1485,18 @@ async function upsertDailyDigest(items: FeedItem[], config: KeywordRadarConfig, 
     `SELECT COALESCE(MAX(publicId), 0) + 1 as nextId FROM Post`
   )
   const publicId = Number(rows[0]?.nextId) || 1
+  const baseSlug = `${slugify(title)}-${dateKey}`
+  // Ensure unique slug by checking existing and appending suffix if needed
+  const slugConflict = await prisma.$queryRawUnsafe<{ id: string }[]>(
+    `SELECT id FROM Post WHERE slug = ? LIMIT 1`,
+    baseSlug
+  )
+  const slug = slugConflict.length > 0 ? `${baseSlug}-${Date.now().toString(36).slice(-4)}` : baseSlug
   const post = await prisma.post.create({
     data: {
       publicId,
       title,
-      slug: `${slugify(title)}-${dateKey}`,
+      slug,
       content,
       excerpt,
       published: config.autoPublish,
