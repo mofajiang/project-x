@@ -305,7 +305,7 @@ function dedupeByLink(items: FeedItem[]): FeedItem[] {
 
 /** Compute bigram set for a string (for similarity comparison) */
 function bigrams(text: string): Set<string> {
-  const normalized = text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '')
+  const normalized = text.toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7a3]+/g, '')
   const set = new Set<string>()
   for (let i = 0; i < normalized.length - 1; i++) {
     set.add(normalized.slice(i, i + 2))
