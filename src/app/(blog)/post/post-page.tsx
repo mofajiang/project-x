@@ -147,7 +147,7 @@ export async function renderPostPage(post: LoadedPost, session: { userId: string
       .catch(() => [{ reposts: 0 }]),
   ])
   const comments = commentsRaw as any[]
-  const postReposts = (repostRow as { reposts: number }[])[0]?.reposts ?? 0
+  const postReposts = Number((repostRow as { reposts: bigint | number }[])[0]?.reposts ?? 0)
   const conversationCount = comments.reduce((sum, comment) => sum + 1 + (comment.replies?.length || 0), 0)
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'

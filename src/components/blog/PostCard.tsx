@@ -45,7 +45,7 @@ export const PostCard = memo(function PostCard({ post, currentUserId, index = 0 
   const [liking, setLiking] = useState(false)
   const [likeAnim, setLikeAnim] = useState(false)
   const isAuthor = currentUserId && post.authorId && currentUserId === post.authorId
-  const [reposts, setReposts] = useState(post.reposts || 0)
+  const [reposts, setReposts] = useState(Number(post.reposts) || 0)
   const [repostOpen, setRepostOpen] = useState(false)
   const [reposting, setReposting] = useState(false)
   const repostContainerRef = useRef<HTMLDivElement>(null)

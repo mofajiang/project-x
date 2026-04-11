@@ -97,7 +97,10 @@ export default async function HomePage({ searchParams }: { searchParams: { tab?:
         ...postIds
       )
       threadMap = new Map(
-        threadRows.map((r) => [r.id, { threadId: r.threadId, threadOrder: r.threadOrder, reposts: r.reposts }])
+        threadRows.map((r) => [
+          r.id,
+          { threadId: r.threadId, threadOrder: Number(r.threadOrder), reposts: Number(r.reposts) },
+        ])
       )
       const threadIds = Array.from(new Set(threadRows.filter((r) => r.threadId).map((r) => r.threadId as string)))
       if (threadIds.length > 0) {
@@ -122,7 +125,7 @@ export default async function HomePage({ searchParams }: { searchParams: { tab?:
       threadId: tinfo?.threadId || null,
       threadOrder: tinfo?.threadOrder || 0,
       threadCount: tinfo?.threadId ? threadCountMap.get(tinfo.threadId) || 1 : null,
-      reposts: tinfo?.reposts || 0,
+      reposts: Number(tinfo?.reposts) || 0,
     }
   })
 
