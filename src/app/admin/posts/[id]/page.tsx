@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { getErrorMessage } from '@/lib/converters'
@@ -176,12 +176,32 @@ export default function EditPostPage() {
     return data.url
   }
 
+  const charCount = useMemo(() => {
+    const text = form.content.replace(/<[^>]*>/g, '').replace(/\s+/g, '')
+    return text.length
+  }, [form.content])
+
   return (
     <div className="mx-auto w-full max-w-6xl">
       <div className="mb-4 sm:mb-6">
-        <h1 className={`${ADMIN_PAGE_TITLE_CLASS} text-xl sm:text-3xl`} style={{ color: 'var(--text-primary)' }}>
-          {isNew ? '新建文章' : '编辑文章'}
-        </h1>
+        <div className="flex items-center gap-3">
+          <h1 className={`${ADMIN_PAGE_TITLE_CLASS} text-xl sm:text-3xl`} style={{ color: 'var(--text-primary)' }}>
+            {isNew ? '新建文章' : '编辑文章'}
+          </h1>
+          <button
+            type="button"
+            onClick={() => updateForm((f) => ({ ...f, pinned: !f.pinned }))}
+            title={form.pinned ? '已置顶，点击取消' : '点击置顶此文章'}
+            className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-all"
+            style={{
+              background: form.pinned ? 'rgba(29,155,240,0.12)' : 'transparent',
+              color: form.pinned ? 'var(--accent)' : 'var(--text-secondary)',
+              border: `1px solid ${form.pinned ? 'var(--accent)' : 'var(--border)'}`,
+            }}
+          >
+            📌 {form.pinned ? '已置顶' : '置顶'}
+          </button>
+        </div>
         {hasDraft && (
           <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
             <span style={{ color: 'var(--accent)' }}>● 有未保存的本地草稿</span>
@@ -246,9 +266,14 @@ export default function EditPostPage() {
             className="rounded-2xl p-4 sm:p-5"
             style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
           >
-            <label className="mb-3 block text-xs font-medium sm:text-sm" style={{ color: 'var(--text-secondary)' }}>
-              正文内容 *
-            </label>
+            <div className="mb-3 flex items-center justify-between">
+              <label className="text-xs font-medium sm:text-sm" style={{ color: 'var(--text-secondary)' }}>
+                正文内容 *
+              </label>
+              <span className="text-xs tabular-nums" style={{ color: 'var(--text-secondary)' }}>
+                共 {charCount.toLocaleString()} 字
+              </span>
+            </div>
             <div className="mb-3 flex flex-wrap items-center gap-2">
               <StorageImagePicker
                 buttonText="从云存储插入图片"
@@ -297,7 +322,7 @@ export default function EditPostPage() {
               <button
                 onClick={() => save(false)}
                 disabled={saving}
-                className="rounded-lg px-4 py-2 text-sm font-bold disabled:opacity-50"
+                className="rounded-full px-4 py-2 text-sm font-bold disabled:opacity-50"
                 style={{ background: 'var(--bg)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
               >
                 保存草稿
@@ -305,7 +330,7 @@ export default function EditPostPage() {
               <button
                 onClick={() => save(true)}
                 disabled={saving}
-                className="rounded-lg px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+                className="rounded-full px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
                 style={{ background: 'var(--accent)' }}
               >
                 {saving ? '保存中...' : '立即发布'}
@@ -330,7 +355,7 @@ export default function EditPostPage() {
                   placeholder="逗号分隔，如：Rust, 教程"
                   value={form.tags}
                   onValueChange={(v) => updateForm((f) => ({ ...f, tags: v }))}
-                  className="w-full rounded-lg border bg-transparent px-3 py-2 text-sm outline-none"
+                  className="x-admin-input w-full rounded-xl border bg-transparent px-3 py-2 text-sm outline-none"
                   style={{ color: 'var(--text-primary)', borderColor: 'var(--border)' }}
                 />
               </div>
@@ -343,7 +368,7 @@ export default function EditPostPage() {
                   type="datetime-local"
                   value={form.publishedAt}
                   onChange={(e) => updateForm((f) => ({ ...f, publishedAt: e.target.value }))}
-                  className="w-full rounded-lg border bg-transparent px-3 py-2 text-sm outline-none"
+                  className="x-admin-input w-full rounded-xl border bg-transparent px-3 py-2 text-sm outline-none"
                   style={{ color: 'var(--text-primary)', borderColor: 'var(--border)' }}
                 />
                 <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
@@ -351,18 +376,19 @@ export default function EditPostPage() {
                 </p>
               </div>
 
-              <label className="flex cursor-pointer items-center gap-2" style={{ color: 'var(--text-primary)' }}>
-                <input
-                  type="checkbox"
-                  checked={form.pinned}
-                  onChange={(e) => updateForm((f) => ({ ...f, pinned: e.target.checked }))}
-                  className="h-4 w-4 cursor-pointer rounded"
-                  style={{ accentColor: 'var(--accent)' }}
-                />
-                <span className="text-xs sm:text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  置顶此文章
-                </span>
-              </label>
+              <button
+                type="button"
+                onClick={() => updateForm((f) => ({ ...f, pinned: !f.pinned }))}
+                className="flex w-full items-center justify-between rounded-full px-3 py-2 text-xs font-medium transition-all"
+                style={{
+                  background: form.pinned ? 'rgba(29,155,240,0.12)' : 'var(--bg)',
+                  color: form.pinned ? 'var(--accent)' : 'var(--text-secondary)',
+                  border: `1px solid ${form.pinned ? 'var(--accent)' : 'var(--border)'}`,
+                }}
+              >
+                <span>📌 置顶此文章</span>
+                <span>{form.pinned ? '✓ 已置顶' : '未置顶'}</span>
+              </button>
             </div>
           </section>
 
@@ -412,7 +438,7 @@ export default function EditPostPage() {
                     placeholder="留空则不属于任何 Thread"
                     value={form.threadId}
                     onValueChange={(v) => updateForm((f) => ({ ...f, threadId: v }))}
-                    className="min-w-0 flex-1 rounded-lg border bg-transparent px-2 py-1.5 text-xs outline-none"
+                    className="x-admin-input min-w-0 flex-1 rounded-xl border bg-transparent px-2 py-1.5 text-xs outline-none"
                     style={{ color: 'var(--text-primary)', borderColor: 'var(--border)' }}
                   />
                   <button
@@ -422,7 +448,7 @@ export default function EditPostPage() {
                       updateForm((f) => ({ ...f, threadId: id, threadOrder: 1 }))
                       setShowThreadPicker(false)
                     }}
-                    className="flex-shrink-0 rounded-lg px-2 py-1.5 text-xs transition-colors hover:opacity-80"
+                    className="flex-shrink-0 rounded-full px-2 py-1.5 text-xs transition-colors hover:opacity-80"
                     style={{ background: 'var(--accent)', color: '#fff' }}
                     title="生成新 Thread ID"
                   >
@@ -435,7 +461,7 @@ export default function EditPostPage() {
                         updateForm((f) => ({ ...f, threadId: '', threadOrder: 1 }))
                         setShowThreadPicker(false)
                       }}
-                      className="flex-shrink-0 rounded-lg px-2 py-1.5 text-xs transition-colors hover:opacity-80"
+                      className="flex-shrink-0 rounded-full px-2 py-1.5 text-xs transition-colors hover:opacity-80"
                       style={{ background: 'rgba(249,24,128,0.12)', color: 'var(--red)' }}
                       title="移出 Thread"
                     >
@@ -499,7 +525,7 @@ export default function EditPostPage() {
                     min={1}
                     value={form.threadOrder}
                     onChange={(e) => updateForm((f) => ({ ...f, threadOrder: parseInt(e.target.value) || 1 }))}
-                    className="w-full rounded-lg border bg-transparent px-2 py-1.5 text-xs outline-none"
+                    className="x-admin-input w-full rounded-xl border bg-transparent px-2 py-1.5 text-xs outline-none"
                     style={{ color: 'var(--text-primary)', borderColor: 'var(--border)' }}
                   />
                   <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
