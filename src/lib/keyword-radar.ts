@@ -286,6 +286,51 @@ function dedupeByLink(items: FeedItem[]): FeedItem[] {
   })
 }
 
+/** Compute bigram set for a string (for similarity comparison) */
+function bigrams(text: string): Set<string> {
+  const normalized = text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '')
+  const set = new Set<string>()
+  for (let i = 0; i < normalized.length - 1; i++) {
+    set.add(normalized.slice(i, i + 2))
+  }
+  return set
+}
+
+/** Dice coefficient similarity between two strings (0-1) */
+function titleSimilarity(a: string, b: string): number {
+  const ba = bigrams(a)
+  const bb = bigrams(b)
+  if (ba.size === 0 || bb.size === 0) return 0
+  let intersection = 0
+  for (const bg of ba) {
+    if (bb.has(bg)) intersection++
+  }
+  return (2 * intersection) / (ba.size + bb.size)
+}
+
+/** Deduplicate by title similarity — merge keywords from near-duplicate items */
+function dedupeBySimilarTitle(items: FeedItem[], threshold = 0.7): FeedItem[] {
+  const result: FeedItem[] = []
+  for (const item of items) {
+    const dup = result.find((existing) => titleSimilarity(existing.title, item.title) >= threshold)
+    if (dup) {
+      // Merge keywords from the duplicate
+      dup.keywords = Array.from(new Set([...dup.keywords, ...item.keywords]))
+      // Prefer the item with longer summary
+      if (item.summary.length > dup.summary.length) {
+        dup.summary = item.summary
+      }
+      // Mark source as multi-source
+      if (!dup.source.includes(item.source) && item.source !== dup.source) {
+        dup.source = `${dup.source} / ${item.source}`
+      }
+    } else {
+      result.push({ ...item })
+    }
+  }
+  return result
+}
+
 /**
  * Parse news results from Sogou HTML search page.
  */
@@ -1610,10 +1655,20 @@ async function collectItems(
     return `${src}: ${status}，共 ${s.items} 条`
   })
   logger('info', `抓取统计：${statsLines.join(' | ')}`)
-  logger('info', `去重后共 ${deduped.size} 条待处理`)
-  return Array.from(deduped.values()).sort(
+  logger('info', `链接去重后共 ${deduped.size} 条`)
+  const linkDeduped = Array.from(deduped.values()).sort(
     (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
   )
+  const titleDeduped = dedupeBySimilarTitle(linkDeduped)
+  if (titleDeduped.length < linkDeduped.length) {
+    logger(
+      'info',
+      `标题相似度去重合并 ${linkDeduped.length - titleDeduped.length} 条，最终 ${titleDeduped.length} 条待处理`
+    )
+  } else {
+    logger('info', `去重后共 ${titleDeduped.length} 条待处理`)
+  }
+  return titleDeduped
 }
 
 async function insertSeenItems(items: FeedItem[], dateKey: string) {
