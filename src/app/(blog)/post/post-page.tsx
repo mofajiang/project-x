@@ -462,7 +462,9 @@ export async function renderPostPage(post: LoadedPost, session: { userId: string
         )}
       </article>
 
-      <CommentSection postId={post.id} comments={comments} session={session} showCommentIp={!!config.showCommentIp} />
+      <div id="comments" className="scroll-mt-24">
+        <CommentSection postId={post.id} comments={comments} session={session} showCommentIp={!!config.showCommentIp} />
+      </div>
     </div>
   )
 }

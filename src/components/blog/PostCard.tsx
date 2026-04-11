@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useMemo, memo } from 'react'
-import { relativeTime } from '@/lib/utils'
+import { formatViews, relativeTime } from '@/lib/utils'
 import { getPostPath } from '@/lib/post-link'
 import toast from 'react-hot-toast'
 import { InternalQuoteCard, ExternalQuoteCard } from './QuoteCard'
@@ -51,6 +51,7 @@ export const PostCard = memo(function PostCard({ post, currentUserId, index = 0 
     () => post.quotes ?? (post.content ? extractQuotesFn(post.content) : []),
     [post.quotes, post.content]
   )
+  const displayText = plainText || post.excerpt || ''
 
   const handleLike = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -66,6 +67,14 @@ export const PostCard = memo(function PostCard({ post, currentUserId, index = 0 
     } else if (res.status === 429) {
       toast.error('操作太频繁，请稍后再试')
     }
+  }
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const url = `${window.location.origin}${getPostPath(post)}`
+    await navigator.clipboard.writeText(url)
+    toast.success('帖子链接已复制')
   }
 
   return (
@@ -147,21 +156,21 @@ export const PostCard = memo(function PostCard({ post, currentUserId, index = 0 
                     </svg>
                   </span>
                 )}
-                <h2 className="text-[15px] font-bold leading-snug" style={{ color: 'var(--text-primary)' }}>
+                <h2 className="text-[13px] font-medium leading-snug" style={{ color: 'var(--text-secondary)' }}>
                   {post.title}
                 </h2>
               </div>
             )}
 
             {/* 正文内容预览 */}
-            {(plainText || quotes.length > 0) && (
+            {(displayText || quotes.length > 0) && (
               <>
-                {plainText && (
+                {displayText && (
                   <p
-                    className="line-clamp-5 whitespace-pre-line text-sm leading-relaxed"
+                    className="line-clamp-6 whitespace-pre-line text-[15px] leading-6"
                     style={{ color: 'var(--text-primary)' }}
                   >
-                    {plainText}
+                    {displayText}
                   </p>
                 )}
                 {quotes.map((q, i) =>
@@ -197,14 +206,14 @@ export const PostCard = memo(function PostCard({ post, currentUserId, index = 0 
 
             {/* 标签 */}
             {post.tags.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1.5">
+              <div className="mt-2 flex flex-wrap gap-1.5 opacity-90">
                 {post.tags.map(({ tag }) => (
                   <Link
                     key={tag.id}
                     href={`/tag/${tag.slug}`}
                     onClick={(e) => e.stopPropagation()}
-                    className="rounded-full px-2 py-0.5 text-xs transition-opacity active:opacity-60"
-                    style={{ background: 'rgba(29,155,240,0.1)', color: 'var(--accent)' }}
+                    className="rounded-full px-2 py-0.5 text-[11px] transition-opacity active:opacity-60"
+                    style={{ background: 'rgba(29,155,240,0.08)', color: 'var(--text-secondary)' }}
                   >
                     #{tag.name}
                   </Link>
@@ -214,53 +223,74 @@ export const PostCard = memo(function PostCard({ post, currentUserId, index = 0 
 
             {/* Thread 查看链接 */}
             {post.threadId && post.threadCount && post.threadCount > 1 && (
-              <div className="mt-2 text-[13px]" style={{ color: 'var(--accent)' }}>
+              <div className="mt-2 text-[13px] font-medium" style={{ color: 'var(--accent)' }}>
                 查看完整 Thread（{post.threadCount} 条）
               </div>
             )}
 
             {/* 操作栏 */}
-            <div className="-ml-2 mt-2 flex items-center gap-1">
+            <div className="-ml-2 mt-2 flex items-center justify-between gap-1">
               <span
-                className="flex items-center gap-1.5 px-2 py-1.5 text-[13px]"
+                className="group flex items-center gap-1 px-2 py-1.5 text-[13px]"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                </svg>
+                <span className="rounded-full p-1.5 transition-colors group-hover:bg-sky-500/10 group-hover:text-sky-500">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                </span>
                 {post._count.comments}
               </span>
               <button
                 onClick={handleLike}
                 disabled={liking}
-                className="flex items-center gap-1.5 rounded-full px-2 py-1.5 text-[13px] transition-colors"
+                className="group flex items-center gap-1 rounded-full px-2 py-1.5 text-[13px] transition-colors"
                 style={{
                   color: liked ? '#F91880' : 'var(--text-secondary)',
-                  background: liked ? 'rgba(249,24,128,0.08)' : 'transparent',
+                  background: 'transparent',
                 }}
               >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill={liked ? '#F91880' : 'none'}
-                  stroke={liked ? '#F91880' : 'currentColor'}
-                  strokeWidth="1.75"
+                <span
+                  className={`rounded-full p-1.5 transition-colors ${liked ? 'bg-pink-500/10 text-pink-500' : 'group-hover:bg-pink-500/10 group-hover:text-pink-500'}`}
                 >
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                </svg>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill={liked ? '#F91880' : 'none'}
+                    stroke={liked ? '#F91880' : 'currentColor'}
+                    strokeWidth="1.75"
+                  >
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                  </svg>
+                </span>
                 {likes}
               </button>
               <span
-                className="flex items-center gap-1.5 px-2 py-1.5 text-[13px]"
+                className="group flex items-center gap-1 px-2 py-1.5 text-[13px]"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
-                {post.views}
+                <span className="rounded-full p-1.5 transition-colors group-hover:bg-white/5">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                </span>
+                {formatViews(post.views)}
               </span>
+              <button
+                onClick={handleShare}
+                className="group flex items-center gap-1 rounded-full px-2 py-1.5 text-[13px]"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                <span className="rounded-full p-1.5 transition-colors group-hover:bg-sky-500/10 group-hover:text-sky-500">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+                    <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" />
+                    <path d="M12 16V3" />
+                    <path d="m7 8 5-5 5 5" />
+                  </svg>
+                </span>
+              </button>
             </div>
           </div>
         </div>
