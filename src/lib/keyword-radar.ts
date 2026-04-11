@@ -303,26 +303,27 @@ function dedupeByLink(items: FeedItem[]): FeedItem[] {
   })
 }
 
-/** Compute bigram set for a string (for similarity comparison) */
-function bigrams(text: string): Set<string> {
+/** Compute bigram array for a string (for similarity comparison) */
+function bigrams(text: string): string[] {
   const normalized = text.toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7a3]+/g, '')
-  const set = new Set<string>()
+  const arr: string[] = []
   for (let i = 0; i < normalized.length - 1; i++) {
-    set.add(normalized.slice(i, i + 2))
+    arr.push(normalized.slice(i, i + 2))
   }
-  return set
+  return arr
 }
 
 /** Dice coefficient similarity between two strings (0-1) */
 function titleSimilarity(a: string, b: string): number {
   const ba = bigrams(a)
   const bb = bigrams(b)
-  if (ba.size === 0 || bb.size === 0) return 0
+  if (ba.length === 0 || bb.length === 0) return 0
+  const bbSet = new Set(bb)
   let intersection = 0
-  for (const bg of ba) {
-    if (bb.has(bg)) intersection++
-  }
-  return (2 * intersection) / (ba.size + bb.size)
+  ba.forEach((bg) => {
+    if (bbSet.has(bg)) intersection++
+  })
+  return (2 * intersection) / (ba.length + bb.length)
 }
 
 /** Deduplicate by title similarity — merge keywords from near-duplicate items */
