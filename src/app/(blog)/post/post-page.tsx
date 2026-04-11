@@ -9,7 +9,7 @@ import { MarkdownRenderer } from '@/components/blog/MarkdownRenderer'
 import { getSiteConfig } from '@/lib/config'
 import { buildSlugCandidates } from '@/lib/slug'
 import Image from 'next/image'
-import { extractImages } from '@/lib/post-utils'
+import { extractImages, looksLikeHtmlContent } from '@/lib/post-utils'
 import { MomentsImageGrid } from '@/components/blog/MomentsImageGrid'
 import { getPostPath, getPostUrl } from '@/lib/post-link'
 
@@ -307,7 +307,7 @@ export async function renderPostPage(post: LoadedPost, session: { userId: string
                         <div className="mb-6">
                           <MarkdownRenderer
                             content={
-                              post.content.trimStart().startsWith('<')
+                              looksLikeHtmlContent(post.content)
                                 ? post.content.replace(/<img[^>]*>/gi, '')
                                 : post.content
                                     .replace(/!\[.*?\]\(https?:\/\/[^)\s]+\)/g, '')
@@ -457,7 +457,7 @@ export async function renderPostPage(post: LoadedPost, session: { userId: string
             <div className="mb-6">
               <MarkdownRenderer
                 content={
-                  post.content.trimStart().startsWith('<')
+                  looksLikeHtmlContent(post.content)
                     ? post.content.replace(/<img[^>]*>/gi, '')
                     : post.content.replace(/!\[.*?\]\(https?:\/\/[^)\s]+\)/g, '').replace(/<img[^>]*>/gi, '')
                 }

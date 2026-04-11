@@ -3,10 +3,14 @@ export interface QuoteSegment {
   value: string
 }
 
+export function looksLikeHtmlContent(md: string) {
+  return /^<(?!\!--)/.test(md.trimStart())
+}
+
 export function extractQuotes(md: string): QuoteSegment[] {
   const results: QuoteSegment[] = []
   // HTML content from TipTap
-  if (md.trimStart().startsWith('<')) {
+  if (looksLikeHtmlContent(md)) {
     const reUrl = /<div\s+data-quote-url="([^"]+)"[^>]*>/g
     const rePost = /<div\s+data-quote-post="([^"]+)"[^>]*>/g
     let m: RegExpExecArray | null
@@ -34,7 +38,7 @@ export function extractQuotes(md: string): QuoteSegment[] {
 }
 
 export function stripMarkdown(md: string): string {
-  if (md.trimStart().startsWith('<')) {
+  if (looksLikeHtmlContent(md)) {
     // HTML content from TipTap
     return md
       .replace(/<img[^>]*>/gi, '[图片]')
@@ -66,7 +70,7 @@ export function stripMarkdown(md: string): string {
 export function extractImages(md: string): string[] {
   if (!md) return []
   const urls: string[] = []
-  if (md.trimStart().startsWith('<')) {
+  if (looksLikeHtmlContent(md)) {
     // HTML content from TipTap
     const re = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi
     let m: RegExpExecArray | null

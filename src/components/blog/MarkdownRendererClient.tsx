@@ -24,6 +24,7 @@ import dockerfile from 'highlight.js/lib/languages/dockerfile'
 import nginx from 'highlight.js/lib/languages/nginx'
 import 'highlight.js/styles/github-dark.css'
 import { InternalQuoteCard, ExternalQuoteCard } from './QuoteCard'
+import { looksLikeHtmlContent } from '@/lib/post-utils'
 
 const lowlight = createLowlight()
 lowlight.register('javascript', javascript)
@@ -126,7 +127,7 @@ function parseHtmlQuotes(html: string): Array<{ type: 'html' | 'quote-url' | 'qu
 }
 
 export default function MarkdownRendererClient({ content }: { content: string }) {
-  const isHtml = content.trimStart().startsWith('<')
+  const isHtml = looksLikeHtmlContent(content)
   if (isHtml) {
     const htmlSegments = parseHtmlQuotes(content)
     if (htmlSegments.some((s) => s.type === 'quote-url' || s.type === 'quote-post')) {
