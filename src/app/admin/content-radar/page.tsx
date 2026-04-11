@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
 import { IMEInput } from '@/components/ui/IMEInput'
+import { MarkdownRenderer } from '@/components/blog/MarkdownRenderer'
 import { formatTime, formatTimeShort } from '@/lib/utils'
 import {
   ADMIN_BTN_PRIMARY,
@@ -133,6 +134,14 @@ export default function AdminContentRadarPage() {
   const [historyEntries, setHistoryEntries] = useState<RadarStatus['logs']['entries']>([])
   const [historyRunId, setHistoryRunId] = useState<string | null>(null)
   const [historyLoading, setHistoryLoading] = useState(false)
+  const [previewing, setPreviewing] = useState(false)
+  const [previewResult, setPreviewResult] = useState<{
+    content: string
+    message: string
+    matchedCount: number
+    newCount: number
+    digestDate: string
+  } | null>(null)
   const [healthData, setHealthData] = useState<
     Array<{
       sourceId: string
@@ -250,6 +259,31 @@ export default function AdminContentRadarPage() {
     }
   }
 
+  const handlePreview = async () => {
+    setPreviewing(true)
+    try {
+      const res = await fetch('/api/admin/content-radar/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ previewOnly: true }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || data.message || '预览失败')
+      setPreviewResult({
+        content: data.content || '',
+        message: data.message || '',
+        matchedCount: Number(data.matchedCount || 0),
+        newCount: Number(data.newCount || 0),
+        digestDate: String(data.digestDate || ''),
+      })
+      toast.success(data.message || '预览已生成')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : '预览失败')
+    } finally {
+      setPreviewing(false)
+    }
+  }
+
   const loadHistoryRuns = async () => {
     setHistoryLoading(true)
     try {
@@ -310,6 +344,19 @@ export default function AdminContentRadarPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={handlePreview}
+            disabled={previewing}
+            className={ADMIN_BTN_SECONDARY}
+            style={{
+              background: 'var(--bg-secondary)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border)',
+            }}
+          >
+            {previewing ? '预览生成中...' : '仅预览文案'}
+          </button>
           <button
             type="button"
             onClick={handleRun}
@@ -687,6 +734,39 @@ export default function AdminContentRadarPage() {
                 placeholder="例如：更偏技术情报风格，少一些空泛总结，多一些要点提炼。"
               />
             </div>
+
+            {previewResult && (
+              <div
+                className="mt-6 rounded-3xl border p-4"
+                style={{ borderColor: 'var(--border)', background: 'var(--bg)' }}
+              >
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
+                      文案预览
+                    </h3>
+                    <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                      {previewResult.message} · 命中 {previewResult.matchedCount} 条 · 新增 {previewResult.newCount} 条
+                      · 日期 {previewResult.digestDate}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewResult(null)}
+                    className="rounded-full px-3 py-1 text-xs"
+                    style={{ color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
+                  >
+                    关闭预览
+                  </button>
+                </div>
+                <div
+                  className="max-h-[480px] overflow-y-auto rounded-2xl border px-4 py-4"
+                  style={{ borderColor: 'var(--border)' }}
+                >
+                  <MarkdownRenderer content={previewResult.content} />
+                </div>
+              </div>
+            )}
           </section>
         </div>
 

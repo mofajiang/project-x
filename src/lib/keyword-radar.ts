@@ -20,6 +20,10 @@ export const RADAR_SOURCES = [
   { id: 'bing', label: 'Bing News', region: '国际', type: 'rss' },
   { id: 'baidu', label: '百度资讯', region: '中国', type: 'rss' },
   { id: 'yahoo', label: 'Yahoo News', region: '国际', type: 'rss' },
+  { id: 'hackernews', label: 'Hacker News', region: '国际', type: 'rss' },
+  { id: 'reddit', label: 'Reddit', region: '国际', type: 'rss' },
+  { id: 'devto', label: 'DEV.to', region: '国际', type: 'rss' },
+  { id: 'medium', label: 'Medium', region: '国际', type: 'rss' },
   { id: 'sogou', label: '搜狗资讯', region: '中国', type: 'html' },
   { id: 'duckduckgo', label: 'DuckDuckGo', region: '国际', type: 'html' },
   { id: 'yandex', label: 'Yandex News', region: '俄/国际', type: 'html' },
@@ -79,6 +83,21 @@ export type KeywordRadarRunResult = {
   newCount: number
   digestDate: string
   postId?: string
+}
+
+export type KeywordRadarPreviewResult = {
+  ok: boolean
+  message: string
+  matchedCount: number
+  newCount: number
+  digestDate: string
+  content: string
+}
+
+type DigestBuildResult = {
+  content: string
+  mode: 'ai' | 'fallback' | 'strict-fallback'
+  reason?: string
 }
 
 type FeedItem = {
@@ -213,6 +232,22 @@ function buildDuckDuckGoNewsUrl(keyword: string) {
 
 function buildYandexNewsUrl(keyword: string) {
   return `https://newssearch.yandex.ru/yandsearch?text=${encodeURIComponent(keyword)}&rpt=nnews2`
+}
+
+function buildHackerNewsFeedUrl(keyword: string) {
+  return `https://hnrss.org/newest?q=${encodeURIComponent(keyword)}&count=20`
+}
+
+function buildRedditFeedUrl(keyword: string) {
+  return `https://www.reddit.com/search.rss?q=${encodeURIComponent(keyword)}&sort=new&t=week`
+}
+
+function buildDevtoFeedUrl(keyword: string) {
+  return `https://dev.to/search/feed_content?per_page=15&search_fields=${encodeURIComponent(keyword)}&class_name=Article`
+}
+
+function buildMediumFeedUrl(keyword: string) {
+  return `https://medium.com/feed/tag/${encodeURIComponent(keyword.toLowerCase().replace(/\s+/g, '-'))}`
 }
 
 /** Decode common HTML entities */
@@ -550,6 +585,117 @@ function formatRadarLink(url: string, label = '查看原文') {
   return `[${label}](${url})`
 }
 
+function formatPublishedAtLabel(value: string) {
+  return value ? value.replace('T', ' ').slice(0, 16) : '未知'
+}
+
+function normalizeRadarMarkdown(content: string, config: KeywordRadarConfig, dateKey: string) {
+  const marker = makeDigestMarker(dateKey)
+  let normalized = String(content || '')
+    .replace(/\r\n?/g, '\n')
+    .trim()
+
+  const fenced = normalized.match(/^```(?:markdown|md)?\n([\s\S]*?)\n```$/i)
+  if (fenced) normalized = fenced[1].trim()
+
+  normalized = normalized
+    .replace(/^#{1,6}([^#\s])/gm, (_m) => _m.replace(/^(#{1,6})(.*)$/m, '$1 $2'))
+    .replace(/^-\s*原文：\s*(https?:\/\/\S+)$/gm, (_m, url: string) => `- 原文：${formatRadarLink(url)}`)
+    .replace(/^原文：\s*(https?:\/\/\S+)$/gm, (_m, url: string) => `原文：${formatRadarLink(url)}`)
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+
+  if (!normalized.includes(marker)) {
+    normalized = `${marker}\n\n${normalized}`
+  } else if (!normalized.startsWith(marker)) {
+    normalized = `${marker}\n\n${normalized.replace(marker, '').trim()}`
+  }
+
+  const body = normalized.replace(marker, '').trimStart()
+  if (!/^#\s+/m.test(body)) {
+    normalized = `${marker}\n\n# ${formatDateLabel(dateKey)} 关键词资讯日报\n\n${body}`.trim()
+  }
+
+  if (config.standardMarkdown) {
+    normalized = normalized
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>\s*<p>/gi, '\n\n')
+      .replace(/<[^>]+>/g, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim()
+  }
+
+  return normalized
+}
+
+function strictFallbackDigestMarkdown(items: FeedItem[], config: KeywordRadarConfig, dateKey: string) {
+  const marker = makeDigestMarker(dateKey)
+  const keywordLine = config.keywords.length ? config.keywords.join('、') : '未设置关键词'
+  const highlights = items.slice(0, Math.min(3, config.maxItems)).map((item) => {
+    const summary = item.summary ? item.summary.slice(0, 80) : '暂无摘要'
+    return `- **${item.title}**：${summary} ${formatRadarLink(item.link, '→ 原文')}`
+  })
+  const sections = items.slice(0, config.maxItems).map((item, index) => {
+    const summaryText = item.summary
+      ? item.summary.length > 140
+        ? `${item.summary.slice(0, 140)}…`
+        : item.summary
+      : '该内容暂无详细摘要，建议点击原文了解详情。'
+    const sourceNote = /dev\.to|medium|blog|博客/i.test(item.source)
+      ? `来自博客 ${item.source}`
+      : item.source || '未知来源'
+    return [
+      `### ${index + 1}. ${item.title}`,
+      '',
+      summaryText,
+      '',
+      `- 来源：${sourceNote}`,
+      `- 关键词：${item.keywords.join(' / ') || '未匹配'}`,
+      `- 时间：${formatPublishedAtLabel(item.publishedAt)}`,
+      `- ${formatRadarLink(item.link, '阅读原文')}`,
+    ].join('\n')
+  })
+
+  return normalizeRadarMarkdown(
+    [
+      marker,
+      `# ${formatDateLabel(dateKey)} 关键词资讯日报`,
+      '',
+      `> 本期日报围绕 **${keywordLine}** 自动聚合，覆盖新闻与博客，共整理 ${items.length} 条内容。`,
+      '',
+      '## 今日亮点',
+      '',
+      ...(highlights.length > 0 ? highlights : ['- 暂无可展示内容']),
+      '',
+      '## 逐条速读',
+      '',
+      ...sections,
+      '',
+      '---',
+      '',
+      `*以上内容由内容雷达自动聚合生成（严格模板），信息仅供参考。*`,
+    ].join('\n'),
+    config,
+    dateKey
+  )
+}
+
+function inspectAiDigestQuality(content: string, config: KeywordRadarConfig) {
+  const body = content.replace(/<!--\s*keyword-radar:[^>]+-->/, '').trim()
+  const markdownHeadingCount = (body.match(/^#{1,3}\s+/gm) || []).length
+  const markdownLinkCount = (body.match(/\[[^\]]+\]\(https?:\/\/[^)]+\)/g) || []).length
+  const bareUrlCount = (body.match(/(^|[^\]\(])(https?:\/\/\S+)/g) || []).length
+  const htmlTagCount = (body.match(/<(?!!--)[^>]+>/g) || []).length
+  const longLineCount = body.split('\n').filter((line) => line.length > 220 && /https?:\/\//.test(line)).length
+
+  if (markdownHeadingCount < 2) return { ok: false, reason: '标题层级不足' }
+  if (config.standardMarkdown && markdownLinkCount === 0) return { ok: false, reason: '缺少 Markdown 链接' }
+  if (config.standardMarkdown && bareUrlCount > markdownLinkCount + 1) return { ok: false, reason: '裸链接过多' }
+  if (config.standardMarkdown && htmlTagCount > 0) return { ok: false, reason: '包含 HTML 标签' }
+  if (longLineCount > 0) return { ok: false, reason: '存在超长链接行' }
+  return { ok: true }
+}
+
 const BROWSER_USER_AGENTS = [
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
@@ -619,12 +765,63 @@ async function fetchXml(url: string, retries = 1): Promise<string> {
   throw lastError!
 }
 
+async function fetchDevtoArticles(keyword: string): Promise<FeedItem[]> {
+  const url = buildDevtoFeedUrl(keyword)
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': randomUserAgent(),
+        Accept: 'application/json',
+      },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    })
+    if (!res.ok) return []
+    const data = (await res.json()) as {
+      result?: Array<{
+        title?: string
+        path?: string
+        user?: { name?: string }
+        tag_list?: string[]
+        published_at_int?: number
+        body_text?: string
+      }>
+    }
+    const articles = data.result || (Array.isArray(data) ? data : [])
+    return (
+      articles as Array<{
+        title?: string
+        path?: string
+        user?: { name?: string }
+        tag_list?: string[]
+        published_at_int?: number
+        body_text?: string
+      }>
+    )
+      .slice(0, MAX_FEED_ITEMS)
+      .filter((a) => a.title && a.path)
+      .map((a) => ({
+        title: String(a.title || ''),
+        link: a.path?.startsWith('http') ? a.path : `https://dev.to${a.path}`,
+        summary: toSummary(a.body_text || '', 200),
+        publishedAt: a.published_at_int ? new Date(a.published_at_int * 1000).toISOString() : new Date().toISOString(),
+        source: a.user?.name ? `DEV.to / ${a.user.name}` : 'DEV.to',
+        keywords: [keyword],
+      }))
+  } catch {
+    return []
+  }
+}
+
 async function fetchFeedByKeyword(keyword: string, sourceId: RadarSourceId = 'google'): Promise<FeedItem[]> {
   const rssUrlMap: Partial<Record<RadarSourceId, string>> = {
     google: buildGoogleNewsFeedUrl(keyword),
     bing: buildBingNewsFeedUrl(keyword),
     baidu: buildBaiduNewsFeedUrl(keyword),
     yahoo: buildYahooNewsFeedUrl(keyword),
+    hackernews: buildHackerNewsFeedUrl(keyword),
+    reddit: buildRedditFeedUrl(keyword),
+    medium: buildMediumFeedUrl(keyword),
   }
   const htmlUrlMap: Partial<Record<RadarSourceId, string>> = {
     sogou: buildSogouNewsUrl(keyword),
@@ -636,6 +833,10 @@ async function fetchFeedByKeyword(keyword: string, sourceId: RadarSourceId = 'go
     bing: 'Bing News',
     baidu: '百度资讯',
     yahoo: 'Yahoo News',
+    hackernews: 'Hacker News',
+    reddit: 'Reddit',
+    devto: 'DEV.to',
+    medium: 'Medium',
     sogou: '搜狗资讯',
     duckduckgo: 'DuckDuckGo',
     yandex: 'Yandex News',
@@ -651,6 +852,11 @@ async function fetchFeedByKeyword(keyword: string, sourceId: RadarSourceId = 'go
     }
     const parser = htmlParsers[sourceId]
     return parser ? parser(html, keyword) : []
+  }
+
+  // Dev.to JSON API
+  if (sourceId === 'devto') {
+    return fetchDevtoArticles(keyword)
   }
 
   // RSS-based sources
@@ -893,45 +1099,52 @@ function fallbackDigestMarkdown(items: FeedItem[], config: KeywordRadarConfig, d
   const sections = items
     .slice(0, config.maxItems)
     .map((item, index) => {
-      const keywordText = item.keywords.join(' / ')
+      const summaryText = item.summary
+        ? item.summary.length > 120
+          ? `${item.summary.slice(0, 120)}…`
+          : item.summary
+        : '该内容暂无详细摘要，点击原文了解更多。'
+      const sourceNote = /dev\.to|medium|blog|博客/i.test(item.source)
+        ? `（来自博客：${item.source}）`
+        : `（来源：${item.source || '未知来源'}）`
       return [
         `### ${index + 1}. ${item.title}`,
         '',
-        `- 匹配关键词：${keywordText}`,
-        `- 来源：${item.source || '未知来源'}`,
-        `- 发布时间：${item.publishedAt ? item.publishedAt.replace('T', ' ').slice(0, 16) : '未知'}`,
-        item.summary ? `- 摘要：${item.summary}` : '',
-        `- 原文：${config.standardMarkdown ? formatRadarLink(item.link) : item.link}`,
-      ]
-        .filter(Boolean)
-        .join('\n')
+        `${summaryText}${sourceNote}`,
+        '',
+        `- 匹配关键词：${item.keywords.join(' / ')}`,
+        `- 发布时间：${formatPublishedAtLabel(item.publishedAt)}`,
+        `- ${config.standardMarkdown ? formatRadarLink(item.link, '阅读原文') : item.link}`,
+      ].join('\n')
     })
     .join('\n\n')
 
-  return [
-    marker,
-    `# ${formatDateLabel(dateKey)} 关键词资讯日报`,
-    '',
-    `本日报根据以下关键词自动汇总生成：${keywordLine}。`,
-    '',
-    '## 今日摘要',
-    '',
-    `共发现 ${items.length} 条新内容，以下为自动整理结果。`,
-    '',
-    '## 重点内容',
-    '',
-    sections,
-  ].join('\n')
+  return normalizeRadarMarkdown(
+    [
+      marker,
+      `# ${formatDateLabel(dateKey)} 关键词资讯日报`,
+      '',
+      `> 本期日报围绕 **${keywordLine}** 整理，涵盖新闻资讯与博客文章，共 ${items.length} 条内容。`,
+      '',
+      '## 今日动态',
+      '',
+      sections,
+      '',
+      '---',
+      '',
+      `*以上内容由内容雷达自动聚合生成，信息仅供参考。*`,
+    ].join('\n'),
+    config,
+    dateKey
+  )
 }
 
-async function aiDigestMarkdown(items: FeedItem[], config: KeywordRadarConfig, dateKey: string) {
+async function generateAiDigestMarkdown(items: FeedItem[], config: KeywordRadarConfig, dateKey: string) {
   const rows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
     `SELECT ${AI_CONFIG_SELECT} FROM SiteConfig WHERE id = 'singleton'`
   )
   const cfg = rowToAiFullConfig(rows[0] || {})
-  if (!cfg.groqApiKey && !cfg.openrouterApiKey && !cfg.aiModelApiKey) {
-    return fallbackDigestMarkdown(items, config, dateKey)
-  }
+  if (!cfg.groqApiKey && !cfg.openrouterApiKey && !cfg.aiModelApiKey) return null
 
   const marker = makeDigestMarker(dateKey)
   const payload = items
@@ -943,37 +1156,75 @@ async function aiDigestMarkdown(items: FeedItem[], config: KeywordRadarConfig, d
         `来源：${item.source}`,
         `发布时间：${item.publishedAt}`,
         `摘要：${item.summary || '无'}`,
-        `原文：${item.link}`,
+        `原文链接：${item.link}`,
       ].join('\n')
     })
     .join('\n\n')
 
-  const systemPrompt = `你是一位中文科技/行业编辑。请把输入的新闻线索整理成一篇适合博客发布的 Markdown 日报。
+  const systemPrompt = `你是一位经验丰富的中文科技 / 行业日报编辑。你的工作是将一组原始新闻线索和博客文章整理成一篇"像真正编辑写的日报"，而不是简单的链接列表。
 要求：
-1. 使用中文输出。
-2. 文章结构清晰，包含标题、导语、分节小标题、要点列表。
-3. 每条信息都保留原文链接。
-4. 不要编造未提供的事实，不要扩展成大段空话。
-5. 不输出 YAML，不输出代码块围栏。
-6. 文风简洁、像站长日报。
+1. 使用中文输出，文风自然流畅，像站长写给读者的日报。
+2. 整体结构：标题 → 编辑导语（2-3 句话概括今天的整体动态和亮点）→ 若干主题分区 → 编辑点评结尾。
+3. 按主题或领域对线索进行分组，每组用一个小标题概括主题，而非逐条编号。
+4. 核心要求——提炼与重组：
+   - 每条线索用 2-4 句话概括其核心内容和意义，不要只写标题和链接。
+   - 用自己的语言重新组织信息，像真正的编辑一样分析和解读。
+   - 如果有多条相关线索，合并讨论，指出它们的关联性或趋势。
+   - 在每段摘要末尾附上原文链接，格式为 [阅读原文](链接) 或 [来源名称](链接)。
+5. 不要编造未提供的事实，但可以适当加入简短的编辑评论和观点。
+6. 不输出 YAML，不输出代码块围栏。
 7. 第一行必须保留这个标记且不要改动：${marker}
-8. ${config.standardMarkdown ? '必须使用标准 Markdown 语法输出，只使用标题、段落、列表、强调和 Markdown 链接；不要输出 HTML 标签、表格、裸链接或超长连续文本。所有外链都写成 [文字](链接) 形式。' : '保持清晰可读的 Markdown 结构。'}`
+8. ${config.standardMarkdown ? '必须使用标准 Markdown 语法输出，只使用标题、段落、列表、强调和 Markdown 链接；不要输出 HTML 标签、表格、裸链接或超长连续文本。所有外链都写成 [文字](链接) 形式。' : '保持清晰可读的 Markdown 结构。'}
+9. 来源包括新闻网站和个人博客，对博客文章适当标注"来自博客"或作者名。`
 
   const userPrompt = `${config.prompt ? `${config.prompt}\n\n` : ''}关键词：${config.keywords.join('、')}\n标签：${config.tags.join('、')}\n日期：${formatDateLabel(dateKey)}\n\n线索如下：\n\n${payload}`
 
+  const result = await callAi(
+    'postPolish',
+    cfg,
+    [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ],
+    { maxTokens: 3200, temperature: 0.45 }
+  )
+  return normalizeRadarMarkdown(result && result.includes(marker) ? result : `${marker}\n\n${result}`, config, dateKey)
+}
+
+async function buildRadarDigestContent(items: FeedItem[], config: KeywordRadarConfig, dateKey: string) {
+  const digestItems = items.slice(0, config.maxItems)
+  if (!config.useAi) {
+    return {
+      content: fallbackDigestMarkdown(digestItems, config, dateKey),
+      mode: 'fallback',
+      reason: '已关闭 AI 生成功能',
+    } satisfies DigestBuildResult
+  }
+
   try {
-    const result = await callAi(
-      'postPolish',
-      cfg,
-      [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      { maxTokens: 3200, temperature: 0.45 }
-    )
-    return result && result.includes(marker) ? result : `${marker}\n\n${result}`
-  } catch {
-    return fallbackDigestMarkdown(items, config, dateKey)
+    const aiContent = await generateAiDigestMarkdown(digestItems, config, dateKey)
+    if (!aiContent) {
+      return {
+        content: strictFallbackDigestMarkdown(digestItems, config, dateKey),
+        mode: 'strict-fallback',
+        reason: '未配置可用 AI',
+      } satisfies DigestBuildResult
+    }
+    const quality = inspectAiDigestQuality(aiContent, config)
+    if (!quality.ok) {
+      return {
+        content: strictFallbackDigestMarkdown(digestItems, config, dateKey),
+        mode: 'strict-fallback',
+        reason: `AI 输出结构不稳定：${quality.reason}`,
+      } satisfies DigestBuildResult
+    }
+    return { content: aiContent, mode: 'ai' } satisfies DigestBuildResult
+  } catch (error) {
+    return {
+      content: strictFallbackDigestMarkdown(digestItems, config, dateKey),
+      mode: 'strict-fallback',
+      reason: error instanceof Error ? error.message : 'AI 调用失败',
+    } satisfies DigestBuildResult
   }
 }
 
@@ -1011,9 +1262,8 @@ async function upsertDailyDigest(items: FeedItem[], config: KeywordRadarConfig, 
     keywords: parseArray(row.keywords),
   }))
   const digestItems = allItems.length > 0 ? allItems.slice(0, config.maxItems) : items.slice(0, config.maxItems)
-  const content = config.useAi
-    ? await aiDigestMarkdown(digestItems, config, dateKey)
-    : fallbackDigestMarkdown(digestItems, config, dateKey)
+  const digest = await buildRadarDigestContent(digestItems, config, dateKey)
+  const content = digest.content
   const excerpt = plainText(content).slice(0, 160)
   const tagNames = config.tags.length ? config.tags : ['日报']
   const existing = await prisma.$queryRawUnsafe<{ id: string; published: number; publishedAt: string | null }[]>(
@@ -1052,7 +1302,7 @@ async function upsertDailyDigest(items: FeedItem[], config: KeywordRadarConfig, 
         },
       },
     })
-    return existing[0].id
+    return { postId: existing[0].id, mode: digest.mode, reason: digest.reason }
   }
 
   const rows = await prisma.$queryRawUnsafe<{ nextId: number }[]>(
@@ -1081,7 +1331,7 @@ async function upsertDailyDigest(items: FeedItem[], config: KeywordRadarConfig, 
       },
     },
   })
-  return post.id
+  return { postId: post.id, mode: digest.mode, reason: digest.reason }
 }
 
 /** Send webhook notification (fire-and-forget) */
@@ -1472,7 +1722,8 @@ export async function runKeywordRadar(options: { reason: 'manual' | 'scheduler' 
       await insertSeenItems(newItems, dateKey)
       log('success', `已写入 ${newItems.length} 条去重记录`)
       log('info', config.useAi ? '开始生成 AI 日报文案' : '使用模板生成日报文案')
-      const postId = await upsertDailyDigest(newItems, config, dateKey)
+      const digestPost = await upsertDailyDigest(newItems, config, dateKey)
+      const postId = digestPost.postId
       await attachPostId(dateKey, postId)
       await setLastRun({
         lastRunAt: nowIso,
@@ -1484,6 +1735,13 @@ export async function runKeywordRadar(options: { reason: 'manual' | 'scheduler' 
       try {
         revalidateTag('posts')
       } catch {}
+      if (digestPost.mode === 'strict-fallback' && digestPost.reason) {
+        log('info', `已自动切换到严格模板：${digestPost.reason}`)
+      } else if (digestPost.mode === 'fallback' && digestPost.reason) {
+        log('info', `已使用普通模板：${digestPost.reason}`)
+      } else {
+        log('success', 'AI 输出通过质量检查，已直接用于生成日报')
+      }
       log('success', `日报已生成，文章 ID：${postId}`)
       log('success', `执行完成：命中 ${matchedItems.length} 条，新增 ${newItems.length} 条`)
       // Webhook notification
@@ -1528,5 +1786,40 @@ export async function runKeywordRadar(options: { reason: 'manual' | 'scheduler' 
     return await promise
   } finally {
     globalThis.__keywordRadarRunning = null
+  }
+}
+
+export async function previewKeywordRadarDigest(): Promise<KeywordRadarPreviewResult> {
+  await runMigrations()
+  await ensureSiteConfigRow()
+  const config = await getKeywordRadarConfig()
+  const dateKey = getTodayKey()
+
+  if (config.keywords.length === 0 && config.extraFeeds.length === 0) {
+    return {
+      ok: false,
+      message: '未配置关键词或额外 RSS 源',
+      matchedCount: 0,
+      newCount: 0,
+      digestDate: dateKey,
+      content: '',
+    }
+  }
+
+  const matchedItems = await collectItems(config, () => {}, `preview-${Date.now()}`)
+  const newItems = await getNewItems(matchedItems)
+  const previewItems = (newItems.length > 0 ? newItems : matchedItems).slice(0, config.maxItems)
+  const digest = await buildRadarDigestContent(previewItems, config, dateKey)
+  const content = digest.content
+
+  return {
+    ok: true,
+    message:
+      (newItems.length > 0 ? `已预览 ${newItems.length} 条新增内容` : '当前没有新增内容，展示的是候选内容预览') +
+      (digest.mode === 'strict-fallback' && digest.reason ? `；已切换严格模板：${digest.reason}` : ''),
+    matchedCount: matchedItems.length,
+    newCount: newItems.length,
+    digestDate: dateKey,
+    content,
   }
 }
