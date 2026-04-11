@@ -952,7 +952,8 @@ async function collectItems(
   logger('info', `开始抓取 ${tasks.length} 个来源`)
   const settled = await Promise.allSettled(tasks.map((item) => item.task))
   const deduped = new Map<string, FeedItem>()
-  for (const [index, result] of settled.entries()) {
+  for (let index = 0; index < settled.length; index++) {
+    const result = settled[index]
     const label = tasks[index]?.label || `来源 ${index + 1}`
     if (result.status !== 'fulfilled') {
       logger('error', `${label} 抓取失败：${result.reason instanceof Error ? result.reason.message : '未知错误'}`)
