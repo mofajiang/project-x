@@ -2,11 +2,30 @@ import crypto from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { runMigrations } from '@/lib/db-migrate'
 import { AI_CONFIG_SELECT, callAi, rowToAiFullConfig } from '@/lib/ai-call'
+import {
+  appendKeywordRadarLog,
+  finishKeywordRadarLog,
+  getKeywordRadarLogState,
+  startKeywordRadarLog,
+  type KeywordRadarLogState,
+} from '@/lib/keyword-radar-log'
 import { slugify } from '@/lib/utils'
 import { syslog } from '@/lib/syslog'
 import { revalidateTag } from 'next/cache'
 
 type KeywordRadarRow = Record<string, unknown>
+
+export const RADAR_SOURCES = [
+  { id: 'google', label: 'Google News', region: '国际', type: 'rss' },
+  { id: 'bing', label: 'Bing News', region: '国际', type: 'rss' },
+  { id: 'baidu', label: '百度资讯', region: '中国', type: 'rss' },
+  { id: 'yahoo', label: 'Yahoo News', region: '国际', type: 'rss' },
+  { id: 'sogou', label: '搜狗资讯', region: '中国', type: 'html' },
+  { id: 'duckduckgo', label: 'DuckDuckGo', region: '国际', type: 'html' },
+  { id: 'yandex', label: 'Yandex News', region: '俄/国际', type: 'html' },
+] as const
+
+export type RadarSourceId = (typeof RADAR_SOURCES)[number]['id']
 
 export type KeywordRadarConfig = {
   enabled: boolean
@@ -25,6 +44,8 @@ export type KeywordRadarConfig = {
   lastPostId: string
   maxItems: number
   keepDays: number
+  sources: RadarSourceId[]
+  customSourceTemplates: Array<{ name: string; urlTemplate: string }>
 }
 
 export type KeywordRadarSeenItem = {
@@ -44,6 +65,7 @@ export type KeywordRadarStatus = {
   config: KeywordRadarConfig
   recentItems: KeywordRadarSeenItem[]
   totalSeen: number
+  logs: KeywordRadarLogState
 }
 
 export type KeywordRadarRunResult = {
@@ -82,6 +104,8 @@ const DEFAULT_CONFIG: KeywordRadarConfig = {
   lastPostId: '',
   maxItems: 12,
   keepDays: 14,
+  sources: ['google'],
+  customSourceTemplates: [],
 }
 
 const FETCH_TIMEOUT_MS = 8000
@@ -126,11 +150,219 @@ function rowToConfig(row: KeywordRadarRow | undefined): KeywordRadarConfig {
     lastPostId: String(row.keywordRadarLastPostId || ''),
     maxItems: Math.max(3, Math.min(30, Number(row.keywordRadarMaxItems) || DEFAULT_CONFIG.maxItems)),
     keepDays: Math.max(1, Math.min(90, Number(row.keywordRadarKeepDays) || DEFAULT_CONFIG.keepDays)),
+    sources: ((arr) => (arr.length ? arr : DEFAULT_CONFIG.sources))(
+      (parseArray(row.keywordRadarSources) as RadarSourceId[]).filter((s) => RADAR_SOURCES.some((def) => def.id === s))
+    ),
+    customSourceTemplates: parseCustomSourceTemplates(row.keywordRadarCustomSourceTemplates),
   }
 }
 
-function buildNewsFeedUrl(keyword: string) {
+function parseCustomSourceTemplates(input: unknown): Array<{ name: string; urlTemplate: string }> {
+  if (!input) return []
+  try {
+    const parsed = typeof input === 'string' ? JSON.parse(input) : input
+    if (!Array.isArray(parsed)) return []
+    return parsed
+      .filter((t: unknown) => typeof t === 'object' && t && 'name' in t && 'urlTemplate' in t)
+      .map((t: { name: string; urlTemplate: string }) => ({
+        name: String(t.name || '').slice(0, 50),
+        urlTemplate: String(t.urlTemplate || '').slice(0, 500),
+      }))
+      .filter((t) => t.name && t.urlTemplate.includes('{keyword}'))
+  } catch {
+    return []
+  }
+}
+
+function buildGoogleNewsFeedUrl(keyword: string) {
   return `https://news.google.com/rss/search?q=${encodeURIComponent(keyword)}&hl=zh-CN&gl=CN&ceid=CN:zh-Hans`
+}
+
+function buildBingNewsFeedUrl(keyword: string) {
+  return `https://www.bing.com/news/search?q=${encodeURIComponent(keyword)}&format=rss&mkt=zh-CN`
+}
+
+function buildBaiduNewsFeedUrl(keyword: string) {
+  return `https://news.baidu.com/ns?word=${encodeURIComponent(keyword)}&tn=newsrss&sr=0&cl=2&rn=20&ct=0`
+}
+
+function buildYahooNewsFeedUrl(keyword: string) {
+  return `https://news.search.yahoo.com/rss?p=${encodeURIComponent(keyword)}`
+}
+
+function buildSogouNewsUrl(keyword: string) {
+  return `https://news.sogou.com/news?query=${encodeURIComponent(keyword)}&sort=0`
+}
+
+function buildDuckDuckGoNewsUrl(keyword: string) {
+  return `https://html.duckduckgo.com/html/?q=${encodeURIComponent(keyword)}+news`
+}
+
+function buildYandexNewsUrl(keyword: string) {
+  return `https://newssearch.yandex.ru/yandsearch?text=${encodeURIComponent(keyword)}&rpt=nnews2`
+}
+
+/**
+ * Parse news results from Sogou HTML search page.
+ */
+function parseSogouHtml(html: string, keyword: string): FeedItem[] {
+  const items: FeedItem[] = []
+  // Sogou news results use <h3><a href="...">title</a></h3> with class "vrTitle"
+  const blockRe = /<h3[^>]*class="[^"]*vr[Tt]itle[^"]*"[^>]*>[\s\S]*?<\/h3>[\s\S]*?(?=<h3|<div\s+id="pagebar"|$)/gi
+  let m: RegExpExecArray | null
+  while ((m = blockRe.exec(html)) !== null && items.length < MAX_FEED_ITEMS) {
+    const block = m[0]
+    const linkMatch = block.match(/<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i)
+    if (!linkMatch) continue
+    const link = linkMatch[1]
+    const title = linkMatch[2]
+      .replace(/<[^>]+>/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+    if (!title || !link) continue
+    const descMatch =
+      block.match(/<p[^>]*class="[^"]*star-wiki[^"]*"[^>]*>([\s\S]*?)<\/p>/i) ||
+      block.match(/<div[^>]*class="[^"]*rb[^"]*"[^>]*>([\s\S]*?)<\/div>/i)
+    const summary = descMatch
+      ? descMatch[1]
+          .replace(/<[^>]+>/g, '')
+          .replace(/\s+/g, ' ')
+          .trim()
+      : ''
+    items.push({
+      title,
+      link,
+      summary: toSummary(summary),
+      publishedAt: new Date().toISOString(),
+      source: '搜狗资讯',
+      keywords: [keyword],
+    })
+  }
+  // Fallback: generic <a> with newTitle class
+  if (items.length === 0) {
+    const fallbackRe = /<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi
+    while ((m = fallbackRe.exec(html)) !== null && items.length < MAX_FEED_ITEMS) {
+      const link = m[1]
+      const title = m[2]
+        .replace(/<[^>]+>/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+      if (!title || title.length < 6 || !link.startsWith('http')) continue
+      if (link.includes('sogou.com') && !link.includes('/link?')) continue
+      items.push({
+        title,
+        link,
+        summary: '',
+        publishedAt: new Date().toISOString(),
+        source: '搜狗资讯',
+        keywords: [keyword],
+      })
+    }
+  }
+  return items
+}
+
+/**
+ * Parse news results from DuckDuckGo HTML lite page.
+ */
+function parseDuckDuckGoHtml(html: string, keyword: string): FeedItem[] {
+  const items: FeedItem[] = []
+  // DDG HTML lite uses <a class="result__a" href="...">title</a>
+  const resultRe = /<a[^>]+class="[^"]*result__a[^"]*"[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi
+  let m: RegExpExecArray | null
+  while ((m = resultRe.exec(html)) !== null && items.length < MAX_FEED_ITEMS) {
+    let link = m[1]
+    const title = m[2]
+      .replace(/<[^>]+>/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+    if (!title || !link) continue
+    // DDG sometimes wraps links in a redirect
+    const uddg = link.match(/uddg=([^&]+)/)
+    if (uddg) {
+      try {
+        link = decodeURIComponent(uddg[1])
+      } catch {
+        /* keep original */
+      }
+    }
+    items.push({
+      title,
+      link,
+      summary: '',
+      publishedAt: new Date().toISOString(),
+      source: 'DuckDuckGo',
+      keywords: [keyword],
+    })
+  }
+  // Fallback: any <a> with class containing "result"
+  if (items.length === 0) {
+    const fbRe = /<a[^>]+href="(https?:\/\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/gi
+    while ((m = fbRe.exec(html)) !== null && items.length < MAX_FEED_ITEMS) {
+      const link = m[1]
+      const title = m[2]
+        .replace(/<[^>]+>/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+      if (!title || title.length < 6 || link.includes('duckduckgo.com')) continue
+      items.push({
+        title,
+        link,
+        summary: '',
+        publishedAt: new Date().toISOString(),
+        source: 'DuckDuckGo',
+        keywords: [keyword],
+      })
+    }
+  }
+  return items
+}
+
+/**
+ * Parse news results from Yandex News search page.
+ */
+function parseYandexHtml(html: string, keyword: string): FeedItem[] {
+  const items: FeedItem[] = []
+  // Yandex news results: <a class="mg-snippet__url" href="...">
+  const re =
+    /<a[^>]+class="[^"]*snippet[^"]*"[^>]+href="([^"]+)"[^>]*>[\s\S]*?<\/a>[\s\S]*?(?=<a[^>]+class="[^"]*snippet|$)/gi
+  let m: RegExpExecArray | null
+  while ((m = re.exec(html)) !== null && items.length < MAX_FEED_ITEMS) {
+    const link = m[1]
+    const block = m[0]
+    const titleMatch = block.match(/<[^>]+class="[^"]*title[^"]*"[^>]*>([\s\S]*?)<\/[^>]+>/i)
+    const title = titleMatch ? titleMatch[1].replace(/<[^>]+>/g, '').trim() : ''
+    if (!title || !link.startsWith('http')) continue
+    items.push({
+      title,
+      link,
+      summary: '',
+      publishedAt: new Date().toISOString(),
+      source: 'Yandex News',
+      keywords: [keyword],
+    })
+  }
+  // Fallback
+  if (items.length === 0) {
+    const fbRe = /<a[^>]+href="(https?:\/\/(?!yandex\.)[^"]+)"[^>]*>([\s\S]*?)<\/a>/gi
+    while ((m = fbRe.exec(html)) !== null && items.length < MAX_FEED_ITEMS) {
+      const link = m[1]
+      const title = m[2]
+        .replace(/<[^>]+>/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+      if (!title || title.length < 6) continue
+      items.push({
+        title,
+        link,
+        summary: '',
+        publishedAt: new Date().toISOString(),
+        source: 'Yandex News',
+        keywords: [keyword],
+      })
+    }
+  }
+  return items
 }
 
 function getTagText(xml: string, tag: string): string {
@@ -205,18 +437,78 @@ function makeDigestMarker(dateKey: string) {
   return `<!-- keyword-radar:${dateKey} -->`
 }
 
-async function fetchXml(url: string) {
-  const res = await fetch(url, {
-    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; KeywordRadarBot/1.0)' },
-    cache: 'no-store',
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-  })
-  if (!res.ok) throw new Error(`抓取失败 ${res.status}`)
-  return res.text()
+const BROWSER_USER_AGENTS = [
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0',
+  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Safari/605.1.15',
+]
+
+function randomUserAgent() {
+  return BROWSER_USER_AGENTS[Math.floor(Math.random() * BROWSER_USER_AGENTS.length)]
 }
 
-async function fetchFeedByKeyword(keyword: string): Promise<FeedItem[]> {
-  const xml = await fetchXml(buildNewsFeedUrl(keyword))
+async function fetchXml(url: string, retries = 1): Promise<string> {
+  let lastError: Error | null = null
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': randomUserAgent(),
+          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+          'Cache-Control': 'no-cache',
+        },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      })
+      if (!res.ok) throw new Error(`抓取失败 ${res.status}`)
+      return await res.text()
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err))
+      if (attempt < retries) await new Promise((r) => setTimeout(r, 1500))
+    }
+  }
+  throw lastError!
+}
+
+async function fetchFeedByKeyword(keyword: string, sourceId: RadarSourceId = 'google'): Promise<FeedItem[]> {
+  const rssUrlMap: Partial<Record<RadarSourceId, string>> = {
+    google: buildGoogleNewsFeedUrl(keyword),
+    bing: buildBingNewsFeedUrl(keyword),
+    baidu: buildBaiduNewsFeedUrl(keyword),
+    yahoo: buildYahooNewsFeedUrl(keyword),
+  }
+  const htmlUrlMap: Partial<Record<RadarSourceId, string>> = {
+    sogou: buildSogouNewsUrl(keyword),
+    duckduckgo: buildDuckDuckGoNewsUrl(keyword),
+    yandex: buildYandexNewsUrl(keyword),
+  }
+  const sourceLabel: Record<RadarSourceId, string> = {
+    google: 'Google News',
+    bing: 'Bing News',
+    baidu: '百度资讯',
+    yahoo: 'Yahoo News',
+    sogou: '搜狗资讯',
+    duckduckgo: 'DuckDuckGo',
+    yandex: 'Yandex News',
+  }
+
+  // HTML-based sources
+  if (htmlUrlMap[sourceId]) {
+    const html = await fetchXml(htmlUrlMap[sourceId]!)
+    const htmlParsers: Partial<Record<RadarSourceId, (h: string, kw: string) => FeedItem[]>> = {
+      sogou: parseSogouHtml,
+      duckduckgo: parseDuckDuckGoHtml,
+      yandex: parseYandexHtml,
+    }
+    const parser = htmlParsers[sourceId]
+    return parser ? parser(html, keyword) : []
+  }
+
+  // RSS-based sources
+  const xml = await fetchXml(rssUrlMap[sourceId] || buildGoogleNewsFeedUrl(keyword))
   const itemRe = /<item[\s>]([\s\S]*?)<\/item>/gi
   const items: FeedItem[] = []
   let match: RegExpExecArray | null
@@ -226,7 +518,7 @@ async function fetchFeedByKeyword(keyword: string): Promise<FeedItem[]> {
     const link = getTagText(block, 'link') || (block.match(/<link>([^<]+)<\/link>/i)?.[1] ?? '')
     const summary = getTagText(block, 'description') || getTagText(block, 'summary')
     const publishedAt = getTagText(block, 'pubDate') || getTagText(block, 'published') || getTagText(block, 'updated')
-    const source = getTagText(block, 'source') || 'Google News'
+    const source = getTagText(block, 'source') || sourceLabel[sourceId]
     if (!title || !link) continue
     items.push({
       title,
@@ -321,7 +613,9 @@ export async function getKeywordRadarConfig(): Promise<KeywordRadarConfig> {
       COALESCE(keywordRadarLastMessage, '') as keywordRadarLastMessage,
       COALESCE(keywordRadarLastPostId, '') as keywordRadarLastPostId,
       COALESCE(keywordRadarMaxItems, 12) as keywordRadarMaxItems,
-      COALESCE(keywordRadarKeepDays, 14) as keywordRadarKeepDays
+      COALESCE(keywordRadarKeepDays, 14) as keywordRadarKeepDays,
+      COALESCE(keywordRadarSources, '["google"]') as keywordRadarSources,
+      COALESCE(keywordRadarCustomSourceTemplates, '[]') as keywordRadarCustomSourceTemplates
      FROM SiteConfig WHERE id = 'singleton'`
   )
   return rowToConfig(rows[0])
@@ -339,6 +633,13 @@ export async function saveKeywordRadarConfig(input: Partial<KeywordRadarConfig>)
     extraFeeds: input.extraFeeds ? parseArray(input.extraFeeds) : current.extraFeeds,
     includeDomains: input.includeDomains ? parseArray(input.includeDomains) : current.includeDomains,
     excludeDomains: input.excludeDomains ? parseArray(input.excludeDomains) : current.excludeDomains,
+    sources: input.sources
+      ? (parseArray(input.sources) as RadarSourceId[]).filter((s) => RADAR_SOURCES.some((d) => d.id === s))
+      : current.sources,
+    customSourceTemplates:
+      input.customSourceTemplates !== undefined
+        ? parseCustomSourceTemplates(input.customSourceTemplates)
+        : current.customSourceTemplates,
     scheduleMinutes: Math.max(15, Number(input.scheduleMinutes ?? current.scheduleMinutes) || 180),
     maxItems: Math.max(3, Math.min(30, Number(input.maxItems ?? current.maxItems) || 12)),
     keepDays: Math.max(1, Math.min(90, Number(input.keepDays ?? current.keepDays) || 14)),
@@ -356,7 +657,9 @@ export async function saveKeywordRadarConfig(input: Partial<KeywordRadarConfig>)
       keywordRadarUseAi = ?,
       keywordRadarPrompt = ?,
       keywordRadarMaxItems = ?,
-      keywordRadarKeepDays = ?
+      keywordRadarKeepDays = ?,
+      keywordRadarSources = ?,
+      keywordRadarCustomSourceTemplates = ?
      WHERE id = 'singleton'`,
     next.enabled ? 1 : 0,
     JSON.stringify(next.keywords),
@@ -369,7 +672,9 @@ export async function saveKeywordRadarConfig(input: Partial<KeywordRadarConfig>)
     next.useAi ? 1 : 0,
     next.prompt,
     next.maxItems,
-    next.keepDays
+    next.keepDays,
+    JSON.stringify(next.sources),
+    JSON.stringify(next.customSourceTemplates)
   )
   return getKeywordRadarConfig()
 }
@@ -408,6 +713,7 @@ export async function getKeywordRadarStatus(): Promise<KeywordRadarStatus> {
     config,
     recentItems,
     totalSeen: Number(totalRows[0]?.cnt || 0),
+    logs: getKeywordRadarLogState(),
   }
 }
 
@@ -619,14 +925,40 @@ async function upsertDailyDigest(items: FeedItem[], config: KeywordRadarConfig, 
   return post.id
 }
 
-async function collectItems(config: KeywordRadarConfig) {
-  const tasks: Promise<FeedItem[]>[] = []
-  for (const keyword of config.keywords) tasks.push(fetchFeedByKeyword(keyword))
-  for (const feedUrl of config.extraFeeds) tasks.push(fetchCustomFeed(feedUrl, config.keywords))
-  const settled = await Promise.allSettled(tasks)
+async function collectItems(
+  config: KeywordRadarConfig,
+  logger: (level: 'info' | 'success' | 'error', message: string) => void
+) {
+  const tasks: Array<{ label: string; task: Promise<FeedItem[]> }> = []
+  const activeSources = config.sources.length > 0 ? config.sources : (['google'] as RadarSourceId[])
+  for (const keyword of config.keywords) {
+    for (const sourceId of activeSources) {
+      const srcLabel = RADAR_SOURCES.find((s) => s.id === sourceId)?.label || sourceId
+      tasks.push({
+        label: `${srcLabel} · ${keyword}`,
+        task: fetchFeedByKeyword(keyword, sourceId),
+      })
+    }
+  }
+  for (const feedUrl of config.extraFeeds) {
+    tasks.push({ label: `RSS ${feedUrl}`, task: fetchCustomFeed(feedUrl, config.keywords) })
+  }
+  for (const tmpl of config.customSourceTemplates) {
+    for (const keyword of config.keywords) {
+      const url = tmpl.urlTemplate.replace(/\{keyword\}/g, encodeURIComponent(keyword))
+      tasks.push({ label: `${tmpl.name} · ${keyword}`, task: fetchCustomFeed(url, [keyword]) })
+    }
+  }
+  logger('info', `开始抓取 ${tasks.length} 个来源`)
+  const settled = await Promise.allSettled(tasks.map((item) => item.task))
   const deduped = new Map<string, FeedItem>()
-  for (const result of settled) {
-    if (result.status !== 'fulfilled') continue
+  for (const [index, result] of settled.entries()) {
+    const label = tasks[index]?.label || `来源 ${index + 1}`
+    if (result.status !== 'fulfilled') {
+      logger('error', `${label} 抓取失败：${result.reason instanceof Error ? result.reason.message : '未知错误'}`)
+      continue
+    }
+    logger('success', `${label} 抓取完成，命中 ${result.value.length} 条`)
     for (const item of result.value) {
       if (!matchesDomainFilters(item.link, config)) continue
       const key = `${item.link}::${item.title}`
@@ -647,11 +979,11 @@ async function collectItems(config: KeywordRadarConfig) {
 }
 
 async function insertSeenItems(items: FeedItem[], dateKey: string) {
-  for (const item of items) {
-    await prisma.$executeRawUnsafe(
-      `INSERT OR IGNORE INTO KeywordRadarSeen
-       (hash, digestDate, keywords, title, link, summary, source, itemPublishedAt, postId, createdAt)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', datetime('now'))`,
+  const BATCH = 50
+  for (let i = 0; i < items.length; i += BATCH) {
+    const batch = items.slice(i, i + BATCH)
+    const placeholders = batch.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, '', datetime('now'))").join(', ')
+    const params = batch.flatMap((item) => [
       hashItem(item),
       dateKey,
       JSON.stringify(item.keywords),
@@ -659,7 +991,13 @@ async function insertSeenItems(items: FeedItem[], dateKey: string) {
       item.link,
       item.summary,
       item.source,
-      item.publishedAt
+      item.publishedAt,
+    ])
+    await prisma.$executeRawUnsafe(
+      `INSERT OR IGNORE INTO KeywordRadarSeen
+       (hash, digestDate, keywords, title, link, summary, source, itemPublishedAt, postId, createdAt)
+       VALUES ${placeholders}`,
+      ...params
     )
   }
 }
@@ -676,19 +1014,28 @@ export async function runKeywordRadar(options: { reason: 'manual' | 'scheduler' 
   if (globalThis.__keywordRadarRunning) return globalThis.__keywordRadarRunning
 
   const promise = (async () => {
+    const runId = startKeywordRadarLog(options.reason)
+    const log = (level: 'info' | 'success' | 'error', message: string) => {
+      appendKeywordRadarLog(runId, level, message, options.reason)
+    }
     await runMigrations()
     await ensureSiteConfigRow()
     const config = await getKeywordRadarConfig()
     const nowIso = new Date().toISOString()
     const dateKey = getTodayKey()
+    log('info', `开始执行内容雷达（${options.reason === 'manual' ? '手动触发' : '定时触发'}）`)
 
     if (options.reason === 'scheduler' && !config.enabled) {
+      log('info', '定时抓取未启用，跳过本次执行')
+      finishKeywordRadarLog(runId)
       return { ok: true, skipped: true, message: '内容雷达未启用', matchedCount: 0, newCount: 0, digestDate: dateKey }
     }
 
     if (options.reason === 'scheduler' && config.lastRunAt) {
       const elapsed = Date.now() - new Date(config.lastRunAt).getTime()
       if (elapsed < config.scheduleMinutes * 60 * 1000) {
+        log('info', '未到下一次执行时间，跳过本次定时抓取')
+        finishKeywordRadarLog(runId)
         return {
           ok: true,
           skipped: true,
@@ -702,6 +1049,8 @@ export async function runKeywordRadar(options: { reason: 'manual' | 'scheduler' 
 
     if (config.keywords.length === 0 && config.extraFeeds.length === 0) {
       await setLastRun({ lastRunAt: nowIso, lastStatus: 'idle', lastMessage: '未配置关键词或额外 RSS 源' })
+      log('error', '未配置关键词或额外 RSS 源，无法开始抓取')
+      finishKeywordRadarLog(runId)
       return {
         ok: true,
         skipped: true,
@@ -713,11 +1062,16 @@ export async function runKeywordRadar(options: { reason: 'manual' | 'scheduler' 
     }
 
     try {
-      const matchedItems = await collectItems(config)
+      log('info', `关键词 ${config.keywords.length} 个，额外 RSS ${config.extraFeeds.length} 个`)
+      const matchedItems = await collectItems(config, log)
+      log('info', `抓取阶段完成，共命中 ${matchedItems.length} 条候选内容`)
       const newItems = await getNewItems(matchedItems)
+      log('info', `去重完成，新增 ${newItems.length} 条`)
       if (newItems.length === 0) {
         await setLastRun({ lastRunAt: nowIso, lastStatus: 'idle', lastMessage: '本次未发现新内容' })
         await pruneSeenRows(config.keepDays)
+        log('info', '本次未发现新内容，已完成旧记录清理')
+        finishKeywordRadarLog(runId)
         return {
           ok: true,
           message: '本次未发现新内容',
@@ -728,6 +1082,8 @@ export async function runKeywordRadar(options: { reason: 'manual' | 'scheduler' 
       }
 
       await insertSeenItems(newItems, dateKey)
+      log('success', `已写入 ${newItems.length} 条去重记录`)
+      log('info', config.useAi ? '开始生成 AI 日报文案' : '使用模板生成日报文案')
       const postId = await upsertDailyDigest(newItems, config, dateKey)
       await attachPostId(dateKey, postId)
       await setLastRun({
@@ -740,6 +1096,9 @@ export async function runKeywordRadar(options: { reason: 'manual' | 'scheduler' 
       try {
         revalidateTag('posts')
       } catch {}
+      log('success', `日报已生成，文章 ID：${postId}`)
+      log('success', `执行完成：命中 ${matchedItems.length} 条，新增 ${newItems.length} 条`)
+      finishKeywordRadarLog(runId)
       syslog
         .info('system', `内容雷达已执行：新增 ${newItems.length} 条，日报文章 ${postId}`, {
           matchedCount: matchedItems.length,
@@ -758,6 +1117,8 @@ export async function runKeywordRadar(options: { reason: 'manual' | 'scheduler' 
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       await setLastRun({ lastRunAt: nowIso, lastStatus: 'failed', lastMessage: message })
+      log('error', message)
+      finishKeywordRadarLog(runId)
       syslog.error('system', `内容雷达执行失败：${message}`, { reason: options.reason }).catch(() => {})
       return { ok: false, message, matchedCount: 0, newCount: 0, digestDate: dateKey }
     }

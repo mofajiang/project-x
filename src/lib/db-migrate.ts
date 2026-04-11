@@ -342,6 +342,13 @@ export async function runMigrations() {
       await addColumn('SiteConfig', 'keywordRadarLastPostId', `TEXT NOT NULL DEFAULT ''`, 'keywordRadarLastPostId')
       await addColumn('SiteConfig', 'keywordRadarMaxItems', `INTEGER NOT NULL DEFAULT 12`, 'keywordRadarMaxItems')
       await addColumn('SiteConfig', 'keywordRadarKeepDays', `INTEGER NOT NULL DEFAULT 14`, 'keywordRadarKeepDays')
+      await addColumn('SiteConfig', 'keywordRadarSources', `TEXT NOT NULL DEFAULT '["google"]'`, 'keywordRadarSources')
+      await addColumn(
+        'SiteConfig',
+        'keywordRadarCustomSourceTemplates',
+        `TEXT NOT NULL DEFAULT '[]'`,
+        'keywordRadarCustomSourceTemplates'
+      )
       await createTable(
         `CREATE TABLE IF NOT EXISTS KeywordRadarSeen (
           hash TEXT PRIMARY KEY,
@@ -364,6 +371,24 @@ export async function runMigrations() {
         'KeywordRadarSeen digestDate/createdAt index'
       )
       await createIndex('KeywordRadarSeen', 'idx_keyword_radar_postId', 'postId', 'KeywordRadarSeen postId index')
+      await createTable(
+        `CREATE TABLE IF NOT EXISTS KeywordRadarLog (
+          id TEXT PRIMARY KEY,
+          runId TEXT NOT NULL,
+          source TEXT NOT NULL DEFAULT 'manual',
+          level TEXT NOT NULL DEFAULT 'info',
+          message TEXT NOT NULL DEFAULT '',
+          createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )`,
+        'KeywordRadarLog'
+      )
+      await createIndex('KeywordRadarLog', 'idx_keyword_radar_log_runId', 'runId', 'KeywordRadarLog runId index')
+      await createIndex(
+        'KeywordRadarLog',
+        'idx_keyword_radar_log_createdAt',
+        'createdAt',
+        'KeywordRadarLog createdAt index'
+      )
       try {
         await prisma.$executeRawUnsafe(`UPDATE Post SET publicId = rowid WHERE publicId IS NULL`)
         console.log('[migrate] publicId 回填成功')

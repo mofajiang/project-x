@@ -31,6 +31,8 @@ export async function PUT(req: NextRequest) {
     prompt: String(body.prompt || ''),
     maxItems: Number(body.maxItems) || 12,
     keepDays: Number(body.keepDays) || 14,
+    sources: body.sources,
+    customSourceTemplates: body.customSourceTemplates,
   })
   const status = await getKeywordRadarStatus()
   return NextResponse.json(status, { headers: { 'Cache-Control': 'no-store' } })

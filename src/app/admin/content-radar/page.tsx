@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
 import { IMEInput } from '@/components/ui/IMEInput'
@@ -30,6 +30,8 @@ type RadarConfig = {
   lastPostId: string
   maxItems: number
   keepDays: number
+  sources: string[]
+  customSourceTemplates: Array<{ name: string; urlTemplate: string }>
 }
 
 type RadarItem = {
@@ -49,6 +51,21 @@ type RadarStatus = {
   config: RadarConfig
   recentItems: RadarItem[]
   totalSeen: number
+  logs: {
+    activeRunId: string
+    running: boolean
+    source: 'manual' | 'scheduler' | ''
+    startedAt: string
+    finishedAt: string
+    entries: Array<{
+      id: string
+      runId: string
+      source: 'manual' | 'scheduler'
+      level: 'info' | 'success' | 'error'
+      message: string
+      createdAt: string
+    }>
+  }
 }
 
 const EMPTY_STATUS: RadarStatus = {
@@ -69,9 +86,19 @@ const EMPTY_STATUS: RadarStatus = {
     lastPostId: '',
     maxItems: 12,
     keepDays: 14,
+    sources: ['google'],
+    customSourceTemplates: [],
   },
   recentItems: [],
   totalSeen: 0,
+  logs: {
+    activeRunId: '',
+    running: false,
+    source: '',
+    startedAt: '',
+    finishedAt: '',
+    entries: [],
+  },
 }
 
 function textToList(value: string) {
@@ -91,26 +118,55 @@ export default function AdminContentRadarPage() {
   const [feedsInput, setFeedsInput] = useState('')
   const [includeDomainsInput, setIncludeDomainsInput] = useState('')
   const [excludeDomainsInput, setExcludeDomainsInput] = useState('')
+  const logContainerRef = useRef<HTMLDivElement | null>(null)
+  const [logTab, setLogTab] = useState<'live' | 'history'>('live')
+  const [historyRuns, setHistoryRuns] = useState<
+    Array<{ runId: string; source: string; startedAt: string; entryCount: number }>
+  >([])
+  const [historyEntries, setHistoryEntries] = useState<RadarStatus['logs']['entries']>([])
+  const [historyRunId, setHistoryRunId] = useState<string | null>(null)
+  const [historyLoading, setHistoryLoading] = useState(false)
 
   useEffect(() => {
-    fetchStatus()
+    fetchStatus({ syncForm: true })
   }, [])
 
-  const fetchStatus = async () => {
+  useEffect(() => {
+    fetchStatus({ syncForm: false, silent: true }).catch(() => {})
+    const intervalMs = status.logs.running || running ? 1200 : 15000
+    const timer = window.setInterval(() => {
+      fetchStatus({ syncForm: false, silent: true })
+    }, intervalMs)
+    return () => window.clearInterval(timer)
+  }, [running, status.logs.running])
+
+  useEffect(() => {
+    const node = logContainerRef.current
+    if (!node) return
+    node.scrollTop = node.scrollHeight
+  }, [status.logs.entries])
+
+  const fetchStatus = async ({ syncForm = false, silent = false }: { syncForm?: boolean; silent?: boolean } = {}) => {
     try {
       const res = await fetch('/api/admin/content-radar', { cache: 'no-store' })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || '加载失败')
       setStatus(data)
-      setKeywordsInput((data.config.keywords || []).join('\n'))
-      setTagsInput((data.config.tags || []).join(', '))
-      setFeedsInput((data.config.extraFeeds || []).join('\n'))
-      setIncludeDomainsInput((data.config.includeDomains || []).join('\n'))
-      setExcludeDomainsInput((data.config.excludeDomains || []).join('\n'))
+      if (syncForm) {
+        setKeywordsInput((data.config.keywords || []).join('\n'))
+        setTagsInput((data.config.tags || []).join(', '))
+        setFeedsInput((data.config.extraFeeds || []).join('\n'))
+        setIncludeDomainsInput((data.config.includeDomains || []).join('\n'))
+        setExcludeDomainsInput((data.config.excludeDomains || []).join('\n'))
+      }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '加载失败')
+      if (!silent) {
+        toast.error(error instanceof Error ? error.message : '加载失败')
+      }
     } finally {
-      setLoading(false)
+      if (!silent) {
+        setLoading(false)
+      }
     }
   }
 
@@ -136,6 +192,11 @@ export default function AdminContentRadarPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || '保存失败')
       setStatus(data)
+      setKeywordsInput((data.config.keywords || []).join('\n'))
+      setTagsInput((data.config.tags || []).join(', '))
+      setFeedsInput((data.config.extraFeeds || []).join('\n'))
+      setIncludeDomainsInput((data.config.includeDomains || []).join('\n'))
+      setExcludeDomainsInput((data.config.excludeDomains || []).join('\n'))
       toast.success('内容雷达配置已保存')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : '保存失败')
@@ -146,16 +207,45 @@ export default function AdminContentRadarPage() {
 
   const handleRun = async () => {
     setRunning(true)
+    setLogTab('live')
     try {
+      fetchStatus({ syncForm: false, silent: true }).catch(() => {})
       const res = await fetch('/api/admin/content-radar/run', { method: 'POST' })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || data.message || '执行失败')
       toast.success(data.message || '执行完成')
-      await fetchStatus()
+      await fetchStatus({ syncForm: false })
     } catch (error) {
       toast.error(error instanceof Error ? error.message : '执行失败')
     } finally {
       setRunning(false)
+    }
+  }
+
+  const loadHistoryRuns = async () => {
+    setHistoryLoading(true)
+    try {
+      const res = await fetch('/api/admin/content-radar/logs?listRuns=1', { cache: 'no-store' })
+      const data = await res.json()
+      if (res.ok && data.runs) setHistoryRuns(data.runs)
+    } catch {
+    } finally {
+      setHistoryLoading(false)
+    }
+  }
+
+  const loadHistoryEntries = async (runId: string) => {
+    setHistoryRunId(runId)
+    setHistoryLoading(true)
+    try {
+      const res = await fetch(`/api/admin/content-radar/logs?runId=${encodeURIComponent(runId)}&limit=500`, {
+        cache: 'no-store',
+      })
+      const data = await res.json()
+      if (res.ok && data.entries) setHistoryEntries(data.entries)
+    } catch {
+    } finally {
+      setHistoryLoading(false)
     }
   }
 
@@ -372,6 +462,107 @@ export default function AdminContentRadarPage() {
               </div>
 
               <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
+                <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                  抓取源
+                </label>
+                <div className="space-y-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  {[
+                    { id: 'google', label: 'Google News RSS', hint: '覆盖面广，需科学上网' },
+                    { id: 'bing', label: 'Bing News RSS', hint: '国内可用，英文为主' },
+                    { id: 'baidu', label: '百度新闻 RSS', hint: '国内中文源' },
+                    { id: 'yahoo', label: 'Yahoo News RSS', hint: '国际英文源' },
+                    { id: 'sogou', label: '搜狗资讯', hint: '国内中文，HTML解析' },
+                    { id: 'duckduckgo', label: 'DuckDuckGo', hint: '隐私友好，HTML解析' },
+                    { id: 'yandex', label: 'Yandex News', hint: '俄罗斯/国际，HTML解析' },
+                  ].map((src) => (
+                    <label key={src.id} className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={(status.config.sources || []).includes(src.id)}
+                        onChange={(e) => {
+                          const cur = status.config.sources || ['google']
+                          const next = e.target.checked
+                            ? [...cur.filter((s: string) => s !== src.id), src.id]
+                            : cur.filter((s: string) => s !== src.id)
+                          setConfig('sources', next.length ? next : ['google'])
+                        }}
+                        style={{ accentColor: 'var(--accent)' }}
+                      />
+                      {src.label}
+                      <span className="text-xs opacity-60">({src.hint})</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
+                <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                  自定义 RSS 搜索模板
+                </label>
+                <p className="mb-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                  URL 中用 <code>{'{keyword}'}</code> 作为关键词占位符，抓取时会自动替换。
+                </p>
+                {(status.config.customSourceTemplates || []).map((tmpl, idx) => (
+                  <div key={idx} className="mb-2 flex items-center gap-2">
+                    <input
+                      placeholder="名称"
+                      value={tmpl.name}
+                      onChange={(e) => {
+                        const list = [...(status.config.customSourceTemplates || [])]
+                        list[idx] = { ...list[idx], name: e.target.value }
+                        setConfig('customSourceTemplates', list)
+                      }}
+                      className={ADMIN_INPUT_CLASS}
+                      style={{
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--border)',
+                        background: 'transparent',
+                        width: '120px',
+                      }}
+                    />
+                    <input
+                      placeholder="https://example.com/rss?q={keyword}"
+                      value={tmpl.urlTemplate}
+                      onChange={(e) => {
+                        const list = [...(status.config.customSourceTemplates || [])]
+                        list[idx] = { ...list[idx], urlTemplate: e.target.value }
+                        setConfig('customSourceTemplates', list)
+                      }}
+                      className={ADMIN_INPUT_CLASS}
+                      style={{
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--border)',
+                        background: 'transparent',
+                        flex: 1,
+                      }}
+                    />
+                    <button
+                      onClick={() => {
+                        const list = (status.config.customSourceTemplates || []).filter(
+                          (_: unknown, i: number) => i !== idx
+                        )
+                        setConfig('customSourceTemplates', list)
+                      }}
+                      className="rounded px-2 py-1 text-xs"
+                      style={{ color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
+                    >
+                      删除
+                    </button>
+                  </div>
+                ))}
+                <button
+                  onClick={() => {
+                    const list = [...(status.config.customSourceTemplates || []), { name: '', urlTemplate: '' }]
+                    setConfig('customSourceTemplates', list)
+                  }}
+                  className="rounded px-3 py-1 text-xs"
+                  style={{ color: 'var(--accent)', border: '1px solid var(--accent)' }}
+                >
+                  + 添加模板
+                </button>
+              </div>
+
+              <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
                 <div className="space-y-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
                   <label className="flex items-center gap-2">
                     <input
@@ -415,6 +606,180 @@ export default function AdminContentRadarPage() {
         </div>
 
         <aside className="space-y-6">
+          <section
+            className={ADMIN_CARD_CLASS}
+            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
+          >
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setLogTab('live')}
+                  className="rounded-full px-3 py-1 text-xs font-medium transition-colors"
+                  style={{
+                    background: logTab === 'live' ? 'var(--accent)' : 'transparent',
+                    color: logTab === 'live' ? '#fff' : 'var(--text-secondary)',
+                  }}
+                >
+                  实时日志
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLogTab('history')
+                    loadHistoryRuns()
+                  }}
+                  className="rounded-full px-3 py-1 text-xs font-medium transition-colors"
+                  style={{
+                    background: logTab === 'history' ? 'var(--accent)' : 'transparent',
+                    color: logTab === 'history' ? '#fff' : 'var(--text-secondary)',
+                  }}
+                >
+                  历史记录
+                </button>
+              </div>
+              {logTab === 'live' && (
+                <span
+                  className="rounded-full px-2 py-1 text-xs"
+                  style={{
+                    background: status.logs.running ? 'rgba(29,155,240,0.12)' : 'rgba(0,186,124,0.14)',
+                    color: status.logs.running ? 'var(--accent)' : 'var(--green)',
+                  }}
+                >
+                  {status.logs.running ? `${status.logs.source === 'manual' ? '手动任务' : '定时任务'}执行中` : '空闲'}
+                </span>
+              )}
+            </div>
+            {logTab === 'live' && (
+              <div
+                ref={logContainerRef}
+                className="max-h-[360px] overflow-y-auto rounded-2xl border px-3 py-3 font-mono text-xs leading-6"
+                style={{
+                  borderColor: 'var(--border)',
+                  background: 'var(--bg)',
+                  color: 'var(--text-primary)',
+                }}
+              >
+                {status.logs.entries.length === 0 && (
+                  <p style={{ color: 'var(--text-secondary)' }}>暂无抓取日志，点击“立即抓取”后会在这里实时显示。</p>
+                )}
+                <div className="space-y-2">
+                  {status.logs.entries.map((entry) => (
+                    <div key={entry.id} className="break-words">
+                      <span style={{ color: 'var(--text-secondary)' }}>
+                        {entry.createdAt.replace('T', ' ').slice(0, 19)}
+                      </span>
+                      <span style={{ color: 'var(--text-secondary)' }}> · </span>
+                      <span
+                        style={{
+                          color:
+                            entry.level === 'success'
+                              ? 'var(--green)'
+                              : entry.level === 'error'
+                                ? 'var(--red)'
+                                : 'var(--accent)',
+                        }}
+                      >
+                        {entry.level.toUpperCase()}
+                      </span>
+                      <span style={{ color: 'var(--text-secondary)' }}> · </span>
+                      <span style={{ color: 'var(--text-secondary)' }}>
+                        {entry.source === 'manual' ? '手动' : '定时'}
+                      </span>
+                      <div>{entry.message}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {logTab === 'history' && (
+              <div
+                className="max-h-[360px] overflow-y-auto rounded-2xl border px-3 py-3 text-xs leading-6"
+                style={{
+                  borderColor: 'var(--border)',
+                  background: 'var(--bg)',
+                  color: 'var(--text-primary)',
+                }}
+              >
+                {historyLoading && <p style={{ color: 'var(--text-secondary)' }}>加载中...</p>}
+
+                {!historyLoading && !historyRunId && (
+                  <div className="space-y-2">
+                    {historyRuns.length === 0 && <p style={{ color: 'var(--text-secondary)' }}>暂无历史运行记录。</p>}
+                    {historyRuns.map((run) => (
+                      <button
+                        key={run.runId}
+                        type="button"
+                        onClick={() => loadHistoryEntries(run.runId)}
+                        className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left hover:opacity-80"
+                        style={{ background: 'var(--bg-secondary)' }}
+                      >
+                        <div>
+                          <span style={{ color: 'var(--text-primary)' }}>
+                            {run.startedAt.replace('T', ' ').slice(0, 19)}
+                          </span>
+                          <span style={{ color: 'var(--text-secondary)' }}> · </span>
+                          <span style={{ color: 'var(--text-secondary)' }}>
+                            {run.source === 'manual' ? '手动' : '定时'}
+                          </span>
+                        </div>
+                        <span
+                          className="rounded-full px-2 py-0.5"
+                          style={{ background: 'rgba(29,155,240,0.12)', color: 'var(--accent)' }}
+                        >
+                          {run.entryCount} 条
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {!historyLoading && historyRunId && (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setHistoryRunId(null)
+                        setHistoryEntries([])
+                      }}
+                      className="mb-3 text-xs hover:underline"
+                      style={{ color: 'var(--accent)' }}
+                    >
+                      ← 返回运行列表
+                    </button>
+                    <div className="space-y-2 font-mono">
+                      {historyEntries.map((entry) => (
+                        <div key={entry.id} className="break-words">
+                          <span style={{ color: 'var(--text-secondary)' }}>
+                            {entry.createdAt.replace('T', ' ').slice(0, 19)}
+                          </span>
+                          <span style={{ color: 'var(--text-secondary)' }}> · </span>
+                          <span
+                            style={{
+                              color:
+                                entry.level === 'success'
+                                  ? 'var(--green)'
+                                  : entry.level === 'error'
+                                    ? 'var(--red)'
+                                    : 'var(--accent)',
+                            }}
+                          >
+                            {entry.level.toUpperCase()}
+                          </span>
+                          <div>{entry.message}</div>
+                        </div>
+                      ))}
+                      {historyEntries.length === 0 && (
+                        <p style={{ color: 'var(--text-secondary)' }}>该次运行暂无日志。</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+
           <section
             className={ADMIN_CARD_CLASS}
             style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
