@@ -508,233 +508,321 @@ export default function AdminContentRadarPage() {
             <h2 className="mb-4 text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
               发帖与存储策略
             </h2>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
-                <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                  定时周期（分钟）
-                </label>
-                <input
-                  type="number"
-                  min={15}
-                  step={15}
-                  value={status.config.scheduleMinutes}
-                  onChange={(e) => setConfig('scheduleMinutes', Number(e.target.value) || 180)}
-                  className={ADMIN_INPUT_CLASS}
-                  style={{ color: 'var(--text-primary)', border: '1px solid var(--border)', background: 'transparent' }}
-                />
-                <p className="mt-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  调度器会常驻检查，到点才真正执行。
-                </p>
-              </div>
 
-              <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
-                <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                  每篇日报最多收录条数
-                </label>
-                <input
-                  type="number"
-                  min={3}
-                  max={30}
-                  value={status.config.maxItems}
-                  onChange={(e) => setConfig('maxItems', Number(e.target.value) || 12)}
-                  className={ADMIN_INPUT_CLASS}
-                  style={{ color: 'var(--text-primary)', border: '1px solid var(--border)', background: 'transparent' }}
-                />
-                <p className="mt-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  控制生成文章长度，也减少 AI 上下文成本。
-                </p>
-              </div>
-
-              <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
-                <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                  去重记录保留天数
-                </label>
-                <input
-                  type="number"
-                  min={1}
-                  max={90}
-                  value={status.config.keepDays}
-                  onChange={(e) => setConfig('keepDays', Number(e.target.value) || 14)}
-                  className={ADMIN_INPUT_CLASS}
-                  style={{ color: 'var(--text-primary)', border: '1px solid var(--border)', background: 'transparent' }}
-                />
-                <p className="mt-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  这里只保留标题、链接、摘要与指纹，超过时会自动清理旧记录。
-                </p>
-              </div>
-
-              <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
-                <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                  抓取源
-                </label>
-                <div className="space-y-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  {[
-                    { id: 'google', label: 'Google News RSS', hint: '覆盖面广，需科学上网' },
-                    { id: 'bing', label: 'Bing News RSS', hint: '国内可用，英文为主' },
-                    { id: 'baidu', label: '百度新闻 RSS', hint: '国内中文源' },
-                    { id: 'yahoo', label: 'Yahoo News RSS', hint: '国际英文源' },
-                    { id: 'hackernews', label: 'Hacker News', hint: '技术社区/博客，RSS' },
-                    { id: 'reddit', label: 'Reddit', hint: '社区讨论/博客，RSS' },
-                    { id: 'devto', label: 'DEV.to', hint: '开发者博客，JSON API' },
-                    { id: 'medium', label: 'Medium', hint: '个人博客/专栏，RSS' },
-                    { id: 'zhihu', label: '知乎', hint: '中文问答/专栏，HTML解析' },
-                    { id: 'v2ex', label: 'V2EX', hint: '中文技术社区，RSS' },
-                    { id: 'lobsters', label: 'Lobsters', hint: '技术社区，RSS' },
-                    { id: 'sogou', label: '搜狗资讯', hint: '国内中文，HTML解析' },
-                    { id: 'duckduckgo', label: 'DuckDuckGo', hint: '隐私友好，HTML解析' },
-                    { id: 'yandex', label: 'Yandex News', hint: '俄罗斯/国际，HTML解析' },
-                  ].map((src) => (
-                    <label key={src.id} className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={(status.config.sources || []).includes(src.id)}
-                        onChange={(e) => {
-                          const cur = status.config.sources || ['google']
-                          const next = e.target.checked
-                            ? [...cur.filter((s: string) => s !== src.id), src.id]
-                            : cur.filter((s: string) => s !== src.id)
-                          setConfig('sources', next.length ? next : ['google'])
-                        }}
-                        style={{ accentColor: 'var(--accent)' }}
-                      />
-                      {src.label}
-                      <span className="text-xs opacity-60">({src.hint})</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
-                <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                  自定义 RSS 搜索模板
-                </label>
-                <p className="mb-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  URL 中用 <code>{'{keyword}'}</code> 作为关键词占位符，抓取时会自动替换。
-                </p>
-                {(status.config.customSourceTemplates || []).map((tmpl, idx) => (
-                  <div key={idx} className="mb-2 flex items-center gap-2">
-                    <input
-                      placeholder="名称"
-                      value={tmpl.name}
-                      onChange={(e) => {
-                        const list = [...(status.config.customSourceTemplates || [])]
-                        list[idx] = { ...list[idx], name: e.target.value }
-                        setConfig('customSourceTemplates', list)
-                      }}
-                      className={ADMIN_INPUT_CLASS}
-                      style={{
-                        color: 'var(--text-primary)',
-                        border: '1px solid var(--border)',
-                        background: 'transparent',
-                        width: '120px',
-                      }}
-                    />
-                    <input
-                      placeholder="https://example.com/rss?q={keyword}"
-                      value={tmpl.urlTemplate}
-                      onChange={(e) => {
-                        const list = [...(status.config.customSourceTemplates || [])]
-                        list[idx] = { ...list[idx], urlTemplate: e.target.value }
-                        setConfig('customSourceTemplates', list)
-                      }}
-                      className={ADMIN_INPUT_CLASS}
-                      style={{
-                        color: 'var(--text-primary)',
-                        border: '1px solid var(--border)',
-                        background: 'transparent',
-                        flex: 1,
-                      }}
-                    />
-                    <button
-                      onClick={() => {
-                        const list = (status.config.customSourceTemplates || []).filter(
-                          (_: unknown, i: number) => i !== idx
-                        )
-                        setConfig('customSourceTemplates', list)
-                      }}
-                      className="rounded px-2 py-1 text-xs"
-                      style={{ color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
-                    >
-                      删除
-                    </button>
-                  </div>
-                ))}
-                <button
-                  onClick={() => {
-                    const list = [...(status.config.customSourceTemplates || []), { name: '', urlTemplate: '' }]
-                    setConfig('customSourceTemplates', list)
-                  }}
-                  className="rounded px-3 py-1 text-xs"
-                  style={{ color: 'var(--accent)', border: '1px solid var(--accent)' }}
-                >
-                  + 添加模板
-                </button>
-              </div>
-
-              <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
-                <div className="space-y-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={status.config.autoPublish}
-                      onChange={(e) => setConfig('autoPublish', e.target.checked)}
-                      style={{ accentColor: 'var(--accent)' }}
-                    />
-                    自动发布日报文章
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={status.config.useAi}
-                      onChange={(e) => setConfig('useAi', e.target.checked)}
-                      style={{ accentColor: 'var(--accent)' }}
-                    />
-                    使用 AI 生成日报文案
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={status.config.standardMarkdown}
-                      onChange={(e) => setConfig('standardMarkdown', e.target.checked)}
-                      style={{ accentColor: 'var(--accent)' }}
-                    />
-                    按标准 Markdown 输出
-                  </label>
-                </div>
-                <p className="mt-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  开启后会优先输出标准 Markdown 标题、列表和 Markdown
-                  链接，减少裸链接或长段文本把内容区域撑出边框的问题。
-                </p>
-              </div>
-              <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
-                <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                  Webhook 通知
-                </label>
-                <div className="space-y-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={status.config.webhookEnabled}
-                      onChange={(e) => setConfig('webhookEnabled', e.target.checked)}
-                      style={{ accentColor: 'var(--accent)' }}
-                    />
-                    启用 Webhook
+            {/* 调度与容量 */}
+            <div className="mb-5">
+              <p className="mb-3 text-xs font-medium" style={{ color: 'var(--text-secondary)', opacity: 0.7 }}>
+                调度与容量
+              </p>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
+                  <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                    定时周期（分钟）
                   </label>
                   <input
-                    type="url"
-                    value={status.config.webhookUrl}
-                    onChange={(e) => setConfig('webhookUrl', e.target.value)}
+                    type="number"
+                    min={15}
+                    step={15}
+                    value={status.config.scheduleMinutes}
+                    onChange={(e) => setConfig('scheduleMinutes', Number(e.target.value) || 180)}
                     className={ADMIN_INPUT_CLASS}
                     style={{
                       color: 'var(--text-primary)',
                       border: '1px solid var(--border)',
                       background: 'transparent',
                     }}
-                    placeholder="https://hooks.example.com/webhook"
                   />
-                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                    每次抓取完成后会向此 URL 发送 POST JSON 通知（包含状态和统计）。
+                  <p className="mt-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    调度器会常驻检查，到点才真正执行。
                   </p>
+                </div>
+
+                <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
+                  <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                    每篇日报最多收录条数
+                  </label>
+                  <input
+                    type="number"
+                    min={3}
+                    max={30}
+                    value={status.config.maxItems}
+                    onChange={(e) => setConfig('maxItems', Number(e.target.value) || 12)}
+                    className={ADMIN_INPUT_CLASS}
+                    style={{
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border)',
+                      background: 'transparent',
+                    }}
+                  />
+                  <p className="mt-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    控制生成文章长度，也减少 AI 上下文成本。
+                  </p>
+                </div>
+
+                <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
+                  <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                    去重记录保留天数
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={90}
+                    value={status.config.keepDays}
+                    onChange={(e) => setConfig('keepDays', Number(e.target.value) || 14)}
+                    className={ADMIN_INPUT_CLASS}
+                    style={{
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border)',
+                      background: 'transparent',
+                    }}
+                  />
+                  <p className="mt-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    这里只保留标题、链接、摘要与指纹，超过时会自动清理旧记录。
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* 抓取源 */}
+            <div className="mb-5">
+              <p className="mb-3 text-xs font-medium" style={{ color: 'var(--text-secondary)', opacity: 0.7 }}>
+                抓取源
+              </p>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
+                  <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                    抓取源
+                  </label>
+                  <div className="space-y-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    <div>
+                      <p className="mb-1.5 text-xs font-medium opacity-60">新闻搜索</p>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                        {[
+                          { id: 'google', label: 'Google News', hint: '国际，需科学上网' },
+                          { id: 'bing', label: 'Bing News', hint: '国内可用' },
+                          { id: 'baidu', label: '百度新闻', hint: '国内中文' },
+                          { id: 'yahoo', label: 'Yahoo News', hint: '国际英文' },
+                        ].map((src) => (
+                          <label key={src.id} className="flex items-center gap-1.5">
+                            <input
+                              type="checkbox"
+                              checked={(status.config.sources || []).includes(src.id)}
+                              onChange={(e) => {
+                                const cur = status.config.sources || ['google']
+                                const next = e.target.checked
+                                  ? [...cur.filter((s: string) => s !== src.id), src.id]
+                                  : cur.filter((s: string) => s !== src.id)
+                                setConfig('sources', next.length ? next : ['google'])
+                              }}
+                              style={{ accentColor: 'var(--accent)' }}
+                            />
+                            <span>{src.label}</span>
+                            <span className="text-[10px] opacity-50">{src.hint}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="mb-1.5 text-xs font-medium opacity-60">博客 / 社区</p>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                        {[
+                          { id: 'hackernews', label: 'Hacker News', hint: '技术' },
+                          { id: 'reddit', label: 'Reddit', hint: '社区' },
+                          { id: 'devto', label: 'DEV.to', hint: '开发者' },
+                          { id: 'medium', label: 'Medium', hint: '博客' },
+                          { id: 'zhihu', label: '知乎', hint: '中文' },
+                          { id: 'v2ex', label: 'V2EX', hint: '中文技术' },
+                          { id: 'lobsters', label: 'Lobsters', hint: '技术' },
+                        ].map((src) => (
+                          <label key={src.id} className="flex items-center gap-1.5">
+                            <input
+                              type="checkbox"
+                              checked={(status.config.sources || []).includes(src.id)}
+                              onChange={(e) => {
+                                const cur = status.config.sources || ['google']
+                                const next = e.target.checked
+                                  ? [...cur.filter((s: string) => s !== src.id), src.id]
+                                  : cur.filter((s: string) => s !== src.id)
+                                setConfig('sources', next.length ? next : ['google'])
+                              }}
+                              style={{ accentColor: 'var(--accent)' }}
+                            />
+                            <span>{src.label}</span>
+                            <span className="text-[10px] opacity-50">{src.hint}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="mb-1.5 text-xs font-medium opacity-60">HTML 解析（备用）</p>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                        {[
+                          { id: 'sogou', label: '搜狗资讯', hint: '中文' },
+                          { id: 'duckduckgo', label: 'DuckDuckGo', hint: '隐私' },
+                          { id: 'yandex', label: 'Yandex', hint: '俄/国际' },
+                        ].map((src) => (
+                          <label key={src.id} className="flex items-center gap-1.5">
+                            <input
+                              type="checkbox"
+                              checked={(status.config.sources || []).includes(src.id)}
+                              onChange={(e) => {
+                                const cur = status.config.sources || ['google']
+                                const next = e.target.checked
+                                  ? [...cur.filter((s: string) => s !== src.id), src.id]
+                                  : cur.filter((s: string) => s !== src.id)
+                                setConfig('sources', next.length ? next : ['google'])
+                              }}
+                              style={{ accentColor: 'var(--accent)' }}
+                            />
+                            <span>{src.label}</span>
+                            <span className="text-[10px] opacity-50">{src.hint}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
+                  <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                    自定义 RSS 搜索模板
+                  </label>
+                  <p className="mb-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    URL 中用 <code>{'{keyword}'}</code> 作为关键词占位符，抓取时会自动替换。
+                  </p>
+                  {(status.config.customSourceTemplates || []).map((tmpl, idx) => (
+                    <div key={idx} className="mb-2 flex items-center gap-2">
+                      <input
+                        placeholder="名称"
+                        value={tmpl.name}
+                        onChange={(e) => {
+                          const list = [...(status.config.customSourceTemplates || [])]
+                          list[idx] = { ...list[idx], name: e.target.value }
+                          setConfig('customSourceTemplates', list)
+                        }}
+                        className={ADMIN_INPUT_CLASS}
+                        style={{
+                          color: 'var(--text-primary)',
+                          border: '1px solid var(--border)',
+                          background: 'transparent',
+                          width: '120px',
+                        }}
+                      />
+                      <input
+                        placeholder="https://example.com/rss?q={keyword}"
+                        value={tmpl.urlTemplate}
+                        onChange={(e) => {
+                          const list = [...(status.config.customSourceTemplates || [])]
+                          list[idx] = { ...list[idx], urlTemplate: e.target.value }
+                          setConfig('customSourceTemplates', list)
+                        }}
+                        className={ADMIN_INPUT_CLASS}
+                        style={{
+                          color: 'var(--text-primary)',
+                          border: '1px solid var(--border)',
+                          background: 'transparent',
+                          flex: 1,
+                        }}
+                      />
+                      <button
+                        onClick={() => {
+                          const list = (status.config.customSourceTemplates || []).filter(
+                            (_: unknown, i: number) => i !== idx
+                          )
+                          setConfig('customSourceTemplates', list)
+                        }}
+                        className="rounded px-2 py-1 text-xs"
+                        style={{ color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
+                      >
+                        删除
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => {
+                      const list = [...(status.config.customSourceTemplates || []), { name: '', urlTemplate: '' }]
+                      setConfig('customSourceTemplates', list)
+                    }}
+                    className="rounded px-3 py-1 text-xs"
+                    style={{ color: 'var(--accent)', border: '1px solid var(--accent)' }}
+                  >
+                    + 添加模板
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* 发布选项 */}
+            <div className="mb-5">
+              <p className="mb-3 text-xs font-medium" style={{ color: 'var(--text-secondary)', opacity: 0.7 }}>
+                发布选项
+              </p>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
+                  <div className="space-y-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={status.config.autoPublish}
+                        onChange={(e) => setConfig('autoPublish', e.target.checked)}
+                        style={{ accentColor: 'var(--accent)' }}
+                      />
+                      自动发布日报文章
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={status.config.useAi}
+                        onChange={(e) => setConfig('useAi', e.target.checked)}
+                        style={{ accentColor: 'var(--accent)' }}
+                      />
+                      使用 AI 生成日报文案
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={status.config.standardMarkdown}
+                        onChange={(e) => setConfig('standardMarkdown', e.target.checked)}
+                        style={{ accentColor: 'var(--accent)' }}
+                      />
+                      按标准 Markdown 输出
+                    </label>
+                  </div>
+                  <p className="mt-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    开启后会优先输出标准 Markdown 标题、列表和 Markdown
+                    链接，减少裸链接或长段文本把内容区域撑出边框的问题。
+                  </p>
+                </div>
+                <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
+                  <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                    Webhook 通知
+                  </label>
+                  <div className="space-y-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={status.config.webhookEnabled}
+                        onChange={(e) => setConfig('webhookEnabled', e.target.checked)}
+                        style={{ accentColor: 'var(--accent)' }}
+                      />
+                      启用 Webhook
+                    </label>
+                    <input
+                      type="url"
+                      value={status.config.webhookUrl}
+                      onChange={(e) => setConfig('webhookUrl', e.target.value)}
+                      className={ADMIN_INPUT_CLASS}
+                      style={{
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--border)',
+                        background: 'transparent',
+                      }}
+                      placeholder="https://hooks.example.com/webhook"
+                    />
+                    <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                      每次抓取完成后会向此 URL 发送 POST JSON 通知（包含状态和统计）。
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1032,39 +1120,46 @@ export default function AdminContentRadarPage() {
             <h2 className="mb-4 text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
               最近命中内容
             </h2>
-            <div className="space-y-3">
+            <div className="max-h-[520px] space-y-2 overflow-y-auto pr-1">
               {status.recentItems.length === 0 && (
                 <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                   还没有抓取记录。
                 </p>
               )}
               {status.recentItems.map((item) => (
-                <div key={item.hash} className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
+                <div
+                  key={item.hash}
+                  className="rounded-xl px-3 py-2.5"
+                  style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}
+                >
                   <div
-                    className="mb-2 flex flex-wrap items-center gap-2 text-[11px]"
+                    className="mb-1 flex items-center gap-1.5 text-[10px]"
                     style={{ color: 'var(--text-secondary)' }}
                   >
+                    <span className="rounded px-1.5 py-0.5" style={{ background: 'rgba(29,155,240,0.08)' }}>
+                      {item.source || '未知'}
+                    </span>
                     <span>{item.digestDate.replace(/-/g, '.')}</span>
-                    <span>·</span>
-                    <span>{item.source || '未知来源'}</span>
                   </div>
                   <a
                     href={item.link}
                     target="_blank"
                     rel="noreferrer"
-                    className="line-clamp-2 text-sm font-medium hover:underline"
+                    className="line-clamp-2 text-[13px] font-medium leading-5 hover:underline"
                     style={{ color: 'var(--text-primary)' }}
                   >
                     {item.title}
                   </a>
-                  <p className="mt-2 line-clamp-3 text-xs leading-5" style={{ color: 'var(--text-secondary)' }}>
-                    {item.summary || '无摘要'}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
+                  {item.summary && (
+                    <p className="mt-1 line-clamp-2 text-xs leading-4" style={{ color: 'var(--text-secondary)' }}>
+                      {item.summary}
+                    </p>
+                  )}
+                  <div className="mt-1.5 flex flex-wrap gap-1">
                     {item.keywords.map((keyword) => (
                       <span
                         key={keyword}
-                        className="rounded-full px-2 py-1 text-[10px]"
+                        className="rounded-full px-1.5 py-0.5 text-[10px]"
                         style={{ background: 'rgba(29,155,240,0.12)', color: 'var(--accent)' }}
                       >
                         {keyword}
