@@ -115,6 +115,7 @@ const DEFAULT_CONFIG: KeywordRadarConfig = {
 const FETCH_TIMEOUT_MS = 8000
 const MAX_FEED_ITEMS = 12
 const MAX_SEEN_ROWS = 800
+const RADAR_TIME_ZONE = 'Asia/Shanghai'
 
 function parseArray(input: unknown): string[] {
   if (Array.isArray(input)) {
@@ -518,7 +519,12 @@ function plainText(input: string) {
 }
 
 function getTodayKey() {
-  return new Date().toISOString().slice(0, 10)
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: RADAR_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date())
 }
 
 function formatDateLabel(dateKey: string) {

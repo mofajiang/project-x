@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
 import { IMEInput } from '@/components/ui/IMEInput'
+import { formatTime, formatTimeShort } from '@/lib/utils'
 import {
   ADMIN_BTN_PRIMARY,
   ADMIN_BTN_SECONDARY,
@@ -739,7 +740,7 @@ export default function AdminContentRadarPage() {
                   {status.logs.entries.map((entry) => (
                     <div key={entry.id} className="break-words">
                       <span style={{ color: 'var(--text-secondary)' }}>
-                        {entry.createdAt.replace('T', ' ').slice(0, 19)}
+                        {formatTime(entry.createdAt, { timeZone: 'Asia/Shanghai' })}
                       </span>
                       <span style={{ color: 'var(--text-secondary)' }}> · </span>
                       <span
@@ -789,7 +790,7 @@ export default function AdminContentRadarPage() {
                       >
                         <div>
                           <span style={{ color: 'var(--text-primary)' }}>
-                            {run.startedAt.replace('T', ' ').slice(0, 19)}
+                            {formatTimeShort(run.startedAt, { timeZone: 'Asia/Shanghai' })}
                           </span>
                           <span style={{ color: 'var(--text-secondary)' }}> · </span>
                           <span style={{ color: 'var(--text-secondary)' }}>
@@ -824,7 +825,7 @@ export default function AdminContentRadarPage() {
                       {historyEntries.map((entry) => (
                         <div key={entry.id} className="break-words">
                           <span style={{ color: 'var(--text-secondary)' }}>
-                            {entry.createdAt.replace('T', ' ').slice(0, 19)}
+                            {formatTime(entry.createdAt, { timeZone: 'Asia/Shanghai' })}
                           </span>
                           <span style={{ color: 'var(--text-secondary)' }}> · </span>
                           <span
@@ -884,7 +885,9 @@ export default function AdminContentRadarPage() {
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span style={{ color: 'var(--text-secondary)' }}>最近执行</span>
-                <span style={{ color: 'var(--text-primary)' }}>{status.config.lastRunAt || '暂无'}</span>
+                <span style={{ color: 'var(--text-primary)' }}>
+                  {formatTime(status.config.lastRunAt, { timeZone: 'Asia/Shanghai' })}
+                </span>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span style={{ color: 'var(--text-secondary)' }}>去重记录</span>
@@ -931,7 +934,7 @@ export default function AdminContentRadarPage() {
                     className="mb-2 flex flex-wrap items-center gap-2 text-[11px]"
                     style={{ color: 'var(--text-secondary)' }}
                   >
-                    <span>{item.digestDate}</span>
+                    <span>{item.digestDate.replace(/-/g, '.')}</span>
                     <span>·</span>
                     <span>{item.source || '未知来源'}</span>
                   </div>

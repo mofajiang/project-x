@@ -15,13 +15,15 @@ export function formatDate(date: Date | string) {
 }
 
 export function slugify(text: string) {
-  return text
-    .trim()
-    .toLowerCase()
-    // 保留 ASCII 字母/数字、中日韩字符、空格和连字符，移除其余字符
-    .replace(/[^\w\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/^-+|-+$/g, '')
+  return (
+    text
+      .trim()
+      .toLowerCase()
+      // 保留 ASCII 字母/数字、中日韩字符、空格和连字符，移除其余字符
+      .replace(/[^\w\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/^-+|-+$/g, '')
+  )
 }
 
 export function formatViews(views: number) {
@@ -30,14 +32,14 @@ export function formatViews(views: number) {
   return views.toString()
 }
 
-export function formatTime(value: Date | string | null) {
+export function formatTime(value: Date | string | null, options: Intl.DateTimeFormatOptions = {}) {
   if (!value) return '-'
   const date = typeof value === 'string' ? new Date(value) : value
   if (Number.isNaN(date.getTime())) return typeof value === 'string' ? value : '-'
-  return date.toLocaleString('zh-CN', { hour12: false })
+  return date.toLocaleString('zh-CN', { hour12: false, ...options })
 }
 
-export function formatTimeShort(value: string) {
+export function formatTimeShort(value: string, options: Intl.DateTimeFormatOptions = {}) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
   return date.toLocaleString('zh-CN', {
@@ -45,6 +47,7 @@ export function formatTimeShort(value: string) {
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
+    ...options,
   })
 }
 

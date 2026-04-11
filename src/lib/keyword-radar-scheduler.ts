@@ -6,7 +6,8 @@ declare global {
   var __keywordRadarSchedulerTimer: NodeJS.Timeout | undefined
 }
 
-const MIN_TICK_MS = 30_000
+const MIN_TICK_MS = 5_000
+const DISABLED_RECHECK_MS = 5 * 60 * 1000
 const PRUNE_INTERVAL_MS = 6 * 3600 * 1000
 
 export function ensureKeywordRadarScheduler() {
@@ -14,6 +15,30 @@ export function ensureKeywordRadarScheduler() {
   globalThis.__keywordRadarSchedulerStarted = true
 
   let lastPrune = 0
+
+  const scheduleNext = () => {
+    getKeywordRadarConfig()
+      .then((cfg) => {
+        let delayMs = DISABLED_RECHECK_MS
+        if (cfg.enabled) {
+          const intervalMs = cfg.scheduleMinutes * 60 * 1000
+          if (cfg.lastRunAt) {
+            const elapsedMs = Date.now() - new Date(cfg.lastRunAt).getTime()
+            const remainingMs = intervalMs - elapsedMs
+            delayMs = remainingMs > 0 ? Math.max(MIN_TICK_MS, remainingMs) : MIN_TICK_MS
+          } else {
+            delayMs = MIN_TICK_MS
+          }
+        }
+        if (globalThis.__keywordRadarSchedulerTimer) clearTimeout(globalThis.__keywordRadarSchedulerTimer)
+        globalThis.__keywordRadarSchedulerTimer = setTimeout(tick, delayMs)
+        globalThis.__keywordRadarSchedulerTimer.unref?.()
+      })
+      .catch(() => {
+        globalThis.__keywordRadarSchedulerTimer = setTimeout(tick, DISABLED_RECHECK_MS)
+        globalThis.__keywordRadarSchedulerTimer.unref?.()
+      })
+  }
 
   const tick = async () => {
     try {
@@ -28,19 +53,5 @@ export function ensureKeywordRadarScheduler() {
     scheduleNext()
   }
 
-  const scheduleNext = () => {
-    getKeywordRadarConfig()
-      .then((cfg) => {
-        const ms = Math.max(MIN_TICK_MS, cfg.scheduleMinutes * 60 * 1000 * 0.95)
-        if (globalThis.__keywordRadarSchedulerTimer) clearTimeout(globalThis.__keywordRadarSchedulerTimer)
-        globalThis.__keywordRadarSchedulerTimer = setTimeout(tick, ms)
-        globalThis.__keywordRadarSchedulerTimer.unref?.()
-      })
-      .catch(() => {
-        globalThis.__keywordRadarSchedulerTimer = setTimeout(tick, 60_000)
-        globalThis.__keywordRadarSchedulerTimer.unref?.()
-      })
-  }
-
-  setTimeout(tick, 5000)
+  scheduleNext()
 }
