@@ -24,6 +24,9 @@ export const RADAR_SOURCES = [
   { id: 'reddit', label: 'Reddit', region: '国际', type: 'rss' },
   { id: 'devto', label: 'DEV.to', region: '国际', type: 'rss' },
   { id: 'medium', label: 'Medium', region: '国际', type: 'rss' },
+  { id: 'zhihu', label: '知乎', region: '中国', type: 'html' },
+  { id: 'v2ex', label: 'V2EX', region: '中国', type: 'rss' },
+  { id: 'lobsters', label: 'Lobsters', region: '国际', type: 'rss' },
   { id: 'sogou', label: '搜狗资讯', region: '中国', type: 'html' },
   { id: 'duckduckgo', label: 'DuckDuckGo', region: '国际', type: 'html' },
   { id: 'yandex', label: 'Yandex News', region: '俄/国际', type: 'html' },
@@ -104,6 +107,8 @@ type FeedItem = {
   title: string
   link: string
   summary: string
+  /** Extended body text fetched from the article page (first ~500 chars) */
+  bodyText?: string
   publishedAt: string
   source: string
   keywords: string[]
@@ -248,6 +253,18 @@ function buildDevtoFeedUrl(keyword: string) {
 
 function buildMediumFeedUrl(keyword: string) {
   return `https://medium.com/feed/tag/${encodeURIComponent(keyword.toLowerCase().replace(/\s+/g, '-'))}`
+}
+
+function buildZhihuSearchUrl(keyword: string) {
+  return `https://www.zhihu.com/search?type=content&q=${encodeURIComponent(keyword)}`
+}
+
+function buildV2exFeedUrl(keyword: string) {
+  return `https://www.v2ex.com/feed/tab/tech.xml`
+}
+
+function buildLobstersFeedUrl(keyword: string) {
+  return `https://lobste.rs/search.rss?q=${encodeURIComponent(keyword)}&what=stories&order=newest`
 }
 
 /** Decode common HTML entities */
@@ -810,6 +827,56 @@ async function fetchXml(url: string, retries = 1): Promise<string> {
   throw lastError!
 }
 
+/**
+ * Parse search results from Zhihu search page.
+ */
+function parseZhihuHtml(html: string, keyword: string): FeedItem[] {
+  const items: FeedItem[] = []
+  // Strategy 1: Search result cards with data attributes
+  const cardRe =
+    /<div[^>]*class="[^"]*SearchResult-Card[^"]*"[^>]*>([\s\S]*?)(?=<div[^>]*class="[^"]*SearchResult-Card|$)/gi
+  let m: RegExpExecArray | null
+  while ((m = cardRe.exec(html)) !== null && items.length < MAX_FEED_ITEMS) {
+    const block = m[1]
+    const titleMatch = block.match(
+      /<a[^>]+href="([^"]*(?:zhihu\.com\/(?:question|p)[^"]*|zhuanlan[^"]*)[^"]*)"[^>]*>([\s\S]*?)<\/a>/i
+    )
+    if (!titleMatch) continue
+    const link = titleMatch[1].startsWith('http') ? titleMatch[1] : `https://www.zhihu.com${titleMatch[1]}`
+    const title = stripHtml(titleMatch[2])
+    if (!title || title.length < 4) continue
+    const descMatch =
+      block.match(/<span[^>]*class="[^"]*RichText[^"]*"[^>]*>([\s\S]*?)<\/span>/i) ||
+      block.match(/<p[^>]*>([\s\S]*?)<\/p>/i)
+    const summary = descMatch ? stripHtml(descMatch[1]).slice(0, 200) : ''
+    items.push({
+      title,
+      link,
+      summary: toSummary(summary),
+      publishedAt: new Date().toISOString(),
+      source: '知乎',
+      keywords: [keyword],
+    })
+  }
+  // Strategy 2: Broad link fallback for zhihu question/article pages
+  if (items.length === 0) {
+    const fbRe = /<a[^>]+href="(https?:\/\/(?:www\.)?zhihu\.com\/(?:question\/\d+|p\/\d+)[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi
+    while ((m = fbRe.exec(html)) !== null && items.length < MAX_FEED_ITEMS) {
+      const title = stripHtml(m[2])
+      if (!title || title.length < 6) continue
+      items.push({
+        title,
+        link: m[1],
+        summary: '',
+        publishedAt: new Date().toISOString(),
+        source: '知乎',
+        keywords: [keyword],
+      })
+    }
+  }
+  return dedupeByLink(items)
+}
+
 async function fetchDevtoArticles(keyword: string): Promise<FeedItem[]> {
   const url = buildDevtoFeedUrl(keyword)
   try {
@@ -867,11 +934,14 @@ async function fetchFeedByKeyword(keyword: string, sourceId: RadarSourceId = 'go
     hackernews: buildHackerNewsFeedUrl(keyword),
     reddit: buildRedditFeedUrl(keyword),
     medium: buildMediumFeedUrl(keyword),
+    v2ex: buildV2exFeedUrl(keyword),
+    lobsters: buildLobstersFeedUrl(keyword),
   }
   const htmlUrlMap: Partial<Record<RadarSourceId, string>> = {
     sogou: buildSogouNewsUrl(keyword),
     duckduckgo: buildDuckDuckGoNewsUrl(keyword),
     yandex: buildYandexNewsUrl(keyword),
+    zhihu: buildZhihuSearchUrl(keyword),
   }
   const sourceLabel: Record<RadarSourceId, string> = {
     google: 'Google News',
@@ -882,6 +952,9 @@ async function fetchFeedByKeyword(keyword: string, sourceId: RadarSourceId = 'go
     reddit: 'Reddit',
     devto: 'DEV.to',
     medium: 'Medium',
+    zhihu: '知乎',
+    v2ex: 'V2EX',
+    lobsters: 'Lobsters',
     sogou: '搜狗资讯',
     duckduckgo: 'DuckDuckGo',
     yandex: 'Yandex News',
@@ -894,6 +967,7 @@ async function fetchFeedByKeyword(keyword: string, sourceId: RadarSourceId = 'go
       sogou: parseSogouHtml,
       duckduckgo: parseDuckDuckGoHtml,
       yandex: parseYandexHtml,
+      zhihu: parseZhihuHtml,
     }
     const parser = htmlParsers[sourceId]
     return parser ? parser(html, keyword) : []
@@ -917,6 +991,12 @@ async function fetchFeedByKeyword(keyword: string, sourceId: RadarSourceId = 'go
     const publishedAt = getTagText(block, 'pubDate') || getTagText(block, 'published') || getTagText(block, 'updated')
     const source = getTagText(block, 'source') || sourceLabel[sourceId]
     if (!title || !link) continue
+    // For sources that don't filter server-side (e.g. V2EX), filter by keyword match
+    const needsClientFilter = sourceId === 'v2ex'
+    if (needsClientFilter) {
+      const haystack = normalizeKeyword(`${title} ${summary}`)
+      if (!haystack.includes(normalizeKeyword(keyword))) continue
+    }
     items.push({
       title,
       link,
@@ -927,6 +1007,50 @@ async function fetchFeedByKeyword(keyword: string, sourceId: RadarSourceId = 'go
     })
   }
   return items
+}
+
+/** Fetch and extract main body text from an article URL (best-effort, for enrichment) */
+async function fetchArticleBody(url: string, maxChars = 500): Promise<string> {
+  try {
+    const html = await fetchXml(url, 0) // no retry for enrichment
+    // Remove script, style, nav, header, footer tags
+    const cleaned = html
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<nav[\s\S]*?<\/nav>/gi, '')
+      .replace(/<header[\s\S]*?<\/header>/gi, '')
+      .replace(/<footer[\s\S]*?<\/footer>/gi, '')
+      .replace(/<aside[\s\S]*?<\/aside>/gi, '')
+    // Try to extract article/main content first
+    const articleMatch = cleaned.match(/<(?:article|main)[^>]*>([\s\S]*?)<\/(?:article|main)>/i)
+    const body = articleMatch ? articleMatch[1] : cleaned
+    // Extract paragraphs
+    const paragraphs: string[] = []
+    const pRe = /<p[^>]*>([\s\S]*?)<\/p>/gi
+    let m: RegExpExecArray | null
+    while ((m = pRe.exec(body)) !== null) {
+      const text = stripHtml(m[1]).trim()
+      if (text.length > 20) paragraphs.push(text)
+    }
+    const result = paragraphs.join(' ').slice(0, maxChars)
+    return result.length > 40 ? result : ''
+  } catch {
+    return ''
+  }
+}
+
+/** Enrich items with article body text (concurrent, best-effort) */
+async function enrichItemBodies(items: FeedItem[], maxItems = 8): Promise<void> {
+  const limit = createLimiter(3)
+  const targets = items.slice(0, maxItems).filter((item) => !item.bodyText && item.link)
+  await Promise.allSettled(
+    targets.map((item) =>
+      limit(async () => {
+        const body = await fetchArticleBody(item.link)
+        if (body) item.bodyText = body
+      })
+    )
+  )
 }
 
 async function fetchCustomFeed(feedUrl: string, keywords: string[]): Promise<FeedItem[]> {
@@ -1195,14 +1319,18 @@ async function generateAiDigestMarkdown(items: FeedItem[], config: KeywordRadarC
   const payload = items
     .slice(0, config.maxItems)
     .map((item, index) => {
-      return [
+      const lines = [
         `${index + 1}. 标题：${item.title}`,
         `关键词：${item.keywords.join(' / ')}`,
         `来源：${item.source}`,
         `发布时间：${item.publishedAt}`,
         `摘要：${item.summary || '无'}`,
-        `原文链接：${item.link}`,
-      ].join('\n')
+      ]
+      if (item.bodyText) {
+        lines.push(`正文节选：${item.bodyText}`)
+      }
+      lines.push(`原文链接：${item.link}`)
+      return lines.join('\n')
     })
     .join('\n\n')
 
@@ -1307,6 +1435,8 @@ async function upsertDailyDigest(items: FeedItem[], config: KeywordRadarConfig, 
     keywords: parseArray(row.keywords),
   }))
   const digestItems = allItems.length > 0 ? allItems.slice(0, config.maxItems) : items.slice(0, config.maxItems)
+  // Enrich items with article body text for better AI summarization
+  if (config.useAi) await enrichItemBodies(digestItems)
   const digest = await buildRadarDigestContent(digestItems, config, dateKey)
   const content = digest.content
   const excerpt = plainText(content).slice(0, 160)
@@ -1726,13 +1856,20 @@ export async function runKeywordRadar(options: { reason: 'manual' | 'scheduler' 
 
     if (options.reason === 'scheduler' && config.lastRunAt) {
       const elapsed = Date.now() - new Date(config.lastRunAt).getTime()
-      if (elapsed < config.scheduleMinutes * 60 * 1000) {
-        log('info', '未到下一次执行时间，跳过本次定时抓取')
+      // Adaptive scheduling: if last run found nothing, extend interval by 50%
+      const baseInterval = config.scheduleMinutes * 60 * 1000
+      const adaptiveInterval = config.lastStatus === 'idle' ? baseInterval * 1.5 : baseInterval
+      if (elapsed < adaptiveInterval) {
+        const nextRunIn = Math.ceil((adaptiveInterval - elapsed) / 60000)
+        log(
+          'info',
+          `未到下一次执行时间（约 ${nextRunIn} 分钟后），跳过本次定时抓取${config.lastStatus === 'idle' ? '（上次无新内容，已自动延长间隔）' : ''}`
+        )
         finishKeywordRadarLog(runId)
         return {
           ok: true,
           skipped: true,
-          message: '未到下一次执行时间',
+          message: `未到下一次执行时间（约 ${nextRunIn} 分钟后）`,
           matchedCount: 0,
           newCount: 0,
           digestDate: dateKey,
@@ -1864,6 +2001,7 @@ export async function previewKeywordRadarDigest(): Promise<KeywordRadarPreviewRe
   const matchedItems = await collectItems(config, () => {}, `preview-${Date.now()}`)
   const newItems = await getNewItems(matchedItems)
   const previewItems = (newItems.length > 0 ? newItems : matchedItems).slice(0, config.maxItems)
+  if (config.useAi) await enrichItemBodies(previewItems)
   const digest = await buildRadarDigestContent(previewItems, config, dateKey)
   const content = digest.content
 

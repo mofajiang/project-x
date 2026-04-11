@@ -162,7 +162,18 @@ export default function AdminContentRadarPage() {
     totalItems: number
     totalDays: number
   } | null>(null)
-  const [dashTab, setDashTab] = useState<'config' | 'health' | 'stats'>('config')
+  const [dashTab, setDashTab] = useState<'config' | 'health' | 'stats' | 'history'>('config')
+  const [historyDigests, setHistoryDigests] = useState<
+    Array<{ id: string; title: string; publishedAt: string; digestDate: string; itemCount: number }>
+  >([])
+
+  const fetchHistory = async () => {
+    try {
+      const res = await fetch('/api/admin/content-radar/history')
+      const data = await res.json()
+      if (res.ok && data.digests) setHistoryDigests(data.digests)
+    } catch {}
+  }
 
   useEffect(() => {
     fetchStatus({ syncForm: true })
@@ -566,6 +577,9 @@ export default function AdminContentRadarPage() {
                     { id: 'reddit', label: 'Reddit', hint: '社区讨论/博客，RSS' },
                     { id: 'devto', label: 'DEV.to', hint: '开发者博客，JSON API' },
                     { id: 'medium', label: 'Medium', hint: '个人博客/专栏，RSS' },
+                    { id: 'zhihu', label: '知乎', hint: '中文问答/专栏，HTML解析' },
+                    { id: 'v2ex', label: 'V2EX', hint: '中文技术社区，RSS' },
+                    { id: 'lobsters', label: 'Lobsters', hint: '技术社区，RSS' },
                     { id: 'sogou', label: '搜狗资讯', hint: '国内中文，HTML解析' },
                     { id: 'duckduckgo', label: 'DuckDuckGo', hint: '隐私友好，HTML解析' },
                     { id: 'yandex', label: 'Yandex News', hint: '俄罗斯/国际，HTML解析' },
@@ -1067,7 +1081,7 @@ export default function AdminContentRadarPage() {
       {/* 源健康 & 统计面板 */}
       <div className="mt-6 space-y-6">
         <div className="flex gap-2">
-          {(['health', 'stats'] as const).map((tab) => (
+          {(['health', 'stats', 'history'] as const).map((tab) => (
             <button
               key={tab}
               type="button"
@@ -1075,6 +1089,7 @@ export default function AdminContentRadarPage() {
                 setDashTab(tab)
                 if (tab === 'health') fetchHealth()
                 if (tab === 'stats') fetchStats()
+                if (tab === 'history') fetchHistory()
               }}
               className="rounded-full px-4 py-1.5 text-xs font-medium transition-colors"
               style={{
@@ -1083,7 +1098,7 @@ export default function AdminContentRadarPage() {
                 border: dashTab === tab ? 'none' : '1px solid var(--border)',
               }}
             >
-              {tab === 'health' ? '源健康状态' : '数据统计'}
+              {tab === 'health' ? '源健康状态' : tab === 'stats' ? '数据统计' : '历史日报'}
             </button>
           ))}
         </div>
@@ -1314,6 +1329,52 @@ export default function AdminContentRadarPage() {
                     )}
                   </div>
                 </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {dashTab === 'history' && (
+          <section className={ADMIN_CARD_CLASS}>
+            <h2 className="mb-4 text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+              历史日报
+            </h2>
+            {historyDigests.length === 0 ? (
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                暂无历史日报记录。
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {historyDigests.map((d) => (
+                  <div
+                    key={d.id}
+                    className="flex items-center justify-between rounded-lg px-4 py-3"
+                    style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}
+                  >
+                    <div>
+                      <a
+                        href={`/admin/posts/${d.id}`}
+                        className="text-sm font-medium hover:underline"
+                        style={{ color: 'var(--accent)' }}
+                      >
+                        {d.title}
+                      </a>
+                      <div className="mt-0.5 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                        {d.digestDate} · {d.itemCount} 条内容 ·{' '}
+                        {d.publishedAt ? `发布于 ${d.publishedAt.replace('T', ' ').slice(0, 16)}` : '未发布'}
+                      </div>
+                    </div>
+                    <a
+                      href={`/post/${d.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded px-3 py-1 text-xs"
+                      style={{ color: 'var(--accent)', border: '1px solid var(--accent)' }}
+                    >
+                      查看
+                    </a>
+                  </div>
+                ))}
               </div>
             )}
           </section>
