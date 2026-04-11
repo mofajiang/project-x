@@ -86,6 +86,16 @@ export function buildPostMetadata(post: LoadedPost) {
 export async function renderPostPage(post: LoadedPost, session: { userId: string; username: string } | null) {
   const config = await getSiteConfig()
   const postWithDisplay = { ...post, author: { ...post.author, displayName: post.author.displayName || '' } }
+  const publishedLabel = post.publishedAt
+    ? post.publishedAt.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      })
+    : '草稿'
 
   type ThreadPost = {
     id: string
@@ -134,6 +144,7 @@ export async function renderPostPage(post: LoadedPost, session: { userId: string
     }),
   ])
   const comments = commentsRaw as any[]
+  const conversationCount = comments.reduce((sum, comment) => sum + 1 + (comment.replies?.length || 0), 0)
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
   const postUrl = getPostUrl(post, baseUrl)
@@ -176,6 +187,9 @@ export async function renderPostPage(post: LoadedPost, session: { userId: string
         </Link>
         <span className="text-[17px] font-bold" style={{ color: 'var(--text-primary)' }}>
           文章
+        </span>
+        <span className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
+          {conversationCount > 0 ? `${conversationCount} 条对话` : '查看帖子'}
         </span>
       </div>
 
@@ -354,7 +368,7 @@ export async function renderPostPage(post: LoadedPost, session: { userId: string
           </>
         ) : (
           <>
-            <div className="mb-5 flex items-center gap-3">
+            <div className="mb-5 flex gap-3">
               <div
                 className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-base font-bold"
                 style={{ background: 'var(--bg-secondary)', boxShadow: '0 0 0 1px var(--border)' }}
@@ -373,8 +387,8 @@ export async function renderPostPage(post: LoadedPost, session: { userId: string
                   </span>
                 )}
               </div>
-              <div>
-                <div className="flex items-center gap-1.5">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
                   <p className="text-[15px] font-bold" style={{ color: 'var(--text-primary)' }}>
                     {postWithDisplay.author.displayName || postWithDisplay.author.username}
                   </p>
@@ -384,16 +398,18 @@ export async function renderPostPage(post: LoadedPost, session: { userId: string
                   <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                     @{postWithDisplay.author.username}
                   </span>
+                  <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    · {publishedLabel}
+                  </span>
                 </div>
-                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  {post.publishedAt ? formatDate(post.publishedAt) : ''}
-                </p>
+
+                {post.title ? (
+                  <p className="mt-2 text-[13px] font-medium" style={{ color: 'var(--text-secondary)' }}>
+                    {post.title}
+                  </p>
+                ) : null}
               </div>
             </div>
-
-            <h1 className="mb-3 text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-              {post.title}
-            </h1>
 
             {post.coverImage && extractImages(post.content).length === 0 && (
               <div className="mb-5 aspect-[16/9] overflow-hidden rounded-2xl">
@@ -447,7 +463,7 @@ export async function renderPostPage(post: LoadedPost, session: { userId: string
               className="-mx-4 flex items-center gap-4 border-y px-4 py-3 text-sm"
               style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
             >
-              <span>{post.publishedAt ? formatDate(post.publishedAt) : ''}</span>
+              <span>{publishedLabel}</span>
               <span className="flex items-center gap-1">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
@@ -455,6 +471,7 @@ export async function renderPostPage(post: LoadedPost, session: { userId: string
                 </svg>
                 {post.views + 1} 次浏览
               </span>
+              <span>{conversationCount} 条对话</span>
             </div>
 
             <PostActions postId={post.id} likes={post.likes} commentCount={post._count.comments} />

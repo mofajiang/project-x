@@ -355,24 +355,30 @@ export function CommentSection({
 
   return (
     <section className="px-4 pb-6 pt-2 sm:px-5">
-      {/* 评论标头 */}
       <div
         className="-mx-4 flex items-center gap-3 px-4 py-3 sm:-mx-5 sm:px-5"
         style={{ borderBottom: '1px solid var(--border)' }}
       >
-        <h2 className="text-[17px] font-bold" style={{ color: 'var(--text-primary)' }}>
-          {totalCount > 0 ? `${totalCount} 条评论` : '评论'}
-        </h2>
+        <div>
+          <h2 className="text-[17px] font-bold" style={{ color: 'var(--text-primary)' }}>
+            对话
+          </h2>
+          <p className="mt-0.5 text-xs" style={{ color: 'var(--text-secondary)' }}>
+            {totalCount > 0 ? `${totalCount} 条回复正在展开` : '还没有人加入这条对话'}
+          </p>
+        </div>
       </div>
 
-      {/* 评论输入框 */}
       <div className="py-4" style={{ borderBottom: '1px solid var(--border)' }}>
+        <div className="mb-3 text-[13px] font-medium" style={{ color: 'var(--accent)' }}>
+          加入对话
+        </div>
         <CommentInput session={session} postId={postId} placeholder="发表评论..." onDone={() => {}} />
       </div>
 
       {comments.length === 0 ? (
         <p className="py-10 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
-          暂无评论，来说点什么吧
+          还没有回复，成为第一个加入对话的人
         </p>
       ) : (
         <div className="divide-y" style={{ '--tw-divide-opacity': 1 } as React.CSSProperties}>

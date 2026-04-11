@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image'
 
 interface MomentsImageGridProps {
@@ -11,75 +11,157 @@ interface MomentsImageGridProps {
 /** 图片 lightbox 查看器 */
 function ImageLightbox({ images, index, onClose }: { images: string[]; index: number; onClose: () => void }) {
   const [current, setCurrent] = useState(index)
+  const touchStartX = useRef<number | null>(null)
 
   const goPrev = useCallback(() => setCurrent((i) => (i - 1 + images.length) % images.length), [images.length])
   const goNext = useCallback(() => setCurrent((i) => (i + 1) % images.length), [images.length])
 
   useEffect(() => {
+    const originalOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
       if (e.key === 'ArrowLeft') goPrev()
       if (e.key === 'ArrowRight') goNext()
     }
     window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
+    return () => {
+      document.body.style.overflow = originalOverflow
+      window.removeEventListener('keydown', handler)
+    }
   }, [onClose, goPrev, goNext])
+
+  const shareCurrent = async () => {
+    const url = images[current]
+    if (navigator.share) {
+      try {
+        await navigator.share({ url })
+        return
+      } catch {
+        // ignore canceled share
+      }
+    }
+    await navigator.clipboard.writeText(url)
+  }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: 'rgba(0,0,0,0.9)' }}
+      className="fixed inset-0 z-[80] flex items-center justify-center"
+      style={{ background: 'rgba(0,0,0,0.96)', backdropFilter: 'blur(10px)' }}
       onClick={onClose}
     >
-      <button
-        className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
-        onClick={onClose}
-        aria-label="关闭"
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M18 6L6 18M6 6l12 12" />
-        </svg>
-      </button>
+      <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between bg-gradient-to-b from-black/60 to-transparent px-4 py-4 text-white">
+        <div>
+          <div className="text-sm font-semibold">图片</div>
+          <div className="text-xs text-white/60">
+            {current + 1} / {images.length}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            className="flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-white/10"
+            onClick={(e) => {
+              e.stopPropagation()
+              shareCurrent()
+            }}
+            aria-label="分享图片"
+          >
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
+              <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" />
+              <path d="M12 16V3" />
+              <path d="m7 8 5-5 5 5" />
+            </svg>
+          </button>
+          <button
+            className="flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-white/10"
+            onClick={(e) => {
+              e.stopPropagation()
+              onClose()
+            }}
+            aria-label="关闭"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
       {images.length > 1 && (
-        <button
-          className="absolute left-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
-          onClick={(e) => {
-            e.stopPropagation()
-            goPrev()
-          }}
-          aria-label="上一张"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
+        <>
+          <button
+            className="absolute left-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
+            onClick={(e) => {
+              e.stopPropagation()
+              goPrev()
+            }}
+            aria-label="上一张"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+          <button
+            className="absolute right-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
+            onClick={(e) => {
+              e.stopPropagation()
+              goNext()
+            }}
+            aria-label="下一张"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </button>
+        </>
       )}
-      <div className="max-h-[90vh] max-w-[90vw]" onClick={(e) => e.stopPropagation()}>
+
+      <div
+        className="max-h-[92vh] max-w-[96vw] px-14 py-16 sm:px-20"
+        onClick={(e) => e.stopPropagation()}
+        onTouchStart={(e) => {
+          touchStartX.current = e.touches[0]?.clientX ?? null
+        }}
+        onTouchEnd={(e) => {
+          const start = touchStartX.current
+          const end = e.changedTouches[0]?.clientX ?? null
+          touchStartX.current = null
+          if (start == null || end == null) return
+          const delta = end - start
+          if (Math.abs(delta) < 40) return
+          if (delta > 0) goPrev()
+          else goNext()
+        }}
+      >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={images[current]}
           alt={`图片 ${current + 1}`}
-          className="max-h-[90vh] max-w-[90vw] rounded-lg object-contain"
+          className="max-h-[calc(92vh-120px)] max-w-full rounded-2xl object-contain shadow-2xl"
           style={{ display: 'block' }}
         />
       </div>
+
       {images.length > 1 && (
-        <button
-          className="absolute right-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
-          onClick={(e) => {
-            e.stopPropagation()
-            goNext()
-          }}
-          aria-label="下一张"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path d="M9 18l6-6-6-6" />
-          </svg>
-        </button>
-      )}
-      {images.length > 1 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-sm text-white/60">
-          {current + 1} / {images.length}
+        <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/70 to-transparent px-4 pb-5 pt-12">
+          <div className="mx-auto flex max-w-xl items-center justify-center gap-2 overflow-x-auto">
+            {images.map((src, i) => (
+              <button
+                key={src + i}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setCurrent(i)
+                }}
+                className={`relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl border transition-all ${current === i ? 'scale-105' : 'opacity-60'}`}
+                style={{ borderColor: current === i ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.18)' }}
+                aria-label={`查看第 ${i + 1} 张图片`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={src} alt={`缩略图 ${i + 1}`} className="h-full w-full object-cover" />
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>

@@ -38,15 +38,27 @@ export default async function LinksPage() {
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-primary)' }}>
-      <div className="mx-auto max-w-4xl px-3 py-6 sm:px-4 sm:py-12">
-        {/* 页面头部 */}
-        <div className="mb-6">
-          <h1 className="mb-1.5 text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-            友情链接
-          </h1>
-          <p style={{ color: 'var(--text-secondary)' }} className="text-sm">
-            欢迎与我们互换友链，共同成长。
-          </p>
+      <div
+        className="sticky top-0 z-10 px-4 py-4 backdrop-blur-md"
+        style={{ background: 'var(--bg-blur)', borderBottom: '1px solid var(--border)' }}
+      >
+        <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+          友情链接
+        </h1>
+        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+          欢迎与我们互换友链，共同成长。
+        </p>
+      </div>
+      <div className="mx-auto max-w-4xl px-3 py-6 sm:px-4 sm:py-8">
+        <div className="mb-6 sm:hidden">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm transition-colors"
+            style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}
+          >
+            <span aria-hidden="true">←</span>
+            返回首页
+          </Link>
         </div>
 
         {/* 申请表单卡片（上移） */}

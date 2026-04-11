@@ -61,63 +61,116 @@ export default async function FriendLinkStatusPage({ params }: { params: { id: s
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-primary)' }}>
-      <div className="max-w-2xl mx-auto px-4 py-12">
-        <div className="rounded-2xl p-6 sm:p-8" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-          <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>申请编号：{link.id}</p>
-          <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>友链申请状态</h1>
-          <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>站点：{link.name} · {link.url}</p>
+      <div
+        className="sticky top-0 z-10 flex items-center gap-4 px-4 py-3 backdrop-blur-md"
+        style={{ background: 'var(--bg-blur)', borderBottom: '1px solid var(--border)' }}
+      >
+        <Link
+          href="/links"
+          aria-label="返回友链页"
+          className="rounded-full p-2 transition-colors hover:bg-x-bg-hover"
+          style={{ color: 'var(--text-primary)' }}
+        >
+          ←
+        </Link>
+        <div>
+          <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+            友链申请状态
+          </h1>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+            查看当前申请进度与审核结果。
+          </p>
+        </div>
+      </div>
 
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-bold mb-4" style={{ color: tone.color, background: tone.bg }}>
-            <span className="w-2 h-2 rounded-full" style={{ background: tone.color }} />
+      <div className="mx-auto max-w-2xl px-4 py-6 sm:py-8">
+        <div
+          className="rounded-2xl p-6 sm:p-8"
+          style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
+        >
+          <p className="mb-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
+            申请编号：{link.id}
+          </p>
+          <h2 className="mb-2 text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
+            友链申请状态
+          </h2>
+          <p className="mb-6 text-sm" style={{ color: 'var(--text-secondary)' }}>
+            站点：{link.name} · {link.url}
+          </p>
+
+          <div
+            className="mb-4 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-bold"
+            style={{ color: tone.color, background: tone.bg }}
+          >
+            <span className="h-2 w-2 rounded-full" style={{ background: tone.color }} />
             {tone.label}
           </div>
 
-          <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>{tone.desc}</p>
+          <p className="mb-6 text-sm" style={{ color: 'var(--text-secondary)' }}>
+            {tone.desc}
+          </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+          <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
             <div className="rounded-xl p-3" style={{ background: 'var(--bg-hover)' }}>
               <p style={{ color: 'var(--text-secondary)' }}>提交时间</p>
-              <p className="font-medium mt-1" style={{ color: 'var(--text-primary)' }}>{formatTime(link.createdAt)}</p>
+              <p className="mt-1 font-medium" style={{ color: 'var(--text-primary)' }}>
+                {formatTime(link.createdAt)}
+              </p>
             </div>
             <div className="rounded-xl p-3" style={{ background: 'var(--bg-hover)' }}>
               <p style={{ color: 'var(--text-secondary)' }}>最后更新</p>
-              <p className="font-medium mt-1" style={{ color: 'var(--text-primary)' }}>{formatTime(link.updatedAt)}</p>
+              <p className="mt-1 font-medium" style={{ color: 'var(--text-primary)' }}>
+                {formatTime(link.updatedAt)}
+              </p>
             </div>
             <div className="rounded-xl p-3" style={{ background: 'var(--bg-hover)' }}>
               <p style={{ color: 'var(--text-secondary)' }}>互链检测</p>
-              <p className="font-medium mt-1" style={{ color: link.hasReciprocal ? '#22c55e' : 'var(--text-primary)' }}>
+              <p className="mt-1 font-medium" style={{ color: link.hasReciprocal ? '#22c55e' : 'var(--text-primary)' }}>
                 {link.reciprocalChecked ? (link.hasReciprocal ? '已检测到互链' : '未检测到互链') : '未检测'}
               </p>
             </div>
             <div className="rounded-xl p-3" style={{ background: 'var(--bg-hover)' }}>
               <p style={{ color: 'var(--text-secondary)' }}>AI 风险分</p>
-              <p className="font-medium mt-1" style={{ color: 'var(--text-primary)' }}>{link.aiScore}</p>
+              <p className="mt-1 font-medium" style={{ color: 'var(--text-primary)' }}>
+                {link.aiScore}
+              </p>
             </div>
           </div>
 
           {link.status === 'approved' && (
-            <div className="mt-5 p-4 rounded-xl" style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e' }}>
+            <div className="mt-5 rounded-xl p-4" style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e' }}>
               你的友链已通过审核，可前往友链页面查看。
             </div>
           )}
 
           {link.status === 'rejected' && (
-            <div className="mt-5 p-4 rounded-xl" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
+            <div className="mt-5 rounded-xl p-4" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
               拒绝原因：{link.rejectionReason || '未提供原因'}
             </div>
           )}
 
           {link.status === 'pending' && (
-            <div className="mt-5 p-4 rounded-xl text-sm" style={{ background: 'rgba(29,155,240,0.1)', color: 'var(--text-primary)' }}>
+            <div
+              className="mt-5 rounded-xl p-4 text-sm"
+              style={{ background: 'rgba(29,155,240,0.1)', color: 'var(--text-primary)' }}
+            >
               提示：友链列表只展示“已通过”状态，当前待审核时不会显示在公开列表中。
             </div>
           )}
 
-          <div className="mt-8 flex flex-col sm:flex-row gap-3">
-            <Link href="/links" className="px-4 py-2.5 rounded-lg text-center font-medium" style={{ background: 'var(--accent)', color: '#fff' }}>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <Link
+              href="/links"
+              className="rounded-lg px-4 py-2.5 text-center font-medium"
+              style={{ background: 'var(--accent)', color: '#fff' }}
+            >
               查看友链列表
             </Link>
-            <Link href="/links/submit" className="px-4 py-2.5 rounded-lg text-center font-medium" style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
+            <Link
+              href="/links/submit"
+              className="rounded-lg px-4 py-2.5 text-center font-medium"
+              style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+            >
               再提交一个
             </Link>
           </div>
