@@ -42,6 +42,7 @@ export const PostCard = memo(function PostCard({ post, currentUserId, index = 0 
   const [likes, setLikes] = useState(post.likes)
   const [liked, setLiked] = useState(false)
   const [liking, setLiking] = useState(false)
+  const [likeAnim, setLikeAnim] = useState(false)
   const isAuthor = currentUserId && post.authorId && currentUserId === post.authorId
   const plainText = useMemo(
     () => post.plainText ?? (post.content ? stripMarkdownFn(post.content).trim() : ''),
@@ -64,6 +65,7 @@ export const PostCard = memo(function PostCard({ post, currentUserId, index = 0 
       const data = await res.json()
       setLikes(data.likes)
       setLiked(true)
+      setLikeAnim(true)
     } else if (res.status === 429) {
       toast.error('操作太频繁，请稍后再试')
     }
@@ -251,7 +253,8 @@ export const PostCard = memo(function PostCard({ post, currentUserId, index = 0 
                 }}
               >
                 <span
-                  className={`rounded-full p-1.5 transition-colors ${liked ? 'bg-pink-500/10 text-pink-500' : 'group-hover:bg-pink-500/10 group-hover:text-pink-500'}`}
+                  className={`rounded-full p-1.5 transition-colors ${liked ? 'bg-pink-500/10 text-pink-500' : 'group-hover:bg-pink-500/10 group-hover:text-pink-500'} ${likeAnim ? 'like-heart-pop' : ''}`}
+                  onAnimationEnd={() => setLikeAnim(false)}
                 >
                   <svg
                     width="16"
