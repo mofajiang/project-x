@@ -195,17 +195,27 @@ export default function AdminContentRadarPage() {
   }, [status.logs.entries])
 
   const fetchStatus = async ({ syncForm = false, silent = false }: { syncForm?: boolean; silent?: boolean } = {}) => {
+    // Skip polling updates while saving to prevent overwriting unsaved form state
+    if (saving && !syncForm) return
     try {
       const res = await fetch('/api/admin/content-radar', { cache: 'no-store' })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || '加载失败')
-      setStatus(data)
       if (syncForm) {
+        setStatus(data)
         setKeywordsInput((data.config.keywords || []).join('\n'))
         setTagsInput((data.config.tags || []).join(', '))
         setFeedsInput((data.config.extraFeeds || []).join('\n'))
         setIncludeDomainsInput((data.config.includeDomains || []).join('\n'))
         setExcludeDomainsInput((data.config.excludeDomains || []).join('\n'))
+      } else {
+        // Only update non-config status (logs, recentItems) during polling to avoid overwriting user edits
+        setStatus((current) => ({
+          ...current,
+          recentItems: data.recentItems,
+          totalSeen: data.totalSeen,
+          logs: data.logs,
+        }))
       }
     } catch (error) {
       if (!silent) {

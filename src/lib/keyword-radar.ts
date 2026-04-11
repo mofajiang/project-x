@@ -1238,11 +1238,11 @@ export async function saveKeywordRadarConfig(input: Partial<KeywordRadarConfig>)
   const next: KeywordRadarConfig = {
     ...current,
     ...input,
-    keywords: input.keywords ? parseArray(input.keywords) : current.keywords,
-    tags: input.tags ? parseArray(input.tags) : current.tags,
-    extraFeeds: input.extraFeeds ? parseArray(input.extraFeeds) : current.extraFeeds,
-    includeDomains: input.includeDomains ? parseArray(input.includeDomains) : current.includeDomains,
-    excludeDomains: input.excludeDomains ? parseArray(input.excludeDomains) : current.excludeDomains,
+    keywords: input.keywords !== undefined ? parseArray(input.keywords) : current.keywords,
+    tags: input.tags !== undefined ? parseArray(input.tags) : current.tags,
+    extraFeeds: input.extraFeeds !== undefined ? parseArray(input.extraFeeds) : current.extraFeeds,
+    includeDomains: input.includeDomains !== undefined ? parseArray(input.includeDomains) : current.includeDomains,
+    excludeDomains: input.excludeDomains !== undefined ? parseArray(input.excludeDomains) : current.excludeDomains,
     sources: input.sources
       ? (parseArray(input.sources) as RadarSourceId[]).filter((s) => RADAR_SOURCES.some((d) => d.id === s))
       : current.sources,
