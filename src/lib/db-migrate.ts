@@ -310,6 +310,7 @@ export async function runMigrations() {
       await addColumn('Post', 'threadId', `TEXT`, 'threadId (Thread 分组 ID)')
       await addColumn('Post', 'threadOrder', `INTEGER NOT NULL DEFAULT 0`, 'threadOrder (Thread 内排序)')
       await addColumn('Post', 'publicId', `INTEGER`, 'publicId (公开数字 ID)')
+      await addColumn('Post', 'reposts', `INTEGER NOT NULL DEFAULT 0`, 'reposts (转发计数)')
       try {
         await prisma.$executeRawUnsafe(`UPDATE Post SET publicId = rowid WHERE publicId IS NULL`)
         console.log('[migrate] publicId 回填成功')

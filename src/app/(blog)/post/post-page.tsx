@@ -336,7 +336,13 @@ export async function renderPostPage(post: LoadedPost, session: { userId: string
                             {post.views + 1} 次浏览
                           </span>
                         </div>
-                        <PostActions postId={post.id} likes={post.likes} commentCount={post._count.comments} />
+                        <PostActions
+                          postId={post.id}
+                          postSlug={post.slug}
+                          likes={post.likes}
+                          commentCount={post._count.comments}
+                          isLoggedIn={!!session}
+                        />
                       </>
                     ) : (
                       <Link
@@ -474,7 +480,13 @@ export async function renderPostPage(post: LoadedPost, session: { userId: string
               <span>{conversationCount} 条对话</span>
             </div>
 
-            <PostActions postId={post.id} likes={post.likes} commentCount={post._count.comments} />
+            <PostActions
+              postId={post.id}
+              postSlug={post.slug}
+              likes={post.likes}
+              commentCount={post._count.comments}
+              isLoggedIn={!!session}
+            />
           </>
         )}
       </article>

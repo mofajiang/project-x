@@ -85,16 +85,20 @@ export default async function HomePage({ searchParams }: { searchParams: { tab?:
   }
 
   // 获取每篇文章的 threadId / threadOrder，以及各 thread 的帖子数
-  let threadMap = new Map<string, { threadId: string | null; threadOrder: number }>()
+  let threadMap = new Map<string, { threadId: string | null; threadOrder: number; reposts: number }>()
   let threadCountMap = new Map<string, number>()
   try {
     const postIds = posts.map((p) => p.id)
     if (postIds.length > 0) {
-      const threadRows = await prisma.$queryRawUnsafe<{ id: string; threadId: string | null; threadOrder: number }[]>(
-        `SELECT id, threadId, threadOrder FROM Post WHERE id IN (${postIds.map(() => '?').join(',')})`,
+      const threadRows = await prisma.$queryRawUnsafe<
+        { id: string; threadId: string | null; threadOrder: number; reposts: number }[]
+      >(
+        `SELECT id, threadId, threadOrder, COALESCE(reposts, 0) as reposts FROM Post WHERE id IN (${postIds.map(() => '?').join(',')})`,
         ...postIds
       )
-      threadMap = new Map(threadRows.map((r) => [r.id, { threadId: r.threadId, threadOrder: r.threadOrder }]))
+      threadMap = new Map(
+        threadRows.map((r) => [r.id, { threadId: r.threadId, threadOrder: r.threadOrder, reposts: r.reposts }])
+      )
       const threadIds = Array.from(new Set(threadRows.filter((r) => r.threadId).map((r) => r.threadId as string)))
       if (threadIds.length > 0) {
         const counts = await prisma.$queryRawUnsafe<{ threadId: string; count: number }[]>(
@@ -118,6 +122,7 @@ export default async function HomePage({ searchParams }: { searchParams: { tab?:
       threadId: tinfo?.threadId || null,
       threadOrder: tinfo?.threadOrder || 0,
       threadCount: tinfo?.threadId ? threadCountMap.get(tinfo.threadId) || 1 : null,
+      reposts: tinfo?.reposts || 0,
     }
   })
 

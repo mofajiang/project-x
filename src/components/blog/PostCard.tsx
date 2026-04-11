@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState, useMemo, memo } from 'react'
+import { useState, useMemo, memo, useEffect, useRef } from 'react'
 import { formatViews, relativeTime } from '@/lib/utils'
 import { getPostPath } from '@/lib/post-link'
 import toast from 'react-hot-toast'
@@ -30,6 +30,7 @@ interface Post {
   threadId?: string | null
   threadOrder?: number
   threadCount?: number | null
+  reposts?: number
 }
 
 interface PostCardProps {
@@ -44,6 +45,48 @@ export const PostCard = memo(function PostCard({ post, currentUserId, index = 0 
   const [liking, setLiking] = useState(false)
   const [likeAnim, setLikeAnim] = useState(false)
   const isAuthor = currentUserId && post.authorId && currentUserId === post.authorId
+  const [reposts, setReposts] = useState(post.reposts || 0)
+  const [repostOpen, setRepostOpen] = useState(false)
+  const [reposting, setReposting] = useState(false)
+  const repostContainerRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!repostOpen) return
+    const handler = (e: PointerEvent) => {
+      if (!repostContainerRef.current?.contains(e.target as Node)) setRepostOpen(false)
+    }
+    document.addEventListener('pointerdown', handler)
+    return () => document.removeEventListener('pointerdown', handler)
+  }, [repostOpen])
+  const handleRepost = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setRepostOpen(false)
+    if (!currentUserId) {
+      toast.error('请先登录')
+      return
+    }
+    setReposting(true)
+    const res = await fetch(`/api/posts/${post.id}/repost`, { method: 'POST' })
+    setReposting(false)
+    if (res.ok) {
+      setReposts((r) => r + 1)
+      toast.success('转发成功')
+    } else if (res.status === 401) {
+      toast.error('请先登录后转发')
+    } else {
+      toast.error('转发失败')
+    }
+  }
+  const handleQuote = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setRepostOpen(false)
+    if (!currentUserId) {
+      toast.error('请先登录')
+      return
+    }
+    window.dispatchEvent(new CustomEvent('open-compose', { detail: { quoteSlug: post.slug } }))
+  }
   const plainText = useMemo(
     () => post.plainText ?? (post.content ? stripMarkdownFn(post.content).trim() : ''),
     [post.plainText, post.content]
@@ -243,6 +286,83 @@ export const PostCard = memo(function PostCard({ post, currentUserId, index = 0 
                 </span>
                 {post._count.comments}
               </span>
+              {/* 转发带气泡 */}
+              <div className="relative" ref={repostContainerRef}>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setRepostOpen((o) => !o)
+                  }}
+                  disabled={reposting}
+                  className="group flex items-center gap-1 rounded-full px-2 py-1.5 text-[13px] transition-colors"
+                  style={{ color: repostOpen ? '#00BA7C' : 'var(--text-secondary)' }}
+                >
+                  <span
+                    className={`rounded-full p-1.5 transition-colors ${repostOpen ? 'bg-emerald-500/10 text-emerald-500' : 'group-hover:bg-emerald-500/10 group-hover:text-emerald-500'}`}
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.75"
+                    >
+                      <path d="M17 2 21 6l-4 4" />
+                      <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                      <path d="M7 22 3 18l4-4" />
+                      <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+                    </svg>
+                  </span>
+                  {reposts > 0 && <span>{reposts}</span>}
+                </button>
+                {repostOpen && (
+                  <div
+                    className="absolute bottom-full left-0 z-50 mb-1.5 overflow-hidden rounded-xl shadow-xl"
+                    style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', minWidth: 152 }}
+                  >
+                    <button
+                      onClick={handleRepost}
+                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-[14px] font-semibold transition-colors hover:bg-emerald-500/10 hover:text-emerald-500"
+                      style={{ color: 'var(--text-primary)' }}
+                    >
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.75"
+                      >
+                        <path d="M17 2 21 6l-4 4" />
+                        <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                        <path d="M7 22 3 18l4-4" />
+                        <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+                      </svg>
+                      转发
+                    </button>
+                    <button
+                      onClick={handleQuote}
+                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-[14px] font-semibold transition-colors hover:bg-sky-500/10 hover:text-sky-500"
+                      style={{ color: 'var(--text-primary)' }}
+                    >
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.75"
+                      >
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
+                      引用发帖
+                    </button>
+                  </div>
+                )}
+              </div>
               <button
                 onClick={handleLike}
                 disabled={liking}
