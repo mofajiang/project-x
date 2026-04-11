@@ -202,33 +202,62 @@ function buildYandexNewsUrl(keyword: string) {
   return `https://newssearch.yandex.ru/yandsearch?text=${encodeURIComponent(keyword)}&rpt=nnews2`
 }
 
+/** Decode common HTML entities */
+function decodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
+}
+
+/** Strip HTML tags and normalize whitespace */
+function stripHtml(input: string): string {
+  return decodeHtmlEntities(input.replace(/<[^>]+>/g, ' '))
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/** Deduplicate items by link hostname+pathname */
+function dedupeByLink(items: FeedItem[]): FeedItem[] {
+  const seen = new Set<string>()
+  return items.filter((item) => {
+    try {
+      const u = new URL(item.link)
+      const key = `${u.hostname}${u.pathname}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    } catch {
+      return true
+    }
+  })
+}
+
 /**
  * Parse news results from Sogou HTML search page.
  */
 function parseSogouHtml(html: string, keyword: string): FeedItem[] {
   const items: FeedItem[] = []
-  // Sogou news results use <h3><a href="...">title</a></h3> with class "vrTitle"
-  const blockRe = /<h3[^>]*class="[^"]*vr[Tt]itle[^"]*"[^>]*>[\s\S]*?<\/h3>[\s\S]*?(?=<h3|<div\s+id="pagebar"|$)/gi
+  // Strategy 1: vrTitle class (desktop layout)
+  const blockRe = /<h3[^>]*class="[^"]*vr[Tt]itle[^"]*"[^>]*>([\s\S]*?)<\/h3>/gi
   let m: RegExpExecArray | null
   while ((m = blockRe.exec(html)) !== null && items.length < MAX_FEED_ITEMS) {
-    const block = m[0]
-    const linkMatch = block.match(/<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i)
+    const h3 = m[1]
+    const linkMatch = h3.match(/<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i)
     if (!linkMatch) continue
     const link = linkMatch[1]
-    const title = linkMatch[2]
-      .replace(/<[^>]+>/g, '')
-      .replace(/\s+/g, ' ')
-      .trim()
-    if (!title || !link) continue
+    const title = stripHtml(linkMatch[2])
+    if (!title || title.length < 4 || !link) continue
+    const afterH3 = html.slice((m.index || 0) + m[0].length, (m.index || 0) + m[0].length + 800)
     const descMatch =
-      block.match(/<p[^>]*class="[^"]*star-wiki[^"]*"[^>]*>([\s\S]*?)<\/p>/i) ||
-      block.match(/<div[^>]*class="[^"]*rb[^"]*"[^>]*>([\s\S]*?)<\/div>/i)
-    const summary = descMatch
-      ? descMatch[1]
-          .replace(/<[^>]+>/g, '')
-          .replace(/\s+/g, ' ')
-          .trim()
-      : ''
+      afterH3.match(/<p[^>]*>([\s\S]*?)<\/p>/i) ||
+      afterH3.match(/<div[^>]*class="[^"]*rb[^"]*"[^>]*>([\s\S]*?)<\/div>/i)
+    const summary = descMatch ? stripHtml(descMatch[1] || descMatch[2] || '') : ''
     items.push({
       title,
       link,
@@ -238,16 +267,33 @@ function parseSogouHtml(html: string, keyword: string): FeedItem[] {
       keywords: [keyword],
     })
   }
-  // Fallback: generic <a> with newTitle class
+  // Strategy 2: news-result class (mobile/alt layout)
   if (items.length === 0) {
-    const fallbackRe = /<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi
-    while ((m = fallbackRe.exec(html)) !== null && items.length < MAX_FEED_ITEMS) {
+    const altRe =
+      /<div[^>]*class="[^"]*news[_-]?result[^"]*"[^>]*>([\s\S]*?)(?=<div[^>]*class="[^"]*news[_-]?result|$)/gi
+    while ((m = altRe.exec(html)) !== null && items.length < MAX_FEED_ITEMS) {
+      const block = m[1]
+      const linkMatch = block.match(/<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i)
+      if (!linkMatch) continue
+      const title = stripHtml(linkMatch[2])
+      if (!title || title.length < 4) continue
+      items.push({
+        title,
+        link: linkMatch[1],
+        summary: '',
+        publishedAt: new Date().toISOString(),
+        source: '搜狗资讯',
+        keywords: [keyword],
+      })
+    }
+  }
+  // Strategy 3: broad fallback — external links only
+  if (items.length === 0) {
+    const fbRe = /<a[^>]+href="(https?:\/\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/gi
+    while ((m = fbRe.exec(html)) !== null && items.length < MAX_FEED_ITEMS) {
       const link = m[1]
-      const title = m[2]
-        .replace(/<[^>]+>/g, '')
-        .replace(/\s+/g, ' ')
-        .trim()
-      if (!title || title.length < 6 || !link.startsWith('http')) continue
+      const title = stripHtml(m[2])
+      if (!title || title.length < 6) continue
       if (link.includes('sogou.com') && !link.includes('/link?')) continue
       items.push({
         title,
@@ -259,7 +305,7 @@ function parseSogouHtml(html: string, keyword: string): FeedItem[] {
       })
     }
   }
-  return items
+  return dedupeByLink(items)
 }
 
 /**
@@ -267,47 +313,45 @@ function parseSogouHtml(html: string, keyword: string): FeedItem[] {
  */
 function parseDuckDuckGoHtml(html: string, keyword: string): FeedItem[] {
   const items: FeedItem[] = []
-  // DDG HTML lite uses <a class="result__a" href="...">title</a>
+  // Strategy 1: result__a class (HTML lite)
   const resultRe = /<a[^>]+class="[^"]*result__a[^"]*"[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi
   let m: RegExpExecArray | null
   while ((m = resultRe.exec(html)) !== null && items.length < MAX_FEED_ITEMS) {
     let link = m[1]
-    const title = m[2]
-      .replace(/<[^>]+>/g, '')
-      .replace(/\s+/g, ' ')
-      .trim()
+    const title = stripHtml(m[2])
     if (!title || !link) continue
-    // DDG sometimes wraps links in a redirect
     const uddg = link.match(/uddg=([^&]+)/)
     if (uddg) {
       try {
         link = decodeURIComponent(uddg[1])
       } catch {
-        /* keep original */
+        /* keep */
       }
     }
+    if (!link.startsWith('http')) continue
+    const afterLink = html.slice((m.index || 0) + m[0].length, (m.index || 0) + m[0].length + 600)
+    const snippetMatch =
+      afterLink.match(/<a[^>]+class="[^"]*result__snippet[^"]*"[^>]*>([\s\S]*?)<\/a>/i) ||
+      afterLink.match(/<td[^>]*class="[^"]*result-snippet[^"]*"[^>]*>([\s\S]*?)<\/td>/i)
+    const summary = snippetMatch ? stripHtml(snippetMatch[1]) : ''
     items.push({
       title,
       link,
-      summary: '',
+      summary: toSummary(summary),
       publishedAt: new Date().toISOString(),
       source: 'DuckDuckGo',
       keywords: [keyword],
     })
   }
-  // Fallback: any <a> with class containing "result"
+  // Strategy 2: web-result with data- attributes
   if (items.length === 0) {
-    const fbRe = /<a[^>]+href="(https?:\/\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/gi
-    while ((m = fbRe.exec(html)) !== null && items.length < MAX_FEED_ITEMS) {
-      const link = m[1]
-      const title = m[2]
-        .replace(/<[^>]+>/g, '')
-        .replace(/\s+/g, ' ')
-        .trim()
-      if (!title || title.length < 6 || link.includes('duckduckgo.com')) continue
+    const altRe = /<a[^>]+href="(https?:\/\/[^"]+)"[^>]*data-[^>]*>([\s\S]*?)<\/a>/gi
+    while ((m = altRe.exec(html)) !== null && items.length < MAX_FEED_ITEMS) {
+      const title = stripHtml(m[2])
+      if (!title || title.length < 6 || m[1].includes('duckduckgo.com')) continue
       items.push({
         title,
-        link,
+        link: m[1],
         summary: '',
         publishedAt: new Date().toISOString(),
         source: 'DuckDuckGo',
@@ -315,7 +359,23 @@ function parseDuckDuckGoHtml(html: string, keyword: string): FeedItem[] {
       })
     }
   }
-  return items
+  // Strategy 3: broad fallback
+  if (items.length === 0) {
+    const fbRe = /<a[^>]+href="(https?:\/\/(?!duckduckgo\.com)[^"]+)"[^>]*>([\s\S]*?)<\/a>/gi
+    while ((m = fbRe.exec(html)) !== null && items.length < MAX_FEED_ITEMS) {
+      const title = stripHtml(m[2])
+      if (!title || title.length < 6) continue
+      items.push({
+        title,
+        link: m[1],
+        summary: '',
+        publishedAt: new Date().toISOString(),
+        source: 'DuckDuckGo',
+        keywords: [keyword],
+      })
+    }
+  }
+  return dedupeByLink(items)
 }
 
 /**
@@ -323,16 +383,13 @@ function parseDuckDuckGoHtml(html: string, keyword: string): FeedItem[] {
  */
 function parseYandexHtml(html: string, keyword: string): FeedItem[] {
   const items: FeedItem[] = []
-  // Yandex news results: <a class="mg-snippet__url" href="...">
-  const re =
-    /<a[^>]+class="[^"]*snippet[^"]*"[^>]+href="([^"]+)"[^>]*>[\s\S]*?<\/a>[\s\S]*?(?=<a[^>]+class="[^"]*snippet|$)/gi
+  // Strategy 1: mg-snippet or news-snippet classes
+  const snippetRe = /<a[^>]+class="[^"]*(?:mg-snippet|news-snippet)[^"]*"[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi
   let m: RegExpExecArray | null
-  while ((m = re.exec(html)) !== null && items.length < MAX_FEED_ITEMS) {
+  while ((m = snippetRe.exec(html)) !== null && items.length < MAX_FEED_ITEMS) {
     const link = m[1]
-    const block = m[0]
-    const titleMatch = block.match(/<[^>]+class="[^"]*title[^"]*"[^>]*>([\s\S]*?)<\/[^>]+>/i)
-    const title = titleMatch ? titleMatch[1].replace(/<[^>]+>/g, '').trim() : ''
-    if (!title || !link.startsWith('http')) continue
+    const title = stripHtml(m[2])
+    if (!title || title.length < 4 || !link.startsWith('http')) continue
     items.push({
       title,
       link,
@@ -342,16 +399,15 @@ function parseYandexHtml(html: string, keyword: string): FeedItem[] {
       keywords: [keyword],
     })
   }
-  // Fallback
+  // Strategy 2: snippet class with title child
   if (items.length === 0) {
-    const fbRe = /<a[^>]+href="(https?:\/\/(?!yandex\.)[^"]+)"[^>]*>([\s\S]*?)<\/a>/gi
-    while ((m = fbRe.exec(html)) !== null && items.length < MAX_FEED_ITEMS) {
+    const re = /<a[^>]+class="[^"]*snippet[^"]*"[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi
+    while ((m = re.exec(html)) !== null && items.length < MAX_FEED_ITEMS) {
       const link = m[1]
-      const title = m[2]
-        .replace(/<[^>]+>/g, '')
-        .replace(/\s+/g, ' ')
-        .trim()
-      if (!title || title.length < 6) continue
+      const block = m[2]
+      const titleMatch = block.match(/<[^>]+class="[^"]*title[^"]*"[^>]*>([\s\S]*?)<\/[^>]+>/i)
+      const title = titleMatch ? stripHtml(titleMatch[1]) : stripHtml(block)
+      if (!title || title.length < 4 || !link.startsWith('http')) continue
       items.push({
         title,
         link,
@@ -362,7 +418,42 @@ function parseYandexHtml(html: string, keyword: string): FeedItem[] {
       })
     }
   }
-  return items
+  // Strategy 3: data-url attribute (SPA-rendered snippets)
+  if (items.length === 0) {
+    const dataRe = /data-url="(https?:\/\/(?!yandex\.)[^"]+)"/gi
+    while ((m = dataRe.exec(html)) !== null && items.length < MAX_FEED_ITEMS) {
+      const link = m[1]
+      const after = html.slice(m.index, m.index + 500)
+      const titleMatch = after.match(/class="[^"]*title[^"]*"[^>]*>([\s\S]*?)<\//i)
+      const title = titleMatch ? stripHtml(titleMatch[1]) : ''
+      if (!title || title.length < 4) continue
+      items.push({
+        title,
+        link,
+        summary: '',
+        publishedAt: new Date().toISOString(),
+        source: 'Yandex News',
+        keywords: [keyword],
+      })
+    }
+  }
+  // Strategy 4: broad external links fallback
+  if (items.length === 0) {
+    const fbRe = /<a[^>]+href="(https?:\/\/(?!yandex\.|ya\.)[^"]+)"[^>]*>([\s\S]*?)<\/a>/gi
+    while ((m = fbRe.exec(html)) !== null && items.length < MAX_FEED_ITEMS) {
+      const title = stripHtml(m[2])
+      if (!title || title.length < 6) continue
+      items.push({
+        title,
+        link: m[1],
+        summary: '',
+        publishedAt: new Date().toISOString(),
+        source: 'Yandex News',
+        keywords: [keyword],
+      })
+    }
+  }
+  return dedupeByLink(items)
 }
 
 function getTagText(xml: string, tag: string): string {
@@ -449,9 +540,40 @@ function randomUserAgent() {
   return BROWSER_USER_AGENTS[Math.floor(Math.random() * BROWSER_USER_AGENTS.length)]
 }
 
+/** Random delay between min and max ms */
+function randomDelay(minMs: number, maxMs: number): Promise<void> {
+  const ms = minMs + Math.random() * (maxMs - minMs)
+  return new Promise((r) => setTimeout(r, ms))
+}
+
+/** Simple concurrency limiter */
+function createLimiter(concurrency: number) {
+  let running = 0
+  const queue: Array<() => void> = []
+  return <T>(fn: () => Promise<T>): Promise<T> =>
+    new Promise<T>((resolve, reject) => {
+      const run = () => {
+        running++
+        fn()
+          .then(resolve, reject)
+          .finally(() => {
+            running--
+            const next = queue.shift()
+            if (next) next()
+          })
+      }
+      if (running < concurrency) run()
+      else queue.push(run)
+    })
+}
+
 async function fetchXml(url: string, retries = 1): Promise<string> {
   let lastError: Error | null = null
   for (let attempt = 0; attempt <= retries; attempt++) {
+    // Random pre-request jitter (300-1200ms) to avoid burst patterns
+    if (attempt === 0) await randomDelay(300, 1200)
+    // Adaptive timeout: increase on retry
+    const timeout = FETCH_TIMEOUT_MS + attempt * 4000
     try {
       const res = await fetch(url, {
         headers: {
@@ -459,15 +581,17 @@ async function fetchXml(url: string, retries = 1): Promise<string> {
           Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
           'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
           'Cache-Control': 'no-cache',
+          Referer: 'https://www.google.com/',
         },
         cache: 'no-store',
-        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+        signal: AbortSignal.timeout(timeout),
       })
       if (!res.ok) throw new Error(`抓取失败 ${res.status}`)
       return await res.text()
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err))
-      if (attempt < retries) await new Promise((r) => setTimeout(r, 1500))
+      // Exponential backoff with jitter on retry
+      if (attempt < retries) await randomDelay(1500 + attempt * 1000, 3000 + attempt * 2000)
     }
   }
   throw lastError!
@@ -929,32 +1053,34 @@ async function collectItems(
   config: KeywordRadarConfig,
   logger: (level: 'info' | 'success' | 'error', message: string) => void
 ) {
-  const tasks: Array<{ label: string; task: Promise<FeedItem[]> }> = []
   const activeSources = config.sources.length > 0 ? config.sources : (['google'] as RadarSourceId[])
+  const taskDefs: Array<{ label: string; run: () => Promise<FeedItem[]> }> = []
   for (const keyword of config.keywords) {
     for (const sourceId of activeSources) {
       const srcLabel = RADAR_SOURCES.find((s) => s.id === sourceId)?.label || sourceId
-      tasks.push({
+      taskDefs.push({
         label: `${srcLabel} · ${keyword}`,
-        task: fetchFeedByKeyword(keyword, sourceId),
+        run: () => fetchFeedByKeyword(keyword, sourceId),
       })
     }
   }
   for (const feedUrl of config.extraFeeds) {
-    tasks.push({ label: `RSS ${feedUrl}`, task: fetchCustomFeed(feedUrl, config.keywords) })
+    taskDefs.push({ label: `RSS ${feedUrl}`, run: () => fetchCustomFeed(feedUrl, config.keywords) })
   }
   for (const tmpl of config.customSourceTemplates) {
     for (const keyword of config.keywords) {
       const url = tmpl.urlTemplate.replace(/\{keyword\}/g, encodeURIComponent(keyword))
-      tasks.push({ label: `${tmpl.name} · ${keyword}`, task: fetchCustomFeed(url, [keyword]) })
+      taskDefs.push({ label: `${tmpl.name} · ${keyword}`, run: () => fetchCustomFeed(url, [keyword]) })
     }
   }
-  logger('info', `开始抓取 ${tasks.length} 个来源`)
-  const settled = await Promise.allSettled(tasks.map((item) => item.task))
+  logger('info', `开始抓取 ${taskDefs.length} 个来源（并发上限 3）`)
+  // Rate-limited concurrent execution (max 3 at a time)
+  const limit = createLimiter(3)
+  const settled = await Promise.allSettled(taskDefs.map((def) => limit(def.run)))
   const deduped = new Map<string, FeedItem>()
   for (let index = 0; index < settled.length; index++) {
     const result = settled[index]
-    const label = tasks[index]?.label || `来源 ${index + 1}`
+    const label = taskDefs[index]?.label || `来源 ${index + 1}`
     if (result.status !== 'fulfilled') {
       logger('error', `${label} 抓取失败：${result.reason instanceof Error ? result.reason.message : '未知错误'}`)
       continue
@@ -974,6 +1100,24 @@ async function collectItems(
       })
     }
   }
+  // Per-source statistics summary
+  const stats: Record<string, { ok: number; fail: number; items: number }> = {}
+  for (let i = 0; i < taskDefs.length; i++) {
+    const label = taskDefs[i].label.split(' · ')[0] || taskDefs[i].label
+    if (!stats[label]) stats[label] = { ok: 0, fail: 0, items: 0 }
+    if (settled[i].status === 'fulfilled') {
+      stats[label].ok++
+      stats[label].items += (settled[i] as PromiseFulfilledResult<FeedItem[]>).value.length
+    } else {
+      stats[label].fail++
+    }
+  }
+  const statsLines = Object.entries(stats).map(([src, s]) => {
+    const status = s.fail > 0 ? `${s.ok}✓ ${s.fail}✗` : `${s.ok}✓`
+    return `${src}: ${status}，共 ${s.items} 条`
+  })
+  logger('info', `抓取统计：${statsLines.join(' | ')}`)
+  logger('info', `去重后共 ${deduped.size} 条待处理`)
   return Array.from(deduped.values()).sort(
     (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
   )
