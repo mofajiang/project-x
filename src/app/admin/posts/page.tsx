@@ -94,7 +94,7 @@ export default function AdminPostsPage() {
   const deletePost = async (id: string, title: string) => {
     if (!confirm(`确定删除「${title}」？`)) return
     await fetch(`/api/admin/posts/${id}`, { method: 'DELETE' })
-    fetchPosts(page, search, status)
+    fetchPosts(page, search, status, tag)
     toast.success('已删除')
   }
 
