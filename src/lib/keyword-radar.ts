@@ -138,8 +138,39 @@ const DEFAULT_CONFIG: KeywordRadarConfig = {
   webhookEnabled: false,
 }
 
-const FETCH_TIMEOUT_MS = 8000
+const FETCH_TIMEOUT_MS = 10000
 const MAX_FEED_ITEMS = 12
+/** Source-specific retry counts (HTML parsers need more retries due to anti-bot) */
+const SOURCE_RETRIES: Partial<Record<RadarSourceId, number>> = {
+  zhihu: 2,
+  sogou: 2,
+  duckduckgo: 2,
+  yandex: 2,
+}
+
+/** In-memory fetch cache to avoid duplicate requests within a single run */
+let fetchCacheMap = new Map<string, { data: string; ts: number }>()
+const FETCH_CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
+function getCachedFetch(url: string): string | null {
+  const entry = fetchCacheMap.get(url)
+  if (entry && Date.now() - entry.ts < FETCH_CACHE_TTL) return entry.data
+  return null
+}
+
+function setCachedFetch(url: string, data: string) {
+  fetchCacheMap.set(url, { data, ts: Date.now() })
+  // Limit cache size
+  if (fetchCacheMap.size > 100) {
+    const firstKey = fetchCacheMap.keys().next().value
+    if (firstKey) fetchCacheMap.delete(firstKey)
+  }
+}
+
+/** Clear fetch cache (call at start of each run) */
+function clearFetchCache() {
+  fetchCacheMap = new Map<string, { data: string; ts: number }>()
+}
 const MAX_SEEN_ROWS = 800
 const RADAR_TIME_ZONE = 'Asia/Shanghai'
 
@@ -315,6 +346,9 @@ function bigrams(text: string): string[] {
 
 /** Dice coefficient similarity between two strings (0-1) */
 function titleSimilarity(a: string, b: string): number {
+  // Quick length-ratio check — very different lengths are unlikely similar
+  const lenRatio = a.length > b.length ? a.length / b.length : b.length / a.length
+  if (lenRatio > 3) return 0
   const ba = bigrams(a)
   const bb = bigrams(b)
   if (ba.length === 0 || bb.length === 0) return 0
@@ -756,6 +790,24 @@ function inspectAiDigestQuality(content: string, config: KeywordRadarConfig) {
   if (config.standardMarkdown && bareUrlCount > markdownLinkCount + 1) return { ok: false, reason: '裸链接过多' }
   if (config.standardMarkdown && htmlTagCount > 0) return { ok: false, reason: '包含 HTML 标签' }
   if (longLineCount > 0) return { ok: false, reason: '存在超长链接行' }
+  // Check minimum content length (excluding marker and headings)
+  const plainBody = body
+    .replace(/^#{1,6}\s+.*$/gm, '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .trim()
+  if (plainBody.length < 200) return { ok: false, reason: '内容过短，可能生成不完整' }
+  // Check for repetitive content (same sentence repeated)
+  const sentences = plainBody.split(/[。！？\n]+/).filter((s) => s.trim().length > 10)
+  if (sentences.length >= 4) {
+    const uniqueSentences = new Map<string, boolean>()
+    let dupeCount = 0
+    for (const s of sentences) {
+      const key = s.trim().slice(0, 40)
+      if (uniqueSentences.has(key)) dupeCount++
+      else uniqueSentences.set(key, true)
+    }
+    if (dupeCount > sentences.length * 0.3) return { ok: false, reason: 'AI 输出内容重复度过高' }
+  }
   return { ok: true }
 }
 
@@ -799,12 +851,16 @@ function createLimiter(concurrency: number) {
 }
 
 async function fetchXml(url: string, retries = 1): Promise<string> {
+  // Check in-memory cache first
+  const cached = getCachedFetch(url)
+  if (cached) return cached
+
   let lastError: Error | null = null
   for (let attempt = 0; attempt <= retries; attempt++) {
     // Random pre-request jitter (300-1200ms) to avoid burst patterns
     if (attempt === 0) await randomDelay(300, 1200)
     // Adaptive timeout: increase on retry
-    const timeout = FETCH_TIMEOUT_MS + attempt * 4000
+    const timeout = FETCH_TIMEOUT_MS + attempt * 5000
     try {
       const res = await fetch(url, {
         headers: {
@@ -817,12 +873,24 @@ async function fetchXml(url: string, retries = 1): Promise<string> {
         cache: 'no-store',
         signal: AbortSignal.timeout(timeout),
       })
+      if (res.status === 429) {
+        // Rate limited — wait longer before retry
+        if (attempt < retries) await randomDelay(3000 + attempt * 3000, 6000 + attempt * 4000)
+        throw new Error(`请求被限流 429`)
+      }
+      if (res.status >= 500 && attempt < retries) {
+        // Server error — retry with backoff
+        await randomDelay(2000 + attempt * 2000, 4000 + attempt * 3000)
+        throw new Error(`服务器错误 ${res.status}`)
+      }
       if (!res.ok) throw new Error(`抓取失败 ${res.status}`)
-      return await res.text()
+      const text = await res.text()
+      setCachedFetch(url, text)
+      return text
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err))
       // Exponential backoff with jitter on retry
-      if (attempt < retries) await randomDelay(1500 + attempt * 1000, 3000 + attempt * 2000)
+      if (attempt < retries) await randomDelay(1500 + attempt * 1500, 3000 + attempt * 2500)
     }
   }
   throw lastError!
@@ -880,50 +948,63 @@ function parseZhihuHtml(html: string, keyword: string): FeedItem[] {
 
 async function fetchDevtoArticles(keyword: string): Promise<FeedItem[]> {
   const url = buildDevtoFeedUrl(keyword)
-  try {
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': randomUserAgent(),
-        Accept: 'application/json',
-      },
-      cache: 'no-store',
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    })
-    if (!res.ok) return []
-    const data = (await res.json()) as {
-      result?: Array<{
-        title?: string
-        path?: string
-        user?: { name?: string }
-        tag_list?: string[]
-        published_at_int?: number
-        body_text?: string
-      }>
+  for (let attempt = 0; attempt <= 1; attempt++) {
+    try {
+      if (attempt === 0) await randomDelay(200, 800)
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': randomUserAgent(),
+          Accept: 'application/json',
+        },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS + attempt * 4000),
+      })
+      if (!res.ok) {
+        if (attempt < 1 && res.status >= 500) {
+          await randomDelay(1500, 3000)
+          continue
+        }
+        return []
+      }
+      const data = (await res.json()) as {
+        result?: Array<{
+          title?: string
+          path?: string
+          user?: { name?: string }
+          tag_list?: string[]
+          published_at_int?: number
+          body_text?: string
+        }>
+      }
+      const articles = data.result || (Array.isArray(data) ? data : [])
+      return (
+        articles as Array<{
+          title?: string
+          path?: string
+          user?: { name?: string }
+          tag_list?: string[]
+          published_at_int?: number
+          body_text?: string
+        }>
+      )
+        .slice(0, MAX_FEED_ITEMS)
+        .filter((a) => a.title && a.path)
+        .map((a) => ({
+          title: String(a.title || ''),
+          link: a.path?.startsWith('http') ? a.path : `https://dev.to${a.path}`,
+          summary: toSummary(a.body_text || '', 200),
+          publishedAt: a.published_at_int
+            ? new Date(a.published_at_int * 1000).toISOString()
+            : new Date().toISOString(),
+          source: a.user?.name ? `DEV.to / ${a.user.name}` : 'DEV.to',
+          keywords: [keyword],
+        }))
+    } catch {
+      if (attempt < 1) continue
+      return []
     }
-    const articles = data.result || (Array.isArray(data) ? data : [])
-    return (
-      articles as Array<{
-        title?: string
-        path?: string
-        user?: { name?: string }
-        tag_list?: string[]
-        published_at_int?: number
-        body_text?: string
-      }>
-    )
-      .slice(0, MAX_FEED_ITEMS)
-      .filter((a) => a.title && a.path)
-      .map((a) => ({
-        title: String(a.title || ''),
-        link: a.path?.startsWith('http') ? a.path : `https://dev.to${a.path}`,
-        summary: toSummary(a.body_text || '', 200),
-        publishedAt: a.published_at_int ? new Date(a.published_at_int * 1000).toISOString() : new Date().toISOString(),
-        source: a.user?.name ? `DEV.to / ${a.user.name}` : 'DEV.to',
-        keywords: [keyword],
-      }))
-  } catch {
-    return []
   }
+  return []
 }
 
 async function fetchFeedByKeyword(keyword: string, sourceId: RadarSourceId = 'google'): Promise<FeedItem[]> {
@@ -963,7 +1044,8 @@ async function fetchFeedByKeyword(keyword: string, sourceId: RadarSourceId = 'go
 
   // HTML-based sources
   if (htmlUrlMap[sourceId]) {
-    const html = await fetchXml(htmlUrlMap[sourceId]!)
+    const retries = SOURCE_RETRIES[sourceId] || 1
+    const html = await fetchXml(htmlUrlMap[sourceId]!, retries)
     const htmlParsers: Partial<Record<RadarSourceId, (h: string, kw: string) => FeedItem[]>> = {
       sogou: parseSogouHtml,
       duckduckgo: parseDuckDuckGoHtml,
@@ -1043,7 +1125,10 @@ async function fetchArticleBody(url: string, maxChars = 500): Promise<string> {
 /** Enrich items with article body text (concurrent, best-effort) */
 async function enrichItemBodies(items: FeedItem[], maxItems = 8): Promise<void> {
   const limit = createLimiter(3)
-  const targets = items.slice(0, maxItems).filter((item) => !item.bodyText && item.link)
+  // Skip items that already have bodyText or have sufficiently detailed summaries
+  const targets = items
+    .slice(0, maxItems)
+    .filter((item) => !item.bodyText && item.link && (!item.summary || item.summary.length < 100))
   await Promise.allSettled(
     targets.map((item) =>
       limit(async () => {
@@ -1335,21 +1420,36 @@ async function generateAiDigestMarkdown(items: FeedItem[], config: KeywordRadarC
     })
     .join('\n\n')
 
+  // Analyze keyword distribution to help AI group content
+  const keywordGroups: Record<string, number> = {}
+  for (const item of items) {
+    for (const kw of item.keywords) {
+      keywordGroups[kw] = (keywordGroups[kw] || 0) + 1
+    }
+  }
+  const keywordHint = Object.entries(keywordGroups)
+    .sort((a, b) => b[1] - a[1])
+    .map(([kw, cnt]) => `${kw}(${cnt}条)`)
+    .join('、')
+
   const systemPrompt = `你是一位经验丰富的中文科技 / 行业日报编辑。你的工作是将一组原始新闻线索和博客文章整理成一篇"像真正编辑写的日报"，而不是简单的链接列表。
 要求：
 1. 使用中文输出，文风自然流畅，像站长写给读者的日报。
-2. 整体结构：标题 → 编辑导语（2-3 句话概括今天的整体动态和亮点）→ 若干主题分区 → 编辑点评结尾。
-3. 按主题或领域对线索进行分组，每组用一个小标题概括主题，而非逐条编号。
+2. 整体结构：一级标题（含日期）→ 编辑导语（2-3 句话概括今天的整体动态和亮点）→ 若干主题分区（二级标题）→ 编辑点评结尾。
+3. 按主题或领域对线索进行分组，每组用一个二级标题概括主题，而非逐条编号。当前线索关键词分布：${keywordHint}，可据此合理分组。
 4. 核心要求——提炼与重组：
    - 每条线索用 2-4 句话概括其核心内容和意义，不要只写标题和链接。
+   - 如果提供了正文节选，请结合正文节选来生成更丰富的摘要。
    - 用自己的语言重新组织信息，像真正的编辑一样分析和解读。
    - 如果有多条相关线索，合并讨论，指出它们的关联性或趋势。
    - 在每段摘要末尾附上原文链接，格式为 [阅读原文](链接) 或 [来源名称](链接)。
 5. 不要编造未提供的事实，但可以适当加入简短的编辑评论和观点。
-6. 不输出 YAML，不输出代码块围栏。
+6. 不输出 YAML，不输出代码块围栏，不输出 HTML 标签。
 7. 第一行必须保留这个标记且不要改动：${marker}
 8. ${config.standardMarkdown ? '必须使用标准 Markdown 语法输出，只使用标题、段落、列表、强调和 Markdown 链接；不要输出 HTML 标签、表格、裸链接或超长连续文本。所有外链都写成 [文字](链接) 形式。' : '保持清晰可读的 Markdown 结构。'}
-9. 来源包括新闻网站和个人博客，对博客文章适当标注"来自博客"或作者名。`
+9. 来源包括新闻网站和个人博客，对博客文章适当标注"来自博客"或作者名。
+10. 输出长度控制：日报总字数建议 800-2000 字（不含链接），不要过短也不要灌水。
+11. 确保每个主题分区至少包含一个 Markdown 链接指向原文。`
 
   const userPrompt = `${config.prompt ? `${config.prompt}\n\n` : ''}关键词：${config.keywords.join('、')}\n标签：${config.tags.join('、')}\n日期：${formatDateLabel(dateKey)}\n\n线索如下：\n\n${payload}`
 
@@ -1360,7 +1460,7 @@ async function generateAiDigestMarkdown(items: FeedItem[], config: KeywordRadarC
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },
     ],
-    { maxTokens: 3200, temperature: 0.45 }
+    { maxTokens: 4000, temperature: 0.4 }
   )
   return normalizeRadarMarkdown(result && result.includes(marker) ? result : `${marker}\n\n${result}`, config, dateKey)
 }
@@ -1730,15 +1830,21 @@ async function collectItems(
     'info',
     `开始抓取 ${taskDefs.length} 个来源（并发上限 3）${degradedSources.size > 0 ? `（${degradedSources.size} 个已降级）` : ''}`
   )
-  // Rate-limited concurrent execution with timing
+  // Rate-limited concurrent execution with timing and per-task timeout
   const limit = createLimiter(3)
   const timings: number[] = []
+  const PER_TASK_TIMEOUT = 30000 // 30s hard limit per task
   const settled = await Promise.allSettled(
     taskDefs.map((def) =>
       limit(async () => {
         const start = Date.now()
         try {
-          const result = await def.run()
+          const result = await Promise.race([
+            def.run(),
+            new Promise<FeedItem[]>((_, reject) =>
+              setTimeout(() => reject(new Error('单任务超时 30s')), PER_TASK_TIMEOUT)
+            ),
+          ])
           timings.push(Date.now() - start)
           return result
         } catch (err) {
@@ -1854,6 +1960,7 @@ export async function runKeywordRadar(options: { reason: 'manual' | 'scheduler' 
     const config = await getKeywordRadarConfig()
     const nowIso = new Date().toISOString()
     const dateKey = getTodayKey()
+    clearFetchCache()
     log('info', `开始执行内容雷达（${options.reason === 'manual' ? '手动触发' : '定时触发'}）`)
 
     if (options.reason === 'scheduler' && !config.enabled) {
