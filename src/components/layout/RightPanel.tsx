@@ -87,7 +87,7 @@ export async function RightPanel({ siteDesc, social, widgets = [], copyright = '
   return (
     <aside
       aria-label="侧边栏"
-      className="sticky top-0 hidden h-screen w-[350px] overflow-y-auto px-4 py-4 lg:block"
+      className="no-scrollbar sticky top-0 hidden h-screen w-[350px] overflow-y-auto px-4 py-4 lg:block"
       style={{ WebkitFontSmoothing: 'antialiased' }}
     >
       {enabledWidgets.map((widget, i) => {

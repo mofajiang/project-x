@@ -170,6 +170,15 @@ body {
   background: var(--text-secondary);
 }
 
+/* 隐藏滚动条（保留滚动功能，视觉上彻底隐藏，与 X 一致） */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE / Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
 /* 文字选中颜色 */
 ::selection {
   background: rgba(29, 155, 240, 0.25);
