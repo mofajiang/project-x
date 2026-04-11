@@ -15,6 +15,7 @@ export const ADMIN_NAV_GROUPS = [
 export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { label: '仪表盘', href: '/admin', icon: '📊', group: 'content' },
   { label: '文章管理', href: '/admin/posts', icon: '📝', group: 'content' },
+  { label: '内容雷达', href: '/admin/content-radar', icon: '🛰️', group: 'content' },
   { label: '评论管理', href: '/admin/comments', icon: '💬', badge: true, group: 'content' },
   { label: '标签管理', href: '/admin/tags', icon: '🏷', group: 'content' },
   { label: '友链管理', href: '/admin/friend-links', icon: '🔗', group: 'content' },

@@ -311,6 +311,59 @@ export async function runMigrations() {
       await addColumn('Post', 'threadOrder', `INTEGER NOT NULL DEFAULT 0`, 'threadOrder (Thread 内排序)')
       await addColumn('Post', 'publicId', `INTEGER`, 'publicId (公开数字 ID)')
       await addColumn('Post', 'reposts', `INTEGER NOT NULL DEFAULT 0`, 'reposts (转发计数)')
+      await addColumn('SiteConfig', 'keywordRadarEnabled', `INTEGER NOT NULL DEFAULT 0`, 'keywordRadarEnabled')
+      await addColumn('SiteConfig', 'keywordRadarKeywords', `TEXT NOT NULL DEFAULT ''`, 'keywordRadarKeywords')
+      await addColumn('SiteConfig', 'keywordRadarTags', `TEXT NOT NULL DEFAULT ''`, 'keywordRadarTags')
+      await addColumn('SiteConfig', 'keywordRadarExtraFeeds', `TEXT NOT NULL DEFAULT ''`, 'keywordRadarExtraFeeds')
+      await addColumn(
+        'SiteConfig',
+        'keywordRadarIncludeDomains',
+        `TEXT NOT NULL DEFAULT ''`,
+        'keywordRadarIncludeDomains'
+      )
+      await addColumn(
+        'SiteConfig',
+        'keywordRadarExcludeDomains',
+        `TEXT NOT NULL DEFAULT ''`,
+        'keywordRadarExcludeDomains'
+      )
+      await addColumn(
+        'SiteConfig',
+        'keywordRadarScheduleMinutes',
+        `INTEGER NOT NULL DEFAULT 180`,
+        'keywordRadarScheduleMinutes'
+      )
+      await addColumn('SiteConfig', 'keywordRadarAutoPublish', `INTEGER NOT NULL DEFAULT 1`, 'keywordRadarAutoPublish')
+      await addColumn('SiteConfig', 'keywordRadarUseAi', `INTEGER NOT NULL DEFAULT 1`, 'keywordRadarUseAi')
+      await addColumn('SiteConfig', 'keywordRadarPrompt', `TEXT NOT NULL DEFAULT ''`, 'keywordRadarPrompt')
+      await addColumn('SiteConfig', 'keywordRadarLastRunAt', `TEXT NOT NULL DEFAULT ''`, 'keywordRadarLastRunAt')
+      await addColumn('SiteConfig', 'keywordRadarLastStatus', `TEXT NOT NULL DEFAULT ''`, 'keywordRadarLastStatus')
+      await addColumn('SiteConfig', 'keywordRadarLastMessage', `TEXT NOT NULL DEFAULT ''`, 'keywordRadarLastMessage')
+      await addColumn('SiteConfig', 'keywordRadarLastPostId', `TEXT NOT NULL DEFAULT ''`, 'keywordRadarLastPostId')
+      await addColumn('SiteConfig', 'keywordRadarMaxItems', `INTEGER NOT NULL DEFAULT 12`, 'keywordRadarMaxItems')
+      await addColumn('SiteConfig', 'keywordRadarKeepDays', `INTEGER NOT NULL DEFAULT 14`, 'keywordRadarKeepDays')
+      await createTable(
+        `CREATE TABLE IF NOT EXISTS KeywordRadarSeen (
+          hash TEXT PRIMARY KEY,
+          digestDate TEXT NOT NULL DEFAULT '',
+          keywords TEXT NOT NULL DEFAULT '[]',
+          title TEXT NOT NULL DEFAULT '',
+          link TEXT NOT NULL DEFAULT '',
+          summary TEXT NOT NULL DEFAULT '',
+          source TEXT NOT NULL DEFAULT '',
+          itemPublishedAt TEXT NOT NULL DEFAULT '',
+          postId TEXT NOT NULL DEFAULT '',
+          createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )`,
+        'KeywordRadarSeen'
+      )
+      await createIndex(
+        'KeywordRadarSeen',
+        'idx_keyword_radar_digest_createdAt',
+        'digestDate, createdAt',
+        'KeywordRadarSeen digestDate/createdAt index'
+      )
+      await createIndex('KeywordRadarSeen', 'idx_keyword_radar_postId', 'postId', 'KeywordRadarSeen postId index')
       try {
         await prisma.$executeRawUnsafe(`UPDATE Post SET publicId = rowid WHERE publicId IS NULL`)
         console.log('[migrate] publicId 回填成功')

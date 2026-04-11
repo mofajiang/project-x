@@ -5,6 +5,8 @@ import { AdminVisitorMap } from '@/components/admin/AdminVisitorMap'
 import { AdminRightPanel } from '@/components/admin/AdminRightPanel'
 import { ADMIN_PAGE_TITLE_CLASS, ADMIN_CARD_CLASS, ADMIN_TABLE_CLASS } from '@/components/admin/adminUi'
 import { getAdminDashboardData, type DashboardHealthItem } from '@/lib/admin-dashboard'
+import { getKeywordRadarStatus } from '@/lib/keyword-radar'
+import { ensureKeywordRadarScheduler } from '@/lib/keyword-radar-scheduler'
 
 const HEALTH_TONE_STYLES: Record<DashboardHealthItem['tone'], { badgeBg: string; badgeColor: string; border: string }> =
   {
@@ -24,9 +26,10 @@ const HEALTH_TONE_LABELS: Record<DashboardHealthItem['tone'], string> = {
 export const dynamic = 'force-dynamic'
 
 export default async function AdminDashboard() {
+  ensureKeywordRadarScheduler()
   const headerStore = headers()
   const currentHost = headerStore.get('x-forwarded-host') || headerStore.get('host') || ''
-  const dashboard = await getAdminDashboardData(currentHost)
+  const [dashboard, keywordRadar] = await Promise.all([getAdminDashboardData(currentHost), getKeywordRadarStatus()])
   const { summary, recentPosts, healthItems } = dashboard
 
   const stats = [
@@ -64,6 +67,64 @@ export default async function AdminDashboard() {
               </p>
             </div>
           ))}
+        </div>
+
+        <div className="mb-6 rounded-2xl p-4 sm:mb-8 sm:p-5" style={{ background: 'var(--bg-secondary)' }}>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                  内容雷达
+                </h2>
+                <span
+                  className="rounded-full px-2 py-0.5 text-[10px]"
+                  style={{
+                    background: keywordRadar.config.enabled ? 'rgba(0,186,124,0.14)' : 'rgba(113,118,123,0.18)',
+                    color: keywordRadar.config.enabled ? 'var(--green)' : 'var(--text-secondary)',
+                  }}
+                >
+                  {keywordRadar.config.enabled ? '已启用' : '未启用'}
+                </span>
+              </div>
+              <p className="mt-1 text-xs leading-5" style={{ color: 'var(--text-secondary)' }}>
+                关键词自动抓取、自动生成日报、自动打标签。只保留去重指纹和摘要，存储占用较低。
+              </p>
+            </div>
+            <Link
+              href="/admin/content-radar"
+              className="text-sm font-medium hover:underline"
+              style={{ color: 'var(--accent)' }}
+            >
+              进入内容雷达 →
+            </Link>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div className="rounded-2xl p-3" style={{ background: 'var(--bg-hover)' }}>
+              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                最近执行
+              </p>
+              <p className="mt-1 text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+                {keywordRadar.config.lastRunAt || '暂无'}
+              </p>
+            </div>
+            <div className="rounded-2xl p-3" style={{ background: 'var(--bg-hover)' }}>
+              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                最近结果
+              </p>
+              <p className="mt-1 text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+                {keywordRadar.config.lastMessage || '尚未执行'}
+              </p>
+            </div>
+            <div className="rounded-2xl p-3" style={{ background: 'var(--bg-hover)' }}>
+              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                已缓存去重记录
+              </p>
+              <p className="mt-1 text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+                {keywordRadar.totalSeen}
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* 管理健康 */}
