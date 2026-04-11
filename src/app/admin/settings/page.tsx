@@ -87,7 +87,7 @@ function Field({
           value={value}
           onValueChange={onChange}
           placeholder={placeholder}
-          className="min-w-0 flex-1 rounded-2xl px-3 py-2 text-sm outline-none"
+          className="x-admin-input min-w-0 flex-1 rounded-xl px-3 py-2 text-sm outline-none"
           style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}
         />
       </div>
@@ -104,7 +104,7 @@ function Field({
         value={value}
         onValueChange={onChange}
         placeholder={placeholder}
-        className="w-full rounded-2xl px-3 py-2 text-sm outline-none"
+        className="x-admin-input w-full rounded-xl px-3 py-2 text-sm outline-none"
         style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}
       />
     </div>

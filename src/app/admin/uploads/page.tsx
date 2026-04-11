@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import JSZip from 'jszip'
 import toast from 'react-hot-toast'
 import { ADMIN_PAGE_TITLE_CLASS } from '@/components/admin/adminUi'
-import { getErrorMessage } from '@/lib/converters';
+import { getErrorMessage } from '@/lib/converters'
 
 type UploadFile = {
   name: string
@@ -95,14 +95,11 @@ export default function AdminUploadsPage() {
   const filtered = useMemo(() => {
     const k = keyword.trim().toLowerCase()
     if (!k) return files
-    return files.filter(f => f.name.toLowerCase().includes(k) || f.ext.toLowerCase().includes(k))
+    return files.filter((f) => f.name.toLowerCase().includes(k) || f.ext.toLowerCase().includes(k))
   }, [files, keyword])
 
-  const selectedFiles = useMemo(
-    () => filtered.filter(f => !!selectedMap[f.name]),
-    [filtered, selectedMap]
-  )
-  const allSelectedInView = filtered.length > 0 && filtered.every(f => !!selectedMap[f.name])
+  const selectedFiles = useMemo(() => filtered.filter((f) => !!selectedMap[f.name]), [filtered, selectedMap])
+  const allSelectedInView = filtered.length > 0 && filtered.every((f) => !!selectedMap[f.name])
 
   const fetchFiles = async () => {
     setLoading(true)
@@ -117,7 +114,7 @@ export default function AdminUploadsPage() {
       setListError('')
       const nextFiles = Array.isArray(data.files) ? data.files : []
       setFiles(nextFiles)
-      setSelectedMap(prev => {
+      setSelectedMap((prev) => {
         const names = new Set(nextFiles.map((f: UploadFile) => f.name))
         const next: Record<string, boolean> = {}
         for (const key of Object.keys(prev)) {
@@ -278,11 +275,11 @@ export default function AdminUploadsPage() {
   }
 
   const toggleSelect = (name: string, checked: boolean) => {
-    setSelectedMap(prev => ({ ...prev, [name]: checked }))
+    setSelectedMap((prev) => ({ ...prev, [name]: checked }))
   }
 
   const toggleSelectAllInView = (checked: boolean) => {
-    setSelectedMap(prev => {
+    setSelectedMap((prev) => {
       const next = { ...prev }
       for (const file of filtered) next[file.name] = checked
       return next
@@ -299,11 +296,9 @@ export default function AdminUploadsPage() {
     setBatchDeleting(true)
     try {
       const results = await Promise.allSettled(
-        selectedFiles.map(file =>
-          fetch(`/api/admin/uploads/${encodeURIComponent(file.name)}`, { method: 'DELETE' })
-        )
+        selectedFiles.map((file) => fetch(`/api/admin/uploads/${encodeURIComponent(file.name)}`, { method: 'DELETE' }))
       )
-      const success = results.filter(r => r.status === 'fulfilled').length
+      const success = results.filter((r) => r.status === 'fulfilled').length
       const failed = results.length - success
       if (failed === 0) toast.success(`已删除 ${success} 个文件`)
       else toast.error(`删除完成：成功 ${success}，失败 ${failed}`)
@@ -346,25 +341,34 @@ export default function AdminUploadsPage() {
   }
 
   return (
-    <div className='w-full max-w-7xl mx-auto'>
-      <div className='grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-4'>
-        <section className='rounded-2xl p-4' style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-          <div className='rounded-2xl p-3 mb-3' style={{ background: 'linear-gradient(135deg, rgba(29,155,240,0.15), rgba(34,197,94,0.08))' }}>
-            <div className='grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-2'>
+    <div className="mx-auto w-full max-w-7xl">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
+        <section
+          className="rounded-2xl p-4"
+          style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
+        >
+          <div
+            className="mb-3 rounded-2xl p-3"
+            style={{ background: 'linear-gradient(135deg, rgba(29,155,240,0.15), rgba(34,197,94,0.08))' }}
+          >
+            <div className="grid grid-cols-1 gap-2 md:grid-cols-[1fr_auto_auto]">
               <input
                 value={customName}
-                onChange={e => setCustomName(e.target.value)}
-                placeholder='自定义文件名（可选）'
-                className='px-3 py-2 rounded-xl border bg-transparent outline-none text-sm'
+                onChange={(e) => setCustomName(e.target.value)}
+                placeholder="自定义文件名（可选）"
+                className="rounded-xl border bg-transparent px-3 py-2 text-sm outline-none"
                 style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
               />
-              <label className='px-4 py-2 rounded-xl text-sm font-medium text-white cursor-pointer text-center' style={{ background: 'var(--accent)' }}>
+              <label
+                className="cursor-pointer rounded-xl px-4 py-2 text-center text-sm font-medium text-white"
+                style={{ background: 'var(--accent)' }}
+              >
                 {uploading ? '上传中...' : '上传文件'}
-                <input type='file' className='hidden' onChange={uploadFile} disabled={uploading} />
+                <input type="file" className="hidden" onChange={uploadFile} disabled={uploading} />
               </label>
               <button
                 onClick={fetchFiles}
-                className='px-4 py-2 rounded-xl text-sm'
+                className="rounded-xl px-4 py-2 text-sm"
                 style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
               >
                 刷新
@@ -372,26 +376,37 @@ export default function AdminUploadsPage() {
             </div>
           </div>
 
-          <div className='rounded-xl p-3 mb-3 flex items-center gap-2' style={{ background: 'var(--bg-hover)' }}>
+          <div className="mb-3 flex items-center gap-2 rounded-xl p-3" style={{ background: 'var(--bg-hover)' }}>
             <input
               value={keyword}
-              onChange={e => setKeyword(e.target.value)}
-              placeholder='搜索文件名 / 后缀'
-              className='w-full px-3 py-2 rounded-lg border bg-transparent outline-none text-sm'
+              onChange={(e) => setKeyword(e.target.value)}
+              placeholder="搜索文件名 / 后缀"
+              className="w-full rounded-lg border bg-transparent px-3 py-2 text-sm outline-none"
               style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
             />
-            <span className='text-xs shrink-0' style={{ color: 'var(--text-secondary)' }}>{filtered.length} 项</span>
+            <span className="shrink-0 text-xs" style={{ color: 'var(--text-secondary)' }}>
+              {filtered.length} 项
+            </span>
           </div>
 
-          <div className='rounded-xl p-3 mb-3 flex flex-wrap items-center gap-2' style={{ background: 'var(--bg-hover)' }}>
-            <label className='inline-flex items-center gap-2 text-xs' style={{ color: 'var(--text-secondary)' }}>
-              <input type='checkbox' checked={allSelectedInView} onChange={e => toggleSelectAllInView(e.target.checked)} />
+          <div
+            className="mb-3 flex flex-wrap items-center gap-2 rounded-xl p-3"
+            style={{ background: 'var(--bg-hover)' }}
+          >
+            <label className="inline-flex items-center gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+              <input
+                type="checkbox"
+                checked={allSelectedInView}
+                onChange={(e) => toggleSelectAllInView(e.target.checked)}
+              />
               当前视图全选
             </label>
-            <span className='text-xs' style={{ color: 'var(--text-secondary)' }}>已选 {selectedFiles.length}</span>
+            <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+              已选 {selectedFiles.length}
+            </span>
             <button
-              onClick={() => setViewMode(v => (v === 'list' ? 'grid' : 'list'))}
-              className='px-3 py-1.5 rounded-lg text-xs'
+              onClick={() => setViewMode((v) => (v === 'list' ? 'grid' : 'list'))}
+              className="rounded-lg px-3 py-1.5 text-xs"
               style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
             >
               {viewMode === 'list' ? '切换网格' : '切换列表'}
@@ -400,7 +415,7 @@ export default function AdminUploadsPage() {
               <button
                 onClick={handleBatchDownload}
                 disabled={batchDownloading || selectedFiles.length === 0}
-                className='px-3 py-1.5 rounded-lg text-xs text-white disabled:opacity-50'
+                className="rounded-lg px-3 py-1.5 text-xs text-white disabled:opacity-50"
                 style={{ background: '#0ea5e9' }}
               >
                 {batchDownloading ? '打包中...' : '批量下载'}
@@ -410,7 +425,7 @@ export default function AdminUploadsPage() {
               <button
                 onClick={handleBatchDelete}
                 disabled={batchDeleting || selectedFiles.length === 0}
-                className='px-3 py-1.5 rounded-lg text-xs text-white disabled:opacity-50'
+                className="rounded-lg px-3 py-1.5 text-xs text-white disabled:opacity-50"
                 style={{ background: '#64748b' }}
               >
                 {batchDeleting ? '删除中...' : '批量删除'}
@@ -419,14 +434,24 @@ export default function AdminUploadsPage() {
           </div>
 
           {!loading && !!listError && (
-            <div className='rounded-xl p-3 mb-3 text-sm' style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.35)', color: '#b45309' }}>
+            <div
+              className="mb-3 rounded-xl p-3 text-sm"
+              style={{
+                background: 'rgba(245,158,11,0.1)',
+                border: '1px solid rgba(245,158,11,0.35)',
+                color: '#b45309',
+              }}
+            >
               <p>{listError}</p>
             </div>
           )}
 
           {viewMode === 'list' ? (
-            <div className='rounded-xl overflow-hidden border' style={{ borderColor: 'var(--border)' }}>
-              <div className='grid grid-cols-[36px_1fr_120px_180px_220px] gap-2 px-4 py-3 text-xs font-medium' style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>
+            <div className="overflow-hidden rounded-xl border" style={{ borderColor: 'var(--border)' }}>
+              <div
+                className="grid grid-cols-[36px_1fr_120px_180px_220px] gap-2 px-4 py-3 text-xs font-medium"
+                style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}
+              >
                 <span></span>
                 <span>文件名</span>
                 <span>大小</span>
@@ -435,50 +460,107 @@ export default function AdminUploadsPage() {
               </div>
 
               {loading ? (
-                <div className='py-12 text-center text-sm' style={{ color: 'var(--text-secondary)' }}>加载中...</div>
+                <div className="py-12 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  加载中...
+                </div>
               ) : filtered.length === 0 ? (
-                <div className='py-12 text-center text-sm' style={{ color: 'var(--text-secondary)' }}>暂无文件</div>
+                <div className="py-12 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  暂无文件
+                </div>
               ) : (
-                <div className='divide-y' style={{ borderColor: 'var(--border)' }}>
-                  {filtered.map(file => (
-                    <div key={file.name} className='grid grid-cols-[36px_1fr_120px_180px_220px] gap-2 px-4 py-3 items-center text-sm'>
-                      <label className='inline-flex items-center justify-center'>
-                        <input type='checkbox' checked={!!selectedMap[file.name]} onChange={e => toggleSelect(file.name, e.target.checked)} />
+                <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
+                  {filtered.map((file) => (
+                    <div
+                      key={file.name}
+                      className="grid grid-cols-[36px_1fr_120px_180px_220px] items-center gap-2 px-4 py-3 text-sm"
+                    >
+                      <label className="inline-flex items-center justify-center">
+                        <input
+                          type="checkbox"
+                          checked={!!selectedMap[file.name]}
+                          onChange={(e) => toggleSelect(file.name, e.target.checked)}
+                        />
                       </label>
-                      <div className='min-w-0'>
+                      <div className="min-w-0">
                         {editingName === file.name ? (
-                          <div className='flex gap-2'>
+                          <div className="flex gap-2">
                             <input
                               value={renameDraft}
-                              onChange={e => setRenameDraft(e.target.value)}
-                              className='flex-1 px-3 py-2 rounded-lg border bg-transparent outline-none text-sm'
+                              onChange={(e) => setRenameDraft(e.target.value)}
+                              className="flex-1 rounded-lg border bg-transparent px-3 py-2 text-sm outline-none"
                               style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                             />
-                            <button onClick={() => saveRename(file.name)} className='px-3 py-2 rounded-lg text-xs text-white' style={{ background: 'var(--accent)' }}>保存</button>
-                            <button onClick={() => setEditingName(null)} className='px-3 py-2 rounded-lg text-xs' style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>取消</button>
+                            <button
+                              onClick={() => saveRename(file.name)}
+                              className="rounded-lg px-3 py-2 text-xs text-white"
+                              style={{ background: 'var(--accent)' }}
+                            >
+                              保存
+                            </button>
+                            <button
+                              onClick={() => setEditingName(null)}
+                              className="rounded-lg px-3 py-2 text-xs"
+                              style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+                            >
+                              取消
+                            </button>
                           </div>
                         ) : (
-                          <div className='flex items-center gap-2 min-w-0'>
+                          <div className="flex min-w-0 items-center gap-2">
                             <span>{extIcon(file.ext)}</span>
-                            <div className='min-w-0'>
-                              <p className='truncate font-medium' style={{ color: 'var(--text-primary)' }}>{file.name}</p>
-                              <p className='truncate text-xs' style={{ color: 'var(--text-secondary)' }}>{file.url}</p>
+                            <div className="min-w-0">
+                              <p className="truncate font-medium" style={{ color: 'var(--text-primary)' }}>
+                                {file.name}
+                              </p>
+                              <p className="truncate text-xs" style={{ color: 'var(--text-secondary)' }}>
+                                {file.url}
+                              </p>
                             </div>
                           </div>
                         )}
                       </div>
-                      <span className='text-xs' style={{ color: 'var(--text-secondary)' }}>{formatSize(file.size)}</span>
-                      <span className='text-xs' style={{ color: 'var(--text-secondary)' }}>{new Date(file.updatedAt).toLocaleString('zh-CN', { hour12: false })}</span>
-                      <div className='flex items-center gap-1'>
+                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                        {formatSize(file.size)}
+                      </span>
+                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                        {new Date(file.updatedAt).toLocaleString('zh-CN', { hour12: false })}
+                      </span>
+                      <div className="flex items-center gap-1">
                         {storageStatus?.capabilities.download !== false && (
-                          <a href={`/api/admin/uploads/${encodeURIComponent(file.name)}`} className='px-2 py-1 rounded text-xs' style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>下载</a>
+                          <a
+                            href={`/api/admin/uploads/${encodeURIComponent(file.name)}`}
+                            className="rounded px-2 py-1 text-xs"
+                            style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+                          >
+                            下载
+                          </a>
                         )}
-                        <a href={file.url} target='_blank' rel='noopener noreferrer' className='px-2 py-1 rounded text-xs' style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>访问</a>
+                        <a
+                          href={file.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="rounded px-2 py-1 text-xs"
+                          style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+                        >
+                          访问
+                        </a>
                         {storageStatus?.capabilities.rename !== false && (
-                          <button onClick={() => beginRename(file.name)} className='px-2 py-1 rounded text-xs' style={{ background: 'rgba(29,155,240,0.12)', color: 'var(--accent)' }}>重命名</button>
+                          <button
+                            onClick={() => beginRename(file.name)}
+                            className="rounded px-2 py-1 text-xs"
+                            style={{ background: 'rgba(29,155,240,0.12)', color: 'var(--accent)' }}
+                          >
+                            重命名
+                          </button>
                         )}
                         {storageStatus?.capabilities.delete !== false && (
-                          <button onClick={() => deleteFile(file.name)} className='px-2 py-1 rounded text-xs text-white' style={{ background: '#64748b' }}>删除</button>
+                          <button
+                            onClick={() => deleteFile(file.name)}
+                            className="rounded px-2 py-1 text-xs text-white"
+                            style={{ background: '#64748b' }}
+                          >
+                            删除
+                          </button>
                         )}
                       </div>
                     </div>
@@ -487,37 +569,86 @@ export default function AdminUploadsPage() {
               )}
             </div>
           ) : (
-            <div className='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3'>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
               {loading ? (
-                <div className='col-span-full py-12 text-center text-sm' style={{ color: 'var(--text-secondary)' }}>加载中...</div>
+                <div className="col-span-full py-12 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  加载中...
+                </div>
               ) : filtered.length === 0 ? (
-                <div className='col-span-full py-12 text-center text-sm' style={{ color: 'var(--text-secondary)' }}>暂无文件</div>
+                <div className="col-span-full py-12 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  暂无文件
+                </div>
               ) : (
-                filtered.map(file => (
-                  <div key={file.name} className='rounded-xl p-3 border' style={{ borderColor: 'var(--border)', background: 'var(--bg-secondary)' }}>
-                    <div className='flex items-start justify-between gap-2'>
-                      <label className='inline-flex items-center gap-2 text-xs' style={{ color: 'var(--text-secondary)' }}>
-                        <input type='checkbox' checked={!!selectedMap[file.name]} onChange={e => toggleSelect(file.name, e.target.checked)} />
+                filtered.map((file) => (
+                  <div
+                    key={file.name}
+                    className="rounded-xl border p-3"
+                    style={{ borderColor: 'var(--border)', background: 'var(--bg-secondary)' }}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <label
+                        className="inline-flex items-center gap-2 text-xs"
+                        style={{ color: 'var(--text-secondary)' }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={!!selectedMap[file.name]}
+                          onChange={(e) => toggleSelect(file.name, e.target.checked)}
+                        />
                         选择
                       </label>
-                      <span className='text-xs' style={{ color: 'var(--text-secondary)' }}>{formatSize(file.size)}</span>
+                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                        {formatSize(file.size)}
+                      </span>
                     </div>
-                    <div className='mt-2 flex items-center gap-2 min-w-0'>
+                    <div className="mt-2 flex min-w-0 items-center gap-2">
                       <span>{extIcon(file.ext)}</span>
-                      <p className='truncate font-medium text-sm' style={{ color: 'var(--text-primary)' }}>{file.name}</p>
+                      <p className="truncate text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                        {file.name}
+                      </p>
                     </div>
-                    <p className='text-xs mt-1 truncate' style={{ color: 'var(--text-secondary)' }}>{file.url}</p>
-                    <p className='text-xs mt-1' style={{ color: 'var(--text-secondary)' }}>{new Date(file.updatedAt).toLocaleString('zh-CN', { hour12: false })}</p>
-                    <div className='mt-3 flex flex-wrap gap-1'>
+                    <p className="mt-1 truncate text-xs" style={{ color: 'var(--text-secondary)' }}>
+                      {file.url}
+                    </p>
+                    <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                      {new Date(file.updatedAt).toLocaleString('zh-CN', { hour12: false })}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-1">
                       {storageStatus?.capabilities.download !== false && (
-                        <a href={`/api/admin/uploads/${encodeURIComponent(file.name)}`} className='px-2 py-1 rounded text-xs' style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>下载</a>
+                        <a
+                          href={`/api/admin/uploads/${encodeURIComponent(file.name)}`}
+                          className="rounded px-2 py-1 text-xs"
+                          style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+                        >
+                          下载
+                        </a>
                       )}
-                      <a href={file.url} target='_blank' rel='noopener noreferrer' className='px-2 py-1 rounded text-xs' style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>访问</a>
+                      <a
+                        href={file.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded px-2 py-1 text-xs"
+                        style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+                      >
+                        访问
+                      </a>
                       {storageStatus?.capabilities.rename !== false && (
-                        <button onClick={() => beginRename(file.name)} className='px-2 py-1 rounded text-xs' style={{ background: 'rgba(29,155,240,0.12)', color: 'var(--accent)' }}>重命名</button>
+                        <button
+                          onClick={() => beginRename(file.name)}
+                          className="rounded px-2 py-1 text-xs"
+                          style={{ background: 'rgba(29,155,240,0.12)', color: 'var(--accent)' }}
+                        >
+                          重命名
+                        </button>
                       )}
                       {storageStatus?.capabilities.delete !== false && (
-                        <button onClick={() => deleteFile(file.name)} className='px-2 py-1 rounded text-xs text-white' style={{ background: '#64748b' }}>删除</button>
+                        <button
+                          onClick={() => deleteFile(file.name)}
+                          className="rounded px-2 py-1 text-xs text-white"
+                          style={{ background: '#64748b' }}
+                        >
+                          删除
+                        </button>
                       )}
                     </div>
                   </div>
@@ -527,74 +658,230 @@ export default function AdminUploadsPage() {
           )}
         </section>
 
-        <aside className='rounded-2xl p-4 h-fit sticky top-4' style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-          <h2 className='text-base font-bold mb-2' style={{ color: 'var(--text-primary)' }}>存储设置</h2>
-          <p className='text-xs mb-3' style={{ color: 'var(--text-secondary)' }}>上传管理页内直接配置与测试</p>
+        <aside
+          className="sticky top-4 h-fit rounded-2xl p-4"
+          style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
+        >
+          <h2 className="mb-2 text-base font-bold" style={{ color: 'var(--text-primary)' }}>
+            存储设置
+          </h2>
+          <p className="mb-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
+            上传管理页内直接配置与测试
+          </p>
 
-          <div className='space-y-3'>
+          <div className="space-y-3">
             <div>
-              <label className='block text-xs mb-1' style={{ color: 'var(--text-secondary)' }}>存储类型</label>
+              <label className="mb-1 block text-xs" style={{ color: 'var(--text-secondary)' }}>
+                存储类型
+              </label>
               <select
                 value={storageConfig.storageDriver}
-                onChange={e => setStorageConfig(s => ({ ...s, storageDriver: e.target.value as 'local' | 's3' | 'smms' }))}
-                className='w-full px-3 py-2 rounded-xl text-sm outline-none'
+                onChange={(e) =>
+                  setStorageConfig((s) => ({ ...s, storageDriver: e.target.value as 'local' | 's3' | 'smms' }))
+                }
+                className="w-full rounded-xl px-3 py-2 text-sm outline-none"
                 style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}
               >
-                {STORAGE_DRIVER_OPTIONS.map(item => (
-                  <option key={item.value} value={item.value}>{item.label}</option>
+                {STORAGE_DRIVER_OPTIONS.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
                 ))}
               </select>
             </div>
 
             {storageStatus && (
-              <div className='rounded-xl p-3 text-xs' style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>
+              <div
+                className="rounded-xl p-3 text-xs"
+                style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}
+              >
                 <p>配置驱动：{storageStatus.configuredDriver.toUpperCase()}</p>
                 <p>当前生效：{storageStatus.activeDriver.toUpperCase()}</p>
                 {!!storageStatus.fallbackReason && (
-                  <p className='mt-1' style={{ color: '#b45309' }}>
+                  <p className="mt-1" style={{ color: '#b45309' }}>
                     {storageStatus.fallbackReason === 's3_config_incomplete'
                       ? 'S3 配置不完整，系统已回退本地。'
                       : 'SM.MS Token 未配置，系统已回退本地。'}
                   </p>
                 )}
-                <div className='flex flex-wrap gap-1 mt-2'>
-                  <span className='px-2 py-1 rounded-lg' style={{ background: storageStatus.capabilities.upload ? 'rgba(34,197,94,0.14)' : 'rgba(148,163,184,0.2)', color: storageStatus.capabilities.upload ? '#15803d' : '#475569' }}>上传</span>
-                  <span className='px-2 py-1 rounded-lg' style={{ background: storageStatus.capabilities.list ? 'rgba(34,197,94,0.14)' : 'rgba(148,163,184,0.2)', color: storageStatus.capabilities.list ? '#15803d' : '#475569' }}>列表</span>
-                  <span className='px-2 py-1 rounded-lg' style={{ background: storageStatus.capabilities.download ? 'rgba(34,197,94,0.14)' : 'rgba(148,163,184,0.2)', color: storageStatus.capabilities.download ? '#15803d' : '#475569' }}>下载</span>
-                  <span className='px-2 py-1 rounded-lg' style={{ background: storageStatus.capabilities.rename ? 'rgba(34,197,94,0.14)' : 'rgba(148,163,184,0.2)', color: storageStatus.capabilities.rename ? '#15803d' : '#475569' }}>重命名</span>
-                  <span className='px-2 py-1 rounded-lg' style={{ background: storageStatus.capabilities.delete ? 'rgba(34,197,94,0.14)' : 'rgba(148,163,184,0.2)', color: storageStatus.capabilities.delete ? '#15803d' : '#475569' }}>删除</span>
+                <div className="mt-2 flex flex-wrap gap-1">
+                  <span
+                    className="rounded-lg px-2 py-1"
+                    style={{
+                      background: storageStatus.capabilities.upload ? 'rgba(34,197,94,0.14)' : 'rgba(148,163,184,0.2)',
+                      color: storageStatus.capabilities.upload ? '#15803d' : '#475569',
+                    }}
+                  >
+                    上传
+                  </span>
+                  <span
+                    className="rounded-lg px-2 py-1"
+                    style={{
+                      background: storageStatus.capabilities.list ? 'rgba(34,197,94,0.14)' : 'rgba(148,163,184,0.2)',
+                      color: storageStatus.capabilities.list ? '#15803d' : '#475569',
+                    }}
+                  >
+                    列表
+                  </span>
+                  <span
+                    className="rounded-lg px-2 py-1"
+                    style={{
+                      background: storageStatus.capabilities.download
+                        ? 'rgba(34,197,94,0.14)'
+                        : 'rgba(148,163,184,0.2)',
+                      color: storageStatus.capabilities.download ? '#15803d' : '#475569',
+                    }}
+                  >
+                    下载
+                  </span>
+                  <span
+                    className="rounded-lg px-2 py-1"
+                    style={{
+                      background: storageStatus.capabilities.rename ? 'rgba(34,197,94,0.14)' : 'rgba(148,163,184,0.2)',
+                      color: storageStatus.capabilities.rename ? '#15803d' : '#475569',
+                    }}
+                  >
+                    重命名
+                  </span>
+                  <span
+                    className="rounded-lg px-2 py-1"
+                    style={{
+                      background: storageStatus.capabilities.delete ? 'rgba(34,197,94,0.14)' : 'rgba(148,163,184,0.2)',
+                      color: storageStatus.capabilities.delete ? '#15803d' : '#475569',
+                    }}
+                  >
+                    删除
+                  </span>
                 </div>
               </div>
             )}
 
             {storageConfig.storageDriver === 's3' && (
-              <div className='space-y-2'>
-                <input value={storageConfig.storageS3Endpoint} onChange={e => setStorageConfig(s => ({ ...s, storageS3Endpoint: e.target.value }))} placeholder='Endpoint' className='w-full px-3 py-2 rounded-xl text-sm outline-none' style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }} />
-                <input value={storageConfig.storageS3Region} onChange={e => setStorageConfig(s => ({ ...s, storageS3Region: e.target.value }))} placeholder='Region (auto)' className='w-full px-3 py-2 rounded-xl text-sm outline-none' style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }} />
-                <input value={storageConfig.storageS3Bucket} onChange={e => setStorageConfig(s => ({ ...s, storageS3Bucket: e.target.value }))} placeholder='Bucket' className='w-full px-3 py-2 rounded-xl text-sm outline-none' style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }} />
-                <input value={storageConfig.storageS3Prefix} onChange={e => setStorageConfig(s => ({ ...s, storageS3Prefix: e.target.value }))} placeholder='Key Prefix (uploads/)' className='w-full px-3 py-2 rounded-xl text-sm outline-none' style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }} />
-                <input value={storageConfig.storageS3AccessKeyId} onChange={e => setStorageConfig(s => ({ ...s, storageS3AccessKeyId: e.target.value }))} placeholder='Access Key' className='w-full px-3 py-2 rounded-xl text-sm outline-none' style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }} />
-                <input type='password' value={storageConfig.storageS3SecretAccessKey} onChange={e => setStorageConfig(s => ({ ...s, storageS3SecretAccessKey: e.target.value }))} placeholder='Secret Key' className='w-full px-3 py-2 rounded-xl text-sm outline-none' style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }} />
-                <input value={storageConfig.storagePublicBaseUrl} onChange={e => setStorageConfig(s => ({ ...s, storagePublicBaseUrl: e.target.value }))} placeholder='公网访问前缀 https://cdn.example.com' className='w-full px-3 py-2 rounded-xl text-sm outline-none' style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }} />
-                <label className='flex items-center gap-2 text-xs' style={{ color: 'var(--text-primary)' }}>
-                  <input type='checkbox' checked={storageConfig.storageS3ForcePathStyle} onChange={e => setStorageConfig(s => ({ ...s, storageS3ForcePathStyle: e.target.checked }))} />
+              <div className="space-y-2">
+                <input
+                  value={storageConfig.storageS3Endpoint}
+                  onChange={(e) => setStorageConfig((s) => ({ ...s, storageS3Endpoint: e.target.value }))}
+                  placeholder="Endpoint"
+                  className="x-admin-input w-full rounded-xl px-3 py-2 text-sm outline-none"
+                  style={{
+                    background: 'var(--bg-hover)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid transparent',
+                  }}
+                />
+                <input
+                  value={storageConfig.storageS3Region}
+                  onChange={(e) => setStorageConfig((s) => ({ ...s, storageS3Region: e.target.value }))}
+                  placeholder="Region (auto)"
+                  className="x-admin-input w-full rounded-xl px-3 py-2 text-sm outline-none"
+                  style={{
+                    background: 'var(--bg-hover)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid transparent',
+                  }}
+                />
+                <input
+                  value={storageConfig.storageS3Bucket}
+                  onChange={(e) => setStorageConfig((s) => ({ ...s, storageS3Bucket: e.target.value }))}
+                  placeholder="Bucket"
+                  className="x-admin-input w-full rounded-xl px-3 py-2 text-sm outline-none"
+                  style={{
+                    background: 'var(--bg-hover)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid transparent',
+                  }}
+                />
+                <input
+                  value={storageConfig.storageS3Prefix}
+                  onChange={(e) => setStorageConfig((s) => ({ ...s, storageS3Prefix: e.target.value }))}
+                  placeholder="Key Prefix (uploads/)"
+                  className="x-admin-input w-full rounded-xl px-3 py-2 text-sm outline-none"
+                  style={{
+                    background: 'var(--bg-hover)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid transparent',
+                  }}
+                />
+                <input
+                  value={storageConfig.storageS3AccessKeyId}
+                  onChange={(e) => setStorageConfig((s) => ({ ...s, storageS3AccessKeyId: e.target.value }))}
+                  placeholder="Access Key"
+                  className="x-admin-input w-full rounded-xl px-3 py-2 text-sm outline-none"
+                  style={{
+                    background: 'var(--bg-hover)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid transparent',
+                  }}
+                />
+                <input
+                  type="password"
+                  value={storageConfig.storageS3SecretAccessKey}
+                  onChange={(e) => setStorageConfig((s) => ({ ...s, storageS3SecretAccessKey: e.target.value }))}
+                  placeholder="Secret Key"
+                  className="x-admin-input w-full rounded-xl px-3 py-2 text-sm outline-none"
+                  style={{
+                    background: 'var(--bg-hover)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid transparent',
+                  }}
+                />
+                <input
+                  value={storageConfig.storagePublicBaseUrl}
+                  onChange={(e) => setStorageConfig((s) => ({ ...s, storagePublicBaseUrl: e.target.value }))}
+                  placeholder="公网访问前缀 https://cdn.example.com"
+                  className="x-admin-input w-full rounded-xl px-3 py-2 text-sm outline-none"
+                  style={{
+                    background: 'var(--bg-hover)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid transparent',
+                  }}
+                />
+                <label className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-primary)' }}>
+                  <input
+                    type="checkbox"
+                    checked={storageConfig.storageS3ForcePathStyle}
+                    onChange={(e) => setStorageConfig((s) => ({ ...s, storageS3ForcePathStyle: e.target.checked }))}
+                  />
                   使用 Path-Style
                 </label>
               </div>
             )}
 
             {storageConfig.storageDriver === 'smms' && (
-              <div className='space-y-2'>
-                <input type='password' value={storageConfig.storageSmmsToken} onChange={e => setStorageConfig(s => ({ ...s, storageSmmsToken: e.target.value }))} placeholder='SM.MS Token' className='w-full px-3 py-2 rounded-xl text-sm outline-none' style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }} />
-                <p className='text-xs' style={{ color: 'var(--text-secondary)' }}>SM.MS 模式仅支持上传，不支持列表/重命名/删除。</p>
+              <div className="space-y-2">
+                <input
+                  type="password"
+                  value={storageConfig.storageSmmsToken}
+                  onChange={(e) => setStorageConfig((s) => ({ ...s, storageSmmsToken: e.target.value }))}
+                  placeholder="SM.MS Token"
+                  className="x-admin-input w-full rounded-xl px-3 py-2 text-sm outline-none"
+                  style={{
+                    background: 'var(--bg-hover)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid transparent',
+                  }}
+                />
+                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                  SM.MS 模式仅支持上传，不支持列表/重命名/删除。
+                </p>
               </div>
             )}
 
-            <div className='grid grid-cols-2 gap-2 pt-2'>
-              <button onClick={saveStorageConfig} disabled={savingStorage} className='px-3 py-2 rounded-xl text-sm text-white disabled:opacity-50' style={{ background: 'var(--accent)' }}>
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              <button
+                onClick={saveStorageConfig}
+                disabled={savingStorage}
+                className="rounded-xl px-3 py-2 text-sm text-white disabled:opacity-50"
+                style={{ background: 'var(--accent)' }}
+              >
                 {savingStorage ? '保存中...' : '保存设置'}
               </button>
-              <button onClick={testStorage} disabled={testingStorage} className='px-3 py-2 rounded-xl text-sm disabled:opacity-50' style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
+              <button
+                onClick={testStorage}
+                disabled={testingStorage}
+                className="rounded-xl px-3 py-2 text-sm disabled:opacity-50"
+                style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+              >
                 {testingStorage ? '测试中...' : '测试连接'}
               </button>
             </div>

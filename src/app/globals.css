@@ -433,3 +433,42 @@ img {
   background: #1e1e1e !important;
   border-radius: 8px;
 }
+
+/* ── 后台管理 X 风格辅助类 ────────────────────────────────── */
+
+/* 表格行 hover */
+.x-admin-table tbody tr {
+  transition: background 0.12s;
+}
+.x-admin-table tbody tr:hover {
+  background: var(--bg-hover);
+}
+
+/* 输入框 focus 高亮 */
+.x-admin-input {
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.x-admin-input:focus {
+  outline: none;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+/* 表单 section 标题 */
+.x-admin-section-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+/* 分割线 */
+.x-admin-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 20px 0;
+}
