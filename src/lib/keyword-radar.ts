@@ -27,6 +27,10 @@ export const RADAR_SOURCES = [
   { id: 'zhihu', label: '知乎', region: '中国', type: 'html' },
   { id: 'v2ex', label: 'V2EX', region: '中国', type: 'rss' },
   { id: 'lobsters', label: 'Lobsters', region: '国际', type: 'rss' },
+  { id: 'juejin', label: '掘金', region: '中国', type: 'json' },
+  { id: 'csdn', label: 'CSDN', region: '中国', type: 'json' },
+  { id: 'github', label: 'GitHub', region: '国际', type: 'json' },
+  { id: 'wechat', label: '微信公众号', region: '中国', type: 'html' },
   { id: 'sogou', label: '搜狗资讯', region: '中国', type: 'html' },
   { id: 'duckduckgo', label: 'DuckDuckGo', region: '国际', type: 'html' },
   { id: 'yandex', label: 'Yandex News', region: '俄/国际', type: 'html' },
@@ -146,6 +150,9 @@ const SOURCE_RETRIES: Partial<Record<RadarSourceId, number>> = {
   sogou: 2,
   duckduckgo: 2,
   yandex: 2,
+  csdn: 1,
+  baidu: 2,
+  wechat: 2,
 }
 
 /** In-memory fetch cache to avoid duplicate requests within a single run */
@@ -296,6 +303,26 @@ function buildV2exFeedUrl(keyword: string) {
 
 function buildLobstersFeedUrl(keyword: string) {
   return `https://lobste.rs/search.rss?q=${encodeURIComponent(keyword)}&what=stories&order=newest`
+}
+
+function buildJuejinSearchUrl(keyword: string) {
+  return `https://api.juejin.cn/search_api/v1/search`
+}
+
+function buildCsdnSearchUrl(keyword: string) {
+  return `https://so.csdn.net/api/v3/search?q=${encodeURIComponent(keyword)}&t=blog&p=1&s=new&tm=0`
+}
+
+function buildGithubSearchUrl(keyword: string) {
+  return `https://api.github.com/search/repositories?q=${encodeURIComponent(keyword)}&sort=updated&order=desc&per_page=15`
+}
+
+function buildBaiduNewsHtmlUrl(keyword: string) {
+  return `https://www.baidu.com/s?tn=news&rtt=4&bsst=1&cl=2&wd=${encodeURIComponent(keyword)}`
+}
+
+function buildWechatSearchUrl(keyword: string) {
+  return `https://weixin.sogou.com/weixin?type=2&query=${encodeURIComponent(keyword)}&ie=utf8&s_from=input&_sug_=n&_sug_type_=`
 }
 
 /** Decode common HTML entities */
@@ -1007,6 +1034,325 @@ async function fetchDevtoArticles(keyword: string): Promise<FeedItem[]> {
   return []
 }
 
+/** Fetch articles from Juejin (掘金) — two-step: tag lookup + tag feed with keyword filter */
+async function fetchJuejinArticles(keyword: string): Promise<FeedItem[]> {
+  const headers = {
+    'Content-Type': 'application/json',
+    'User-Agent': randomUserAgent(),
+    Referer: 'https://juejin.cn/',
+  }
+  // Step 1: Try search API first (may return empty if restricted)
+  try {
+    await randomDelay(200, 800)
+    const searchRes = await fetch(buildJuejinSearchUrl(keyword), {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ keyword, search_type: 2, cursor: '0', limit: 20, sort_type: 0 }),
+      cache: 'no-store',
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    })
+    if (searchRes.ok) {
+      const searchData = (await searchRes.json()) as {
+        data?: Array<{
+          result_model?: {
+            article_info?: { article_id?: string; title?: string; brief_content?: string; ctime?: string }
+            author_info?: { user_name?: string }
+          }
+        }>
+      }
+      const searchArticles = searchData.data || []
+      if (searchArticles.length > 0) {
+        return searchArticles
+          .slice(0, MAX_FEED_ITEMS)
+          .filter((a) => a.result_model?.article_info?.title && a.result_model?.article_info?.article_id)
+          .map((a) => {
+            const info = a.result_model!.article_info!
+            const author = a.result_model?.author_info?.user_name
+            return {
+              title: stripHtml(info.title || ''),
+              link: `https://juejin.cn/post/${info.article_id}`,
+              summary: toSummary(info.brief_content || '', 200),
+              publishedAt: info.ctime ? new Date(Number(info.ctime) * 1000).toISOString() : new Date().toISOString(),
+              source: author ? `掘金 / ${author}` : '掘金',
+              keywords: [keyword],
+            }
+          })
+      }
+    }
+  } catch {
+    /* search failed, try tag fallback */
+  }
+
+  // Step 2: Fallback — find matching tag, then fetch tag feed with keyword filtering
+  try {
+    await randomDelay(300, 800)
+    const tagRes = await fetch('https://api.juejin.cn/tag_api/v1/query_tag_list', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ key_word: keyword, type: 0 }),
+      cache: 'no-store',
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    })
+    if (!tagRes.ok) return []
+    const tagData = (await tagRes.json()) as {
+      data?: Array<{ tag_id?: string; tag?: { tag_name?: string } }>
+    }
+    const tags = tagData.data || []
+    if (tags.length === 0) return []
+
+    // Use the first matching tag
+    const tagId = tags[0].tag_id
+    if (!tagId) return []
+
+    await randomDelay(300, 800)
+    const feedRes = await fetch('https://api.juejin.cn/recommend_api/v1/article/recommend_tag_feed', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ id_type: 2, sort_type: 200, cursor: '0', limit: 20, tag_ids: [tagId] }),
+      cache: 'no-store',
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    })
+    if (!feedRes.ok) return []
+    const feedData = (await feedRes.json()) as {
+      data?: Array<{
+        article_info?: { article_id?: string; title?: string; brief_content?: string; ctime?: string }
+        author_user_info?: { user_name?: string }
+      }>
+    }
+    const articles = feedData.data || []
+    const kw = normalizeKeyword(keyword)
+    return articles
+      .filter((a) => {
+        if (!a.article_info?.title || !a.article_info?.article_id) return false
+        const haystack = normalizeKeyword(`${a.article_info.title} ${a.article_info.brief_content || ''}`)
+        return haystack.includes(kw)
+      })
+      .slice(0, MAX_FEED_ITEMS)
+      .map((a) => {
+        const info = a.article_info!
+        const author = a.author_user_info?.user_name
+        return {
+          title: stripHtml(info.title || ''),
+          link: `https://juejin.cn/post/${info.article_id}`,
+          summary: toSummary(info.brief_content || '', 200),
+          publishedAt: info.ctime ? new Date(Number(info.ctime) * 1000).toISOString() : new Date().toISOString(),
+          source: author ? `掘金 / ${author}` : '掘金',
+          keywords: [keyword],
+        }
+      })
+  } catch {
+    return []
+  }
+}
+
+/** Fetch articles from CSDN search API */
+async function fetchCsdnArticles(keyword: string): Promise<FeedItem[]> {
+  const url = buildCsdnSearchUrl(keyword)
+  const retries = SOURCE_RETRIES.csdn || 1
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      if (attempt === 0) await randomDelay(300, 1000)
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': randomUserAgent(),
+          Accept: 'application/json, text/plain, */*',
+          Referer: 'https://so.csdn.net/',
+        },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS + attempt * 4000),
+      })
+      if (!res.ok) {
+        if (attempt < retries && (res.status >= 500 || res.status === 429)) {
+          await randomDelay(2000 + attempt * 2000, 4000 + attempt * 3000)
+          continue
+        }
+        return []
+      }
+      const data = (await res.json()) as {
+        result_vos?: Array<{
+          title?: string
+          url?: string
+          description?: string
+          create_time_str?: string
+          nickname?: string
+        }>
+      }
+      const articles = data.result_vos || []
+      return articles
+        .slice(0, MAX_FEED_ITEMS)
+        .filter((a) => a.title && a.url)
+        .map((a) => ({
+          title: stripHtml(a.title || ''),
+          link: a.url!,
+          summary: toSummary(a.description || '', 200),
+          publishedAt: a.create_time_str ? new Date(a.create_time_str).toISOString() : new Date().toISOString(),
+          source: a.nickname ? `CSDN / ${a.nickname}` : 'CSDN',
+          keywords: [keyword],
+        }))
+    } catch {
+      if (attempt < retries) continue
+      return []
+    }
+  }
+  return []
+}
+
+/** Fetch repos from GitHub search API */
+async function fetchGithubRepos(keyword: string): Promise<FeedItem[]> {
+  const url = buildGithubSearchUrl(keyword)
+  for (let attempt = 0; attempt <= 1; attempt++) {
+    try {
+      if (attempt === 0) await randomDelay(200, 600)
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': randomUserAgent(),
+          Accept: 'application/vnd.github+json',
+        },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS + attempt * 4000),
+      })
+      if (!res.ok) {
+        if (attempt < 1 && (res.status >= 500 || res.status === 403)) {
+          await randomDelay(2000, 5000)
+          continue
+        }
+        return []
+      }
+      const data = (await res.json()) as {
+        items?: Array<{
+          full_name?: string
+          html_url?: string
+          description?: string
+          updated_at?: string
+          stargazers_count?: number
+          language?: string
+          owner?: { login?: string }
+        }>
+      }
+      const repos = data.items || []
+      return repos
+        .slice(0, MAX_FEED_ITEMS)
+        .filter((r) => r.full_name && r.html_url)
+        .map((r) => {
+          const stars = r.stargazers_count ? ` ⭐${r.stargazers_count}` : ''
+          const lang = r.language ? ` [${r.language}]` : ''
+          return {
+            title: `${r.full_name}${lang}${stars}`,
+            link: r.html_url!,
+            summary: toSummary(r.description || '', 200),
+            publishedAt: r.updated_at ? new Date(r.updated_at).toISOString() : new Date().toISOString(),
+            source: r.owner?.login ? `GitHub / ${r.owner.login}` : 'GitHub',
+            keywords: [keyword],
+          }
+        })
+    } catch {
+      if (attempt < 1) continue
+      return []
+    }
+  }
+  return []
+}
+
+/** Parse WeChat articles from Sogou WeChat search page */
+function parseWechatHtml(html: string, keyword: string): FeedItem[] {
+  const items: FeedItem[] = []
+  // Strategy 1: txt-box blocks with h3 > a title (standard layout)
+  const boxRe = /<div\s+class="txt-box">([\s\S]*?)(?=<\/li>|<div\s+class="txt-box">)/gi
+  let m: RegExpExecArray | null
+  while ((m = boxRe.exec(html)) !== null && items.length < MAX_FEED_ITEMS) {
+    const block = m[1]
+    const titleMatch = block.match(/<h3[^>]*>\s*<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>\s*<\/h3>/i)
+    if (!titleMatch) continue
+    let link = titleMatch[1].replace(/&amp;/g, '&')
+    // Sogou uses redirect links — prefix with domain if relative
+    if (link.startsWith('/link?')) link = `https://weixin.sogou.com${link}`
+    const title = stripHtml(titleMatch[2].replace(/<!--[\s\S]*?-->/g, ''))
+    if (!title || title.length < 4) continue
+    const summaryMatch = block.match(/<p[^>]*class="[^"]*txt-info[^"]*"[^>]*>([\s\S]*?)<\/p>/i)
+    const summary = summaryMatch ? stripHtml(summaryMatch[1].replace(/<!--[\s\S]*?-->/g, '')) : ''
+    const accountMatch = block.match(/<span[^>]*class="[^"]*all-time-y2[^"]*"[^>]*>([\s\S]*?)<\/span>/i)
+    const account = accountMatch ? stripHtml(accountMatch[1]) : ''
+    items.push({
+      title,
+      link,
+      summary: toSummary(summary),
+      publishedAt: new Date().toISOString(),
+      source: account ? `微信 / ${account}` : '微信公众号',
+      keywords: [keyword],
+    })
+  }
+  // Strategy 2: sogou_vr li items (broader match)
+  if (items.length === 0) {
+    const liRe = /<li[^>]*id="sogou_vr_[^"]*"[^>]*>([\s\S]*?)(?=<\/li>)/gi
+    while ((m = liRe.exec(html)) !== null && items.length < MAX_FEED_ITEMS) {
+      const block = m[1]
+      const linkMatch = block.match(/<a[^>]+href="([^"]+)"[^>]*uigs="article_title[^"]*"[^>]*>([\s\S]*?)<\/a>/i)
+      if (!linkMatch) continue
+      let link = linkMatch[1].replace(/&amp;/g, '&')
+      if (link.startsWith('/link?')) link = `https://weixin.sogou.com${link}`
+      const title = stripHtml(linkMatch[2].replace(/<!--[\s\S]*?-->/g, ''))
+      if (!title || title.length < 4) continue
+      items.push({
+        title,
+        link,
+        summary: '',
+        publishedAt: new Date().toISOString(),
+        source: '微信公众号',
+        keywords: [keyword],
+      })
+    }
+  }
+  return dedupeByLink(items)
+}
+
+/** Parse news results from Baidu HTML search page (fallback when RSS fails) */
+function parseBaiduNewsHtml(html: string, keyword: string): FeedItem[] {
+  const items: FeedItem[] = []
+  // Strategy 1: result class with h3 title
+  const blockRe = /<div[^>]*class="[^"]*result[^"]*"[^>]*>([\s\S]*?)(?=<div[^>]*class="[^"]*result[^"]*"|$)/gi
+  let m: RegExpExecArray | null
+  while ((m = blockRe.exec(html)) !== null && items.length < MAX_FEED_ITEMS) {
+    const block = m[1]
+    const titleMatch = block.match(/<h3[^>]*>\s*<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>\s*<\/h3>/i)
+    if (!titleMatch) continue
+    const link = titleMatch[1]
+    const title = stripHtml(titleMatch[2])
+    if (!title || title.length < 4 || !link) continue
+    const descMatch =
+      block.match(/<div[^>]*class="[^"]*c-summary[^"]*"[^>]*>([\s\S]*?)<\/div>/i) ||
+      block.match(/<div[^>]*class="[^"]*c-abstract[^"]*"[^>]*>([\s\S]*?)<\/div>/i) ||
+      block.match(/<p[^>]*>([\s\S]*?)<\/p>/i)
+    const summary = descMatch ? stripHtml(descMatch[1]) : ''
+    const sourceMatch = block.match(/<span[^>]*class="[^"]*c-color-gray[^"]*"[^>]*>([\s\S]*?)<\/span>/i)
+    const sourceLabel = sourceMatch ? stripHtml(sourceMatch[1]) : '百度资讯'
+    items.push({
+      title,
+      link,
+      summary: toSummary(summary),
+      publishedAt: new Date().toISOString(),
+      source: sourceLabel || '百度资讯',
+      keywords: [keyword],
+    })
+  }
+  // Strategy 2: broad link fallback
+  if (items.length === 0) {
+    const fbRe = /<a[^>]+href="(https?:\/\/(?!www\.baidu\.com)[^"]+)"[^>]*>([\s\S]*?)<\/a>/gi
+    while ((m = fbRe.exec(html)) !== null && items.length < MAX_FEED_ITEMS) {
+      const title = stripHtml(m[2])
+      if (!title || title.length < 8) continue
+      items.push({
+        title,
+        link: m[1],
+        summary: '',
+        publishedAt: new Date().toISOString(),
+        source: '百度资讯',
+        keywords: [keyword],
+      })
+    }
+  }
+  return dedupeByLink(items)
+}
+
 async function fetchFeedByKeyword(keyword: string, sourceId: RadarSourceId = 'google'): Promise<FeedItem[]> {
   const rssUrlMap: Partial<Record<RadarSourceId, string>> = {
     google: buildGoogleNewsFeedUrl(keyword),
@@ -1024,6 +1370,7 @@ async function fetchFeedByKeyword(keyword: string, sourceId: RadarSourceId = 'go
     duckduckgo: buildDuckDuckGoNewsUrl(keyword),
     yandex: buildYandexNewsUrl(keyword),
     zhihu: buildZhihuSearchUrl(keyword),
+    wechat: buildWechatSearchUrl(keyword),
   }
   const sourceLabel: Record<RadarSourceId, string> = {
     google: 'Google News',
@@ -1037,6 +1384,10 @@ async function fetchFeedByKeyword(keyword: string, sourceId: RadarSourceId = 'go
     zhihu: '知乎',
     v2ex: 'V2EX',
     lobsters: 'Lobsters',
+    juejin: '掘金',
+    csdn: 'CSDN',
+    github: 'GitHub',
+    wechat: '微信公众号',
     sogou: '搜狗资讯',
     duckduckgo: 'DuckDuckGo',
     yandex: 'Yandex News',
@@ -1051,6 +1402,7 @@ async function fetchFeedByKeyword(keyword: string, sourceId: RadarSourceId = 'go
       duckduckgo: parseDuckDuckGoHtml,
       yandex: parseYandexHtml,
       zhihu: parseZhihuHtml,
+      wechat: parseWechatHtml,
     }
     const parser = htmlParsers[sourceId]
     return parser ? parser(html, keyword) : []
@@ -1059,6 +1411,57 @@ async function fetchFeedByKeyword(keyword: string, sourceId: RadarSourceId = 'go
   // Dev.to JSON API
   if (sourceId === 'devto') {
     return fetchDevtoArticles(keyword)
+  }
+
+  // Juejin JSON API
+  if (sourceId === 'juejin') {
+    return fetchJuejinArticles(keyword)
+  }
+
+  // CSDN JSON API
+  if (sourceId === 'csdn') {
+    return fetchCsdnArticles(keyword)
+  }
+
+  // GitHub JSON API
+  if (sourceId === 'github') {
+    return fetchGithubRepos(keyword)
+  }
+
+  // Baidu: try RSS first, fall back to HTML parsing
+  if (sourceId === 'baidu') {
+    try {
+      const xml = await fetchXml(rssUrlMap[sourceId]!, 0)
+      const itemRe = /<item[\s>]([\s\S]*?)<\/item>/gi
+      const rssItems: FeedItem[] = []
+      let rm: RegExpExecArray | null
+      while ((rm = itemRe.exec(xml)) !== null && rssItems.length < MAX_FEED_ITEMS) {
+        const block = rm[1]
+        const title = getTagText(block, 'title')
+        const link = getTagText(block, 'link') || (block.match(/<link>([^<]+)<\/link>/i)?.[1] ?? '')
+        const summary = getTagText(block, 'description')
+        const pubDate = getTagText(block, 'pubDate')
+        if (!title || !link) continue
+        rssItems.push({
+          title,
+          link,
+          summary: toSummary(summary),
+          publishedAt: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
+          source: '百度资讯',
+          keywords: [keyword],
+        })
+      }
+      if (rssItems.length > 0) return rssItems
+    } catch {
+      /* RSS failed, try HTML fallback */
+    }
+    // HTML fallback
+    try {
+      const html = await fetchXml(buildBaiduNewsHtmlUrl(keyword), 2)
+      return parseBaiduNewsHtml(html, keyword)
+    } catch {
+      return []
+    }
   }
 
   // RSS-based sources
