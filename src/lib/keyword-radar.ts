@@ -46,6 +46,8 @@ export type KeywordRadarConfig = {
   keepDays: number
   sources: RadarSourceId[]
   customSourceTemplates: Array<{ name: string; urlTemplate: string }>
+  webhookUrl: string
+  webhookEnabled: boolean
 }
 
 export type KeywordRadarSeenItem = {
@@ -106,6 +108,8 @@ const DEFAULT_CONFIG: KeywordRadarConfig = {
   keepDays: 14,
   sources: ['google'],
   customSourceTemplates: [],
+  webhookUrl: '',
+  webhookEnabled: false,
 }
 
 const FETCH_TIMEOUT_MS = 8000
@@ -154,6 +158,8 @@ function rowToConfig(row: KeywordRadarRow | undefined): KeywordRadarConfig {
       (parseArray(row.keywordRadarSources) as RadarSourceId[]).filter((s) => RADAR_SOURCES.some((def) => def.id === s))
     ),
     customSourceTemplates: parseCustomSourceTemplates(row.keywordRadarCustomSourceTemplates),
+    webhookUrl: String(row.keywordRadarWebhookUrl || ''),
+    webhookEnabled: Boolean(Number(row.keywordRadarWebhookEnabled) || 0),
   }
 }
 
@@ -739,7 +745,9 @@ export async function getKeywordRadarConfig(): Promise<KeywordRadarConfig> {
       COALESCE(keywordRadarMaxItems, 12) as keywordRadarMaxItems,
       COALESCE(keywordRadarKeepDays, 14) as keywordRadarKeepDays,
       COALESCE(keywordRadarSources, '["google"]') as keywordRadarSources,
-      COALESCE(keywordRadarCustomSourceTemplates, '[]') as keywordRadarCustomSourceTemplates
+      COALESCE(keywordRadarCustomSourceTemplates, '[]') as keywordRadarCustomSourceTemplates,
+      COALESCE(keywordRadarWebhookUrl, '') as keywordRadarWebhookUrl,
+      COALESCE(keywordRadarWebhookEnabled, 0) as keywordRadarWebhookEnabled
      FROM SiteConfig WHERE id = 'singleton'`
   )
   return rowToConfig(rows[0])
@@ -764,6 +772,8 @@ export async function saveKeywordRadarConfig(input: Partial<KeywordRadarConfig>)
       input.customSourceTemplates !== undefined
         ? parseCustomSourceTemplates(input.customSourceTemplates)
         : current.customSourceTemplates,
+    webhookUrl: input.webhookUrl !== undefined ? String(input.webhookUrl || '') : current.webhookUrl,
+    webhookEnabled: input.webhookEnabled !== undefined ? Boolean(input.webhookEnabled) : current.webhookEnabled,
     scheduleMinutes: Math.max(15, Number(input.scheduleMinutes ?? current.scheduleMinutes) || 180),
     maxItems: Math.max(3, Math.min(30, Number(input.maxItems ?? current.maxItems) || 12)),
     keepDays: Math.max(1, Math.min(90, Number(input.keepDays ?? current.keepDays) || 14)),
@@ -783,7 +793,9 @@ export async function saveKeywordRadarConfig(input: Partial<KeywordRadarConfig>)
       keywordRadarMaxItems = ?,
       keywordRadarKeepDays = ?,
       keywordRadarSources = ?,
-      keywordRadarCustomSourceTemplates = ?
+      keywordRadarCustomSourceTemplates = ?,
+      keywordRadarWebhookUrl = ?,
+      keywordRadarWebhookEnabled = ?
      WHERE id = 'singleton'`,
     next.enabled ? 1 : 0,
     JSON.stringify(next.keywords),
@@ -798,7 +810,9 @@ export async function saveKeywordRadarConfig(input: Partial<KeywordRadarConfig>)
     next.maxItems,
     next.keepDays,
     JSON.stringify(next.sources),
-    JSON.stringify(next.customSourceTemplates)
+    JSON.stringify(next.customSourceTemplates),
+    next.webhookUrl,
+    next.webhookEnabled ? 1 : 0
   )
   return getKeywordRadarConfig()
 }
@@ -1049,43 +1063,251 @@ async function upsertDailyDigest(items: FeedItem[], config: KeywordRadarConfig, 
   return post.id
 }
 
+/** Send webhook notification (fire-and-forget) */
+async function sendWebhookNotification(url: string, payload: Record<string, unknown>) {
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'User-Agent': 'KeywordRadar/1.0' },
+      body: JSON.stringify({ ...payload, timestamp: new Date().toISOString() }),
+      signal: AbortSignal.timeout(10000),
+    })
+    if (!res.ok) console.warn(`[radar] webhook 响应 ${res.status}`)
+  } catch (err) {
+    console.warn('[radar] webhook 发送失败:', err instanceof Error ? err.message : err)
+  }
+}
+
+/** Record source health data point */
+async function recordSourceHealth(
+  sourceId: string,
+  runId: string,
+  success: boolean,
+  itemCount: number,
+  latencyMs: number,
+  errorMessage: string
+) {
+  try {
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO KeywordRadarSourceHealth (sourceId, runId, success, itemCount, latencyMs, errorMessage, createdAt)
+       VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`,
+      sourceId,
+      runId,
+      success ? 1 : 0,
+      itemCount,
+      latencyMs,
+      errorMessage
+    )
+    // Prune old records (keep last 200 per source)
+    await prisma.$executeRawUnsafe(
+      `DELETE FROM KeywordRadarSourceHealth WHERE sourceId = ? AND createdAt < (
+        SELECT createdAt FROM KeywordRadarSourceHealth WHERE sourceId = ?
+        ORDER BY createdAt DESC LIMIT 1 OFFSET 200
+      )`,
+      sourceId,
+      sourceId
+    )
+  } catch {
+    /* ignore health recording errors */
+  }
+}
+
+/** Check if a source should be auto-degraded (>= 5 consecutive recent failures) */
+async function isSourceDegraded(sourceId: string): Promise<boolean> {
+  try {
+    const rows = await prisma.$queryRawUnsafe<{ success: number }[]>(
+      `SELECT success FROM KeywordRadarSourceHealth WHERE sourceId = ? ORDER BY createdAt DESC LIMIT 5`,
+      sourceId
+    )
+    if (rows.length < 5) return false
+    return rows.every((r) => !r.success)
+  } catch {
+    return false
+  }
+}
+
+/** Get health summary for all sources */
+export async function getSourceHealthSummary(): Promise<
+  Array<{
+    sourceId: string
+    label: string
+    total: number
+    successCount: number
+    failCount: number
+    successRate: number
+    avgLatencyMs: number
+    lastError: string
+    degraded: boolean
+  }>
+> {
+  await runMigrations()
+  const sources = [...RADAR_SOURCES]
+  const results = []
+  for (const src of sources) {
+    const stats = await prisma.$queryRawUnsafe<
+      { total: number; successCount: number; failCount: number; avgLatency: number; lastError: string }[]
+    >(
+      `SELECT
+        COUNT(*) as total,
+        SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successCount,
+        SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) as failCount,
+        AVG(latencyMs) as avgLatency,
+        COALESCE((SELECT errorMessage FROM KeywordRadarSourceHealth WHERE sourceId = ? AND success = 0 ORDER BY createdAt DESC LIMIT 1), '') as lastError
+       FROM KeywordRadarSourceHealth WHERE sourceId = ?`,
+      src.id,
+      src.id
+    )
+    const s = stats[0] || { total: 0, successCount: 0, failCount: 0, avgLatency: 0, lastError: '' }
+    const degraded = await isSourceDegraded(src.id)
+    results.push({
+      sourceId: src.id,
+      label: src.label,
+      total: Number(s.total) || 0,
+      successCount: Number(s.successCount) || 0,
+      failCount: Number(s.failCount) || 0,
+      successRate: s.total ? Math.round((Number(s.successCount) / Number(s.total)) * 100) : 0,
+      avgLatencyMs: Math.round(Number(s.avgLatency) || 0),
+      lastError: String(s.lastError || ''),
+      degraded,
+    })
+  }
+  return results
+}
+
+/** Get radar statistics for visualization */
+export async function getRadarStats(): Promise<{
+  dailyTrend: Array<{ date: string; count: number }>
+  keywordFrequency: Array<{ keyword: string; count: number }>
+  sourceDistribution: Array<{ source: string; count: number }>
+  totalItems: number
+  totalDays: number
+}> {
+  await runMigrations()
+  // Daily trend (last 30 days)
+  const dailyRows = await prisma.$queryRawUnsafe<{ date: string; cnt: number }[]>(
+    `SELECT digestDate as date, COUNT(*) as cnt
+     FROM KeywordRadarSeen
+     WHERE createdAt >= datetime('now', '-30 days')
+     GROUP BY digestDate ORDER BY digestDate DESC LIMIT 30`
+  )
+  // Keyword frequency
+  const allKeywordRows = await prisma.$queryRawUnsafe<{ keywords: string }[]>(
+    `SELECT keywords FROM KeywordRadarSeen WHERE createdAt >= datetime('now', '-30 days')`
+  )
+  const kwCount: Record<string, number> = {}
+  for (const row of allKeywordRows) {
+    try {
+      const kws = JSON.parse(String(row.keywords || '[]')) as string[]
+      for (const kw of kws) {
+        kwCount[kw] = (kwCount[kw] || 0) + 1
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  // Source distribution
+  const sourceRows = await prisma.$queryRawUnsafe<{ source: string; cnt: number }[]>(
+    `SELECT source, COUNT(*) as cnt
+     FROM KeywordRadarSeen
+     WHERE createdAt >= datetime('now', '-30 days')
+     GROUP BY source ORDER BY cnt DESC LIMIT 20`
+  )
+  // Totals
+  const totalRows = await prisma.$queryRawUnsafe<{ total: number; days: number }[]>(
+    `SELECT COUNT(*) as total, COUNT(DISTINCT digestDate) as days FROM KeywordRadarSeen`
+  )
+  return {
+    dailyTrend: dailyRows.map((r) => ({ date: r.date, count: Number(r.cnt) })),
+    keywordFrequency: Object.entries(kwCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 20)
+      .map(([keyword, count]) => ({ keyword, count })),
+    sourceDistribution: sourceRows.map((r) => ({ source: r.source, count: Number(r.cnt) })),
+    totalItems: Number(totalRows[0]?.total) || 0,
+    totalDays: Number(totalRows[0]?.days) || 0,
+  }
+}
+
 async function collectItems(
   config: KeywordRadarConfig,
-  logger: (level: 'info' | 'success' | 'error', message: string) => void
+  logger: (level: 'info' | 'success' | 'error', message: string) => void,
+  runId = ''
 ) {
   const activeSources = config.sources.length > 0 ? config.sources : (['google'] as RadarSourceId[])
-  const taskDefs: Array<{ label: string; run: () => Promise<FeedItem[]> }> = []
+  // Auto-degrade: check which sources are healthy
+  const degradedSources = new Set<string>()
+  for (const sourceId of activeSources) {
+    if (await isSourceDegraded(sourceId)) {
+      degradedSources.add(sourceId)
+      const srcLabel = RADAR_SOURCES.find((s) => s.id === sourceId)?.label || sourceId
+      logger('error', `${srcLabel} 已自动降级（连续5次失败），本轮跳过`)
+    }
+  }
+  const healthySources = activeSources.filter((s) => !degradedSources.has(s))
+  if (healthySources.length === 0 && activeSources.length > 0) {
+    logger('error', '所有源均已降级，强制使用第一个源尝试恢复')
+    healthySources.push(activeSources[0])
+  }
+  const taskDefs: Array<{ label: string; sourceId: string; run: () => Promise<FeedItem[]> }> = []
   for (const keyword of config.keywords) {
-    for (const sourceId of activeSources) {
+    for (const sourceId of healthySources) {
       const srcLabel = RADAR_SOURCES.find((s) => s.id === sourceId)?.label || sourceId
       taskDefs.push({
         label: `${srcLabel} · ${keyword}`,
+        sourceId,
         run: () => fetchFeedByKeyword(keyword, sourceId),
       })
     }
   }
   for (const feedUrl of config.extraFeeds) {
-    taskDefs.push({ label: `RSS ${feedUrl}`, run: () => fetchCustomFeed(feedUrl, config.keywords) })
+    taskDefs.push({ label: `RSS ${feedUrl}`, sourceId: 'custom', run: () => fetchCustomFeed(feedUrl, config.keywords) })
   }
   for (const tmpl of config.customSourceTemplates) {
     for (const keyword of config.keywords) {
       const url = tmpl.urlTemplate.replace(/\{keyword\}/g, encodeURIComponent(keyword))
-      taskDefs.push({ label: `${tmpl.name} · ${keyword}`, run: () => fetchCustomFeed(url, [keyword]) })
+      taskDefs.push({
+        label: `${tmpl.name} · ${keyword}`,
+        sourceId: `tmpl:${tmpl.name}`,
+        run: () => fetchCustomFeed(url, [keyword]),
+      })
     }
   }
-  logger('info', `开始抓取 ${taskDefs.length} 个来源（并发上限 3）`)
-  // Rate-limited concurrent execution (max 3 at a time)
+  logger(
+    'info',
+    `开始抓取 ${taskDefs.length} 个来源（并发上限 3）${degradedSources.size > 0 ? `（${degradedSources.size} 个已降级）` : ''}`
+  )
+  // Rate-limited concurrent execution with timing
   const limit = createLimiter(3)
-  const settled = await Promise.allSettled(taskDefs.map((def) => limit(def.run)))
+  const timings: number[] = []
+  const settled = await Promise.allSettled(
+    taskDefs.map((def) =>
+      limit(async () => {
+        const start = Date.now()
+        try {
+          const result = await def.run()
+          timings.push(Date.now() - start)
+          return result
+        } catch (err) {
+          timings.push(Date.now() - start)
+          throw err
+        }
+      })
+    )
+  )
   const deduped = new Map<string, FeedItem>()
   for (let index = 0; index < settled.length; index++) {
     const result = settled[index]
     const label = taskDefs[index]?.label || `来源 ${index + 1}`
+    const sourceId = taskDefs[index]?.sourceId || 'unknown'
+    const latency = timings[index] || 0
     if (result.status !== 'fulfilled') {
-      logger('error', `${label} 抓取失败：${result.reason instanceof Error ? result.reason.message : '未知错误'}`)
+      const errMsg = result.reason instanceof Error ? result.reason.message : '未知错误'
+      logger('error', `${label} 抓取失败（${latency}ms）：${errMsg}`)
+      recordSourceHealth(sourceId, runId, false, 0, latency, errMsg)
       continue
     }
-    logger('success', `${label} 抓取完成，命中 ${result.value.length} 条`)
+    logger('success', `${label} 抓取完成（${latency}ms），命中 ${result.value.length} 条`)
+    recordSourceHealth(sourceId, runId, true, result.value.length, latency, '')
     for (const item of result.value) {
       if (!matchesDomainFilters(item.link, config)) continue
       const key = `${item.link}::${item.title}`
@@ -1208,7 +1430,7 @@ export async function runKeywordRadar(options: { reason: 'manual' | 'scheduler' 
 
     try {
       log('info', `关键词 ${config.keywords.length} 个，额外 RSS ${config.extraFeeds.length} 个`)
-      const matchedItems = await collectItems(config, log)
+      const matchedItems = await collectItems(config, log, runId)
       log('info', `抓取阶段完成，共命中 ${matchedItems.length} 条候选内容`)
       const newItems = await getNewItems(matchedItems)
       log('info', `去重完成，新增 ${newItems.length} 条`)
@@ -1243,6 +1465,17 @@ export async function runKeywordRadar(options: { reason: 'manual' | 'scheduler' 
       } catch {}
       log('success', `日报已生成，文章 ID：${postId}`)
       log('success', `执行完成：命中 ${matchedItems.length} 条，新增 ${newItems.length} 条`)
+      // Webhook notification
+      if (config.webhookEnabled && config.webhookUrl) {
+        sendWebhookNotification(config.webhookUrl, {
+          event: 'radar_completed',
+          matchedCount: matchedItems.length,
+          newCount: newItems.length,
+          digestDate: dateKey,
+          postId,
+          message: `内容雷达已执行：新增 ${newItems.length} 条，日报文章 ${postId}`,
+        }).catch(() => {})
+      }
       finishKeywordRadarLog(runId)
       syslog
         .info('system', `内容雷达已执行：新增 ${newItems.length} 条，日报文章 ${postId}`, {

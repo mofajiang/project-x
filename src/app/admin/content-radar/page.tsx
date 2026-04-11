@@ -32,6 +32,8 @@ type RadarConfig = {
   keepDays: number
   sources: string[]
   customSourceTemplates: Array<{ name: string; urlTemplate: string }>
+  webhookUrl: string
+  webhookEnabled: boolean
 }
 
 type RadarItem = {
@@ -88,6 +90,8 @@ const EMPTY_STATUS: RadarStatus = {
     keepDays: 14,
     sources: ['google'],
     customSourceTemplates: [],
+    webhookUrl: '',
+    webhookEnabled: false,
   },
   recentItems: [],
   totalSeen: 0,
@@ -126,6 +130,27 @@ export default function AdminContentRadarPage() {
   const [historyEntries, setHistoryEntries] = useState<RadarStatus['logs']['entries']>([])
   const [historyRunId, setHistoryRunId] = useState<string | null>(null)
   const [historyLoading, setHistoryLoading] = useState(false)
+  const [healthData, setHealthData] = useState<
+    Array<{
+      sourceId: string
+      label: string
+      total: number
+      successCount: number
+      failCount: number
+      successRate: number
+      avgLatencyMs: number
+      lastError: string
+      degraded: boolean
+    }>
+  >([])
+  const [statsData, setStatsData] = useState<{
+    dailyTrend: Array<{ date: string; count: number }>
+    keywordFrequency: Array<{ keyword: string; count: number }>
+    sourceDistribution: Array<{ source: string; count: number }>
+    totalItems: number
+    totalDays: number
+  } | null>(null)
+  const [dashTab, setDashTab] = useState<'config' | 'health' | 'stats'>('config')
 
   useEffect(() => {
     fetchStatus({ syncForm: true })
@@ -247,6 +272,22 @@ export default function AdminContentRadarPage() {
     } finally {
       setHistoryLoading(false)
     }
+  }
+
+  const fetchHealth = async () => {
+    try {
+      const res = await fetch('/api/admin/content-radar/health', { cache: 'no-store' })
+      const data = await res.json()
+      if (res.ok && data.sources) setHealthData(data.sources)
+    } catch {}
+  }
+
+  const fetchStats = async () => {
+    try {
+      const res = await fetch('/api/admin/content-radar/stats', { cache: 'no-store' })
+      const data = await res.json()
+      if (res.ok) setStatsData(data)
+    } catch {}
   }
 
   if (loading) {
@@ -587,6 +628,37 @@ export default function AdminContentRadarPage() {
                   未配置 AI 时会自动回退到模板生成，不会中断抓取流程。
                 </p>
               </div>
+              <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
+                <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                  Webhook 通知
+                </label>
+                <div className="space-y-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={status.config.webhookEnabled}
+                      onChange={(e) => setConfig('webhookEnabled', e.target.checked)}
+                      style={{ accentColor: 'var(--accent)' }}
+                    />
+                    启用 Webhook
+                  </label>
+                  <input
+                    type="url"
+                    value={status.config.webhookUrl}
+                    onChange={(e) => setConfig('webhookUrl', e.target.value)}
+                    className={ADMIN_INPUT_CLASS}
+                    style={{
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border)',
+                      background: 'transparent',
+                    }}
+                    placeholder="https://hooks.example.com/webhook"
+                  />
+                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    每次抓取完成后会向此 URL 发送 POST JSON 通知（包含状态和统计）。
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div className="mt-4">
@@ -891,6 +963,262 @@ export default function AdminContentRadarPage() {
             </div>
           </section>
         </aside>
+      </div>
+
+      {/* 源健康 & 统计面板 */}
+      <div className="mt-6 space-y-6">
+        <div className="flex gap-2">
+          {(['health', 'stats'] as const).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => {
+                setDashTab(tab)
+                if (tab === 'health') fetchHealth()
+                if (tab === 'stats') fetchStats()
+              }}
+              className="rounded-full px-4 py-1.5 text-xs font-medium transition-colors"
+              style={{
+                background: dashTab === tab ? 'var(--accent)' : 'transparent',
+                color: dashTab === tab ? '#fff' : 'var(--text-secondary)',
+                border: dashTab === tab ? 'none' : '1px solid var(--border)',
+              }}
+            >
+              {tab === 'health' ? '源健康状态' : '数据统计'}
+            </button>
+          ))}
+        </div>
+
+        {dashTab === 'health' && (
+          <section
+            className={ADMIN_CARD_CLASS}
+            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                抓取源健康状态
+              </h2>
+              <button
+                type="button"
+                onClick={fetchHealth}
+                className="rounded px-3 py-1 text-xs"
+                style={{ color: 'var(--accent)', border: '1px solid var(--accent)' }}
+              >
+                刷新
+              </button>
+            </div>
+            {healthData.length === 0 ? (
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                暂无健康数据，运行一次抓取后即可看到。
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr style={{ color: 'var(--text-secondary)', borderColor: 'var(--border)' }} className="border-b">
+                      <th className="px-3 py-2 font-medium">来源</th>
+                      <th className="px-3 py-2 font-medium">成功率</th>
+                      <th className="px-3 py-2 font-medium">延迟</th>
+                      <th className="px-3 py-2 font-medium">总计</th>
+                      <th className="px-3 py-2 font-medium">状态</th>
+                      <th className="px-3 py-2 font-medium">最近错误</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {healthData.map((src) => (
+                      <tr key={src.sourceId} className="border-b" style={{ borderColor: 'var(--border)' }}>
+                        <td className="px-3 py-2 font-medium" style={{ color: 'var(--text-primary)' }}>
+                          {src.label || src.sourceId}
+                        </td>
+                        <td className="px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="h-2 rounded-full"
+                              style={{
+                                width: '60px',
+                                background: 'var(--border)',
+                              }}
+                            >
+                              <div
+                                className="h-2 rounded-full"
+                                style={{
+                                  width: `${Math.round(src.successRate * 100)}%`,
+                                  background:
+                                    src.successRate >= 0.8
+                                      ? 'var(--green)'
+                                      : src.successRate >= 0.5
+                                        ? 'orange'
+                                        : 'var(--red)',
+                                }}
+                              />
+                            </div>
+                            <span style={{ color: 'var(--text-primary)' }}>{Math.round(src.successRate * 100)}%</span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2" style={{ color: 'var(--text-secondary)' }}>
+                          {Math.round(src.avgLatencyMs)}ms
+                        </td>
+                        <td className="px-3 py-2" style={{ color: 'var(--text-secondary)' }}>
+                          {src.successCount}/{src.total}
+                        </td>
+                        <td className="px-3 py-2">
+                          <span
+                            className="rounded-full px-2 py-0.5 text-xs"
+                            style={{
+                              background: src.degraded ? 'rgba(249,24,128,0.14)' : 'rgba(0,186,124,0.14)',
+                              color: src.degraded ? 'var(--red)' : 'var(--green)',
+                            }}
+                          >
+                            {src.degraded ? '已降级' : '正常'}
+                          </span>
+                        </td>
+                        <td
+                          className="max-w-[200px] truncate px-3 py-2 text-xs"
+                          title={src.lastError}
+                          style={{ color: 'var(--text-secondary)' }}
+                        >
+                          {src.lastError || '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        )}
+
+        {dashTab === 'stats' && (
+          <section
+            className={ADMIN_CARD_CLASS}
+            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                数据统计
+              </h2>
+              <button
+                type="button"
+                onClick={fetchStats}
+                className="rounded px-3 py-1 text-xs"
+                style={{ color: 'var(--accent)', border: '1px solid var(--accent)' }}
+              >
+                刷新
+              </button>
+            </div>
+            {!statsData ? (
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                暂无统计数据。
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+                {/* 每日趋势 */}
+                <div>
+                  <h3 className="mb-3 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                    近30日抓取趋势（共 {statsData.totalItems} 条）
+                  </h3>
+                  <div className="flex items-end gap-[2px]" style={{ height: '120px' }}>
+                    {(() => {
+                      const max = Math.max(...statsData.dailyTrend.map((d) => d.count), 1)
+                      return statsData.dailyTrend.map((d) => (
+                        <div
+                          key={d.date}
+                          title={`${d.date}: ${d.count} 条`}
+                          className="flex-1 rounded-t"
+                          style={{
+                            height: `${Math.max((d.count / max) * 100, 2)}%`,
+                            background: d.count > 0 ? 'var(--accent)' : 'var(--border)',
+                            minWidth: '3px',
+                          }}
+                        />
+                      ))
+                    })()}
+                  </div>
+                  <div className="mt-1 flex justify-between text-[10px]" style={{ color: 'var(--text-secondary)' }}>
+                    <span>{statsData.dailyTrend[0]?.date.slice(5) || ''}</span>
+                    <span>{statsData.dailyTrend[statsData.dailyTrend.length - 1]?.date.slice(5) || ''}</span>
+                  </div>
+                </div>
+
+                {/* 关键词频率 */}
+                <div>
+                  <h3 className="mb-3 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                    关键词命中频率
+                  </h3>
+                  <div className="space-y-2">
+                    {statsData.keywordFrequency.slice(0, 8).map((kw) => {
+                      const max = statsData.keywordFrequency[0]?.count || 1
+                      return (
+                        <div key={kw.keyword} className="flex items-center gap-2 text-xs">
+                          <span
+                            className="w-20 shrink-0 truncate text-right"
+                            title={kw.keyword}
+                            style={{ color: 'var(--text-primary)' }}
+                          >
+                            {kw.keyword}
+                          </span>
+                          <div className="h-4 flex-1 rounded" style={{ background: 'var(--border)' }}>
+                            <div
+                              className="h-4 rounded"
+                              style={{
+                                width: `${Math.max((kw.count / max) * 100, 4)}%`,
+                                background: 'var(--accent)',
+                              }}
+                            />
+                          </div>
+                          <span className="w-8 shrink-0 text-right" style={{ color: 'var(--text-secondary)' }}>
+                            {kw.count}
+                          </span>
+                        </div>
+                      )
+                    })}
+                    {statsData.keywordFrequency.length === 0 && (
+                      <p style={{ color: 'var(--text-secondary)' }}>暂无数据</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* 来源分布 */}
+                <div>
+                  <h3 className="mb-3 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                    来源分布
+                  </h3>
+                  <div className="space-y-2">
+                    {statsData.sourceDistribution.map((sd) => {
+                      const max = statsData.sourceDistribution[0]?.count || 1
+                      return (
+                        <div key={sd.source} className="flex items-center gap-2 text-xs">
+                          <span
+                            className="w-20 shrink-0 truncate text-right"
+                            title={sd.source}
+                            style={{ color: 'var(--text-primary)' }}
+                          >
+                            {sd.source}
+                          </span>
+                          <div className="h-4 flex-1 rounded" style={{ background: 'var(--border)' }}>
+                            <div
+                              className="h-4 rounded"
+                              style={{
+                                width: `${Math.max((sd.count / max) * 100, 4)}%`,
+                                background: 'rgba(0,186,124,0.7)',
+                              }}
+                            />
+                          </div>
+                          <span className="w-8 shrink-0 text-right" style={{ color: 'var(--text-secondary)' }}>
+                            {sd.count}
+                          </span>
+                        </div>
+                      )
+                    })}
+                    {statsData.sourceDistribution.length === 0 && (
+                      <p style={{ color: 'var(--text-secondary)' }}>暂无数据</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
       </div>
     </div>
   )

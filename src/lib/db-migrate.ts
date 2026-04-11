@@ -400,6 +400,32 @@ export async function runMigrations() {
         `CREATE UNIQUE INDEX IF NOT EXISTS idx_post_publicId_unique ON Post(publicId) WHERE publicId IS NOT NULL`,
         'Post publicId unique index'
       )
+      await createTable(
+        `CREATE TABLE IF NOT EXISTS KeywordRadarSourceHealth (
+          sourceId TEXT NOT NULL,
+          runId TEXT NOT NULL DEFAULT '',
+          success INTEGER NOT NULL DEFAULT 0,
+          itemCount INTEGER NOT NULL DEFAULT 0,
+          latencyMs INTEGER NOT NULL DEFAULT 0,
+          errorMessage TEXT NOT NULL DEFAULT '',
+          createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (sourceId, createdAt)
+        )`,
+        'KeywordRadarSourceHealth'
+      )
+      await createIndex(
+        'KeywordRadarSourceHealth',
+        'idx_krs_health_sourceId',
+        'sourceId, createdAt',
+        'KeywordRadarSourceHealth sourceId index'
+      )
+      await addColumn('SiteConfig', 'keywordRadarWebhookUrl', `TEXT NOT NULL DEFAULT ''`, 'keywordRadarWebhookUrl')
+      await addColumn(
+        'SiteConfig',
+        'keywordRadarWebhookEnabled',
+        `INTEGER NOT NULL DEFAULT 0`,
+        'keywordRadarWebhookEnabled'
+      )
       migrated = true
     })().finally(() => {
       migratePromise = null

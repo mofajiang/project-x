@@ -33,6 +33,8 @@ export async function PUT(req: NextRequest) {
     keepDays: Number(body.keepDays) || 14,
     sources: body.sources,
     customSourceTemplates: body.customSourceTemplates,
+    webhookUrl: body.webhookUrl,
+    webhookEnabled: body.webhookEnabled,
   })
   const status = await getKeywordRadarStatus()
   return NextResponse.json(status, { headers: { 'Cache-Control': 'no-store' } })
