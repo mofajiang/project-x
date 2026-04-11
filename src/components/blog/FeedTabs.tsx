@@ -13,12 +13,7 @@ export function FeedTabs({ active, showFriendCircle = false }: { active: string;
       className="sticky top-14 z-10 backdrop-blur-md md:top-0"
       style={{ background: 'var(--bg-blur)', borderBottom: '1px solid var(--border)' }}
     >
-      <div className="flex items-center px-4 pt-2">
-        <span className="text-[18px] font-extrabold" style={{ color: 'var(--text-primary)' }}>
-          主页
-        </span>
-      </div>
-      <div className="mt-1 flex">
+      <div className="flex">
         {tabs.map((tab) => (
           <Link
             key={tab.key}
