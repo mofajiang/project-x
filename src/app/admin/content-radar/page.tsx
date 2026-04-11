@@ -369,7 +369,7 @@ export default function AdminContentRadarPage() {
                   rows={6}
                   className={`${ADMIN_INPUT_CLASS} min-h-[140px] resize-y`}
                   style={{ color: 'var(--text-primary)', border: '1px solid var(--border)', background: 'transparent' }}
-                  placeholder="每行一个关键词，例如：\nAI 编程\n大模型\nRAG"
+                  placeholder="逗号或换行分隔，例如：AI 编程, 大模型, RAG"
                 />
               </div>
 
@@ -397,7 +397,7 @@ export default function AdminContentRadarPage() {
                   rows={4}
                   className={`${ADMIN_INPUT_CLASS} min-h-[100px] resize-y`}
                   style={{ color: 'var(--text-primary)', border: '1px solid var(--border)', background: 'transparent' }}
-                  placeholder="每行一个 RSS 地址，例如：\nhttps://example.com/feed.xml"
+                  placeholder="逗号或换行分隔，例如：https://a.com/feed.xml, https://b.com/rss"
                 />
               </div>
 
@@ -416,7 +416,7 @@ export default function AdminContentRadarPage() {
                       border: '1px solid var(--border)',
                       background: 'transparent',
                     }}
-                    placeholder="每行一个域名，例如：\n36kr.com\ninfoq.cn"
+                    placeholder="逗号或换行分隔，例如：36kr.com, infoq.cn"
                   />
                 </div>
                 <div>
@@ -433,7 +433,7 @@ export default function AdminContentRadarPage() {
                       border: '1px solid var(--border)',
                       background: 'transparent',
                     }}
-                    placeholder="每行一个域名，例如：\nspam-site.example"
+                    placeholder="逗号或换行分隔，例如：spam-site.example"
                   />
                 </div>
               </div>
