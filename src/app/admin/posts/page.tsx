@@ -10,8 +10,12 @@ interface Post {
   title: string
   slug: string
   published: boolean
+  pinned: boolean
   views: number
+  likes: number
   createdAt: string
+  publishedAt: string | null
+  updatedAt: string
   _count: { comments: number }
   tags: { tag: { name: string } }[]
 }
@@ -50,7 +54,9 @@ export default function AdminPostsPage() {
     }
   }, [])
 
-  useEffect(() => { fetchPosts(page, search, status) }, [page, search, status, fetchPosts])
+  useEffect(() => {
+    fetchPosts(page, search, status)
+  }, [page, search, status, fetchPosts])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -77,74 +83,136 @@ export default function AdminPostsPage() {
   }
 
   const renderPostCard = (post: Post) => (
-    <div key={post.id} className={`${ADMIN_CARD_CLASS} flex flex-col gap-2`} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+    <div
+      key={post.id}
+      className={`${ADMIN_CARD_CLASS} flex flex-col gap-2`}
+      style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <Link href={`/admin/posts/${post.id}`} className="font-medium text-base leading-6 block truncate" style={{ color: 'var(--text-primary)' }}>
+          <Link
+            href={`/admin/posts/${post.id}`}
+            className="block truncate text-base font-medium leading-6"
+            style={{ color: 'var(--text-primary)' }}
+          >
             {post.title}
           </Link>
-          <div className="text-xs mt-1 flex flex-wrap gap-x-3 gap-y-1" style={{ color: 'var(--text-secondary)' }}>
-            <span>浏览 {post.views}</span>
-            <span>评论 {post._count.comments}</span>
-            <span>{formatDate(post.createdAt)}</span>
+          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
+            <span>👁 {post.views}</span>
+            <span>💬 {post._count.comments}</span>
+            <span>❤️ {post.likes}</span>
+            <span title={`更新：${formatDate(post.updatedAt)}`}>
+              {post.published && post.publishedAt
+                ? `发布 ${formatDate(post.publishedAt)}`
+                : `创建 ${formatDate(post.createdAt)}`}
+            </span>
           </div>
         </div>
-        <span className="px-2 py-0.5 rounded-full text-[11px] shrink-0 leading-none" style={{ background: post.published ? '#00BA7C22' : '#71767B22', color: post.published ? 'var(--green)' : 'var(--text-secondary)' }}>
-          {post.published ? '已发布' : '草稿'}
-        </span>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <span
+            className="rounded-full px-2 py-0.5 text-[11px] leading-none"
+            style={{
+              background: post.published ? '#00BA7C22' : '#71767B22',
+              color: post.published ? 'var(--green)' : 'var(--text-secondary)',
+            }}
+          >
+            {post.published ? '已发布' : '草稿'}
+          </span>
+          {post.pinned && (
+            <span className="text-[11px] leading-none" title="已置顶">
+              📌
+            </span>
+          )}
+        </div>
       </div>
 
-      <div className="text-xs leading-5 break-words" style={{ color: 'var(--text-secondary)' }}>
-        {post.tags.map(t => `#${t.tag.name}`).join(' ')}
+      <div className="break-words text-xs leading-5" style={{ color: 'var(--text-secondary)' }}>
+        {post.tags.map((t) => `#${t.tag.name}`).join(' ')}
       </div>
 
       <div className="flex gap-2 pt-1">
-        <Link href={`/admin/posts/${post.id}`}
-          className="flex-1 text-center px-3 py-2 rounded-full text-xs font-bold transition-colors hover:opacity-80 min-h-9"
-          style={{ background: 'rgba(29,155,240,0.15)', color: 'var(--accent)' }}>编辑</Link>
-        <button onClick={() => deletePost(post.id, post.title)}
-          className="flex-1 px-3 py-2 rounded-full text-xs font-bold transition-colors hover:opacity-80 min-h-9"
-          style={{ background: 'rgba(249,24,128,0.12)', color: 'var(--red)' }}>删除</button>
+        <Link
+          href={`/admin/posts/${post.id}`}
+          className="min-h-9 flex-1 rounded-full px-3 py-2 text-center text-xs font-bold transition-colors hover:opacity-80"
+          style={{ background: 'rgba(29,155,240,0.15)', color: 'var(--accent)' }}
+        >
+          编辑
+        </Link>
+        <button
+          onClick={() => deletePost(post.id, post.title)}
+          className="min-h-9 flex-1 rounded-full px-3 py-2 text-xs font-bold transition-colors hover:opacity-80"
+          style={{ background: 'rgba(249,24,128,0.12)', color: 'var(--red)' }}
+        >
+          删除
+        </button>
       </div>
     </div>
   )
 
   return (
-    <div className="w-full max-w-6xl mx-auto">
-      <div className="sticky top-0 z-20 flex items-center justify-end gap-3 px-3 py-2 rounded-2xl mb-3 -mx-1" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', backdropFilter: 'blur(8px)' }}>
-        <Link href="/admin/posts/new"
-          className="px-4 py-2 rounded-full text-sm font-bold text-white"
-          style={{ background: 'var(--accent)' }}>+ 新建文章</Link>
+    <div className="mx-auto w-full max-w-6xl">
+      <div
+        className="sticky top-0 z-20 -mx-1 mb-3 flex items-center justify-end gap-3 rounded-2xl px-3 py-2"
+        style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', backdropFilter: 'blur(8px)' }}
+      >
+        <Link
+          href="/admin/posts/new"
+          className="rounded-full px-4 py-2 text-sm font-bold text-white"
+          style={{ background: 'var(--accent)' }}
+        >
+          + 新建文章
+        </Link>
       </div>
 
       {/* 搜索 + 状态筛选 */}
-      <div className="rounded-2xl p-3 sm:p-4 mb-4" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2 flex-1 mb-3">
+      <div
+        className="mb-4 rounded-2xl p-3 sm:p-4"
+        style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
+      >
+        <form onSubmit={handleSearch} className="mb-3 flex flex-1 flex-col gap-2 sm:flex-row">
           <input
             type="text"
             placeholder="搜索文章标题..."
             value={searchInput}
-            onChange={e => setSearchInput(e.target.value)}
-            className="flex-1 px-4 py-2 rounded-full text-sm outline-none min-w-0"
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="min-w-0 flex-1 rounded-full px-4 py-2 text-sm outline-none"
             style={{ background: 'var(--bg-hover)', border: '1px solid transparent', color: 'var(--text-primary)' }}
           />
-          <button type="submit"
-            className="px-4 py-2 rounded-full text-sm font-bold text-white sm:w-auto w-full"
-            style={{ background: 'var(--accent)' }}>搜索</button>
+          <button
+            type="submit"
+            className="w-full rounded-full px-4 py-2 text-sm font-bold text-white sm:w-auto"
+            style={{ background: 'var(--accent)' }}
+          >
+            搜索
+          </button>
           {search && (
-            <button type="button" onClick={() => { setSearchInput(''); setSearch(''); setPage(1) }}
-              className="px-4 py-2 rounded-full text-sm sm:w-auto w-full"
-                style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>清除</button>
+            <button
+              type="button"
+              onClick={() => {
+                setSearchInput('')
+                setSearch('')
+                setPage(1)
+              }}
+              className="w-full rounded-full px-4 py-2 text-sm sm:w-auto"
+              style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}
+            >
+              清除
+            </button>
           )}
         </form>
-        <div className="flex gap-1 p-1 rounded-full overflow-x-auto" style={{ background: 'var(--bg)' }}>
-          {statusTabs.map(tab => (
-            <button key={tab.key} onClick={() => handleStatus(tab.key)}
-              className="px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap"
+        <div className="flex gap-1 overflow-x-auto rounded-full p-1" style={{ background: 'var(--bg)' }}>
+          {statusTabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => handleStatus(tab.key)}
+              className="whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
               style={{
                 background: status === tab.key ? 'var(--accent)' : 'transparent',
                 color: status === tab.key ? '#fff' : 'var(--text-secondary)',
-              }}>{tab.label}</button>
+              }}
+            >
+              {tab.label}
+            </button>
           ))}
         </div>
       </div>
@@ -154,57 +222,96 @@ export default function AdminPostsPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-20" style={{ color: 'var(--text-secondary)' }}>加载中...</div>
+        <div className="py-20 text-center" style={{ color: 'var(--text-secondary)' }}>
+          加载中...
+        </div>
       ) : data.posts.length === 0 ? (
-        <div className="text-center py-20" style={{ color: 'var(--text-secondary)' }}>
+        <div className="py-20 text-center" style={{ color: 'var(--text-secondary)' }}>
           {search ? `未找到包含「${search}」的文章` : '暂无文章'}
         </div>
       ) : (
         <>
-          <div className="sm:hidden flex flex-col gap-3">
-            {data.posts.map(renderPostCard)}
-          </div>
+          <div className="flex flex-col gap-3 sm:hidden">{data.posts.map(renderPostCard)}</div>
 
-          <div className="hidden sm:block rounded-2xl overflow-hidden" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+          <div
+            className="hidden overflow-hidden rounded-2xl sm:block"
+            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
+          >
             <table className="w-full text-sm">
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
-                  <th className="text-left px-4 py-3">标题</th>
-                  <th className="text-left px-4 py-3">状态</th>
-                  <th className="text-left px-4 py-3">浏览</th>
-                  <th className="text-left px-4 py-3">评论</th>
-                  <th className="text-left px-4 py-3">创建时间</th>
+                  <th className="px-4 py-3 text-left">标题</th>
+                  <th className="px-4 py-3 text-left">状态</th>
+                  <th className="px-4 py-3 text-left">浏览</th>
+                  <th className="px-4 py-3 text-left">评论</th>
+                  <th className="px-4 py-3 text-left">点赞</th>
+                  <th className="px-4 py-3 text-left">时间</th>
                   <th className="px-4 py-3">操作</th>
                 </tr>
               </thead>
               <tbody>
-                {data.posts.map(post => (
-                  <tr key={post.id} style={{ borderBottom: '1px solid var(--border)' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                {data.posts.map((post) => (
+                  <tr
+                    key={post.id}
+                    style={{ borderBottom: '1px solid var(--border)' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  >
                     <td className="px-4 py-3" style={{ color: 'var(--text-primary)' }}>
-                      <div className="font-medium">{post.title}</div>
-                      <div className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                        {post.tags.map(t => `#${t.tag.name}`).join(' ')}
+                      <div className="flex items-center gap-1 font-medium">
+                        {post.pinned && <span title="已置顶">📌</span>}
+                        {post.title}
+                      </div>
+                      <div className="mt-0.5 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                        {post.tags.map((t) => `#${t.tag.name}`).join(' ')}
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="px-2 py-0.5 rounded-full text-xs"
-                        style={{ background: post.published ? '#00BA7C22' : '#71767B22', color: post.published ? 'var(--green)' : 'var(--text-secondary)' }}>
+                      <span
+                        className="rounded-full px-2 py-0.5 text-xs"
+                        style={{
+                          background: post.published ? '#00BA7C22' : '#71767B22',
+                          color: post.published ? 'var(--green)' : 'var(--text-secondary)',
+                        }}
+                      >
                         {post.published ? '已发布' : '草稿'}
                       </span>
                     </td>
-                    <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{post.views}</td>
-                    <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{post._count.comments}</td>
-                    <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{formatDate(post.createdAt)}</td>
+                    <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>
+                      {post.views}
+                    </td>
+                    <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>
+                      {post._count.comments}
+                    </td>
+                    <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>
+                      {post.likes}
+                    </td>
+                    <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>
+                      <div title={`创建：${formatDate(post.createdAt)}\n更新：${formatDate(post.updatedAt)}`}>
+                        {post.published && post.publishedAt ? formatDate(post.publishedAt) : formatDate(post.createdAt)}
+                      </div>
+                      {post.published && post.publishedAt && post.publishedAt !== post.createdAt && (
+                        <div className="text-xs opacity-60" title={`创建：${formatDate(post.createdAt)}`}>
+                          创建 {formatDate(post.createdAt)}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-4 py-3">
-                      <div className="flex gap-2 justify-center">
-                        <Link href={`/admin/posts/${post.id}`}
-                          className="px-3 py-1 rounded-full text-xs font-bold transition-colors hover:opacity-80"
-                          style={{ background: 'rgba(29,155,240,0.15)', color: 'var(--accent)' }}>编辑</Link>
-                        <button onClick={() => deletePost(post.id, post.title)}
-                          className="px-3 py-1 rounded-full text-xs font-bold transition-colors hover:opacity-80"
-                          style={{ background: 'rgba(249,24,128,0.12)', color: 'var(--red)' }}>删除</button>
+                      <div className="flex justify-center gap-2">
+                        <Link
+                          href={`/admin/posts/${post.id}`}
+                          className="rounded-full px-3 py-1 text-xs font-bold transition-colors hover:opacity-80"
+                          style={{ background: 'rgba(29,155,240,0.15)', color: 'var(--accent)' }}
+                        >
+                          编辑
+                        </Link>
+                        <button
+                          onClick={() => deletePost(post.id, post.title)}
+                          className="rounded-full px-3 py-1 text-xs font-bold transition-colors hover:opacity-80"
+                          style={{ background: 'rgba(249,24,128,0.12)', color: 'var(--red)' }}
+                        >
+                          删除
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -215,22 +322,25 @@ export default function AdminPostsPage() {
 
           {/* 分页 */}
           {data.totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-6">
+            <div className="mt-6 flex items-center justify-center gap-2">
               <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="px-4 py-2 rounded-full text-sm"
+                className="rounded-full px-4 py-2 text-sm"
                 style={{
                   background: 'var(--bg-secondary)',
                   color: page === 1 ? 'var(--text-secondary)' : 'var(--text-primary)',
                   border: '1px solid var(--border)',
                   opacity: page === 1 ? 0.4 : 1,
                   cursor: page === 1 ? 'not-allowed' : 'pointer',
-                }}>‹ 上一页</button>
+                }}
+              >
+                ‹ 上一页
+              </button>
 
               <div className="flex gap-1">
                 {Array.from({ length: data.totalPages }, (_, i) => i + 1)
-                  .filter(p => p === 1 || p === data.totalPages || Math.abs(p - page) <= 2)
+                  .filter((p) => p === 1 || p === data.totalPages || Math.abs(p - page) <= 2)
                   .reduce<(number | string)[]>((acc, p, idx, arr) => {
                     if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('...')
                     acc.push(p)
@@ -238,30 +348,40 @@ export default function AdminPostsPage() {
                   }, [])
                   .map((p, idx) =>
                     p === '...' ? (
-                      <span key={`e-${idx}`} className="px-2 py-2 text-sm" style={{ color: 'var(--text-secondary)' }}>…</span>
+                      <span key={`e-${idx}`} className="px-2 py-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                        …
+                      </span>
                     ) : (
-                      <button key={p} onClick={() => setPage(p as number)}
-                        className="w-9 h-9 rounded-full text-sm font-medium"
+                      <button
+                        key={p}
+                        onClick={() => setPage(p as number)}
+                        className="h-9 w-9 rounded-full text-sm font-medium"
                         style={{
                           background: page === p ? 'var(--accent)' : 'var(--bg-secondary)',
                           color: page === p ? '#fff' : 'var(--text-primary)',
                           border: '1px solid var(--border)',
-                        }}>{p}</button>
+                        }}
+                      >
+                        {p}
+                      </button>
                     )
                   )}
               </div>
 
               <button
-                onClick={() => setPage(p => Math.min(data.totalPages, p + 1))}
+                onClick={() => setPage((p) => Math.min(data.totalPages, p + 1))}
                 disabled={page === data.totalPages}
-                className="px-4 py-2 rounded-full text-sm"
+                className="rounded-full px-4 py-2 text-sm"
                 style={{
                   background: 'var(--bg-secondary)',
                   color: page === data.totalPages ? 'var(--text-secondary)' : 'var(--text-primary)',
                   border: '1px solid var(--border)',
                   opacity: page === data.totalPages ? 0.4 : 1,
                   cursor: page === data.totalPages ? 'not-allowed' : 'pointer',
-                }}>下一页 ›</button>
+                }}
+              >
+                下一页 ›
+              </button>
             </div>
           )}
         </>
