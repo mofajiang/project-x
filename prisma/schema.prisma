@@ -204,3 +204,12 @@ model FriendLink {
   @@index([status, showInSidebar, sortOrder])
 }
 
+model ShortLink {
+  code       String   @id       // 6-char base62 code
+  url        String             // original URL
+  clicks     Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([url])
+}
+

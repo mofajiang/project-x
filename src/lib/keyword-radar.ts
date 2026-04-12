@@ -60,6 +60,7 @@ export type KeywordRadarConfig = {
   customSourceTemplates: Array<{ name: string; urlTemplate: string }>
   webhookUrl: string
   webhookEnabled: boolean
+  useShortLinks: boolean
 }
 
 export type KeywordRadarSeenItem = {
@@ -140,6 +141,7 @@ const DEFAULT_CONFIG: KeywordRadarConfig = {
   customSourceTemplates: [],
   webhookUrl: '',
   webhookEnabled: false,
+  useShortLinks: false,
 }
 
 const FETCH_TIMEOUT_MS = 10000
@@ -230,6 +232,10 @@ function rowToConfig(row: KeywordRadarRow | undefined): KeywordRadarConfig {
     customSourceTemplates: parseCustomSourceTemplates(row.keywordRadarCustomSourceTemplates),
     webhookUrl: String(row.keywordRadarWebhookUrl || ''),
     webhookEnabled: Boolean(Number(row.keywordRadarWebhookEnabled) || 0),
+    useShortLinks:
+      row.keywordRadarUseShortLinks === undefined
+        ? DEFAULT_CONFIG.useShortLinks
+        : Boolean(Number(row.keywordRadarUseShortLinks) || 0),
   }
 }
 
@@ -708,6 +714,82 @@ function makeDigestMarker(dateKey: string) {
 
 function formatRadarLink(url: string, label = '查看原文') {
   return `[${label}](${url})`
+}
+
+// ---------- Short link helpers ----------
+
+const BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+
+function toBase62(num: number, length: number): string {
+  var result = ''
+  var n = Math.abs(num)
+  while (result.length < length) {
+    result = BASE62[n % 62] + result
+    n = Math.floor(n / 62)
+  }
+  return result
+}
+
+function generateShortCode(url: string): string {
+  var hash = crypto.createHash('md5').update(url).digest()
+  var num = hash.readUInt32BE(0)
+  return toBase62(num, 6)
+}
+
+async function shortenLink(url: string): Promise<string> {
+  var code = generateShortCode(url)
+  // Check if the code already exists
+  var existing = await prisma.$queryRawUnsafe<{ code: string; url: string }[]>(
+    'SELECT code, url FROM ShortLink WHERE code = ?',
+    code
+  )
+  if (existing.length > 0) {
+    if (existing[0].url === url) {
+      // Same URL, reuse
+    } else {
+      // Collision: append extra chars
+      var hash2 = crypto
+        .createHash('md5')
+        .update(url + ':salt')
+        .digest()
+      code = toBase62(hash2.readUInt32BE(0), 6)
+      var existing2 = await prisma.$queryRawUnsafe<{ code: string }[]>(
+        'SELECT code FROM ShortLink WHERE code = ?',
+        code
+      )
+      if (existing2.length === 0) {
+        await prisma.$executeRawUnsafe(
+          "INSERT INTO ShortLink (code, url, clicks, createdAt) VALUES (?, ?, 0, datetime('now'))",
+          code,
+          url
+        )
+      }
+    }
+  } else {
+    await prisma.$executeRawUnsafe(
+      "INSERT INTO ShortLink (code, url, clicks, createdAt) VALUES (?, ?, 0, datetime('now'))",
+      code,
+      url
+    )
+  }
+  var baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '')
+  return baseUrl + '/go/' + code
+}
+
+async function shortenItemLinks(items: FeedItem[], config: KeywordRadarConfig): Promise<FeedItem[]> {
+  if (!config.useShortLinks) return items
+  var result: FeedItem[] = []
+  for (var i = 0; i < items.length; i++) {
+    var item = items[i]
+    try {
+      var shortUrl = await shortenLink(item.link)
+      result.push(Object.assign({}, item, { link: shortUrl }))
+    } catch (e) {
+      // On error keep original link
+      result.push(item)
+    }
+  }
+  return result
 }
 
 function formatPublishedAtLabel(value: string) {
@@ -1713,6 +1795,7 @@ export async function saveKeywordRadarConfig(input: Partial<KeywordRadarConfig>)
     standardMarkdown: input.standardMarkdown !== undefined ? Boolean(input.standardMarkdown) : current.standardMarkdown,
     maxItems: Math.max(3, Math.min(30, Number(input.maxItems ?? current.maxItems) || 12)),
     keepDays: Math.max(1, Math.min(90, Number(input.keepDays ?? current.keepDays) || 14)),
+    useShortLinks: input.useShortLinks !== undefined ? Boolean(input.useShortLinks) : current.useShortLinks,
   }
   await prisma.$executeRawUnsafe(
     `UPDATE SiteConfig SET
@@ -1732,7 +1815,8 @@ export async function saveKeywordRadarConfig(input: Partial<KeywordRadarConfig>)
       keywordRadarSources = ?,
       keywordRadarCustomSourceTemplates = ?,
       keywordRadarWebhookUrl = ?,
-      keywordRadarWebhookEnabled = ?
+      keywordRadarWebhookEnabled = ?,
+      keywordRadarUseShortLinks = ?
      WHERE id = 'singleton'`,
     next.enabled ? 1 : 0,
     JSON.stringify(next.keywords),
@@ -1750,7 +1834,8 @@ export async function saveKeywordRadarConfig(input: Partial<KeywordRadarConfig>)
     JSON.stringify(next.sources),
     JSON.stringify(next.customSourceTemplates),
     next.webhookUrl,
-    next.webhookEnabled ? 1 : 0
+    next.webhookEnabled ? 1 : 0,
+    next.useShortLinks ? 1 : 0
   )
   return getKeywordRadarConfig()
 }
@@ -1995,7 +2080,9 @@ async function upsertDailyDigest(items: FeedItem[], config: KeywordRadarConfig, 
   const digestItems = allItems.length > 0 ? allItems.slice(0, config.maxItems) : items.slice(0, config.maxItems)
   // Enrich items with article body text for better AI summarization
   if (config.useAi) await enrichItemBodies(digestItems)
-  const digest = await buildRadarDigestContent(digestItems, config, dateKey)
+  // Shorten links if enabled
+  const finalItems = await shortenItemLinks(digestItems, config)
+  const digest = await buildRadarDigestContent(finalItems, config, dateKey)
   const content = digest.content
   const excerpt = plainText(content).slice(0, 160)
   const tagNames = config.tags.length ? config.tags : ['日报']
@@ -2574,7 +2661,8 @@ export async function previewKeywordRadarDigest(): Promise<KeywordRadarPreviewRe
   const newItems = await getNewItems(matchedItems)
   const previewItems = (newItems.length > 0 ? newItems : matchedItems).slice(0, config.maxItems)
   if (config.useAi) await enrichItemBodies(previewItems)
-  const digest = await buildRadarDigestContent(previewItems, config, dateKey)
+  const finalItems = await shortenItemLinks(previewItems, config)
+  const digest = await buildRadarDigestContent(finalItems, config, dateKey)
   const content = digest.content
 
   return {

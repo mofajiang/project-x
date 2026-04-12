@@ -36,6 +36,7 @@ export async function PUT(req: NextRequest) {
     customSourceTemplates: body.customSourceTemplates,
     webhookUrl: body.webhookUrl,
     webhookEnabled: body.webhookEnabled,
+    useShortLinks: body.useShortLinks !== undefined ? Boolean(body.useShortLinks) : undefined,
   })
   const status = await getKeywordRadarStatus()
   return NextResponse.json(status, { headers: { 'Cache-Control': 'no-store' } })

@@ -432,6 +432,22 @@ export async function runMigrations() {
         `INTEGER NOT NULL DEFAULT 0`,
         'keywordRadarWebhookEnabled'
       )
+      await createTable(
+        `CREATE TABLE IF NOT EXISTS ShortLink (
+          code TEXT PRIMARY KEY,
+          url TEXT NOT NULL,
+          clicks INTEGER NOT NULL DEFAULT 0,
+          createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )`,
+        'ShortLink'
+      )
+      await createIndex('ShortLink', 'idx_shortlink_url', 'url', 'ShortLink url index')
+      await addColumn(
+        'SiteConfig',
+        'keywordRadarUseShortLinks',
+        `INTEGER NOT NULL DEFAULT 0`,
+        'keywordRadarUseShortLinks (短链接跳转)'
+      )
       migrated = true
     })().finally(() => {
       migratePromise = null

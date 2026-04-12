@@ -37,6 +37,7 @@ type RadarConfig = {
   customSourceTemplates: Array<{ name: string; urlTemplate: string }>
   webhookUrl: string
   webhookEnabled: boolean
+  useShortLinks: boolean
 }
 
 type RadarItem = {
@@ -96,6 +97,7 @@ const EMPTY_STATUS: RadarStatus = {
     customSourceTemplates: [],
     webhookUrl: '',
     webhookEnabled: false,
+    useShortLinks: false,
   },
   recentItems: [],
   totalSeen: 0,
@@ -801,10 +803,20 @@ export default function AdminContentRadarPage() {
                       />
                       按标准 Markdown 输出
                     </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={status.config.useShortLinks}
+                        onChange={(e) => setConfig('useShortLinks', e.target.checked)}
+                        style={{ accentColor: 'var(--accent)' }}
+                      />
+                      使用短链接跳转
+                    </label>
                   </div>
                   <p className="mt-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
                     开启后会优先输出标准 Markdown 标题、列表和 Markdown
-                    链接，减少裸链接或长段文本把内容区域撑出边框的问题。
+                    链接，减少裸链接或长段文本把内容区域撑出边框的问题。开启短链接后，日报中的原文链接将通过本站 /go/xxx
+                    跳转，缩短显示长度。
                   </p>
                 </div>
                 <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
