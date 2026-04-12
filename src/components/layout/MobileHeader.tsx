@@ -127,25 +127,13 @@ export function MobileHeader({
             strokeWidth="2"
             style={{ color: 'var(--text-secondary)' }}
           >
-            <circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none" />
-            <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
-            <circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none" />
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
           </svg>
         </button>
 
-        <button
-          type="button"
-          onClick={handleLogoClick}
-          className="flex min-w-0 items-center gap-2 rounded-full px-3 py-1.5"
-          style={{ color: 'var(--text-primary)' }}
-          aria-label="返回首页"
-        >
-          {isLogoImage ? (
-            <Image src={logoValue} alt={siteName} width={22} height={22} className="h-[22px] w-[22px] object-contain" />
-          ) : (
-            <span className="text-[18px] font-black leading-none">{logoValue}</span>
-          )}
-        </button>
+        <div className="flex-1" />
 
         <ThemeToggle className="h-9 w-9" />
       </header>
