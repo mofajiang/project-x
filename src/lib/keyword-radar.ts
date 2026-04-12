@@ -197,7 +197,7 @@ function parseArray(input: unknown): string[] {
     if (Array.isArray(parsed)) return parseArray(parsed)
   } catch {}
   return input
-    .split(/[\n,，]/)
+    .split(/[\n\r\t,，;；、]+/)
     .map((item) => item.trim())
     .filter(Boolean)
     .filter((item, index, arr) => arr.indexOf(item) === index)

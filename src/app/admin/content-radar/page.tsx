@@ -113,7 +113,7 @@ const EMPTY_STATUS: RadarStatus = {
 
 function textToList(value: string) {
   return value
-    .split(/[\n,，]/)
+    .split(/[\n\r\t,，;；、]+/)
     .map((item) => item.trim())
     .filter(Boolean)
 }
@@ -122,6 +122,7 @@ export default function AdminContentRadarPage() {
   const [status, setStatus] = useState<RadarStatus>(EMPTY_STATUS)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const savingRef = useRef(false)
   const [running, setRunning] = useState(false)
   const [keywordsInput, setKeywordsInput] = useState('')
   const [tagsInput, setTagsInput] = useState('')
@@ -198,7 +199,7 @@ export default function AdminContentRadarPage() {
 
   const fetchStatus = async ({ syncForm = false, silent = false }: { syncForm?: boolean; silent?: boolean } = {}) => {
     // Skip polling updates while saving to prevent overwriting unsaved form state
-    if (saving && !syncForm) return
+    if (savingRef.current && !syncForm) return
     try {
       const res = await fetch('/api/admin/content-radar', { cache: 'no-store' })
       const data = await res.json()
@@ -236,6 +237,7 @@ export default function AdminContentRadarPage() {
 
   const handleSave = async () => {
     setSaving(true)
+    savingRef.current = true
     try {
       const res = await fetch('/api/admin/content-radar', {
         method: 'PUT',
@@ -262,6 +264,7 @@ export default function AdminContentRadarPage() {
       toast.error(error instanceof Error ? error.message : '保存失败')
     } finally {
       setSaving(false)
+      savingRef.current = false
     }
   }
 
