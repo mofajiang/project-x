@@ -150,9 +150,10 @@ const SOURCE_RETRIES: Partial<Record<RadarSourceId, number>> = {
   sogou: 2,
   duckduckgo: 2,
   yandex: 2,
-  csdn: 1,
+  csdn: 2,
   baidu: 2,
-  wechat: 2,
+  wechat: 3,
+  juejin: 1,
 }
 
 /** In-memory fetch cache to avoid duplicate requests within a single run */
@@ -839,12 +840,38 @@ function inspectAiDigestQuality(content: string, config: KeywordRadarConfig) {
 }
 
 const BROWSER_USER_AGENTS = [
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0',
-  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Safari/605.1.15',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:138.0) Gecko/20100101 Firefox/138.0',
+  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.4 Safari/605.1.15',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/136.0.0.0',
 ]
+
+/** Source-specific headers for anti-scraping (Chinese sources need matching Referer/Accept) */
+function getSourceHeaders(url: string): Record<string, string> {
+  const base: Record<string, string> = {
+    'User-Agent': randomUserAgent(),
+    Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+    'Cache-Control': 'no-cache',
+  }
+  if (url.includes('zhihu.com')) {
+    base.Referer = 'https://www.zhihu.com/'
+    base.Cookie = '_xsrf=' + Math.random().toString(36).slice(2, 18)
+  } else if (url.includes('sogou.com')) {
+    base.Referer = 'https://www.sogou.com/'
+  } else if (url.includes('weixin.sogou.com')) {
+    base.Referer = 'https://weixin.sogou.com/'
+  } else if (url.includes('baidu.com')) {
+    base.Referer = 'https://www.baidu.com/'
+  } else if (url.includes('csdn.net')) {
+    base.Referer = 'https://so.csdn.net/'
+  } else {
+    base.Referer = 'https://www.google.com/'
+  }
+  return base
+}
 
 function randomUserAgent() {
   return BROWSER_USER_AGENTS[Math.floor(Math.random() * BROWSER_USER_AGENTS.length)]
@@ -884,19 +911,14 @@ async function fetchXml(url: string, retries = 1): Promise<string> {
 
   let lastError: Error | null = null
   for (let attempt = 0; attempt <= retries; attempt++) {
-    // Random pre-request jitter (300-1200ms) to avoid burst patterns
-    if (attempt === 0) await randomDelay(300, 1200)
+    // Random pre-request jitter — longer for Chinese sources to avoid anti-bot
+    const isCnSource = url.includes('zhihu.com') || url.includes('sogou.com') || url.includes('baidu.com')
+    if (attempt === 0) await randomDelay(isCnSource ? 500 : 300, isCnSource ? 1800 : 1200)
     // Adaptive timeout: increase on retry
     const timeout = FETCH_TIMEOUT_MS + attempt * 5000
     try {
       const res = await fetch(url, {
-        headers: {
-          'User-Agent': randomUserAgent(),
-          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-          'Cache-Control': 'no-cache',
-          Referer: 'https://www.google.com/',
-        },
+        headers: getSourceHeaders(url),
         cache: 'no-store',
         signal: AbortSignal.timeout(timeout),
       })
@@ -928,6 +950,38 @@ async function fetchXml(url: string, retries = 1): Promise<string> {
  */
 function parseZhihuHtml(html: string, keyword: string): FeedItem[] {
   const items: FeedItem[] = []
+
+  // Strategy 0: Try to extract from initialData JSON blob (SSR data)
+  const jsonMatch = html.match(/<script\s+id="js-initialData"[^>]*>([\s\S]*?)<\/script>/i)
+  if (jsonMatch) {
+    try {
+      const data = JSON.parse(jsonMatch[1])
+      const entities = data?.initialState?.search?.items || data?.initialState?.entities?.searchResults || {}
+      const keys = Object.keys(entities)
+      keys.forEach(function (key) {
+        if (items.length >= MAX_FEED_ITEMS) return
+        const item = entities[key]
+        const obj = item?.object || item
+        if (!obj) return
+        const title = obj.title || obj.name || ''
+        const url = obj.url || ''
+        if (!title || title.length < 4 || !url) return
+        const excerpt = obj.excerpt || obj.content || ''
+        items.push({
+          title: stripHtml(title),
+          link: url.startsWith('http') ? url : 'https://www.zhihu.com' + url,
+          summary: toSummary(stripHtml(excerpt), 200),
+          publishedAt: obj.created_time ? new Date(obj.created_time * 1000).toISOString() : new Date().toISOString(),
+          source: '知乎',
+          keywords: [keyword],
+        })
+      })
+      if (items.length > 0) return dedupeByLink(items)
+    } catch {
+      /* json parse failed, try HTML strategies */
+    }
+  }
+
   // Strategy 1: Search result cards with data attributes
   const cardRe =
     /<div[^>]*class="[^"]*SearchResult-Card[^"]*"[^>]*>([\s\S]*?)(?=<div[^>]*class="[^"]*SearchResult-Card|$)/gi

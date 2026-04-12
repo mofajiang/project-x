@@ -643,6 +643,9 @@ export default function AdminContentRadarPage() {
                           { id: 'zhihu', label: '知乎', hint: '中文' },
                           { id: 'v2ex', label: 'V2EX', hint: '中文技术' },
                           { id: 'lobsters', label: 'Lobsters', hint: '技术' },
+                          { id: 'juejin', label: '掘金', hint: '中文开发者' },
+                          { id: 'csdn', label: 'CSDN', hint: '中文技术博客' },
+                          { id: 'github', label: 'GitHub', hint: '开源项目' },
                         ].map((src) => (
                           <label key={src.id} className="flex items-center gap-1.5">
                             <input
@@ -668,6 +671,7 @@ export default function AdminContentRadarPage() {
                       <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                         {[
                           { id: 'sogou', label: '搜狗资讯', hint: '中文' },
+                          { id: 'wechat', label: '微信公众号', hint: '中文' },
                           { id: 'duckduckgo', label: 'DuckDuckGo', hint: '隐私' },
                           { id: 'yandex', label: 'Yandex', hint: '俄/国际' },
                         ].map((src) => (
