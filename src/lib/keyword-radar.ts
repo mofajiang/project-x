@@ -1764,7 +1764,8 @@ export async function getKeywordRadarConfig(): Promise<KeywordRadarConfig> {
       COALESCE(keywordRadarSources, '["google"]') as keywordRadarSources,
       COALESCE(keywordRadarCustomSourceTemplates, '[]') as keywordRadarCustomSourceTemplates,
       COALESCE(keywordRadarWebhookUrl, '') as keywordRadarWebhookUrl,
-      COALESCE(keywordRadarWebhookEnabled, 0) as keywordRadarWebhookEnabled
+      COALESCE(keywordRadarWebhookEnabled, 0) as keywordRadarWebhookEnabled,
+      COALESCE(keywordRadarUseShortLinks, 0) as keywordRadarUseShortLinks
      FROM SiteConfig WHERE id = 'singleton'`
   )
   return rowToConfig(rows[0])
