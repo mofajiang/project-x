@@ -114,37 +114,23 @@ export function MobileHeader({
       >
         <button
           className="flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold transition-opacity active:opacity-70"
-          style={{ background: session ? 'var(--bg-secondary)' : 'transparent', color: 'var(--text-secondary)' }}
+          style={{ background: 'transparent', color: 'var(--text-secondary)' }}
           onClick={() => setDrawerOpen(true)}
           aria-label="打开菜单"
         >
-          {session ? (
-            avatar ? (
-              <Image
-                src={avatar}
-                alt={session.username}
-                width={36}
-                height={36}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <span>{(displayName || handle || session.username)[0]?.toUpperCase()}</span>
-            )
-          ) : (
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-          )}
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            <circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none" />
+            <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
+            <circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none" />
+          </svg>
         </button>
 
         <button
@@ -159,7 +145,6 @@ export function MobileHeader({
           ) : (
             <span className="text-[18px] font-black leading-none">{logoValue}</span>
           )}
-          <span className="max-w-[11rem] truncate text-[15px] font-bold">{siteName}</span>
         </button>
 
         <ThemeToggle className="h-9 w-9" />
