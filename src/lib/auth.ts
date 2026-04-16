@@ -2,9 +2,12 @@ import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'fallback-secret'
-)
+if (!process.env.JWT_SECRET) {
+  // Fail loudly at startup rather than silently using a known-public secret.
+  // Set JWT_SECRET in your environment (see .env.example).
+  throw new Error('JWT_SECRET environment variable is not set')
+}
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET)
 
 export interface JWTPayload {
   userId: string
