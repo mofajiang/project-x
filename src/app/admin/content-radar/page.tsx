@@ -124,6 +124,7 @@ export default function AdminContentRadarPage() {
   const [saving, setSaving] = useState(false)
   const savingRef = useRef(false)
   const [running, setRunning] = useState(false)
+  const coolingDownUntilRef = useRef(0)
   const [keywordsInput, setKeywordsInput] = useState('')
   const [tagsInput, setTagsInput] = useState('')
   const [feedsInput, setFeedsInput] = useState('')
@@ -183,8 +184,14 @@ export default function AdminContentRadarPage() {
   }, [])
 
   useEffect(() => {
+    if (running) {
+      coolingDownUntilRef.current = Date.now() + 5000
+    }
+  }, [running])
+
+  useEffect(() => {
     fetchStatus({ syncForm: false, silent: true }).catch(() => {})
-    const intervalMs = status.logs.running || running ? 1200 : 15000
+    const intervalMs = status.logs.running || running ? 1200 : Date.now() < coolingDownUntilRef.current ? 1200 : 15000
     const timer = window.setInterval(() => {
       fetchStatus({ syncForm: false, silent: true })
     }, intervalMs)

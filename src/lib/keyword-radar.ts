@@ -738,39 +738,31 @@ function generateShortCode(url: string): string {
 
 async function shortenLink(url: string): Promise<string> {
   var code = generateShortCode(url)
-  // Check if the code already exists
-  var existing = await prisma.$queryRawUnsafe<{ code: string; url: string }[]>(
-    'SELECT code, url FROM ShortLink WHERE code = ?',
-    code
+  var inserted = await prisma.$executeRawUnsafe(
+    "INSERT OR IGNORE INTO ShortLink (code, url, clicks, createdAt) VALUES (?, ?, 0, datetime('now'))",
+    code,
+    url
   )
-  if (existing.length > 0) {
-    if (existing[0].url === url) {
-      // Same URL, reuse
+  if (inserted === 0) {
+    var existing = await prisma.$queryRawUnsafe<{ code: string; url: string }[]>(
+      'SELECT code, url FROM ShortLink WHERE code = ?',
+      code
+    )
+    if (existing.length > 0 && existing[0].url === url) {
+      // Same URL already exists, reuse
     } else {
-      // Collision: append extra chars
+      // Collision: generate new code with salt
       var hash2 = crypto
         .createHash('md5')
-        .update(url + ':salt')
+        .update(url + ':' + Date.now() + ':salt')
         .digest()
       code = toBase62(hash2.readUInt32BE(0), 6)
-      var existing2 = await prisma.$queryRawUnsafe<{ code: string }[]>(
-        'SELECT code FROM ShortLink WHERE code = ?',
-        code
+      await prisma.$executeRawUnsafe(
+        "INSERT OR IGNORE INTO ShortLink (code, url, clicks, createdAt) VALUES (?, ?, 0, datetime('now'))",
+        code,
+        url
       )
-      if (existing2.length === 0) {
-        await prisma.$executeRawUnsafe(
-          "INSERT INTO ShortLink (code, url, clicks, createdAt) VALUES (?, ?, 0, datetime('now'))",
-          code,
-          url
-        )
-      }
     }
-  } else {
-    await prisma.$executeRawUnsafe(
-      "INSERT INTO ShortLink (code, url, clicks, createdAt) VALUES (?, ?, 0, datetime('now'))",
-      code,
-      url
-    )
   }
   var baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '')
   return baseUrl + '/go/' + code
@@ -2098,19 +2090,32 @@ async function upsertDailyDigest(items: FeedItem[], config: KeywordRadarConfig, 
   if (!authorId) throw new Error('未找到可用作者，无法自动发帖')
 
   if (existing[0]?.id) {
-    await prisma.tagsOnPosts.deleteMany({ where: { postId: existing[0].id } })
+    const wasAlreadyPublished = Boolean(existing[0].published)
+    const newTagSlugs = new Set(tagNames.map((t) => slugify(t)))
+    const existingTags = await prisma.tagsOnPosts.findMany({
+      where: { postId: existing[0].id },
+      include: { tag: true },
+    })
+    const tagsToDelete = existingTags.filter((tp) => newTagSlugs.has(tp.tag.slug))
+    const tagsToPreserve = existingTags.filter((tp) => !newTagSlugs.has(tp.tag.slug))
+    if (tagsToDelete.length > 0) {
+      await prisma.tagsOnPosts.deleteMany({
+        where: { postId: existing[0].id, tagId: { in: tagsToDelete.map((tp) => tp.tagId) } },
+      })
+    }
     await prisma.post.update({
       where: { id: existing[0].id },
       data: {
         title,
         content,
         excerpt,
-        published: config.autoPublish,
-        publishedAt: config.autoPublish
-          ? existing[0].publishedAt
-            ? new Date(existing[0].publishedAt)
-            : new Date()
-          : null,
+        published: wasAlreadyPublished || config.autoPublish,
+        publishedAt:
+          wasAlreadyPublished || config.autoPublish
+            ? existing[0].publishedAt
+              ? new Date(existing[0].publishedAt)
+              : new Date()
+            : null,
         tags: {
           create: tagNames.map((tagName) => ({
             tag: {
@@ -2219,6 +2224,7 @@ async function isSourceDegraded(sourceId: string): Promise<boolean> {
       sourceId
     )
     if (rows.length < 5) return false
+    if (rows[0].success) return false
     return rows.every((r) => !r.success)
   } catch {
     return false
@@ -2490,6 +2496,7 @@ async function attachPostId(dateKey: string, postId: string) {
 
 declare global {
   var __keywordRadarRunning: Promise<KeywordRadarRunResult> | null | undefined
+  var __keywordRadarPreviewRunning: Promise<KeywordRadarPreviewResult> | null | undefined
 }
 
 export async function runKeywordRadar(options: { reason: 'manual' | 'scheduler' }): Promise<KeywordRadarRunResult> {
@@ -2574,7 +2581,14 @@ export async function runKeywordRadar(options: { reason: 'manual' | 'scheduler' 
       await insertSeenItems(newItems, dateKey)
       log('success', `已写入 ${newItems.length} 条去重记录`)
       log('info', config.useAi ? '开始生成 AI 日报文案' : '使用模板生成日报文案')
-      const digestPost = await upsertDailyDigest(newItems, config, dateKey)
+      let digestPost: { postId: string; mode: string; reason?: string } | null = null
+      try {
+        digestPost = await upsertDailyDigest(newItems, config, dateKey)
+      } catch (digestError) {
+        log('error', `日报生成失败：${digestError instanceof Error ? digestError.message : String(digestError)}`)
+        await attachPostId(dateKey, '')
+        throw digestError
+      }
       const postId = digestPost.postId
       await attachPostId(dateKey, postId)
       await setLastRun({
@@ -2642,38 +2656,49 @@ export async function runKeywordRadar(options: { reason: 'manual' | 'scheduler' 
 }
 
 export async function previewKeywordRadarDigest(): Promise<KeywordRadarPreviewResult> {
-  await runMigrations()
-  await ensureSiteConfigRow()
-  const config = await getKeywordRadarConfig()
-  const dateKey = getTodayKey()
+  if (globalThis.__keywordRadarPreviewRunning) return globalThis.__keywordRadarPreviewRunning
 
-  if (config.keywords.length === 0 && config.extraFeeds.length === 0) {
-    return {
-      ok: false,
-      message: '未配置关键词或额外 RSS 源',
-      matchedCount: 0,
-      newCount: 0,
-      digestDate: dateKey,
-      content: '',
+  const promise = (async (): Promise<KeywordRadarPreviewResult> => {
+    await runMigrations()
+    await ensureSiteConfigRow()
+    const config = await getKeywordRadarConfig()
+    const dateKey = getTodayKey()
+
+    if (config.keywords.length === 0 && config.extraFeeds.length === 0) {
+      return {
+        ok: false,
+        message: '未配置关键词或额外 RSS 源',
+        matchedCount: 0,
+        newCount: 0,
+        digestDate: dateKey,
+        content: '',
+      }
     }
-  }
 
-  const matchedItems = await collectItems(config, () => {}, `preview-${Date.now()}`)
-  const newItems = await getNewItems(matchedItems)
-  const previewItems = (newItems.length > 0 ? newItems : matchedItems).slice(0, config.maxItems)
-  if (config.useAi) await enrichItemBodies(previewItems)
-  const finalItems = await shortenItemLinks(previewItems, config)
-  const digest = await buildRadarDigestContent(finalItems, config, dateKey)
-  const content = digest.content
+    const matchedItems = await collectItems(config, () => {}, `preview-${Date.now()}`)
+    const newItems = await getNewItems(matchedItems)
+    const previewItems = (newItems.length > 0 ? newItems : matchedItems).slice(0, config.maxItems)
+    if (config.useAi) await enrichItemBodies(previewItems)
+    const finalItems = await shortenItemLinks(previewItems, config)
+    const digest = await buildRadarDigestContent(finalItems, config, dateKey)
+    const content = digest.content
 
-  return {
-    ok: true,
-    message:
-      (newItems.length > 0 ? `已预览 ${newItems.length} 条新增内容` : '当前没有新增内容，展示的是候选内容预览') +
-      (digest.mode === 'strict-fallback' && digest.reason ? `；已切换严格模板：${digest.reason}` : ''),
-    matchedCount: matchedItems.length,
-    newCount: newItems.length,
-    digestDate: dateKey,
-    content,
+    return {
+      ok: true,
+      message:
+        (newItems.length > 0 ? `已预览 ${newItems.length} 条新增内容` : '当前没有新增内容，展示的是候选内容预览') +
+        (digest.mode === 'strict-fallback' && digest.reason ? `；已切换严格模板：${digest.reason}` : ''),
+      matchedCount: matchedItems.length,
+      newCount: newItems.length,
+      digestDate: dateKey,
+      content,
+    }
+  })()
+
+  globalThis.__keywordRadarPreviewRunning = promise
+  try {
+    return await promise
+  } finally {
+    globalThis.__keywordRadarPreviewRunning = null
   }
 }
