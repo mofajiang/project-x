@@ -499,11 +499,12 @@ export async function runMigrations() {
         'keywordRadarUseShortLinks (短链接跳转)'
       )
       migrated = true
-      resolved = true
-    })().catch((err) => {
-      if (!resolved) migrateFailed = true
-      console.error('[migrate] Migration failed:', err)
-    })
+    })()
   }
-  await migratePromise
+  try {
+    await migratePromise
+  } catch (e: unknown) {
+    migratePromise = null
+    console.error('[migrate] Migration failed, will retry on next request:', getErrorMessage(e))
+  }
 }

@@ -70,12 +70,11 @@ export async function POST(req: NextRequest) {
     riskReasons: JSON.stringify(quickCheck.localRiskScore > 0 ? ['本地检查中...'] : []),
   }
   if (!session && guestName?.trim()) {
-    commentData.guestName = guestName
+    const clean = guestName
       .trim()
-      .replace(
-        /[<>"'&]/g,
-        (c: string) => ({ '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '&': '&amp;' })[c] || c
-      )
+      .replace(/<[^>]*>/g, '')
+      .slice(0, 50)
+    commentData.guestName = clean
   }
   if (!session && guestEmail?.trim()) {
     commentData.guestEmail = guestEmail.trim()

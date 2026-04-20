@@ -75,14 +75,16 @@ export async function middleware(request: NextRequest) {
         if (res.ok) {
           const data = await res.json()
           allowed = data.valid === true
+          setLicenseCache(hostname, { allowed, expires: Date.now() + LICENSE_CACHE_TTL })
+        } else if (cached) {
+          setLicenseCache(hostname, { allowed, expires: Date.now() + 60000 })
         }
       } catch {
-        // 网络异常时：仅当之前验证通过过且缓存未过期时，沿用旧结果
-        if (cached?.allowed && cached.expires > Date.now()) {
+        if (cached?.allowed) {
           allowed = true
+          setLicenseCache(hostname, { allowed, expires: Date.now() + LICENSE_CACHE_TTL })
         }
       }
-      setLicenseCache(hostname, { allowed, expires: Date.now() + LICENSE_CACHE_TTL })
     }
 
     if (!allowed) {

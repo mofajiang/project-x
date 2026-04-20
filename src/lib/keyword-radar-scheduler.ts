@@ -12,10 +12,6 @@ const DISABLED_RECHECK_MS = 5 * 60 * 1000
 const PRUNE_INTERVAL_MS = 6 * 3600 * 1000
 
 export function ensureKeywordRadarScheduler() {
-  if (globalThis.__keywordRadarSchedulerTimer) {
-    clearTimeout(globalThis.__keywordRadarSchedulerTimer)
-    globalThis.__keywordRadarSchedulerTimer = undefined
-  }
   const now = Date.now()
   if (globalThis.__keywordRadarSchedulerStarted && globalThis.__keywordRadarSchedulerTimer) {
     const startedAt = globalThis.__keywordRadarSchedulerStartedAt || 0
@@ -23,6 +19,8 @@ export function ensureKeywordRadarScheduler() {
     if (now - startedAt < maxDelay) {
       return
     }
+    clearTimeout(globalThis.__keywordRadarSchedulerTimer)
+    globalThis.__keywordRadarSchedulerTimer = undefined
   }
   globalThis.__keywordRadarSchedulerStarted = true
   globalThis.__keywordRadarSchedulerStartedAt = now

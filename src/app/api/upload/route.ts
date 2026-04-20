@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'ico']
   const ext = (file.name.split('.').pop() || '').toLowerCase()
   if (!ALLOWED_TYPES.includes(file.type) || !ALLOWED_EXTS.includes(ext)) {
-    return NextResponse.json({ error: '仅支持图片文件（JPG/PNG/GIF/WebP/SVG/ICO）' }, { status: 400 })
+    return NextResponse.json({ error: '仅支持图片文件（JPG/PNG/GIF/WebP/ICO）' }, { status: 400 })
   }
   // 文件大小限制 10MB
   if (file.size > 10 * 1024 * 1024) {

@@ -16,23 +16,24 @@ export interface JWTPayload {
 }
 
 const revokedTokens = new Map<string, number>()
+const lastCleanup = { t: 0 }
 const REVOKE_CLEANUP_INTERVAL = 60 * 60 * 1000
-setInterval(() => {
-  const now = Date.now()
-  const keys = Array.from(revokedTokens.keys())
-  for (const jti of keys) {
-    if ((revokedTokens.get(jti) as number) < now) revokedTokens.delete(jti)
-  }
-}, REVOKE_CLEANUP_INTERVAL)
 
 export function revokeToken(jti: string, expiresAt: number) {
+  const now = Date.now()
+  if (!lastCleanup.t || now - lastCleanup.t > REVOKE_CLEANUP_INTERVAL) {
+    revokedTokens.forEach((val, key) => {
+      if (val < now) revokedTokens.delete(key)
+    })
+    lastCleanup.t = now
+  }
   revokedTokens.set(jti, expiresAt)
 }
 
 export async function signJWT(payload: Omit<JWTPayload, 'iat' | 'exp' | 'jti'>) {
-  const jti = crypto.randomUUID()
-  return new SignJWT({ ...payload, jti } as Record<string, unknown>)
+  return new SignJWT(payload as Record<string, unknown>)
     .setProtectedHeader({ alg: 'HS256' })
+    .setJti(crypto.randomUUID())
     .setIssuedAt()
     .setExpirationTime('30d')
     .sign(JWT_SECRET)
@@ -42,7 +43,7 @@ export async function verifyJWT(token: string): Promise<JWTPayload | null> {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET)
     const result = payload as unknown as JWTPayload
-    if (result.jti && revokedTokens.has(result.jti)) return null
+    if (!result.jti || revokedTokens.has(result.jti)) return null
     return result
   } catch {
     return null
@@ -62,14 +63,6 @@ export async function getSessionFromRequest(req: NextRequest): Promise<JWTPayloa
   return verifyJWT(token)
 }
 
-/**
- * Wraps an admin route handler with authentication check.
- * If no valid session is found, returns 401 Unauthorized automatically.
- *
- * Usage:
- *   export const GET = withAuth(async (req, session) => { ... })
- *   export const GET = withAuth(async (req, session, { params }) => { ... })
- */
 export function withAuth<TArgs extends unknown[]>(
   handler: (req: NextRequest, session: JWTPayload, ...args: TArgs) => Promise<Response>
 ) {

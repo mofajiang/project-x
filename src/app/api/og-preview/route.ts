@@ -61,7 +61,8 @@ export async function GET(req: NextRequest) {
   } catch {}
 
   // 防止 SSRF：禁止内网地址
-  const blockedHosts = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.|0\.|::1|fe80:|\.internal)/i
+  const blockedHosts =
+    /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.|0\.|169\.254\.|fc00:|fd|::1|::ffff:|fe80:|\.internal)/i
   if (!hostname || blockedHosts.test(hostname)) {
     return NextResponse.json({ error: 'invalid hostname' }, { status: 400 })
   }
