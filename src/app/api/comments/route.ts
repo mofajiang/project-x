@@ -70,7 +70,12 @@ export async function POST(req: NextRequest) {
     riskReasons: JSON.stringify(quickCheck.localRiskScore > 0 ? ['本地检查中...'] : []),
   }
   if (!session && guestName?.trim()) {
-    commentData.guestName = guestName.trim()
+    commentData.guestName = guestName
+      .trim()
+      .replace(
+        /[<>"'&]/g,
+        (c: string) => ({ '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '&': '&amp;' })[c] || c
+      )
   }
   if (!session && guestEmail?.trim()) {
     commentData.guestEmail = guestEmail.trim()
@@ -95,7 +100,12 @@ export async function POST(req: NextRequest) {
       delete commentData.guestEmail
       delete commentData.guestWebsite
       delete commentData.ip
-      comment = await prisma.comment.create({ data: commentData })
+      try {
+        comment = await prisma.comment.create({ data: commentData })
+      } catch (retryErr: unknown) {
+        console.error('[comment create retry]', getErrorMessage(retryErr))
+        return NextResponse.json({ error: '评论提交失败，请重试' }, { status: 500 })
+      }
     } else {
       console.error('[comment create]', getErrorMessage(e))
       return NextResponse.json({ error: '评论提交失败，请重试' }, { status: 500 })
@@ -183,14 +193,18 @@ async function analyzeAndUpdateComment(
     // 根据强度等级和 AI 风险评分决定是否自动通过/隐藏
     let approved: boolean | undefined = undefined
 
-    // riskScore = -1 表示 AI 限速（429）：不更新 approved，保持原有待审状态
+    // riskScore = -1 表示 AI 未完成有效分析（429限速/API错误/异常）：不更新 approved，保持原有待审状态
     if (aiResult.riskScore === -1) {
-      if (DEBUG) console.log('[ai-analysis-async] ⚠️ AI 限速(429)，评论保持待审状态')
+      if (DEBUG) console.log('[ai-analysis-async] ⚠️ AI 未完成有效分析，评论保持待审状态')
       await prisma.comment.update({
         where: { id: commentId },
-        data: { riskReasons: JSON.stringify(['AI 限速，待人工审核']) },
+        data: {
+          riskReasons: JSON.stringify(
+            aiResult.riskReasons.length ? aiResult.riskReasons : ['AI 未完成分析，待人工审核']
+          ),
+        },
       })
-      syslog.warn('ai', 'AI 限速 (429)，评论保持待审', { commentId }).catch(() => {})
+      syslog.warn('ai', 'AI 未完成分析，评论保持待审', { commentId, reasons: aiResult.riskReasons }).catch(() => {})
       return
     }
 

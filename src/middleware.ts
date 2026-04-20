@@ -14,15 +14,28 @@ async function hmacSign(data: string, secret: string): Promise<string> {
     .join('')
 }
 
-// LICENSE_SERVER and LICENSE_SECRET must be supplied via environment variables.
-// If LICENSE_SECRET is absent the middleware skips HMAC verification and allows
-// all requests through, so deployments without a license server are unaffected.
 const LICENSE_SERVER = process.env.LICENSE_SERVER_URL ?? ''
 const LICENSE_SECRET = process.env.LICENSE_SECRET ?? ''
 
 // 授权结果内存缓存（每个 Edge Worker 实例独立）
 const licenseCache = new Map<string, { allowed: boolean; expires: number }>()
 const LICENSE_CACHE_TTL = 60 * 60 * 1000 // 1 小时
+const LICENSE_CACHE_MAX = 100
+
+function setLicenseCache(hostname: string, entry: { allowed: boolean; expires: number }) {
+  if (licenseCache.size >= LICENSE_CACHE_MAX) {
+    let oldestKey: string | null = null
+    let oldestExp = Infinity
+    licenseCache.forEach((v, k) => {
+      if (v.expires < oldestExp) {
+        oldestExp = v.expires
+        oldestKey = k
+      }
+    })
+    if (oldestKey) licenseCache.delete(oldestKey)
+  }
+  licenseCache.set(hostname, entry)
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -64,12 +77,12 @@ export async function middleware(request: NextRequest) {
           allowed = data.valid === true
         }
       } catch {
-        // 网络异常时：如果之前验证通过过，沿用旧结果
-        if (cached?.allowed) {
+        // 网络异常时：仅当之前验证通过过且缓存未过期时，沿用旧结果
+        if (cached?.allowed && cached.expires > Date.now()) {
           allowed = true
         }
       }
-      licenseCache.set(hostname, { allowed, expires: Date.now() + LICENSE_CACHE_TTL })
+      setLicenseCache(hostname, { allowed, expires: Date.now() + LICENSE_CACHE_TTL })
     }
 
     if (!allowed) {

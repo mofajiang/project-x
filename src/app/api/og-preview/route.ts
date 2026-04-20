@@ -17,18 +17,24 @@ interface OGData {
 function extractMeta(html: string, url: string): OGData {
   const get = (pattern: RegExp) => pattern.exec(html)?.[1]?.trim() ?? ''
 
-  const ogTitle = get(/property=["']og:title["'][^>]*content=["']([^"']+)["']/i)
-    || get(/content=["']([^"']+)["'][^>]*property=["']og:title["']/i)
-  const ogDesc = get(/property=["']og:description["'][^>]*content=["']([^"']+)["']/i)
-    || get(/content=["']([^"']+)["'][^>]*property=["']og:description["']/i)
-  const ogImage = get(/property=["']og:image["'][^>]*content=["']([^"']+)["']/i)
-    || get(/content=["']([^"']+)["'][^>]*property=["']og:image["']/i)
+  const ogTitle =
+    get(/property=["']og:title["'][^>]*content=["']([^"']+)["']/i) ||
+    get(/content=["']([^"']+)["'][^>]*property=["']og:title["']/i)
+  const ogDesc =
+    get(/property=["']og:description["'][^>]*content=["']([^"']+)["']/i) ||
+    get(/content=["']([^"']+)["'][^>]*property=["']og:description["']/i)
+  const ogImage =
+    get(/property=["']og:image["'][^>]*content=["']([^"']+)["']/i) ||
+    get(/content=["']([^"']+)["'][^>]*property=["']og:image["']/i)
   const metaTitle = get(/<title[^>]*>([^<]+)<\/title>/i)
-  const metaDesc = get(/name=["']description["'][^>]*content=["']([^"']+)["']/i)
-    || get(/content=["']([^"']+)["'][^>]*name=["']description["']/i)
+  const metaDesc =
+    get(/name=["']description["'][^>]*content=["']([^"']+)["']/i) ||
+    get(/content=["']([^"']+)["'][^>]*name=["']description["']/i)
 
   let hostname = ''
-  try { hostname = new URL(url).hostname } catch {}
+  try {
+    hostname = new URL(url).hostname
+  } catch {}
 
   return {
     title: ogTitle || metaTitle || hostname,
@@ -43,12 +49,22 @@ export async function GET(req: NextRequest) {
   const url = req.nextUrl.searchParams.get('url')
   if (!url) return NextResponse.json({ error: 'url required' }, { status: 400 })
 
-  try { new URL(url) } catch {
+  try {
+    new URL(url)
+  } catch {
     return NextResponse.json({ error: 'invalid url' }, { status: 400 })
   }
 
   let hostname = ''
-  try { hostname = new URL(url).hostname } catch {}
+  try {
+    hostname = new URL(url).hostname
+  } catch {}
+
+  // 防止 SSRF：禁止内网地址
+  const blockedHosts = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.|0\.|::1|fe80:|\.internal)/i
+  if (!hostname || blockedHosts.test(hostname)) {
+    return NextResponse.json({ error: 'invalid hostname' }, { status: 400 })
+  }
 
   // 1. 内存缓存（最快）
   const mem = memCache.get(url)
@@ -58,9 +74,7 @@ export async function GET(req: NextRequest) {
 
   // 2. 数据库缓存
   try {
-    const rows = await prisma.$queryRawUnsafe<any[]>(
-      `SELECT data, updatedAt FROM OgCache WHERE url = ? LIMIT 1`, url
-    )
+    const rows = await prisma.$queryRawUnsafe<any[]>(`SELECT data, updatedAt FROM OgCache WHERE url = ? LIMIT 1`, url)
     if (rows.length > 0) {
       const age = Date.now() - new Date(rows[0].updatedAt).getTime()
       if (age < DB_TTL) {
@@ -69,7 +83,9 @@ export async function GET(req: NextRequest) {
         return NextResponse.json(data, { headers: { 'X-Cache': 'DB' } })
       }
     }
-  } catch { /* OgCache 表可能未创建，继续 */ }
+  } catch {
+    /* OgCache 表可能未创建，继续 */
+  }
 
   // 3. 实时抓取
   try {
@@ -84,11 +100,15 @@ export async function GET(req: NextRequest) {
     memCache.set(url, { data, ts: Date.now() })
 
     // 写入数据库缓存（非阻塞）
-    prisma.$executeRawUnsafe(
-      `INSERT INTO OgCache (url, data, updatedAt) VALUES (?, ?, ?)
+    prisma
+      .$executeRawUnsafe(
+        `INSERT INTO OgCache (url, data, updatedAt) VALUES (?, ?, ?)
        ON CONFLICT(url) DO UPDATE SET data = excluded.data, updatedAt = excluded.updatedAt`,
-      url, JSON.stringify(data), new Date().toISOString()
-    ).catch(() => {})
+        url,
+        JSON.stringify(data),
+        new Date().toISOString()
+      )
+      .catch(() => {})
 
     return NextResponse.json(data, { headers: { 'X-Cache': 'FETCH' } })
   } catch {

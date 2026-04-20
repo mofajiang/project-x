@@ -3,8 +3,6 @@ import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 
 if (!process.env.JWT_SECRET) {
-  // Fail loudly at startup rather than silently using a known-public secret.
-  // Set JWT_SECRET in your environment (see .env.example).
   throw new Error('JWT_SECRET environment variable is not set')
 }
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET)
@@ -12,12 +10,28 @@ const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET)
 export interface JWTPayload {
   userId: string
   username: string
+  jti?: string
   iat?: number
   exp?: number
 }
 
-export async function signJWT(payload: Omit<JWTPayload, 'iat' | 'exp'>) {
-  return new SignJWT(payload as Record<string, unknown>)
+const revokedTokens = new Map<string, number>()
+const REVOKE_CLEANUP_INTERVAL = 60 * 60 * 1000
+setInterval(() => {
+  const now = Date.now()
+  const keys = Array.from(revokedTokens.keys())
+  for (const jti of keys) {
+    if ((revokedTokens.get(jti) as number) < now) revokedTokens.delete(jti)
+  }
+}, REVOKE_CLEANUP_INTERVAL)
+
+export function revokeToken(jti: string, expiresAt: number) {
+  revokedTokens.set(jti, expiresAt)
+}
+
+export async function signJWT(payload: Omit<JWTPayload, 'iat' | 'exp' | 'jti'>) {
+  const jti = crypto.randomUUID()
+  return new SignJWT({ ...payload, jti } as Record<string, unknown>)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('30d')
@@ -27,7 +41,9 @@ export async function signJWT(payload: Omit<JWTPayload, 'iat' | 'exp'>) {
 export async function verifyJWT(token: string): Promise<JWTPayload | null> {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET)
-    return payload as unknown as JWTPayload
+    const result = payload as unknown as JWTPayload
+    if (result.jti && revokedTokens.has(result.jti)) return null
+    return result
   } catch {
     return null
   }

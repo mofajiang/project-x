@@ -298,10 +298,21 @@ backup_db() {
 
 # ── 同步数据库 Schema ─────────────────────────────────────
 sync_db_schema() {
-  cd "$INSTALL_DIR"
-  step "同步数据库结构（新增字段）"
-  npm run db:push -- --accept-data-loss
-  info "数据库结构已同步"
+	cd "$INSTALL_DIR"
+	step "同步数据库结构"
+	if npm run db:push; then
+		info "数据库结构已同步"
+	else
+		warn "db:push 失败，可能存在数据冲突"
+		echo -e -n " ${CYAN}${BOLD}是否允许数据丢失重新同步？(y/N): ${NC}"
+		read -r confirm_loss || true
+		if [[ "${confirm_loss}" =~ ^[Yy]$ ]]; then
+			npm run db:push -- --accept-data-loss
+			info "数据库结构已同步（允许数据丢失）"
+		else
+			error "数据库结构同步已取消"
+		fi
+	fi
 }
 
 # ── 更新流程（不含交互式配置） ────────────────────────────
@@ -332,7 +343,7 @@ init_db() {
   npm run db:push
 
   step "创建管理员账号"
-  ADMIN_USER="$ADMIN_USER" ADMIN_PASS="$ADMIN_PASS" npx tsx scripts/init-admin.ts \
+	ADMIN_USERNAME="$ADMIN_USER" ADMIN_PASSWORD="$ADMIN_PASS" npx tsx scripts/init-admin.ts \
     || warn "管理员账号创建失败（账号可能已存在），请手动执行：npx tsx scripts/init-admin.ts"
 }
 

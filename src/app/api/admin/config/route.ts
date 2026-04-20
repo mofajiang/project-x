@@ -163,7 +163,7 @@ export async function PUT(req: NextRequest) {
       ip: requestIp,
       metadata: { changedKeys, error: getErrorMessage(e) || 'ensure SiteConfig failed' },
     })
-    return NextResponse.json({ error: '保存失败', detail: getErrorMessage(e) }, { status: 500 })
+    return NextResponse.json({ error: '保存失败' }, { status: 500 })
   }
 
   const rawUpdates: Array<{ col: string; val: unknown }> = []
@@ -189,9 +189,11 @@ export async function PUT(req: NextRequest) {
   if (enableFriendCircle !== null) rawUpdates.push({ col: 'enableFriendCircle', val: enableFriendCircle ? 1 : 0 })
 
   try {
-    for (const { col, val } of rawUpdates) {
-      await prisma.$executeRawUnsafe(`UPDATE SiteConfig SET ${col} = ? WHERE id = 'singleton'`, val)
-    }
+    await prisma.$transaction(async (tx) => {
+      for (const { col, val } of rawUpdates) {
+        await tx.$executeRawUnsafe(`UPDATE SiteConfig SET ${col} = ? WHERE id = 'singleton'`, val)
+      }
+    })
   } catch (e: unknown) {
     console.error('[config PUT] raw update failed:', getErrorMessage(e))
     await logAdminAudit({
@@ -203,7 +205,7 @@ export async function PUT(req: NextRequest) {
       ip: requestIp,
       metadata: { changedKeys, error: getErrorMessage(e) || 'raw update failed' },
     })
-    return NextResponse.json({ error: '保存失败', detail: getErrorMessage(e) }, { status: 500 })
+    return NextResponse.json({ error: '保存失败' }, { status: 500 })
   }
 
   await revalidateSiteConfig()
