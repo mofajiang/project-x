@@ -32,6 +32,7 @@ export async function PUT(req: NextRequest) {
     prompt: String(body.prompt || ''),
     maxItems: Number(body.maxItems) || 12,
     keepDays: Number(body.keepDays) || 14,
+    maxArticleAgeDays: Number(body.maxArticleAgeDays) || 7,
     sources: body.sources,
     customSourceTemplates: body.customSourceTemplates,
     webhookUrl: body.webhookUrl,

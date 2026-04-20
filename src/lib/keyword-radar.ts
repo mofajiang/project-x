@@ -1982,6 +1982,7 @@ export async function saveKeywordRadarConfig(input: Partial<KeywordRadarConfig>)
     standardMarkdown: input.standardMarkdown !== undefined ? Boolean(input.standardMarkdown) : current.standardMarkdown,
     maxItems: Math.max(3, Math.min(30, Number(input.maxItems ?? current.maxItems) || 12)),
     keepDays: Math.max(1, Math.min(90, Number(input.keepDays ?? current.keepDays) || 14)),
+    maxArticleAgeDays: Math.max(1, Math.min(30, Number(input.maxArticleAgeDays ?? current.maxArticleAgeDays) || 7)),
     useShortLinks: input.useShortLinks !== undefined ? Boolean(input.useShortLinks) : current.useShortLinks,
   }
   await prisma.$executeRawUnsafe(
@@ -2003,7 +2004,8 @@ export async function saveKeywordRadarConfig(input: Partial<KeywordRadarConfig>)
       keywordRadarCustomSourceTemplates = ?,
       keywordRadarWebhookUrl = ?,
       keywordRadarWebhookEnabled = ?,
-      keywordRadarUseShortLinks = ?
+      keywordRadarUseShortLinks = ?,
+      keywordRadarMaxArticleAgeDays = ?
      WHERE id = 'singleton'`,
     next.enabled ? 1 : 0,
     JSON.stringify(next.keywords),
@@ -2022,7 +2024,8 @@ export async function saveKeywordRadarConfig(input: Partial<KeywordRadarConfig>)
     JSON.stringify(next.customSourceTemplates),
     next.webhookUrl,
     next.webhookEnabled ? 1 : 0,
-    next.useShortLinks ? 1 : 0
+    next.useShortLinks ? 1 : 0,
+    next.maxArticleAgeDays
   )
   return getKeywordRadarConfig()
 }
