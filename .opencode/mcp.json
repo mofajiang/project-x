@@ -1,0 +1,14 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "MiniMax": {
+      "type": "local",
+      "command": ["uvx", "minimax-coding-plan-mcp", "-y"],
+      "environment": {
+        "MINIMAX_API_KEY": "sk-cp-cMIkvODLUNgGHKkaQXQGIqp0hkyDlXpI_CxGDSFvM03vWKtFohVYy8azl-dPgaP00Xxp1i4fp88Xg8gxJ3HeULKVcDpOYhyWQsFWW5Ja_eusdFifc7V5Rb0",
+        "MINIMAX_API_HOST": "https://api.minimaxi.com"
+      },
+      "enabled": true
+    }
+  }
+}

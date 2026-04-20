@@ -7,15 +7,46 @@ import { getErrorMessage } from './converters'
 
 let migrated = false
 let migratePromise: Promise<void> | null = null
+let migrateFailed = false
+
+const ALLOWED_TABLES = new Set([
+  'SiteConfig',
+  'Post',
+  'User',
+  'Comment',
+  'Tag',
+  'TagsOnPosts',
+  'Visitor',
+  'VisitorGeoCache',
+  'LoginFailure',
+  'AdminAuditLog',
+  'FriendLink',
+  'OgCache',
+  'KeywordRadarSeen',
+  'KeywordRadarLog',
+  'KeywordRadarSourceHealth',
+  'ShortLink',
+])
+
+const IDENTIFIER_RE = /^[A-Za-z_][A-Za-z0-9_]*$/
+
+function validateIdentifier(name: string, kind: string) {
+  if (!IDENTIFIER_RE.test(name)) {
+    throw new Error(`[migrate] Invalid ${kind} name: ${name}`)
+  }
+}
 
 async function addColumn(table: string, column: string, definition: string, label: string) {
   try {
-    // 先检查列是否已存在。SQLite pragma_table_info 不支持参数绑定，需用字面量表名。
+    if (!ALLOWED_TABLES.has(table)) {
+      throw new Error(`[migrate] Unknown table: ${table}`)
+    }
+    validateIdentifier(column, 'column')
     const rows = await prisma.$queryRawUnsafe<any[]>(
       `SELECT name FROM pragma_table_info('${table}') WHERE name = ?`,
       column
     )
-    if (rows.length > 0) return // 列已存在，跳过
+    if (rows.length > 0) return
     await prisma.$executeRawUnsafe(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`)
     console.log(`[migrate] ${label} 添加成功`)
   } catch (e: unknown) {
@@ -36,6 +67,17 @@ async function createTable(sql: string, label: string) {
 
 async function createIndex(table: string, index: string, columns: string, label: string) {
   try {
+    if (!ALLOWED_TABLES.has(table)) {
+      throw new Error(`[migrate] Unknown table: ${table}`)
+    }
+    validateIdentifier(index, 'index')
+    for (const col of columns.split(',')) {
+      const trimmed = col
+        .trim()
+        .replace(/\s+(ASC|DESC)$/i, '')
+        .trim()
+      validateIdentifier(trimmed, 'index column')
+    }
     await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS ${index} ON ${table}(${columns})`)
     console.log(`[migrate] ${label} 创建成功`)
   } catch (e: unknown) {
@@ -56,7 +98,9 @@ async function executeStatement(sql: string, label: string) {
 
 export async function runMigrations() {
   if (migrated) return
+  if (migrateFailed) return
   if (!migratePromise) {
+    let resolved = false
     migratePromise = (async () => {
       // OG 预览缓存表
       await createTable(
@@ -348,6 +392,12 @@ export async function runMigrations() {
       await addColumn('SiteConfig', 'keywordRadarLastPostId', `TEXT NOT NULL DEFAULT ''`, 'keywordRadarLastPostId')
       await addColumn('SiteConfig', 'keywordRadarMaxItems', `INTEGER NOT NULL DEFAULT 12`, 'keywordRadarMaxItems')
       await addColumn('SiteConfig', 'keywordRadarKeepDays', `INTEGER NOT NULL DEFAULT 14`, 'keywordRadarKeepDays')
+      await addColumn(
+        'SiteConfig',
+        'keywordRadarMaxArticleAgeDays',
+        `INTEGER NOT NULL DEFAULT 7`,
+        'keywordRadarMaxArticleAgeDays'
+      )
       await addColumn('SiteConfig', 'keywordRadarSources', `TEXT NOT NULL DEFAULT '["google"]'`, 'keywordRadarSources')
       await addColumn(
         'SiteConfig',
@@ -449,10 +499,11 @@ export async function runMigrations() {
         'keywordRadarUseShortLinks (短链接跳转)'
       )
       migrated = true
-    })().finally(() => {
-      migratePromise = null
+      resolved = true
+    })().catch((err) => {
+      if (!resolved) migrateFailed = true
+      console.error('[migrate] Migration failed:', err)
     })
   }
-
   await migratePromise
 }

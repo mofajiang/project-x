@@ -34,6 +34,8 @@ export const RADAR_SOURCES = [
   { id: 'sogou', label: '搜狗资讯', region: '中国', type: 'html' },
   { id: 'duckduckgo', label: 'DuckDuckGo', region: '国际', type: 'html' },
   { id: 'yandex', label: 'Yandex News', region: '俄/国际', type: 'html' },
+  { id: 'oschina', label: '开源中国', region: '中国', type: 'rss' },
+  { id: '36kr', label: '36氪', region: '中国', type: 'rss' },
 ] as const
 
 export type RadarSourceId = (typeof RADAR_SOURCES)[number]['id']
@@ -56,6 +58,7 @@ export type KeywordRadarConfig = {
   lastPostId: string
   maxItems: number
   keepDays: number
+  maxArticleAgeDays: number
   sources: RadarSourceId[]
   customSourceTemplates: Array<{ name: string; urlTemplate: string }>
   webhookUrl: string
@@ -137,6 +140,7 @@ const DEFAULT_CONFIG: KeywordRadarConfig = {
   lastPostId: '',
   maxItems: 12,
   keepDays: 14,
+  maxArticleAgeDays: 7,
   sources: ['google'],
   customSourceTemplates: [],
   webhookUrl: '',
@@ -155,7 +159,7 @@ const SOURCE_RETRIES: Partial<Record<RadarSourceId, number>> = {
   csdn: 2,
   baidu: 2,
   wechat: 3,
-  juejin: 1,
+  juejin: 2,
 }
 
 /** In-memory fetch cache to avoid duplicate requests within a single run */
@@ -203,6 +207,123 @@ function parseArray(input: unknown): string[] {
     .filter((item, index, arr) => arr.indexOf(item) === index)
 }
 
+/**
+ * Parse Chinese relative time strings like "2小时前", "昨天", "3天前", "刚刚"
+ * Returns ISO string or null if parsing fails
+ */
+function parseRelativeTime(text: string): string | null {
+  const now = new Date()
+  const cleaned = text.replace(/\s+/g, '').replace(/[\[\]]/g, '')
+
+  const patterns: Array<[RegExp, (m: RegExpMatchArray) => Date]> = [
+    [/^刚刚?$/, () => now],
+    [/^(\d+)分钟前$/, (m) => new Date(now.getTime() - Number(m[1]) * 60 * 1000)],
+    [/^(\d+)小时前$/, (m) => new Date(now.getTime() - Number(m[1]) * 3600 * 1000)],
+    [
+      /^昨天(\d+):(\d+)$/,
+      (m) => {
+        const d = new Date(now)
+        d.setDate(d.getDate() - 1)
+        d.setHours(Number(m[1]), Number(m[2]), 0, 0)
+        return d
+      },
+    ],
+    [/^(\d+)天前$/, (m) => new Date(now.getTime() - Number(m[1]) * 24 * 3600 * 1000)],
+    [
+      /^前天(\d+):(\d+)$/,
+      (m) => {
+        const d = new Date(now)
+        d.setDate(d.getDate() - 2)
+        d.setHours(Number(m[1]), Number(m[2]), 0, 0)
+        return d
+      },
+    ],
+  ]
+
+  for (const [pattern, factory] of patterns) {
+    const m = cleaned.match(pattern)
+    if (m) {
+      try {
+        return factory(m).toISOString()
+      } catch {
+        return null
+      }
+    }
+  }
+  return null
+}
+
+/**
+ * Parse Chinese date strings like "2024年1月2日", "01月02日", "1-2", "2024-1-2"
+ */
+function parseChineseDate(text: string): string | null {
+  const cleaned = text.replace(/\s+/g, '').trim()
+  const now = new Date()
+
+  const fullDateRe = /^(\d{4})[年](\d{1,2})[月](\d{1,2})日?$/
+  const m1 = cleaned.match(fullDateRe)
+  if (m1) {
+    try {
+      const d = new Date(Number(m1[1]), Number(m1[2]) - 1, Number(m1[3]))
+      if (!isNaN(d.getTime())) return d.toISOString()
+    } catch {
+      return null
+    }
+  }
+
+  const shortDateRe = /^(\d{4})-(\d{1,2})-(\d{1,2})$/
+  const m2 = cleaned.match(shortDateRe)
+  if (m2) {
+    try {
+      const d = new Date(Number(m2[1]), Number(m2[2]) - 1, Number(m2[3]))
+      if (!isNaN(d.getTime())) return d.toISOString()
+    } catch {
+      return null
+    }
+  }
+
+  const monthDayRe = /^(\d{1,2})[月](\d{1,2})日?$/
+  const m3 = cleaned.match(monthDayRe)
+  if (m3) {
+    try {
+      const d = new Date(now.getFullYear(), Number(m3[1]) - 1, Number(m3[2]))
+      if (!isNaN(d.getTime())) return d.toISOString()
+    } catch {
+      return null
+    }
+  }
+
+  const dashRe = /^(\d{1,2})-(\d{1,2})$/
+  const m4 = cleaned.match(dashRe)
+  if (m4) {
+    try {
+      let month = Number(m4[1])
+      let day = Number(m4[2])
+      let year = now.getFullYear()
+      if (month > 12 || day > 31) return null
+      if (month < now.getMonth() + 1) year++
+      const d = new Date(year, month - 1, day)
+      if (!isNaN(d.getTime())) return d.toISOString()
+    } catch {
+      return null
+    }
+  }
+
+  return null
+}
+
+/**
+ * Extract publication date from text using relative and Chinese date parsing
+ */
+function extractDateFromText(text: string): string | null {
+  if (!text) return null
+  const rel = parseRelativeTime(text)
+  if (rel) return rel
+  const chinese = parseChineseDate(text)
+  if (chinese) return chinese
+  return null
+}
+
 function rowToConfig(row: KeywordRadarRow | undefined): KeywordRadarConfig {
   if (!row) return DEFAULT_CONFIG
   return {
@@ -226,6 +347,10 @@ function rowToConfig(row: KeywordRadarRow | undefined): KeywordRadarConfig {
     lastPostId: String(row.keywordRadarLastPostId || ''),
     maxItems: Math.max(3, Math.min(30, Number(row.keywordRadarMaxItems) || DEFAULT_CONFIG.maxItems)),
     keepDays: Math.max(1, Math.min(90, Number(row.keywordRadarKeepDays) || DEFAULT_CONFIG.keepDays)),
+    maxArticleAgeDays: Math.max(
+      1,
+      Math.min(30, Number(row.keywordRadarMaxArticleAgeDays) || DEFAULT_CONFIG.maxArticleAgeDays)
+    ),
     sources: ((arr) => (arr.length ? arr : DEFAULT_CONFIG.sources))(
       (parseArray(row.keywordRadarSources) as RadarSourceId[]).filter((s) => RADAR_SOURCES.some((def) => def.id === s))
     ),
@@ -310,6 +435,14 @@ function buildV2exFeedUrl(keyword: string) {
 
 function buildLobstersFeedUrl(keyword: string) {
   return `https://lobste.rs/search.rss?q=${encodeURIComponent(keyword)}&what=stories&order=newest`
+}
+
+function buildOschinaFeedUrl(keyword: string) {
+  return `https://www.oschina.net/news/rss?content=news&q=${encodeURIComponent(keyword)}`
+}
+
+function build36krFeedUrl(keyword: string) {
+  return `https://36kr.com/feed/${encodeURIComponent(keyword)}`
 }
 
 function buildJuejinSearchUrl(keyword: string) {
@@ -437,11 +570,15 @@ function parseSogouHtml(html: string, keyword: string): FeedItem[] {
       afterH3.match(/<p[^>]*>([\s\S]*?)<\/p>/i) ||
       afterH3.match(/<div[^>]*class="[^"]*rb[^"]*"[^>]*>([\s\S]*?)<\/div>/i)
     const summary = descMatch ? stripHtml(descMatch[1] || descMatch[2] || '') : ''
+    const dateMatch = afterH3.match(/<(?:span|div)[^>]*class="[^"]*(?:s2|time)[^"]*"[^>]*>([^<]+)<\/span>/i)
+    const publishedAt = dateMatch
+      ? extractDateFromText(dateMatch[1]) || new Date().toISOString()
+      : new Date().toISOString()
     items.push({
       title,
       link,
       summary: toSummary(summary),
-      publishedAt: new Date().toISOString(),
+      publishedAt,
       source: '搜狗资讯',
       keywords: [keyword],
     })
@@ -456,11 +593,15 @@ function parseSogouHtml(html: string, keyword: string): FeedItem[] {
       if (!linkMatch) continue
       const title = stripHtml(linkMatch[2])
       if (!title || title.length < 4) continue
+      const dateMatch = block.match(/<(?:span|div)[^>]*class="[^"]*(?:s2|time)[^"]*"[^>]*>([^<]+)<\/span>/i)
+      const publishedAt = dateMatch
+        ? extractDateFromText(dateMatch[1]) || new Date().toISOString()
+        : new Date().toISOString()
       items.push({
         title,
         link: linkMatch[1],
         summary: '',
-        publishedAt: new Date().toISOString(),
+        publishedAt,
         source: '搜狗资讯',
         keywords: [keyword],
       })
@@ -932,7 +1073,6 @@ function getSourceHeaders(url: string): Record<string, string> {
   }
   if (url.includes('zhihu.com')) {
     base.Referer = 'https://www.zhihu.com/'
-    base.Cookie = '_xsrf=' + Math.random().toString(36).slice(2, 18)
   } else if (url.includes('sogou.com')) {
     base.Referer = 'https://www.sogou.com/'
   } else if (url.includes('weixin.sogou.com')) {
@@ -1073,11 +1213,19 @@ function parseZhihuHtml(html: string, keyword: string): FeedItem[] {
       block.match(/<span[^>]*class="[^"]*RichText[^"]*"[^>]*>([\s\S]*?)<\/span>/i) ||
       block.match(/<p[^>]*>([\s\S]*?)<\/p>/i)
     const summary = descMatch ? stripHtml(descMatch[1]).slice(0, 200) : ''
+    const dateMatch =
+      block.match(/(?:发布于|创建于|updated?)[：:\s]*([^<"<]+)/i) || block.match(/data-date[="'][^"']*["']/i)
+    let publishedAt = new Date().toISOString()
+    if (dateMatch) {
+      const dateStr = dateMatch[1] || dateMatch[0]
+      const extracted = extractDateFromText(dateStr)
+      if (extracted) publishedAt = extracted
+    }
     items.push({
       title,
       link,
       summary: toSummary(summary),
-      publishedAt: new Date().toISOString(),
+      publishedAt,
       source: '知乎',
       keywords: [keyword],
     })
@@ -1451,13 +1599,16 @@ function parseBaiduNewsHtml(html: string, keyword: string): FeedItem[] {
       block.match(/<div[^>]*class="[^"]*c-abstract[^"]*"[^>]*>([\s\S]*?)<\/div>/i) ||
       block.match(/<p[^>]*>([\s\S]*?)<\/p>/i)
     const summary = descMatch ? stripHtml(descMatch[1]) : ''
-    const sourceMatch = block.match(/<span[^>]*class="[^"]*c-color-gray[^"]*"[^>]*>([\s\S]*?)<\/span>/i)
-    const sourceLabel = sourceMatch ? stripHtml(sourceMatch[1]) : '百度资讯'
+    const grayMatch = block.match(/<span[^>]*class="[^"]*c-color-gray[^"]*"[^>]*>([^<]+)<\/span>/i)
+    const sourceLabel = grayMatch ? stripHtml(grayMatch[1]) : '百度资讯'
+    const publishedAt = grayMatch
+      ? extractDateFromText(grayMatch[1]) || new Date().toISOString()
+      : new Date().toISOString()
     items.push({
       title,
       link,
       summary: toSummary(summary),
-      publishedAt: new Date().toISOString(),
+      publishedAt,
       source: sourceLabel || '百度资讯',
       keywords: [keyword],
     })
@@ -1492,6 +1643,8 @@ async function fetchFeedByKeyword(keyword: string, sourceId: RadarSourceId = 'go
     medium: buildMediumFeedUrl(keyword),
     v2ex: buildV2exFeedUrl(keyword),
     lobsters: buildLobstersFeedUrl(keyword),
+    oschina: buildOschinaFeedUrl(keyword),
+    '36kr': build36krFeedUrl(keyword),
   }
   const htmlUrlMap: Partial<Record<RadarSourceId, string>> = {
     sogou: buildSogouNewsUrl(keyword),
@@ -1519,6 +1672,8 @@ async function fetchFeedByKeyword(keyword: string, sourceId: RadarSourceId = 'go
     sogou: '搜狗资讯',
     duckduckgo: 'DuckDuckGo',
     yandex: 'Yandex News',
+    oschina: '开源中国',
+    '36kr': '36氪',
   }
 
   // HTML-based sources
@@ -2463,7 +2618,19 @@ async function collectItems(
   } else {
     logger('info', `去重后共 ${titleDeduped.length} 条待处理`)
   }
-  return titleDeduped
+  const maxAge = config.maxArticleAgeDays * 24 * 60 * 60 * 1000
+  const cutoff = Date.now() - maxAge
+  const freshItems = titleDeduped.filter((item) => {
+    const itemTime = new Date(item.publishedAt).getTime()
+    return !isNaN(itemTime) && itemTime >= cutoff
+  })
+  if (freshItems.length < titleDeduped.length) {
+    logger(
+      'info',
+      `时效性过滤（${config.maxArticleAgeDays} 天内）：过滤 ${titleDeduped.length - freshItems.length} 条旧文章，剩余 ${freshItems.length} 条`
+    )
+  }
+  return freshItems
 }
 
 async function insertSeenItems(items: FeedItem[], dateKey: string) {
@@ -2523,7 +2690,6 @@ export async function runKeywordRadar(options: { reason: 'manual' | 'scheduler' 
 
     if (options.reason === 'scheduler' && config.lastRunAt) {
       const elapsed = Date.now() - new Date(config.lastRunAt).getTime()
-      // Adaptive scheduling: if last run found nothing, extend interval by 50%
       const baseInterval = config.scheduleMinutes * 60 * 1000
       const adaptiveInterval = config.lastStatus === 'idle' ? baseInterval * 1.5 : baseInterval
       if (elapsed < adaptiveInterval) {
@@ -2610,7 +2776,6 @@ export async function runKeywordRadar(options: { reason: 'manual' | 'scheduler' 
       }
       log('success', `日报已生成，文章 ID：${postId}`)
       log('success', `执行完成：命中 ${matchedItems.length} 条，新增 ${newItems.length} 条`)
-      // Webhook notification
       if (config.webhookEnabled && config.webhookUrl) {
         sendWebhookNotification(config.webhookUrl, {
           event: 'radar_completed',
@@ -2645,14 +2810,19 @@ export async function runKeywordRadar(options: { reason: 'manual' | 'scheduler' 
       syslog.error('system', `内容雷达执行失败：${message}`, { reason: options.reason }).catch(() => {})
       return { ok: false, message, matchedCount: 0, newCount: 0, digestDate: dateKey }
     }
-  })()
+  })().then(
+    (result) => {
+      globalThis.__keywordRadarRunning = null
+      return result
+    },
+    (err) => {
+      globalThis.__keywordRadarRunning = null
+      throw err
+    }
+  )
 
   globalThis.__keywordRadarRunning = promise
-  try {
-    return await promise
-  } finally {
-    globalThis.__keywordRadarRunning = null
-  }
+  return promise
 }
 
 export async function previewKeywordRadarDigest(): Promise<KeywordRadarPreviewResult> {
@@ -2693,12 +2863,17 @@ export async function previewKeywordRadarDigest(): Promise<KeywordRadarPreviewRe
       digestDate: dateKey,
       content,
     }
-  })()
+  })().then(
+    (result) => {
+      globalThis.__keywordRadarPreviewRunning = null
+      return result
+    },
+    (err) => {
+      globalThis.__keywordRadarPreviewRunning = null
+      throw err
+    }
+  )
 
   globalThis.__keywordRadarPreviewRunning = promise
-  try {
-    return await promise
-  } finally {
-    globalThis.__keywordRadarPreviewRunning = null
-  }
+  return promise
 }

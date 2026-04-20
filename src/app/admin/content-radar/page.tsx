@@ -33,6 +33,7 @@ type RadarConfig = {
   lastPostId: string
   maxItems: number
   keepDays: number
+  maxArticleAgeDays: number
   sources: string[]
   customSourceTemplates: Array<{ name: string; urlTemplate: string }>
   webhookUrl: string
@@ -93,6 +94,7 @@ const EMPTY_STATUS: RadarStatus = {
     lastPostId: '',
     maxItems: 12,
     keepDays: 14,
+    maxArticleAgeDays: 7,
     sources: ['google'],
     customSourceTemplates: [],
     webhookUrl: '',
@@ -602,6 +604,28 @@ export default function AdminContentRadarPage() {
                     这里只保留标题、链接、摘要与指纹，超过时会自动清理旧记录。
                   </p>
                 </div>
+
+                <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
+                  <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                    文章时效过滤（天）
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={30}
+                    value={status.config.maxArticleAgeDays}
+                    onChange={(e) => setConfig('maxArticleAgeDays', Number(e.target.value) || 7)}
+                    className={ADMIN_INPUT_CLASS}
+                    style={{
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border)',
+                      background: 'transparent',
+                    }}
+                  />
+                  <p className="mt-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    只收录多少天内发布的文章，过滤旧内容，提升日报时效性。
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -658,6 +682,8 @@ export default function AdminContentRadarPage() {
                           { id: 'juejin', label: '掘金', hint: '中文开发者' },
                           { id: 'csdn', label: 'CSDN', hint: '中文技术博客' },
                           { id: 'github', label: 'GitHub', hint: '开源项目' },
+                          { id: 'oschina', label: '开源中国', hint: '中文技术' },
+                          { id: '36kr', label: '36氪', hint: '中文科技' },
                         ].map((src) => (
                           <label key={src.id} className="flex items-center gap-1.5">
                             <input
