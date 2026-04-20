@@ -264,7 +264,11 @@ function parseChineseDate(text: string): string | null {
   const m1 = cleaned.match(fullDateRe)
   if (m1) {
     try {
-      const d = new Date(Number(m1[1]), Number(m1[2]) - 1, Number(m1[3]))
+      const year = Number(m1[1])
+      const month = Number(m1[2])
+      const day = Number(m1[3])
+      if (year < 2000 || year > 2100 || month < 1 || month > 12 || day < 1 || day > 31) return null
+      const d = new Date(year, month - 1, day)
       if (!isNaN(d.getTime())) return d.toISOString()
     } catch {
       return null
@@ -275,7 +279,11 @@ function parseChineseDate(text: string): string | null {
   const m2 = cleaned.match(shortDateRe)
   if (m2) {
     try {
-      const d = new Date(Number(m2[1]), Number(m2[2]) - 1, Number(m2[3]))
+      const year = Number(m2[1])
+      const month = Number(m2[2])
+      const day = Number(m2[3])
+      if (year < 2000 || year > 2100 || month < 1 || month > 12 || day < 1 || day > 31) return null
+      const d = new Date(year, month - 1, day)
       if (!isNaN(d.getTime())) return d.toISOString()
     } catch {
       return null
@@ -286,7 +294,10 @@ function parseChineseDate(text: string): string | null {
   const m3 = cleaned.match(monthDayRe)
   if (m3) {
     try {
-      const d = new Date(now.getFullYear(), Number(m3[1]) - 1, Number(m3[2]))
+      const month = Number(m3[1])
+      const day = Number(m3[2])
+      if (month < 1 || month > 12 || day < 1 || day > 31) return null
+      const d = new Date(now.getFullYear(), month - 1, day)
       if (!isNaN(d.getTime())) return d.toISOString()
     } catch {
       return null
@@ -297,11 +308,13 @@ function parseChineseDate(text: string): string | null {
   const m4 = cleaned.match(dashRe)
   if (m4) {
     try {
-      let month = Number(m4[1])
-      let day = Number(m4[2])
+      const month = Number(m4[1])
+      const day = Number(m4[2])
+      if (month < 1 || month > 12 || day < 1 || day > 31) return null
       let year = now.getFullYear()
-      if (month > 12 || day > 31) return null
-      if (month < now.getMonth() + 1) year++
+      const thisMonth = now.getMonth() + 1
+      const todayDay = now.getDate()
+      if (month < thisMonth || (month === thisMonth && day < todayDay)) year++
       const d = new Date(year, month - 1, day)
       if (!isNaN(d.getTime())) return d.toISOString()
     } catch {
@@ -879,30 +892,28 @@ function generateShortCode(url: string): string {
 
 async function shortenLink(url: string): Promise<string> {
   var code = generateShortCode(url)
-  var inserted = await prisma.$executeRawUnsafe(
-    "INSERT OR IGNORE INTO ShortLink (code, url, clicks, createdAt) VALUES (?, ?, 0, datetime('now'))",
-    code,
-    url
-  )
-  if (inserted === 0) {
+  var maxAttempts = 5
+  for (var attempt = 0; attempt < maxAttempts; attempt++) {
+    var inserted = await prisma.$executeRawUnsafe(
+      "INSERT OR IGNORE INTO ShortLink (code, url, clicks, createdAt) VALUES (?, ?, 0, datetime('now'))",
+      code,
+      url
+    )
+    if (inserted === 1) break
+
     var existing = await prisma.$queryRawUnsafe<{ code: string; url: string }[]>(
       'SELECT code, url FROM ShortLink WHERE code = ?',
       code
     )
     if (existing.length > 0 && existing[0].url === url) {
-      // Same URL already exists, reuse
-    } else {
-      // Collision: generate new code with salt
+      break
+    }
+    if (attempt < maxAttempts - 1) {
       var hash2 = crypto
         .createHash('md5')
-        .update(url + ':' + Date.now() + ':salt')
+        .update(url + ':' + Date.now() + ':' + Math.random())
         .digest()
       code = toBase62(hash2.readUInt32BE(0), 6)
-      await prisma.$executeRawUnsafe(
-        "INSERT OR IGNORE INTO ShortLink (code, url, clicks, createdAt) VALUES (?, ?, 0, datetime('now'))",
-        code,
-        url
-      )
     }
   }
   var baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '')
@@ -1826,7 +1837,13 @@ async function enrichItemBodies(items: FeedItem[], maxItems = 8): Promise<void> 
 }
 
 async function fetchCustomFeed(feedUrl: string, keywords: string[]): Promise<FeedItem[]> {
-  const xml = await fetchXml(feedUrl)
+  let xml: string
+  try {
+    xml = await fetchXml(feedUrl)
+  } catch (e) {
+    console.warn(`[radar] 自定义 RSS 获取失败 ${feedUrl}: ${e instanceof Error ? e.message : String(e)}`)
+    return []
+  }
   const itemRe = /<(item|entry)[\s>]([\s\S]*?)<\/\1>/gi
   const items: FeedItem[] = []
   let match: RegExpExecArray | null
@@ -1842,14 +1859,18 @@ async function fetchCustomFeed(feedUrl: string, keywords: string[]): Promise<Fee
     const haystack = normalizeKeyword(`${title} ${summary}`)
     const matched = keywords.filter((keyword) => haystack.includes(normalizeKeyword(keyword)))
     if (!title || !link || matched.length === 0) continue
-    items.push({
-      title,
-      link,
-      summary: toSummary(summary),
-      publishedAt: publishedAt ? new Date(publishedAt).toISOString() : new Date().toISOString(),
-      source: new URL(feedUrl).host,
-      keywords: matched,
-    })
+    try {
+      items.push({
+        title,
+        link,
+        summary: toSummary(summary),
+        publishedAt: publishedAt ? new Date(publishedAt).toISOString() : new Date().toISOString(),
+        source: new URL(feedUrl).host,
+        keywords: matched,
+      })
+    } catch {
+      continue
+    }
   }
   return items
 }
@@ -2251,8 +2272,7 @@ async function upsertDailyDigest(items: FeedItem[], config: KeywordRadarConfig, 
       where: { postId: existing[0].id },
       include: { tag: true },
     })
-    const tagsToDelete = existingTags.filter((tp) => newTagSlugs.has(tp.tag.slug))
-    const tagsToPreserve = existingTags.filter((tp) => !newTagSlugs.has(tp.tag.slug))
+    const tagsToDelete = existingTags.filter((tp) => !newTagSlugs.has(tp.tag.slug))
     if (tagsToDelete.length > 0) {
       await prisma.tagsOnPosts.deleteMany({
         where: { postId: existing[0].id, tagId: { in: tagsToDelete.map((tp) => tp.tagId) } },
@@ -2848,6 +2868,7 @@ export async function previewKeywordRadarDigest(): Promise<KeywordRadarPreviewRe
     const matchedItems = await collectItems(config, () => {}, `preview-${Date.now()}`)
     const newItems = await getNewItems(matchedItems)
     const previewItems = (newItems.length > 0 ? newItems : matchedItems).slice(0, config.maxItems)
+    await insertSeenItems(previewItems, dateKey)
     if (config.useAi) await enrichItemBodies(previewItems)
     const finalItems = await shortenItemLinks(previewItems, config)
     const digest = await buildRadarDigestContent(finalItems, config, dateKey)

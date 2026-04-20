@@ -58,7 +58,9 @@ export function ensureKeywordRadarScheduler() {
     globalThis.__keywordRadarSchedulerTimer = undefined
     try {
       await runKeywordRadar({ reason: 'scheduler' })
-    } catch {}
+    } catch (e) {
+      console.error('[scheduler] 内容雷达执行失败:', e instanceof Error ? e.message : String(e))
+    }
     if (Date.now() - lastPrune > PRUNE_INTERVAL_MS) {
       lastPrune = Date.now()
       try {

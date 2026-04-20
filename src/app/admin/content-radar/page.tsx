@@ -269,11 +269,11 @@ export default function AdminContentRadarPage() {
       setIncludeDomainsInput((data.config.includeDomains || []).join('\n'))
       setExcludeDomainsInput((data.config.excludeDomains || []).join('\n'))
       toast.success('内容雷达配置已保存')
+      savingRef.current = false
     } catch (error) {
       toast.error(error instanceof Error ? error.message : '保存失败')
     } finally {
       setSaving(false)
-      savingRef.current = false
     }
   }
 
