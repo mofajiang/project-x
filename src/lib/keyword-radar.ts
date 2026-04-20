@@ -870,6 +870,16 @@ function formatRadarLink(url: string, label = '查看原文') {
   return `[${label}](${url})`
 }
 
+function escapeForPrompt(text: string | undefined | null): string {
+  if (!text) return ''
+  return text.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${')
+}
+
+function escapeForMarkdown(text: string | undefined | null): string {
+  if (!text) return ''
+  return text.replace(/[*_`#\[\]]/g, '\\$&')
+}
+
 // ---------- Short link helpers ----------
 
 const BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
@@ -974,6 +984,13 @@ function normalizeRadarMarkdown(content: string, config: KeywordRadarConfig, dat
       .replace(/<[^>]+>/g, '')
       .replace(/\n{3,}/g, '\n\n')
       .trim()
+  } else {
+    normalized = normalized
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>\s*<p>/gi, '\n\n')
+      .replace(/<(?!!--)[^>]+>/g, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim()
   }
 
   return normalized
@@ -1041,7 +1058,8 @@ function inspectAiDigestQuality(content: string, config: KeywordRadarConfig) {
 
   if (markdownHeadingCount < 2) return { ok: false, reason: '标题层级不足' }
   if (config.standardMarkdown && markdownLinkCount === 0) return { ok: false, reason: '缺少 Markdown 链接' }
-  if (config.standardMarkdown && bareUrlCount > markdownLinkCount + 1) return { ok: false, reason: '裸链接过多' }
+  if (config.standardMarkdown && bareUrlCount > Math.max(0, markdownLinkCount - 2))
+    return { ok: false, reason: '裸链接过多' }
   if (config.standardMarkdown && htmlTagCount > 0) return { ok: false, reason: '包含 HTML 标签' }
   if (longLineCount > 0) return { ok: false, reason: '存在超长链接行' }
   // Check minimum content length (excluding marker and headings)
@@ -2062,39 +2080,45 @@ async function getNewItems(items: FeedItem[]) {
 function fallbackDigestMarkdown(items: FeedItem[], config: KeywordRadarConfig, dateKey: string) {
   const marker = makeDigestMarker(dateKey)
   const keywordLine = config.keywords.length ? config.keywords.join('、') : '未设置关键词'
-  const sections = items
-    .slice(0, config.maxItems)
-    .map((item, index) => {
-      const summaryText = item.summary
-        ? item.summary.length > 120
-          ? `${item.summary.slice(0, 120)}…`
-          : item.summary
-        : '该内容暂无详细摘要，点击原文了解更多。'
-      const sourceNote = /dev\.to|medium|blog|博客/i.test(item.source)
-        ? `（来自博客：${item.source}）`
-        : `（来源：${item.source || '未知来源'}）`
-      return [
-        `### ${index + 1}. ${item.title}`,
-        '',
-        `${summaryText}${sourceNote}`,
-        '',
-        `- 匹配关键词：${item.keywords.join(' / ')}`,
-        `- 发布时间：${formatPublishedAtLabel(item.publishedAt)}`,
-        `- ${config.standardMarkdown ? formatRadarLink(item.link, '阅读原文') : item.link}`,
-      ].join('\n')
-    })
-    .join('\n\n')
+  const highlights = items.slice(0, Math.min(3, config.maxItems)).map((item) => {
+    const summary = item.summary ? item.summary.slice(0, 80) : '暂无摘要'
+    return `- **${item.title}**：${summary} ${formatRadarLink(item.link, '→ 原文')}`
+  })
+  const sections = items.slice(0, config.maxItems).map((item, index) => {
+    const summaryText = item.summary
+      ? item.summary.length > 140
+        ? `${item.summary.slice(0, 140)}…`
+        : item.summary
+      : '该内容暂无详细摘要，建议点击原文了解详情。'
+    const sourceNote = /dev\.to|medium|blog|博客/i.test(item.source)
+      ? `来自博客 ${item.source}`
+      : item.source || '未知来源'
+    return [
+      `### ${index + 1}. ${item.title}`,
+      '',
+      summaryText,
+      '',
+      `- 来源：${sourceNote}`,
+      `- 关键词：${item.keywords.join(' / ') || '未匹配'}`,
+      `- 时间：${formatPublishedAtLabel(item.publishedAt)}`,
+      `- ${formatRadarLink(item.link, '阅读原文')}`,
+    ].join('\n')
+  })
 
   return normalizeRadarMarkdown(
     [
       marker,
       `# ${formatDateLabel(dateKey)} 关键词资讯日报`,
       '',
-      `> 本期日报围绕 **${keywordLine}** 整理，涵盖新闻资讯与博客文章，共 ${items.length} 条内容。`,
+      `> 本期日报围绕 **${keywordLine}** 自动聚合，覆盖新闻与博客，共整理 ${items.length} 条内容。`,
       '',
-      '## 今日动态',
+      '## 今日亮点',
       '',
-      sections,
+      ...(highlights.length > 0 ? highlights : ['- 暂无可展示内容']),
+      '',
+      '## 逐条速读',
+      '',
+      ...sections,
       '',
       '---',
       '',
@@ -2116,15 +2140,16 @@ async function generateAiDigestMarkdown(items: FeedItem[], config: KeywordRadarC
   const payload = items
     .slice(0, config.maxItems)
     .map((item, index) => {
+      const bodyText = item.bodyText ? item.bodyText.slice(0, 2000) : null
       const lines = [
-        `${index + 1}. 标题：${item.title}`,
-        `关键词：${item.keywords.join(' / ')}`,
-        `来源：${item.source}`,
+        `${index + 1}. 标题：${escapeForPrompt(item.title)}`,
+        `关键词：${item.keywords.map((k) => escapeForPrompt(k)).join(' / ')}`,
+        `来源：${escapeForPrompt(item.source)}`,
         `发布时间：${item.publishedAt}`,
-        `摘要：${item.summary || '无'}`,
+        `摘要：${escapeForPrompt(item.summary) || '无'}`,
       ]
-      if (item.bodyText) {
-        lines.push(`正文节选：${item.bodyText}`)
+      if (bodyText) {
+        lines.push(`正文节选：${escapeForPrompt(bodyText)}`)
       }
       lines.push(`原文链接：${item.link}`)
       return lines.join('\n')
