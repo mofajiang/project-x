@@ -120,6 +120,31 @@ function textToList(value: string) {
     .filter(Boolean)
 }
 
+type MainTab = 'config' | 'publish' | 'preview' | 'data'
+
+const SOURCE_GROUPS = {
+  news: [
+    { id: 'google', label: 'Google News', hint: '国际' },
+    { id: 'bing', label: 'Bing News', hint: '国内' },
+    { id: 'baidu', label: '百度新闻', hint: '国内中文' },
+    { id: 'yahoo', label: 'Yahoo News', hint: '国际英文' },
+  ],
+  blog: [
+    { id: 'hackernews', label: 'Hacker News', hint: '技术' },
+    { id: 'reddit', label: 'Reddit', hint: '社区' },
+    { id: 'devto', label: 'DEV.to', hint: '开发者' },
+    { id: 'medium', label: 'Medium', hint: '博客' },
+    { id: 'zhihu', label: '知乎', hint: '中文' },
+    { id: 'v2ex', label: 'V2EX', hint: '中文技术' },
+    { id: 'lobsters', label: 'Lobsters', hint: '技术' },
+    { id: 'juejin', label: '掘金', hint: '中文开发者' },
+    { id: 'csdn', label: 'CSDN', hint: '中文技术博客' },
+    { id: 'github', label: 'GitHub', hint: '开源项目' },
+    { id: 'oschina', label: '开源中国', hint: '中文技术' },
+    { id: '36kr', label: '36氪', hint: '中文科技' },
+  ],
+}
+
 export default function AdminContentRadarPage() {
   const [status, setStatus] = useState<RadarStatus>(EMPTY_STATUS)
   const [loading, setLoading] = useState(true)
@@ -168,7 +193,12 @@ export default function AdminContentRadarPage() {
     totalItems: number
     totalDays: number
   } | null>(null)
-  const [dashTab, setDashTab] = useState<'config' | 'health' | 'stats' | 'history'>('config')
+  const [mainTab, setMainTab] = useState<MainTab>('config')
+  const [dataSubTab, setDataSubTab] = useState<'health' | 'stats' | 'history'>('health')
+  const [sourceGroupsExpanded, setSourceGroupsExpanded] = useState<{ news: boolean; blog: boolean }>({
+    news: true,
+    blog: false,
+  })
   const [historyDigests, setHistoryDigests] = useState<
     Array<{ id: string; title: string; publishedAt: string; digestDate: string; itemCount: number }>
   >([])
@@ -207,7 +237,6 @@ export default function AdminContentRadarPage() {
   }, [status.logs.entries])
 
   const fetchStatus = async ({ syncForm = false, silent = false }: { syncForm?: boolean; silent?: boolean } = {}) => {
-    // Skip polling updates while saving to prevent overwriting unsaved form state
     if (savingRef.current && !syncForm) return
     try {
       const res = await fetch('/api/admin/content-radar', { cache: 'no-store' })
@@ -221,7 +250,6 @@ export default function AdminContentRadarPage() {
         setIncludeDomainsInput((data.config.includeDomains || []).join('\n'))
         setExcludeDomainsInput((data.config.excludeDomains || []).join('\n'))
       } else {
-        // Only update non-config status (logs, recentItems) during polling to avoid overwriting user edits
         setStatus((current) => ({
           ...current,
           recentItems: data.recentItems,
@@ -368,6 +396,7 @@ export default function AdminContentRadarPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl">
+      {/* Header */}
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)' }}>
@@ -417,534 +446,806 @@ export default function AdminContentRadarPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
-        <div className="space-y-6">
-          <section
-            className={ADMIN_CARD_CLASS}
-            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
+      {/* Main Tab Navigation */}
+      <div className="mb-6 flex flex-wrap items-center gap-1 border-b" style={{ borderColor: 'var(--border)' }}>
+        {(
+          [
+            { id: 'config', label: '配置' },
+            { id: 'publish', label: '发布设置' },
+            { id: 'preview', label: '预览' },
+            { id: 'data', label: '数据' },
+          ] as const
+        ).map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => {
+              setMainTab(tab.id)
+              if (tab.id === 'data') {
+                fetchHealth()
+                fetchStats()
+                fetchHistory()
+              }
+            }}
+            className="px-4 py-2.5 text-sm font-medium transition-colors"
+            style={{
+              color: mainTab === tab.id ? 'var(--accent)' : 'var(--text-secondary)',
+              borderBottom: mainTab === tab.id ? '2px solid var(--accent)' : '2px solid transparent',
+              marginBottom: '-1px',
+            }}
           >
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
-                  抓取规则
-                </h2>
-                <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  关键词会自动转成新闻搜索 RSS。额外 RSS 源是可选项，用于补充行业站点。
-                </p>
-              </div>
-              <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                <input
-                  type="checkbox"
-                  checked={status.config.enabled}
-                  onChange={(e) => setConfig('enabled', e.target.checked)}
-                  style={{ accentColor: 'var(--accent)' }}
-                />
-                启用定时抓取
-              </label>
-            </div>
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                  关键词
-                </label>
-                <textarea
-                  value={keywordsInput}
-                  onChange={(e) => setKeywordsInput(e.target.value)}
-                  rows={6}
-                  className={`${ADMIN_INPUT_CLASS} min-h-[140px] resize-y`}
-                  style={{ color: 'var(--text-primary)', border: '1px solid var(--border)', background: 'transparent' }}
-                  placeholder="逗号或换行分隔，例如：AI 编程, 大模型, RAG"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                  自动打标签
-                </label>
-                <IMEInput
-                  type="text"
-                  value={tagsInput}
-                  onValueChange={setTagsInput}
-                  className={ADMIN_INPUT_CLASS}
-                  style={{ color: 'var(--text-primary)', border: '1px solid var(--border)', background: 'transparent' }}
-                  placeholder="例如：日报, AI, 资讯"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                  额外 RSS 源（可选）
-                </label>
-                <textarea
-                  value={feedsInput}
-                  onChange={(e) => setFeedsInput(e.target.value)}
-                  rows={4}
-                  className={`${ADMIN_INPUT_CLASS} min-h-[100px] resize-y`}
-                  style={{ color: 'var(--text-primary)', border: '1px solid var(--border)', background: 'transparent' }}
-                  placeholder="逗号或换行分隔，例如：https://a.com/feed.xml, https://b.com/rss"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(300px,0.6fr)]">
+        {/* Main Content Area */}
+        <div>
+          {/* 配置 Tab */}
+          {mainTab === 'config' && (
+            <section
+              className={ADMIN_CARD_CLASS}
+              style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
+            >
+              <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
-                  <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                    仅保留这些域名（可选）
-                  </label>
-                  <textarea
-                    value={includeDomainsInput}
-                    onChange={(e) => setIncludeDomainsInput(e.target.value)}
-                    rows={4}
-                    className={`${ADMIN_INPUT_CLASS} min-h-[96px] resize-y`}
-                    style={{
-                      color: 'var(--text-primary)',
-                      border: '1px solid var(--border)',
-                      background: 'transparent',
-                    }}
-                    placeholder="逗号或换行分隔，例如：36kr.com, infoq.cn"
-                  />
+                  <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                    抓取规则
+                  </h2>
+                  <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    关键词会自动转成新闻搜索 RSS。额外 RSS 源是可选项，用于补充行业站点。
+                  </p>
                 </div>
-                <div>
-                  <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                    排除这些域名（可选）
-                  </label>
-                  <textarea
-                    value={excludeDomainsInput}
-                    onChange={(e) => setExcludeDomainsInput(e.target.value)}
-                    rows={4}
-                    className={`${ADMIN_INPUT_CLASS} min-h-[96px] resize-y`}
-                    style={{
-                      color: 'var(--text-primary)',
-                      border: '1px solid var(--border)',
-                      background: 'transparent',
-                    }}
-                    placeholder="逗号或换行分隔，例如：spam-site.example"
+                <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  <input
+                    type="checkbox"
+                    checked={status.config.enabled}
+                    onChange={(e) => setConfig('enabled', e.target.checked)}
+                    style={{ accentColor: 'var(--accent)' }}
                   />
-                </div>
+                  启用定时抓取
+                </label>
               </div>
-            </div>
-          </section>
 
-          <section
-            className={ADMIN_CARD_CLASS}
-            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
-          >
-            <h2 className="mb-4 text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
-              发帖与存储策略
-            </h2>
-
-            {/* 调度与容量 */}
-            <div className="mb-5">
-              <p className="mb-3 text-xs font-medium" style={{ color: 'var(--text-secondary)', opacity: 0.7 }}>
-                调度与容量
-              </p>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
-                  <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                    定时周期（分钟）
-                  </label>
-                  <input
-                    type="number"
-                    min={15}
-                    step={15}
-                    value={status.config.scheduleMinutes}
-                    onChange={(e) => setConfig('scheduleMinutes', Number(e.target.value) || 180)}
-                    className={ADMIN_INPUT_CLASS}
-                    style={{
-                      color: 'var(--text-primary)',
-                      border: '1px solid var(--border)',
-                      background: 'transparent',
-                    }}
-                  />
-                  <p className="mt-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                    调度器会常驻检查，到点才真正执行。
-                  </p>
-                </div>
-
-                <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
-                  <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                    每篇日报最多收录条数
-                  </label>
-                  <input
-                    type="number"
-                    min={3}
-                    max={30}
-                    value={status.config.maxItems}
-                    onChange={(e) => setConfig('maxItems', Number(e.target.value) || 12)}
-                    className={ADMIN_INPUT_CLASS}
-                    style={{
-                      color: 'var(--text-primary)',
-                      border: '1px solid var(--border)',
-                      background: 'transparent',
-                    }}
-                  />
-                  <p className="mt-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                    控制生成文章长度，也减少 AI 上下文成本。
-                  </p>
-                </div>
-
-                <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
-                  <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                    去重记录保留天数
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={90}
-                    value={status.config.keepDays}
-                    onChange={(e) => setConfig('keepDays', Number(e.target.value) || 14)}
-                    className={ADMIN_INPUT_CLASS}
-                    style={{
-                      color: 'var(--text-primary)',
-                      border: '1px solid var(--border)',
-                      background: 'transparent',
-                    }}
-                  />
-                  <p className="mt-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                    这里只保留标题、链接、摘要与指纹，超过时会自动清理旧记录。
-                  </p>
-                </div>
-
-                <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
-                  <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                    文章时效过滤（天）
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={30}
-                    value={status.config.maxArticleAgeDays}
-                    onChange={(e) => setConfig('maxArticleAgeDays', Number(e.target.value) || 7)}
-                    className={ADMIN_INPUT_CLASS}
-                    style={{
-                      color: 'var(--text-primary)',
-                      border: '1px solid var(--border)',
-                      background: 'transparent',
-                    }}
-                  />
-                  <p className="mt-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                    只收录多少天内发布的文章，过滤旧内容，提升日报时效性。
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* 抓取源 */}
-            <div className="mb-5">
-              <p className="mb-3 text-xs font-medium" style={{ color: 'var(--text-secondary)', opacity: 0.7 }}>
-                抓取源
-              </p>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
-                  <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                    抓取源
-                  </label>
-                  <div className="space-y-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    <div>
-                      <p className="mb-1.5 text-xs font-medium opacity-60">新闻搜索</p>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                        {[
-                          { id: 'google', label: 'Google News', hint: '国际，需科学上网' },
-                          { id: 'bing', label: 'Bing News', hint: '国内可用' },
-                          { id: 'baidu', label: '百度新闻', hint: '国内中文' },
-                          { id: 'yahoo', label: 'Yahoo News', hint: '国际英文' },
-                        ].map((src) => (
-                          <label key={src.id} className="flex items-center gap-1.5">
-                            <input
-                              type="checkbox"
-                              checked={(status.config.sources || []).includes(src.id)}
-                              onChange={(e) => {
-                                const cur = status.config.sources || ['google']
-                                const next = e.target.checked
-                                  ? [...cur.filter((s: string) => s !== src.id), src.id]
-                                  : cur.filter((s: string) => s !== src.id)
-                                setConfig('sources', next.length ? next : ['google'])
-                              }}
-                              style={{ accentColor: 'var(--accent)' }}
-                            />
-                            <span>{src.label}</span>
-                            <span className="text-[10px] opacity-50">{src.hint}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <p className="mb-1.5 text-xs font-medium opacity-60">博客 / 社区</p>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                        {[
-                          { id: 'hackernews', label: 'Hacker News', hint: '技术' },
-                          { id: 'reddit', label: 'Reddit', hint: '社区' },
-                          { id: 'devto', label: 'DEV.to', hint: '开发者' },
-                          { id: 'medium', label: 'Medium', hint: '博客' },
-                          { id: 'zhihu', label: '知乎', hint: '中文' },
-                          { id: 'v2ex', label: 'V2EX', hint: '中文技术' },
-                          { id: 'lobsters', label: 'Lobsters', hint: '技术' },
-                          { id: 'juejin', label: '掘金', hint: '中文开发者' },
-                          { id: 'csdn', label: 'CSDN', hint: '中文技术博客' },
-                          { id: 'github', label: 'GitHub', hint: '开源项目' },
-                          { id: 'oschina', label: '开源中国', hint: '中文技术' },
-                          { id: '36kr', label: '36氪', hint: '中文科技' },
-                        ].map((src) => (
-                          <label key={src.id} className="flex items-center gap-1.5">
-                            <input
-                              type="checkbox"
-                              checked={(status.config.sources || []).includes(src.id)}
-                              onChange={(e) => {
-                                const cur = status.config.sources || ['google']
-                                const next = e.target.checked
-                                  ? [...cur.filter((s: string) => s !== src.id), src.id]
-                                  : cur.filter((s: string) => s !== src.id)
-                                setConfig('sources', next.length ? next : ['google'])
-                              }}
-                              style={{ accentColor: 'var(--accent)' }}
-                            />
-                            <span>{src.label}</span>
-                            <span className="text-[10px] opacity-50">{src.hint}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <p className="mb-1.5 text-xs font-medium opacity-60">HTML 解析（备用）</p>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                        {[
-                          { id: 'sogou', label: '搜狗资讯', hint: '中文' },
-                          { id: 'wechat', label: '微信公众号', hint: '中文' },
-                          { id: 'duckduckgo', label: 'DuckDuckGo', hint: '隐私' },
-                          { id: 'yandex', label: 'Yandex', hint: '俄/国际' },
-                        ].map((src) => (
-                          <label key={src.id} className="flex items-center gap-1.5">
-                            <input
-                              type="checkbox"
-                              checked={(status.config.sources || []).includes(src.id)}
-                              onChange={(e) => {
-                                const cur = status.config.sources || ['google']
-                                const next = e.target.checked
-                                  ? [...cur.filter((s: string) => s !== src.id), src.id]
-                                  : cur.filter((s: string) => s !== src.id)
-                                setConfig('sources', next.length ? next : ['google'])
-                              }}
-                              style={{ accentColor: 'var(--accent)' }}
-                            />
-                            <span>{src.label}</span>
-                            <span className="text-[10px] opacity-50">{src.hint}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
+              <div className="space-y-4">
+                {/* 关键词 */}
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                      关键词
+                    </label>
+                    <textarea
+                      value={keywordsInput}
+                      onChange={(e) => setKeywordsInput(e.target.value)}
+                      rows={5}
+                      className={`${ADMIN_INPUT_CLASS} min-h-[120px] resize-y`}
+                      style={{
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--border)',
+                        background: 'transparent',
+                      }}
+                      placeholder="逗号或换行分隔，例如：AI 编程, 大模型, RAG"
+                    />
                   </div>
-                </div>
-
-                <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
-                  <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                    自定义 RSS 搜索模板
-                  </label>
-                  <p className="mb-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                    URL 中用 <code>{'{keyword}'}</code> 作为关键词占位符，抓取时会自动替换。
-                  </p>
-                  {(status.config.customSourceTemplates || []).map((tmpl, idx) => (
-                    <div key={idx} className="mb-2 flex items-center gap-2">
-                      <input
-                        placeholder="名称"
-                        value={tmpl.name}
-                        onChange={(e) => {
-                          const list = [...(status.config.customSourceTemplates || [])]
-                          list[idx] = { ...list[idx], name: e.target.value }
-                          setConfig('customSourceTemplates', list)
-                        }}
-                        className={ADMIN_INPUT_CLASS}
-                        style={{
-                          color: 'var(--text-primary)',
-                          border: '1px solid var(--border)',
-                          background: 'transparent',
-                          width: '120px',
-                        }}
-                      />
-                      <input
-                        placeholder="https://example.com/rss?q={keyword}"
-                        value={tmpl.urlTemplate}
-                        onChange={(e) => {
-                          const list = [...(status.config.customSourceTemplates || [])]
-                          list[idx] = { ...list[idx], urlTemplate: e.target.value }
-                          setConfig('customSourceTemplates', list)
-                        }}
-                        className={ADMIN_INPUT_CLASS}
-                        style={{
-                          color: 'var(--text-primary)',
-                          border: '1px solid var(--border)',
-                          background: 'transparent',
-                          flex: 1,
-                        }}
-                      />
-                      <button
-                        onClick={() => {
-                          const list = (status.config.customSourceTemplates || []).filter(
-                            (_: unknown, i: number) => i !== idx
-                          )
-                          setConfig('customSourceTemplates', list)
-                        }}
-                        className="rounded px-2 py-1 text-xs"
-                        style={{ color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
-                      >
-                        删除
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    onClick={() => {
-                      const list = [...(status.config.customSourceTemplates || []), { name: '', urlTemplate: '' }]
-                      setConfig('customSourceTemplates', list)
-                    }}
-                    className="rounded px-3 py-1 text-xs"
-                    style={{ color: 'var(--accent)', border: '1px solid var(--accent)' }}
-                  >
-                    + 添加模板
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* 发布选项 */}
-            <div className="mb-5">
-              <p className="mb-3 text-xs font-medium" style={{ color: 'var(--text-secondary)', opacity: 0.7 }}>
-                发布选项
-              </p>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
-                  <div className="space-y-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={status.config.autoPublish}
-                        onChange={(e) => setConfig('autoPublish', e.target.checked)}
-                        style={{ accentColor: 'var(--accent)' }}
-                      />
-                      自动发布日报文章
+                  <div>
+                    <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                      自动打标签
                     </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={status.config.useAi}
-                        onChange={(e) => setConfig('useAi', e.target.checked)}
-                        style={{ accentColor: 'var(--accent)' }}
-                      />
-                      使用 AI 生成日报文案
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={status.config.standardMarkdown}
-                        onChange={(e) => setConfig('standardMarkdown', e.target.checked)}
-                        style={{ accentColor: 'var(--accent)' }}
-                      />
-                      按标准 Markdown 输出
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={status.config.useShortLinks}
-                        onChange={(e) => setConfig('useShortLinks', e.target.checked)}
-                        style={{ accentColor: 'var(--accent)' }}
-                      />
-                      使用短链接跳转
-                    </label>
-                  </div>
-                  <p className="mt-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                    开启后会优先输出标准 Markdown 标题、列表和 Markdown
-                    链接，减少裸链接或长段文本把内容区域撑出边框的问题。开启短链接后，日报中的原文链接将通过本站 /go/xxx
-                    跳转，缩短显示长度。
-                  </p>
-                </div>
-                <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
-                  <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                    Webhook 通知
-                  </label>
-                  <div className="space-y-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={status.config.webhookEnabled}
-                        onChange={(e) => setConfig('webhookEnabled', e.target.checked)}
-                        style={{ accentColor: 'var(--accent)' }}
-                      />
-                      启用 Webhook
-                    </label>
-                    <input
-                      type="url"
-                      value={status.config.webhookUrl}
-                      onChange={(e) => setConfig('webhookUrl', e.target.value)}
+                    <IMEInput
+                      type="text"
+                      value={tagsInput}
+                      onValueChange={setTagsInput}
                       className={ADMIN_INPUT_CLASS}
                       style={{
                         color: 'var(--text-primary)',
                         border: '1px solid var(--border)',
                         background: 'transparent',
                       }}
-                      placeholder="https://hooks.example.com/webhook"
+                      placeholder="例如：日报, AI, 资讯"
                     />
-                    <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                      每次抓取完成后会向此 URL 发送 POST JSON 通知（包含状态和统计）。
-                    </p>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            <div className="mt-4">
-              <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                AI 额外提示词（可选）
-              </label>
-              <textarea
-                value={status.config.prompt}
-                onChange={(e) => setConfig('prompt', e.target.value)}
-                rows={4}
-                className={`${ADMIN_INPUT_CLASS} min-h-[96px] resize-y`}
-                style={{ color: 'var(--text-primary)', border: '1px solid var(--border)', background: 'transparent' }}
-                placeholder="例如：更偏技术情报风格，少一些空泛总结，多一些要点提炼。"
-              />
-            </div>
+                {/* 额外 RSS */}
+                <div>
+                  <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                    额外 RSS 源（可选）
+                  </label>
+                  <textarea
+                    value={feedsInput}
+                    onChange={(e) => setFeedsInput(e.target.value)}
+                    rows={3}
+                    className={`${ADMIN_INPUT_CLASS} min-h-[80px] resize-y`}
+                    style={{
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border)',
+                      background: 'transparent',
+                    }}
+                    placeholder="逗号或换行分隔，例如：https://a.com/feed.xml, https://b.com/rss"
+                  />
+                </div>
 
-            {previewResult && (
-              <div
-                className="mt-6 rounded-3xl border p-4"
-                style={{ borderColor: 'var(--border)', background: 'var(--bg)' }}
-              >
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                {/* 抓取源 */}
+                <div>
+                  <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                    抓取源
+                  </label>
+                  <div className="space-y-2">
+                    {/* 新闻搜索 */}
+                    <div
+                      className="rounded-lg p-3"
+                      style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setSourceGroupsExpanded((prev) => ({ ...prev, news: !prev.news }))}
+                        className="mb-2 flex w-full items-center justify-between text-sm font-medium"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
+                        <span>新闻搜索</span>
+                        <span style={{ color: 'var(--text-secondary)' }}>{sourceGroupsExpanded.news ? '▲' : '▼'}</span>
+                      </button>
+                      {sourceGroupsExpanded.news && (
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                          {SOURCE_GROUPS.news.map((src) => (
+                            <label key={src.id} className="flex items-center gap-1.5 text-xs">
+                              <input
+                                type="checkbox"
+                                checked={(status.config.sources || []).includes(src.id)}
+                                onChange={(e) => {
+                                  const cur = status.config.sources || ['google']
+                                  const next = e.target.checked
+                                    ? [...cur.filter((s) => s !== src.id), src.id]
+                                    : cur.filter((s) => s !== src.id)
+                                  setConfig('sources', next.length ? next : ['google'])
+                                }}
+                                style={{ accentColor: 'var(--accent)' }}
+                              />
+                              <span>{src.label}</span>
+                              <span className="opacity-50">({src.hint})</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 博客/社区 */}
+                    <div
+                      className="rounded-lg p-3"
+                      style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setSourceGroupsExpanded((prev) => ({ ...prev, blog: !prev.blog }))}
+                        className="mb-2 flex w-full items-center justify-between text-sm font-medium"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
+                        <span>博客 / 社区</span>
+                        <span style={{ color: 'var(--text-secondary)' }}>{sourceGroupsExpanded.blog ? '▲' : '▼'}</span>
+                      </button>
+                      {sourceGroupsExpanded.blog && (
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+                          {SOURCE_GROUPS.blog.map((src) => (
+                            <label key={src.id} className="flex items-center gap-1.5 text-xs">
+                              <input
+                                type="checkbox"
+                                checked={(status.config.sources || []).includes(src.id)}
+                                onChange={(e) => {
+                                  const cur = status.config.sources || ['google']
+                                  const next = e.target.checked
+                                    ? [...cur.filter((s) => s !== src.id), src.id]
+                                    : cur.filter((s) => s !== src.id)
+                                  setConfig('sources', next.length ? next : ['google'])
+                                }}
+                                style={{ accentColor: 'var(--accent)' }}
+                              />
+                              <span>{src.label}</span>
+                              <span className="opacity-50">({src.hint})</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 域名过滤 */}
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div>
-                    <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
-                      文案预览
-                    </h3>
-                    <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                      {previewResult.message} · 命中 {previewResult.matchedCount} 条 · 新增 {previewResult.newCount} 条
-                      · 日期 {previewResult.digestDate}
-                    </p>
+                    <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                      仅保留这些域名（可选）
+                    </label>
+                    <textarea
+                      value={includeDomainsInput}
+                      onChange={(e) => setIncludeDomainsInput(e.target.value)}
+                      rows={3}
+                      className={`${ADMIN_INPUT_CLASS} min-h-[72px] resize-y`}
+                      style={{
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--border)',
+                        background: 'transparent',
+                      }}
+                      placeholder="逗号或换行分隔，例如：36kr.com, infoq.cn"
+                    />
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewResult(null)}
-                    className="rounded-full px-3 py-1 text-xs"
-                    style={{ color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
-                  >
-                    关闭预览
-                  </button>
-                </div>
-                <div
-                  className="max-h-[480px] overflow-y-auto rounded-2xl border px-4 py-4"
-                  style={{ borderColor: 'var(--border)' }}
-                >
-                  <MarkdownRenderer content={previewResult.content} />
+                  <div>
+                    <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                      排除这些域名（可选）
+                    </label>
+                    <textarea
+                      value={excludeDomainsInput}
+                      onChange={(e) => setExcludeDomainsInput(e.target.value)}
+                      rows={3}
+                      className={`${ADMIN_INPUT_CLASS} min-h-[72px] resize-y`}
+                      style={{
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--border)',
+                        background: 'transparent',
+                      }}
+                      placeholder="逗号或换行分隔，例如：spam-site.example"
+                    />
+                  </div>
                 </div>
               </div>
-            )}
-          </section>
+            </section>
+          )}
+
+          {/* 发布设置 Tab */}
+          {mainTab === 'publish' && (
+            <section
+              className={ADMIN_CARD_CLASS}
+              style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
+            >
+              <h2 className="mb-4 text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                发布设置
+              </h2>
+
+              {/* 调度与容量 */}
+              <div className="mb-6">
+                <p className="mb-3 text-xs font-medium" style={{ color: 'var(--text-secondary)', opacity: 0.7 }}>
+                  调度与容量
+                </p>
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                  <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
+                    <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                      定时周期
+                    </label>
+                    <input
+                      type="number"
+                      min={15}
+                      step={15}
+                      value={status.config.scheduleMinutes}
+                      onChange={(e) => setConfig('scheduleMinutes', Number(e.target.value) || 180)}
+                      className={ADMIN_INPUT_CLASS}
+                      style={{
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--border)',
+                        background: 'transparent',
+                      }}
+                    />
+                    <p className="mt-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                      分钟
+                    </p>
+                  </div>
+                  <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
+                    <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                      每篇日报条数
+                    </label>
+                    <input
+                      type="number"
+                      min={3}
+                      max={30}
+                      value={status.config.maxItems}
+                      onChange={(e) => setConfig('maxItems', Number(e.target.value) || 12)}
+                      className={ADMIN_INPUT_CLASS}
+                      style={{
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--border)',
+                        background: 'transparent',
+                      }}
+                    />
+                    <p className="mt-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                      最多收录
+                    </p>
+                  </div>
+                  <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
+                    <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                      去重保留天数
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={90}
+                      value={status.config.keepDays}
+                      onChange={(e) => setConfig('keepDays', Number(e.target.value) || 14)}
+                      className={ADMIN_INPUT_CLASS}
+                      style={{
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--border)',
+                        background: 'transparent',
+                      }}
+                    />
+                    <p className="mt-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                      天
+                    </p>
+                  </div>
+                  <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg)' }}>
+                    <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                      文章时效过滤
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={30}
+                      value={status.config.maxArticleAgeDays}
+                      onChange={(e) => setConfig('maxArticleAgeDays', Number(e.target.value) || 7)}
+                      className={ADMIN_INPUT_CLASS}
+                      style={{
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--border)',
+                        background: 'transparent',
+                      }}
+                    />
+                    <p className="mt-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                      天内发布
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 选项开关 */}
+              <div className="mb-6">
+                <p className="mb-3 text-xs font-medium" style={{ color: 'var(--text-secondary)', opacity: 0.7 }}>
+                  选项
+                </p>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <label
+                    className="flex items-center gap-2 rounded-lg p-3 text-sm"
+                    style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={status.config.autoPublish}
+                      onChange={(e) => setConfig('autoPublish', e.target.checked)}
+                      style={{ accentColor: 'var(--accent)' }}
+                    />
+                    自动发布
+                  </label>
+                  <label
+                    className="flex items-center gap-2 rounded-lg p-3 text-sm"
+                    style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={status.config.useAi}
+                      onChange={(e) => setConfig('useAi', e.target.checked)}
+                      style={{ accentColor: 'var(--accent)' }}
+                    />
+                    AI 生成
+                  </label>
+                  <label
+                    className="flex items-center gap-2 rounded-lg p-3 text-sm"
+                    style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={status.config.standardMarkdown}
+                      onChange={(e) => setConfig('standardMarkdown', e.target.checked)}
+                      style={{ accentColor: 'var(--accent)' }}
+                    />
+                    标准 Markdown
+                  </label>
+                  <label
+                    className="flex items-center gap-2 rounded-lg p-3 text-sm"
+                    style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={status.config.useShortLinks}
+                      onChange={(e) => setConfig('useShortLinks', e.target.checked)}
+                      style={{ accentColor: 'var(--accent)' }}
+                    />
+                    短链接
+                  </label>
+                </div>
+              </div>
+
+              {/* Webhook */}
+              <div className="mb-6">
+                <p className="mb-3 text-xs font-medium" style={{ color: 'var(--text-secondary)', opacity: 0.7 }}>
+                  Webhook 通知
+                </p>
+                <div className="rounded-lg p-4" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}>
+                  <label className="mb-3 flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={status.config.webhookEnabled}
+                      onChange={(e) => setConfig('webhookEnabled', e.target.checked)}
+                      style={{ accentColor: 'var(--accent)' }}
+                    />
+                    <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                      启用 Webhook
+                    </span>
+                  </label>
+                  <input
+                    type="url"
+                    value={status.config.webhookUrl}
+                    onChange={(e) => setConfig('webhookUrl', e.target.value)}
+                    className={ADMIN_INPUT_CLASS}
+                    style={{
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border)',
+                      background: 'transparent',
+                    }}
+                    placeholder="https://hooks.example.com/webhook"
+                  />
+                  <p className="mt-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    每次抓取完成后会向此 URL 发送 POST JSON 通知。
+                  </p>
+                </div>
+              </div>
+
+              {/* AI 提示词 */}
+              <div>
+                <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                  AI 额外提示词（可选）
+                </label>
+                <textarea
+                  value={status.config.prompt}
+                  onChange={(e) => setConfig('prompt', e.target.value)}
+                  rows={3}
+                  className={`${ADMIN_INPUT_CLASS} min-h-[80px] resize-y`}
+                  style={{ color: 'var(--text-primary)', border: '1px solid var(--border)', background: 'transparent' }}
+                  placeholder="例如：更偏技术情报风格，少一些空泛总结，多一些要点提炼。"
+                />
+              </div>
+            </section>
+          )}
+
+          {/* 预览 Tab */}
+          {mainTab === 'preview' && (
+            <section
+              className={ADMIN_CARD_CLASS}
+              style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
+            >
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                  文案预览
+                </h2>
+                <button
+                  type="button"
+                  onClick={handlePreview}
+                  disabled={previewing}
+                  className={ADMIN_BTN_SECONDARY}
+                  style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}
+                >
+                  {previewing ? '生成中...' : '重新生成预览'}
+                </button>
+              </div>
+              {!previewResult ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <p className="mb-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    点击「重新生成预览」查看日报文案效果
+                  </p>
+                  <p className="text-xs" style={{ color: 'var(--text-secondary)', opacity: 0.7 }}>
+                    预览不会实际发布文章，不会消耗 AI 额度
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <div
+                    className="mb-3 flex flex-wrap items-center gap-3 text-xs"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    <span>{previewResult.message}</span>
+                    <span>·</span>
+                    <span>命中 {previewResult.matchedCount} 条</span>
+                    <span>·</span>
+                    <span>新增 {previewResult.newCount} 条</span>
+                    <span>·</span>
+                    <span>{previewResult.digestDate}</span>
+                  </div>
+                  <div
+                    className="max-h-[600px] overflow-y-auto rounded-2xl border p-4"
+                    style={{ borderColor: 'var(--border)' }}
+                  >
+                    <MarkdownRenderer content={previewResult.content} />
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* 数据 Tab */}
+          {mainTab === 'data' && (
+            <section
+              className={ADMIN_CARD_CLASS}
+              style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
+            >
+              {/* Sub Tab Navigation */}
+              <div className="mb-4 flex gap-2">
+                {(
+                  [
+                    { id: 'health', label: '源健康状态' },
+                    { id: 'stats', label: '数据统计' },
+                    { id: 'history', label: '历史日报' },
+                  ] as const
+                ).map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => {
+                      setDataSubTab(tab.id)
+                      if (tab.id === 'health') fetchHealth()
+                      if (tab.id === 'stats') fetchStats()
+                      if (tab.id === 'history') fetchHistory()
+                    }}
+                    className="rounded-full px-4 py-1.5 text-xs font-medium transition-colors"
+                    style={{
+                      background: dataSubTab === tab.id ? 'var(--accent)' : 'transparent',
+                      color: dataSubTab === tab.id ? '#fff' : 'var(--text-secondary)',
+                      border: dataSubTab === tab.id ? 'none' : '1px solid var(--border)',
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* 健康状态 */}
+              {dataSubTab === 'health' && (
+                <div>
+                  {healthData.length === 0 ? (
+                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                      暂无健康数据，运行一次抓取后即可看到。
+                    </p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-sm">
+                        <thead>
+                          <tr
+                            style={{ color: 'var(--text-secondary)', borderColor: 'var(--border)' }}
+                            className="border-b"
+                          >
+                            <th className="px-3 py-2 font-medium">来源</th>
+                            <th className="px-3 py-2 font-medium">成功率</th>
+                            <th className="px-3 py-2 font-medium">延迟</th>
+                            <th className="px-3 py-2 font-medium">总计</th>
+                            <th className="px-3 py-2 font-medium">状态</th>
+                            <th className="px-3 py-2 font-medium">最近错误</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {healthData.map((src) => (
+                            <tr key={src.sourceId} className="border-b" style={{ borderColor: 'var(--border)' }}>
+                              <td className="px-3 py-2 font-medium" style={{ color: 'var(--text-primary)' }}>
+                                {src.label || src.sourceId}
+                              </td>
+                              <td className="px-3 py-2">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-2 w-14 rounded-full" style={{ background: 'var(--border)' }}>
+                                    <div
+                                      className="h-2 rounded-full"
+                                      style={{
+                                        width: `${Math.round(src.successRate * 100)}%`,
+                                        background:
+                                          src.successRate >= 0.8
+                                            ? 'var(--green)'
+                                            : src.successRate >= 0.5
+                                              ? 'orange'
+                                              : 'var(--red)',
+                                      }}
+                                    />
+                                  </div>
+                                  <span style={{ color: 'var(--text-primary)' }}>
+                                    {Math.round(src.successRate * 100)}%
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-3 py-2" style={{ color: 'var(--text-secondary)' }}>
+                                {src.avgLatencyMs > 0 ? `${(src.avgLatencyMs / 1000).toFixed(1)}s` : '-'}
+                              </td>
+                              <td className="px-3 py-2" style={{ color: 'var(--text-secondary)' }}>
+                                {src.total}
+                              </td>
+                              <td className="px-3 py-2">
+                                <span
+                                  className="rounded-full px-2 py-0.5 text-xs"
+                                  style={{
+                                    background: src.degraded ? 'rgba(240,154,47,0.12)' : 'rgba(0,186,124,0.12)',
+                                    color: src.degraded ? 'orange' : 'var(--green)',
+                                  }}
+                                >
+                                  {src.degraded ? '⚠ 降级' : '✓ 正常'}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                                {src.lastError ? src.lastError.slice(0, 40) : '-'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 数据统计 */}
+              {dataSubTab === 'stats' && (
+                <div>
+                  {!statsData ? (
+                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                      暂无统计数据。
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                      {/* 趋势图 */}
+                      <div>
+                        <h3 className="mb-3 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                          每日抓取趋势
+                        </h3>
+                        <div className="flex items-end gap-1" style={{ height: '120px' }}>
+                          {(() => {
+                            const max = statsData.dailyTrend[0]?.count || 1
+                            return statsData.dailyTrend.map((d) => (
+                              <div
+                                key={d.date}
+                                className="flex-1 rounded-t"
+                                title={`${d.date}: ${d.count} 条`}
+                                style={{
+                                  height: `${Math.max((d.count / max) * 100, 2)}%`,
+                                  background: d.count > 0 ? 'var(--accent)' : 'var(--border)',
+                                  minWidth: '3px',
+                                }}
+                              />
+                            ))
+                          })()}
+                        </div>
+                        <div
+                          className="mt-1 flex justify-between text-[10px]"
+                          style={{ color: 'var(--text-secondary)' }}
+                        >
+                          <span>{statsData.dailyTrend[0]?.date.slice(5) || ''}</span>
+                          <span>{statsData.dailyTrend[statsData.dailyTrend.length - 1]?.date.slice(5) || ''}</span>
+                        </div>
+                      </div>
+
+                      {/* 关键词频率 */}
+                      <div>
+                        <h3 className="mb-3 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                          关键词命中频率
+                        </h3>
+                        <div className="space-y-2">
+                          {statsData.keywordFrequency.slice(0, 8).map((kw) => {
+                            const max = statsData.keywordFrequency[0]?.count || 1
+                            return (
+                              <div key={kw.keyword} className="flex items-center gap-2 text-xs">
+                                <span
+                                  className="w-20 shrink-0 truncate text-right"
+                                  style={{ color: 'var(--text-primary)' }}
+                                >
+                                  {kw.keyword}
+                                </span>
+                                <div className="h-4 flex-1 rounded" style={{ background: 'var(--border)' }}>
+                                  <div
+                                    className="h-4 rounded"
+                                    style={{
+                                      width: `${Math.max((kw.count / max) * 100, 4)}%`,
+                                      background: 'var(--accent)',
+                                    }}
+                                  />
+                                </div>
+                                <span className="w-8 shrink-0 text-right" style={{ color: 'var(--text-secondary)' }}>
+                                  {kw.count}
+                                </span>
+                              </div>
+                            )
+                          })}
+                          {statsData.keywordFrequency.length === 0 && (
+                            <p style={{ color: 'var(--text-secondary)' }}>暂无数据</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* 来源分布 */}
+                      <div className="lg:col-span-2">
+                        <h3 className="mb-3 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                          来源分布
+                        </h3>
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+                          {statsData.sourceDistribution.map((sd) => {
+                            const max = statsData.sourceDistribution[0]?.count || 1
+                            return (
+                              <div
+                                key={sd.source}
+                                className="flex items-center gap-2 rounded-lg p-2"
+                                style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}
+                              >
+                                <span className="w-16 truncate text-xs" style={{ color: 'var(--text-primary)' }}>
+                                  {sd.source}
+                                </span>
+                                <div className="h-2 flex-1 rounded" style={{ background: 'var(--border)' }}>
+                                  <div
+                                    className="h-2 rounded"
+                                    style={{
+                                      width: `${Math.max((sd.count / max) * 100, 4)}%`,
+                                      background: 'rgba(0,186,124,0.7)',
+                                    }}
+                                  />
+                                </div>
+                                <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                                  {sd.count}
+                                </span>
+                              </div>
+                            )
+                          })}
+                          {statsData.sourceDistribution.length === 0 && (
+                            <p style={{ color: 'var(--text-secondary)' }}>暂无数据</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 历史日报 */}
+              {dataSubTab === 'history' && (
+                <div>
+                  {historyDigests.length === 0 ? (
+                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                      暂无历史日报记录。
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {historyDigests.map((d) => (
+                        <div
+                          key={d.id}
+                          className="flex items-center justify-between rounded-lg px-4 py-3"
+                          style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}
+                        >
+                          <div>
+                            <a
+                              href={`/admin/posts/${d.id}`}
+                              className="text-sm font-medium hover:underline"
+                              style={{ color: 'var(--accent)' }}
+                            >
+                              {d.title}
+                            </a>
+                            <div className="mt-0.5 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                              {d.digestDate} · {d.itemCount} 条内容 ·{' '}
+                              {d.publishedAt ? `发布于 ${d.publishedAt.replace('T', ' ').slice(0, 16)}` : '未发布'}
+                            </div>
+                          </div>
+                          <a
+                            href={`/post/${d.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="rounded px-3 py-1 text-xs"
+                            style={{ color: 'var(--accent)', border: '1px solid var(--accent)' }}
+                          >
+                            查看
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+          )}
         </div>
 
-        <aside className="space-y-6">
+        {/* Sidebar - Log Panel */}
+        <aside className="space-y-4">
           <section
             className={ADMIN_CARD_CLASS}
             style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
           >
             <div className="mb-4 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
+              <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={() => setLogTab('live')}
@@ -979,7 +1280,7 @@ export default function AdminContentRadarPage() {
                     color: status.logs.running ? 'var(--accent)' : 'var(--green)',
                   }}
                 >
-                  {status.logs.running ? `${status.logs.source === 'manual' ? '手动任务' : '定时任务'}执行中` : '空闲'}
+                  {status.logs.running ? `${status.logs.source === 'manual' ? '手动' : '定时'}执行中` : '空闲'}
                 </span>
               )}
             </div>
@@ -987,14 +1288,10 @@ export default function AdminContentRadarPage() {
               <div
                 ref={logContainerRef}
                 className="max-h-[360px] overflow-y-auto rounded-2xl border px-3 py-3 font-mono text-xs leading-6"
-                style={{
-                  borderColor: 'var(--border)',
-                  background: 'var(--bg)',
-                  color: 'var(--text-primary)',
-                }}
+                style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text-primary)' }}
               >
                 {status.logs.entries.length === 0 && (
-                  <p style={{ color: 'var(--text-secondary)' }}>暂无抓取日志，点击“立即抓取”后会在这里实时显示。</p>
+                  <p style={{ color: 'var(--text-secondary)' }}>暂无抓取日志，点击「立即抓取」后会在此实时显示。</p>
                 )}
                 <div className="space-y-2">
                   {status.logs.entries.map((entry) => (
@@ -1016,526 +1313,56 @@ export default function AdminContentRadarPage() {
                         {entry.level.toUpperCase()}
                       </span>
                       <span style={{ color: 'var(--text-secondary)' }}> · </span>
-                      <span style={{ color: 'var(--text-secondary)' }}>
-                        {entry.source === 'manual' ? '手动' : '定时'}
-                      </span>
-                      <div>{entry.message}</div>
+                      <span style={{ color: 'var(--text-secondary)' }}>{entry.message}</span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
-
             {logTab === 'history' && (
-              <div
-                className="max-h-[360px] overflow-y-auto rounded-2xl border px-3 py-3 text-xs leading-6"
-                style={{
-                  borderColor: 'var(--border)',
-                  background: 'var(--bg)',
-                  color: 'var(--text-primary)',
-                }}
-              >
-                {historyLoading && <p style={{ color: 'var(--text-secondary)' }}>加载中...</p>}
-
-                {!historyLoading && !historyRunId && (
-                  <div className="space-y-2">
-                    {historyRuns.length === 0 && <p style={{ color: 'var(--text-secondary)' }}>暂无历史运行记录。</p>}
-                    {historyRuns.map((run) => (
-                      <button
-                        key={run.runId}
-                        type="button"
-                        onClick={() => loadHistoryEntries(run.runId)}
-                        className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left hover:opacity-80"
-                        style={{ background: 'var(--bg-secondary)' }}
-                      >
-                        <div>
-                          <span style={{ color: 'var(--text-primary)' }}>
-                            {formatTimeShort(run.startedAt, { timeZone: 'Asia/Shanghai' })}
-                          </span>
-                          <span style={{ color: 'var(--text-secondary)' }}> · </span>
-                          <span style={{ color: 'var(--text-secondary)' }}>
-                            {run.source === 'manual' ? '手动' : '定时'}
-                          </span>
-                        </div>
-                        <span
-                          className="rounded-full px-2 py-0.5"
-                          style={{ background: 'rgba(29,155,240,0.12)', color: 'var(--accent)' }}
-                        >
-                          {run.entryCount} 条
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {!historyLoading && historyRunId && (
-                  <div>
+              <div className="max-h-[360px] space-y-2 overflow-y-auto">
+                {historyRuns.length === 0 ? (
+                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    暂无历史记录。
+                  </p>
+                ) : (
+                  historyRuns.map((run) => (
                     <button
+                      key={run.runId}
                       type="button"
-                      onClick={() => {
-                        setHistoryRunId(null)
-                        setHistoryEntries([])
+                      onClick={() => loadHistoryEntries(run.runId)}
+                      className="w-full rounded-lg px-3 py-2 text-left text-xs"
+                      style={{
+                        background: historyRunId === run.runId ? 'var(--bg)' : 'transparent',
+                        border: '1px solid var(--border)',
                       }}
-                      className="mb-3 text-xs hover:underline"
-                      style={{ color: 'var(--accent)' }}
                     >
-                      ← 返回运行列表
+                      <div style={{ color: 'var(--text-primary)' }}>
+                        {run.source === 'manual' ? '手动' : '定时'} ·{' '}
+                        {formatTimeShort(run.startedAt, { timeZone: 'Asia/Shanghai' })}
+                      </div>
+                      <div style={{ color: 'var(--text-secondary)' }}>{run.entryCount} 条日志</div>
                     </button>
-                    <div className="space-y-2 font-mono">
-                      {historyEntries.map((entry) => (
-                        <div key={entry.id} className="break-words">
-                          <span style={{ color: 'var(--text-secondary)' }}>
-                            {formatTime(entry.createdAt, { timeZone: 'Asia/Shanghai' })}
-                          </span>
-                          <span style={{ color: 'var(--text-secondary)' }}> · </span>
-                          <span
-                            style={{
-                              color:
-                                entry.level === 'success'
-                                  ? 'var(--green)'
-                                  : entry.level === 'error'
-                                    ? 'var(--red)'
-                                    : 'var(--accent)',
-                            }}
-                          >
-                            {entry.level.toUpperCase()}
-                          </span>
-                          <div>{entry.message}</div>
-                        </div>
-                      ))}
-                      {historyEntries.length === 0 && (
-                        <p style={{ color: 'var(--text-secondary)' }}>该次运行暂无日志。</p>
-                      )}
-                    </div>
+                  ))
+                )}
+                {historyRunId && historyEntries.length > 0 && (
+                  <div
+                    className="max-h-[200px] overflow-y-auto rounded-lg border p-2 font-mono text-xs leading-5"
+                    style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text-primary)' }}
+                  >
+                    {historyEntries.map((entry) => (
+                      <div key={entry.id} className="break-words">
+                        <span style={{ color: 'var(--text-secondary)' }}>{entry.level.toUpperCase()}</span>
+                        <span style={{ color: 'var(--text-secondary)' }}> · </span>
+                        <span>{entry.message}</span>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
             )}
-          </section>
-
-          <section
-            className={ADMIN_CARD_CLASS}
-            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
-          >
-            <h2 className="mb-4 text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
-              当前状态
-            </h2>
-            <div className="space-y-3 text-sm">
-              <div className="flex items-center justify-between gap-3">
-                <span style={{ color: 'var(--text-secondary)' }}>运行状态</span>
-                <span
-                  className="rounded-full px-2 py-1 text-xs"
-                  style={{
-                    background:
-                      status.config.lastStatus === 'success'
-                        ? 'rgba(0,186,124,0.14)'
-                        : status.config.lastStatus === 'failed'
-                          ? 'rgba(249,24,128,0.14)'
-                          : 'rgba(29,155,240,0.12)',
-                    color:
-                      status.config.lastStatus === 'success'
-                        ? 'var(--green)'
-                        : status.config.lastStatus === 'failed'
-                          ? 'var(--red)'
-                          : 'var(--accent)',
-                  }}
-                >
-                  {status.config.lastStatus || '尚未执行'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span style={{ color: 'var(--text-secondary)' }}>最近执行</span>
-                <span style={{ color: 'var(--text-primary)' }}>
-                  {formatTime(status.config.lastRunAt, { timeZone: 'Asia/Shanghai' })}
-                </span>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span style={{ color: 'var(--text-secondary)' }}>去重记录</span>
-                <span style={{ color: 'var(--text-primary)' }}>{status.totalSeen}</span>
-              </div>
-              <div>
-                <p className="mb-1" style={{ color: 'var(--text-secondary)' }}>
-                  最近消息
-                </p>
-                <p className="text-sm leading-6" style={{ color: 'var(--text-primary)' }}>
-                  {status.config.lastMessage || '暂无'}
-                </p>
-              </div>
-              {status.config.lastPostId && (
-                <div>
-                  <Link
-                    href={`/admin/posts/${status.config.lastPostId}`}
-                    className="text-sm hover:underline"
-                    style={{ color: 'var(--accent)' }}
-                  >
-                    查看最近生成的日报 →
-                  </Link>
-                </div>
-              )}
-            </div>
-          </section>
-
-          <section
-            className={ADMIN_CARD_CLASS}
-            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
-          >
-            <h2 className="mb-4 text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
-              最近命中内容
-            </h2>
-            <div className="max-h-[520px] space-y-2 overflow-y-auto pr-1">
-              {status.recentItems.length === 0 && (
-                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  还没有抓取记录。
-                </p>
-              )}
-              {status.recentItems.map((item) => (
-                <div
-                  key={item.hash}
-                  className="rounded-xl px-3 py-2.5"
-                  style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}
-                >
-                  <div
-                    className="mb-1 flex items-center gap-1.5 text-[10px]"
-                    style={{ color: 'var(--text-secondary)' }}
-                  >
-                    <span className="rounded px-1.5 py-0.5" style={{ background: 'rgba(29,155,240,0.08)' }}>
-                      {item.source || '未知'}
-                    </span>
-                    <span>{item.digestDate.replace(/-/g, '.')}</span>
-                  </div>
-                  <a
-                    href={item.link}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="line-clamp-2 text-[13px] font-medium leading-5 hover:underline"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
-                    {item.title}
-                  </a>
-                  {item.summary && (
-                    <p className="mt-1 line-clamp-2 text-xs leading-4" style={{ color: 'var(--text-secondary)' }}>
-                      {item.summary}
-                    </p>
-                  )}
-                  <div className="mt-1.5 flex flex-wrap gap-1">
-                    {item.keywords.map((keyword) => (
-                      <span
-                        key={keyword}
-                        className="rounded-full px-1.5 py-0.5 text-[10px]"
-                        style={{ background: 'rgba(29,155,240,0.12)', color: 'var(--accent)' }}
-                      >
-                        {keyword}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
           </section>
         </aside>
-      </div>
-
-      {/* 源健康 & 统计面板 */}
-      <div className="mt-6 space-y-6">
-        <div className="flex gap-2">
-          {(['health', 'stats', 'history'] as const).map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => {
-                setDashTab(tab)
-                if (tab === 'health') fetchHealth()
-                if (tab === 'stats') fetchStats()
-                if (tab === 'history') fetchHistory()
-              }}
-              className="rounded-full px-4 py-1.5 text-xs font-medium transition-colors"
-              style={{
-                background: dashTab === tab ? 'var(--accent)' : 'transparent',
-                color: dashTab === tab ? '#fff' : 'var(--text-secondary)',
-                border: dashTab === tab ? 'none' : '1px solid var(--border)',
-              }}
-            >
-              {tab === 'health' ? '源健康状态' : tab === 'stats' ? '数据统计' : '历史日报'}
-            </button>
-          ))}
-        </div>
-
-        {dashTab === 'health' && (
-          <section
-            className={ADMIN_CARD_CLASS}
-            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
-          >
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
-                抓取源健康状态
-              </h2>
-              <button
-                type="button"
-                onClick={fetchHealth}
-                className="rounded px-3 py-1 text-xs"
-                style={{ color: 'var(--accent)', border: '1px solid var(--accent)' }}
-              >
-                刷新
-              </button>
-            </div>
-            {healthData.length === 0 ? (
-              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                暂无健康数据，运行一次抓取后即可看到。
-              </p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead>
-                    <tr style={{ color: 'var(--text-secondary)', borderColor: 'var(--border)' }} className="border-b">
-                      <th className="px-3 py-2 font-medium">来源</th>
-                      <th className="px-3 py-2 font-medium">成功率</th>
-                      <th className="px-3 py-2 font-medium">延迟</th>
-                      <th className="px-3 py-2 font-medium">总计</th>
-                      <th className="px-3 py-2 font-medium">状态</th>
-                      <th className="px-3 py-2 font-medium">最近错误</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {healthData.map((src) => (
-                      <tr key={src.sourceId} className="border-b" style={{ borderColor: 'var(--border)' }}>
-                        <td className="px-3 py-2 font-medium" style={{ color: 'var(--text-primary)' }}>
-                          {src.label || src.sourceId}
-                        </td>
-                        <td className="px-3 py-2">
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="h-2 rounded-full"
-                              style={{
-                                width: '60px',
-                                background: 'var(--border)',
-                              }}
-                            >
-                              <div
-                                className="h-2 rounded-full"
-                                style={{
-                                  width: `${Math.round(src.successRate * 100)}%`,
-                                  background:
-                                    src.successRate >= 0.8
-                                      ? 'var(--green)'
-                                      : src.successRate >= 0.5
-                                        ? 'orange'
-                                        : 'var(--red)',
-                                }}
-                              />
-                            </div>
-                            <span style={{ color: 'var(--text-primary)' }}>{Math.round(src.successRate * 100)}%</span>
-                          </div>
-                        </td>
-                        <td className="px-3 py-2" style={{ color: 'var(--text-secondary)' }}>
-                          {Math.round(src.avgLatencyMs)}ms
-                        </td>
-                        <td className="px-3 py-2" style={{ color: 'var(--text-secondary)' }}>
-                          {src.successCount}/{src.total}
-                        </td>
-                        <td className="px-3 py-2">
-                          <span
-                            className="rounded-full px-2 py-0.5 text-xs"
-                            style={{
-                              background: src.degraded ? 'rgba(249,24,128,0.14)' : 'rgba(0,186,124,0.14)',
-                              color: src.degraded ? 'var(--red)' : 'var(--green)',
-                            }}
-                          >
-                            {src.degraded ? '已降级' : '正常'}
-                          </span>
-                        </td>
-                        <td
-                          className="max-w-[200px] truncate px-3 py-2 text-xs"
-                          title={src.lastError}
-                          style={{ color: 'var(--text-secondary)' }}
-                        >
-                          {src.lastError || '—'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
-        )}
-
-        {dashTab === 'stats' && (
-          <section
-            className={ADMIN_CARD_CLASS}
-            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
-          >
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
-                数据统计
-              </h2>
-              <button
-                type="button"
-                onClick={fetchStats}
-                className="rounded px-3 py-1 text-xs"
-                style={{ color: 'var(--accent)', border: '1px solid var(--accent)' }}
-              >
-                刷新
-              </button>
-            </div>
-            {!statsData ? (
-              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                暂无统计数据。
-              </p>
-            ) : (
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-                {/* 每日趋势 */}
-                <div>
-                  <h3 className="mb-3 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                    近30日抓取趋势（共 {statsData.totalItems} 条）
-                  </h3>
-                  <div className="flex items-end gap-[2px]" style={{ height: '120px' }}>
-                    {(() => {
-                      const max = Math.max(...statsData.dailyTrend.map((d) => d.count), 1)
-                      return statsData.dailyTrend.map((d) => (
-                        <div
-                          key={d.date}
-                          title={`${d.date}: ${d.count} 条`}
-                          className="flex-1 rounded-t"
-                          style={{
-                            height: `${Math.max((d.count / max) * 100, 2)}%`,
-                            background: d.count > 0 ? 'var(--accent)' : 'var(--border)',
-                            minWidth: '3px',
-                          }}
-                        />
-                      ))
-                    })()}
-                  </div>
-                  <div className="mt-1 flex justify-between text-[10px]" style={{ color: 'var(--text-secondary)' }}>
-                    <span>{statsData.dailyTrend[0]?.date.slice(5) || ''}</span>
-                    <span>{statsData.dailyTrend[statsData.dailyTrend.length - 1]?.date.slice(5) || ''}</span>
-                  </div>
-                </div>
-
-                {/* 关键词频率 */}
-                <div>
-                  <h3 className="mb-3 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                    关键词命中频率
-                  </h3>
-                  <div className="space-y-2">
-                    {statsData.keywordFrequency.slice(0, 8).map((kw) => {
-                      const max = statsData.keywordFrequency[0]?.count || 1
-                      return (
-                        <div key={kw.keyword} className="flex items-center gap-2 text-xs">
-                          <span
-                            className="w-20 shrink-0 truncate text-right"
-                            title={kw.keyword}
-                            style={{ color: 'var(--text-primary)' }}
-                          >
-                            {kw.keyword}
-                          </span>
-                          <div className="h-4 flex-1 rounded" style={{ background: 'var(--border)' }}>
-                            <div
-                              className="h-4 rounded"
-                              style={{
-                                width: `${Math.max((kw.count / max) * 100, 4)}%`,
-                                background: 'var(--accent)',
-                              }}
-                            />
-                          </div>
-                          <span className="w-8 shrink-0 text-right" style={{ color: 'var(--text-secondary)' }}>
-                            {kw.count}
-                          </span>
-                        </div>
-                      )
-                    })}
-                    {statsData.keywordFrequency.length === 0 && (
-                      <p style={{ color: 'var(--text-secondary)' }}>暂无数据</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* 来源分布 */}
-                <div>
-                  <h3 className="mb-3 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                    来源分布
-                  </h3>
-                  <div className="space-y-2">
-                    {statsData.sourceDistribution.map((sd) => {
-                      const max = statsData.sourceDistribution[0]?.count || 1
-                      return (
-                        <div key={sd.source} className="flex items-center gap-2 text-xs">
-                          <span
-                            className="w-20 shrink-0 truncate text-right"
-                            title={sd.source}
-                            style={{ color: 'var(--text-primary)' }}
-                          >
-                            {sd.source}
-                          </span>
-                          <div className="h-4 flex-1 rounded" style={{ background: 'var(--border)' }}>
-                            <div
-                              className="h-4 rounded"
-                              style={{
-                                width: `${Math.max((sd.count / max) * 100, 4)}%`,
-                                background: 'rgba(0,186,124,0.7)',
-                              }}
-                            />
-                          </div>
-                          <span className="w-8 shrink-0 text-right" style={{ color: 'var(--text-secondary)' }}>
-                            {sd.count}
-                          </span>
-                        </div>
-                      )
-                    })}
-                    {statsData.sourceDistribution.length === 0 && (
-                      <p style={{ color: 'var(--text-secondary)' }}>暂无数据</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </section>
-        )}
-
-        {dashTab === 'history' && (
-          <section className={ADMIN_CARD_CLASS}>
-            <h2 className="mb-4 text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
-              历史日报
-            </h2>
-            {historyDigests.length === 0 ? (
-              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                暂无历史日报记录。
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {historyDigests.map((d) => (
-                  <div
-                    key={d.id}
-                    className="flex items-center justify-between rounded-lg px-4 py-3"
-                    style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}
-                  >
-                    <div>
-                      <a
-                        href={`/admin/posts/${d.id}`}
-                        className="text-sm font-medium hover:underline"
-                        style={{ color: 'var(--accent)' }}
-                      >
-                        {d.title}
-                      </a>
-                      <div className="mt-0.5 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                        {d.digestDate} · {d.itemCount} 条内容 ·{' '}
-                        {d.publishedAt ? `发布于 ${d.publishedAt.replace('T', ' ').slice(0, 16)}` : '未发布'}
-                      </div>
-                    </div>
-                    <a
-                      href={`/post/${d.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="rounded px-3 py-1 text-xs"
-                      style={{ color: 'var(--accent)', border: '1px solid var(--accent)' }}
-                    >
-                      查看
-                    </a>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-        )}
       </div>
     </div>
   )
