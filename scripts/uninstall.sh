@@ -109,7 +109,7 @@ step "检查数据库"
 DB_FILE="${INSTALL_DIR}/data/db.sqlite"
 
 if [[ -f "$DB_FILE" ]]; then
-  BACKUP_PATH="/tmp/x-blog-db-$(date +%Y%m%d_%H%M%S).sqlite"
+	BACKUP_PATH="$HOME/x-blog-db-backup-$(date +%Y%m%d_%H%M%S).sqlite"
 
   if [[ "$AUTO_YES" == true ]]; then
     # 非交互模式：自动备份

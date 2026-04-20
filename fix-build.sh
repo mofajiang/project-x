@@ -7,13 +7,13 @@ echo "=== Step 1: Verify git status ==="
 git status --short || true
 echo ""
 
-echo "=== Step 2: Force reset to origin/main ==="
+echo "=== Step 2: Stash local changes and restore source files ==="
+git stash --include-untracked --message "auto-stash before fix-build" 2>/dev/null || true
 git fetch origin
-git reset --hard origin/main || true
 
 echo ""
-echo "=== Step 3: Force checkout all files from HEAD ==="
-git checkout HEAD -- . || true
+echo "=== Step 3: Restore source files from HEAD (preserving config) ==="
+git checkout HEAD -- src/ || true
 
 echo ""
 echo "=== Step 4: Verify critical files exist ==="
@@ -57,3 +57,7 @@ pm2 restart x-blog || pm2 start npm --name x-blog -- start
 echo ""
 echo "✅ Build and restart completed successfully!"
 echo "Check logs: pm2 logs x-blog"
+
+echo ""
+echo "=== Restoring stashed local changes ==="
+git stash pop 2>/dev/null || true

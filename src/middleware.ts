@@ -5,27 +5,50 @@ import { getSessionFromRequest } from './lib/auth'
 // Edge Runtime 兼容的 HMAC-SHA256（Web Crypto API）
 async function hmacSign(data: string, secret: string): Promise<string> {
   const enc = new TextEncoder()
-  const key = await crypto.subtle.importKey(
-    'raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
-  )
+  const key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, [
+    'sign',
+  ])
   const sig = await crypto.subtle.sign('HMAC', key, enc.encode(data))
-  return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('')
+  return Array.from(new Uint8Array(sig))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
 }
 
 // 编码配置（运行时组装）
-const _a = (s: number[]) => s.map(c => String.fromCharCode(c)).join('')
+const _a = (s: number[]) => s.map((c) => String.fromCharCode(c)).join('')
 const _b = (s: string) => atob(s)
-const _s1 = _a([104,116,116,112,115,58,47,47])
+const _s1 = _a([104, 116, 116, 112, 115, 58, 47, 47])
 const _s2 = _b('cHJvamVjdC14')
-const _s3 = _a([46,104,97,116,104,115,46,110,101,116])
-const LICENSE_SERVER = process.env.LICENSE_SERVER_URL || (_s1 + _s2 + _s3)
-const _k  = [122, 53, 78, 63,118, 95, 44,101,111,118, 90, 83,114, 87]
-const _xk = [ 42, 71, 33, 85, 19, 60, 88, 72, 55, 91, 24, 63, 29, 48]
-const LICENSE_SECRET = process.env.LICENSE_SECRET || _a(_k.map((c, i) => c ^ _xk[i]))
+const _s3 = _a([46, 104, 97, 116, 104, 115, 46, 110, 101, 116])
+const LICENSE_SERVER = process.env.LICENSE_SERVER_URL || _s1 + _s2 + _s3
+const _k = [122, 53, 78, 63, 118, 95, 44, 101, 111, 118, 90, 83, 114, 87]
+const _xk = [42, 71, 33, 85, 19, 60, 88, 72, 55, 91, 24, 63, 29, 48]
+const LICENSE_SECRET =
+  process.env.LICENSE_SECRET ||
+  (() => {
+    console.warn('[middleware] ⚠️ LICENSE_SECRET 未设置，使用默认值，请配置环境变量')
+    return _a(_k.map((c, i) => c ^ _xk[i]))
+  })()
 
 // 授权结果内存缓存（每个 Edge Worker 实例独立）
 const licenseCache = new Map<string, { allowed: boolean; expires: number }>()
 const LICENSE_CACHE_TTL = 60 * 60 * 1000 // 1 小时
+const LICENSE_CACHE_MAX = 100
+
+function setLicenseCache(hostname: string, entry: { allowed: boolean; expires: number }) {
+  if (licenseCache.size >= LICENSE_CACHE_MAX) {
+    let oldestKey: string | null = null
+    let oldestExp = Infinity
+    licenseCache.forEach((v, k) => {
+      if (v.expires < oldestExp) {
+        oldestExp = v.expires
+        oldestKey = k
+      }
+    })
+    if (oldestKey) licenseCache.delete(oldestKey)
+  }
+  licenseCache.set(hostname, entry)
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -65,12 +88,12 @@ export async function middleware(request: NextRequest) {
           allowed = data.valid === true
         }
       } catch {
-        // 网络异常时：如果之前验证通过过，沿用旧结果
-        if (cached?.allowed) {
+        // 网络异常时：仅当之前验证通过过且缓存未过期时，沿用旧结果
+        if (cached?.allowed && cached.expires > Date.now()) {
           allowed = true
         }
       }
-      licenseCache.set(hostname, { allowed, expires: Date.now() + LICENSE_CACHE_TTL })
+      setLicenseCache(hostname, { allowed, expires: Date.now() + LICENSE_CACHE_TTL })
     }
 
     if (!allowed) {
@@ -93,7 +116,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|uploads).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|uploads).*)'],
 }

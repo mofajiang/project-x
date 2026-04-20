@@ -8,7 +8,8 @@ import bcrypt from 'bcryptjs'
 
 export async function POST(req: NextRequest) {
   await runMigrations()
-  const ip = (req.headers.get('x-forwarded-for') || 'unknown').split(',')[0].trim()
+  const rawIp = (req.headers.get('x-forwarded-for') || 'unknown').split(',')[0].trim()
+  const ip = /^[a-fA-F0-9.:]+$/.test(rawIp) ? rawIp : 'unknown'
   const now = Date.now()
 
   // 检查锁定（SQLite 持久化，重启不丢失）

@@ -133,7 +133,7 @@ ${authorWebsite ? `网站: ${authorWebsite}` : ''}`
 
       return {
         isSpam: false,
-        riskScore: 0,
+        riskScore: -1,
         riskReasons: [errMsg],
         confidence: 0,
       }
@@ -163,7 +163,7 @@ ${authorWebsite ? `网站: ${authorWebsite}` : ''}`
       console.error('[openrouter] ❌ 响应内容为空，完整响应:', JSON.stringify(data))
       return {
         isSpam: false,
-        riskScore: 0,
+        riskScore: -1,
         riskReasons: ['API 响应为空'],
         confidence: 0,
       }
@@ -224,7 +224,7 @@ ${authorWebsite ? `网站: ${authorWebsite}` : ''}`
     console.error('[spam-filter] ❌ AI 分析异常:', getErrorMessage(error) || error)
     return {
       isSpam: false,
-      riskScore: 0,
+      riskScore: -1,
       riskReasons: [getErrorMessage(error) || 'AI 分析异常'],
       confidence: 0,
     }

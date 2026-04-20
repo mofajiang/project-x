@@ -36,9 +36,8 @@ async function ensureTable() {
     await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS idx_syslog_cat ON system_logs (category)`)
     await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS idx_syslog_time ON system_logs (createdAt DESC)`)
     tableReady = true
-  } catch {
-    // 表已存在或其他非致命错误，忽略
-    tableReady = true
+  } catch (e) {
+    console.warn('[syslog] ensureTable failed, will retry next time:', e)
   }
 }
 
