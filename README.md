@@ -1,4 +1,4 @@
-﻿# X 风格个人博客
+# X 风格个人博客
 
 <div align="center">
 
@@ -41,18 +41,20 @@
 
 ## 功能特性
 
-| 模块        | 功能                                                                       |
-| ----------- | -------------------------------------------------------------------------- |
-| 🎨 **界面** | X 风格 UI、深色/浅色主题切换、三栏布局、卡片式 Feed、响应式移动端适配      |
-| 📝 **内容** | Markdown 编辑、草稿/发布管理、标签系统、封面图、首页快速发帖框             |
-| 💬 **互动** | 嵌套评论、审核模式、点赞、邮件回复通知                                     |
-| 🤖 **AI**   | OpenRouter/自定义 LLM 接入、评论垃圾检测、友链安全审核、可调审核强度       |
-| 🔗 **友链** | 自助申请、互链验证、AI 安全检测、自动审批、右侧栏卡片展示                  |
-| 🔒 **安全** | 动态登录路径、失败锁定、JWT 认证、CSP 策略、DOMPurify XSS 防护             |
-| ⚙️ **管理** | 仪表盘、文章/评论/标签/站点设置、SMTP 配置、AI 模型管理                    |
-| 🔍 **SEO**  | 文章 JSON-LD、站点 JSON-LD、Canonical URL、动态 OG 图、RSS、Sitemap/Robots |
-| 📦 **存储** | 本地存储 / S3 兼容对象存储（Cloudflare R2、MinIO 等）/ SM.MS 图床          |
-| 👤 **账号** | 显示名称与登录账号分离、认证徽章、@handle                                  |
+| 模块        | 功能                                                                                                                                                              |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🎨 **界面** | X 风格 UI、深色/浅色主题切换、三栏布局、卡片式 Feed、响应式移动端适配                                                                                             |
+| 📝 **内容** | Markdown 编辑、草稿/发布管理、标签系统、封面图、首页快速发帖框                                                                                                    |
+| 💬 **互动** | 嵌套评论、审核模式、点赞、邮件回复通知                                                                                                                            |
+| 🤖 **AI**   | OpenRouter/自定义 LLM 接入、评论垃圾检测、友链安全审核、可调审核强度                                                                                              |
+| 🔗 **友链** | 自助申请、互链验证、AI 安全检测、自动审批、右侧栏卡片展示                                                                                                         |
+| 📡 **雷达** | 多源聚合（Google/百度/搜狗/知乎/V2EX/Lobsters/Medium/DEV.to/HN/Reddit/CSDN/掘金/GitHub/公众号/oschina/36kr）、AI 筛选、去重、时效过滤、Webhook 通知、定时日报发布 |
+| 🔒 **安全** | 动态登录路径、失败锁定、JWT 黑名单机制、CSP 策略、DOMPurify XSS 防护、IP 格式校验、SSRF 防护                                                                      |
+| ⚙️ **管理** | 仪表盘、文章/评论/标签/站点设置、SMTP 配置、AI 模型管理                                                                                                           |
+| 🔍 **SEO**  | 文章 JSON-LD、站点 JSON-LD、Canonical URL、动态 OG 图、RSS、Sitemap/Robots                                                                                        |
+| 📦 **存储** | 本地存储 / S3 兼容对象存储（Cloudflare R2、MinIO 等）/ SM.MS 图床                                                                                                 |
+| 👤 **账号** | 显示名称与登录账号分离、认证徽章、@handle                                                                                                                         |
+| 🔗 **短链** | 短链接跳转（自定义码、点击统计）                                                                                                                                  |
 
 ---
 
@@ -123,7 +125,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/mofajiang/project-x/main/scr
 | ----------- | ------------------------------------------------------------------ |
 | `install`   | 全新安装（默认）                                                   |
 | `update`    | 升级：拉取代码 → 安装依赖 → 构建 → 备份数据库 → 同步 Schema → 重启 |
-| `uninstall` | 卸载：停止进程 → 可选备份数据库 → 删除目录                         |
+| `uninstall` | 卸载：停止进程 → 可选备份数据库到 `$HOME/` → 删除目录              |
 | `status`    | 查看 PM2 运行状态                                                  |
 | `restart`   | 重启 PM2 进程                                                      |
 | `stop`      | 停止 PM2 进程                                                      |
@@ -222,7 +224,7 @@ pm2 restart x-blog
 bash <(curl -fsSL https://raw.githubusercontent.com/mofajiang/project-x/main/scripts/uninstall.sh)
 ```
 
-卸载脚本将：停止并删除 PM2 进程 → 可选备份数据库到 `/tmp/` → 删除项目目录。
+卸载脚本将：停止并删除 PM2 进程 → 可选备份数据库到 `$HOME/` → 删除项目目录。
 
 ---
 
@@ -401,13 +403,19 @@ project-x/
     │   ├── layout/            # 布局组件（导航、抽屉等）
     │   └── ui/                # 基础 UI 组件
     └── lib/                   # 工具库
-        ├── auth.ts            # JWT 认证
+        ├── auth.ts            # JWT 认证 + Token 黑名单
         ├── constants.ts       # 全局常量
         ├── converters.ts      # 类型安全转换工具
+        ├── db-migrate.ts      # 数据库自动迁移
+        ├── keyword-radar.ts   # 内容雷达核心（多源抓取/AI筛选/日报发布）
+        ├── keyword-radar-scheduler.ts  # 内容雷达定时调度
+        ├── keyword-radar-log.ts        # 内容雷达日志
         ├── mailer.ts          # 邮件发送
         ├── post-utils.ts      # 文章内容处理
         ├── prisma.ts          # Prisma 客户端
         ├── rate-limit.ts      # 请求频率限制
         ├── slug.ts            # Slug 处理
+        ├── storage.ts         # 存储抽象层（local/s3/smms）
+        ├── syslog.ts          # 系统日志
         └── utils.ts           # 通用工具函数
 ```
