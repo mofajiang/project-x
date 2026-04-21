@@ -204,6 +204,7 @@ export function AdminSidebar({ username }: { username: string }) {
             }}
           >
             <div className="flex flex-col gap-1">
+              <AdminUpdateChecker compact />
               <AdminThemeToggle />
               <a
                 href="/"

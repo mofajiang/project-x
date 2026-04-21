@@ -1,10 +1,9 @@
-﻿'use client'
+'use client'
 import { useEffect, useState, useRef, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import { IMEInput, IMETextarea } from '@/components/ui/IMEInput'
 import ImageCropModal from '@/components/ui/ImageCropModal'
 import { StorageImagePicker } from '@/components/admin/StorageImagePicker'
-import { AdminUpdateChecker } from '@/components/admin/AdminUpdateChecker'
 import { ADMIN_PAGE_TITLE_CLASS, ADMIN_CARD_LG_CLASS, ADMIN_SUBCARD_CLASS } from '@/components/admin/adminUi'
 import {
   DEFAULT_NAV,
@@ -493,14 +492,6 @@ export default function SettingsPage() {
             >
               ↻
             </button>
-          </div>
-
-          {/* 系统更新 */}
-          <div className={`${mobileCardClass} flex flex-col gap-2.5`} style={{ background: 'var(--bg-secondary)' }}>
-            <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>
-              🔄 系统更新
-            </h2>
-            <AdminUpdateChecker />
           </div>
 
           {/* 个人资料 */}
