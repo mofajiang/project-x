@@ -127,6 +127,7 @@ function parseHtmlQuotes(html: string): Array<{ type: 'html' | 'quote-url' | 'qu
 }
 
 export default function MarkdownRendererClient({ content }: { content: string }) {
+  const { segments } = useMemo(() => parseQuotes(content), [content])
   const isHtml = looksLikeHtmlContent(content)
   if (isHtml) {
     const htmlSegments = parseHtmlQuotes(content)
@@ -143,8 +144,6 @@ export default function MarkdownRendererClient({ content }: { content: string })
     }
     return <div className="prose-x" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }} />
   }
-
-  const { segments } = useMemo(() => parseQuotes(content), [content])
 
   return (
     <div className="prose-x markdown-body">

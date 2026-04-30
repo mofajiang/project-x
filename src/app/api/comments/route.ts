@@ -25,8 +25,9 @@ export async function POST(req: NextRequest) {
 
   const session = await getSessionFromRequest(req)
 
-  let { postId, content, parentId, guestName, guestEmail, guestWebsite } = await req.json()
-  postId = String(postId) // 确保 postId 是字符串
+  const body = await req.json()
+  const postId = String(body.postId) // 确保 postId 是字符串
+  const { content, parentId, guestName, guestEmail, guestWebsite } = body
   if (!postId || !content?.trim()) return NextResponse.json({ error: '内容不能为空' }, { status: 400 })
   if (content.trim().length > 2000) return NextResponse.json({ error: '评论不能超过2000字' }, { status: 400 })
 

@@ -25,6 +25,7 @@ const MAX_DB_ROWS = 2000
 const DB_KEEP_DAYS = 7
 
 declare global {
+  // eslint-disable-next-line no-var
   var __keywordRadarLogState: KeywordRadarLogState | undefined
 }
 

@@ -442,7 +442,7 @@ function buildZhihuSearchUrl(keyword: string) {
   return `https://www.zhihu.com/search?type=content&q=${encodeURIComponent(keyword)}`
 }
 
-function buildV2exFeedUrl(keyword: string) {
+function buildV2exFeedUrl(_keyword: string) {
   return `https://www.v2ex.com/feed/tab/tech.xml`
 }
 
@@ -458,7 +458,7 @@ function build36krFeedUrl(keyword: string) {
   return `https://36kr.com/feed/${encodeURIComponent(keyword)}`
 }
 
-function buildJuejinSearchUrl(keyword: string) {
+function buildJuejinSearchUrl(_keyword: string) {
   return `https://api.juejin.cn/search_api/v1/search`
 }
 
@@ -875,18 +875,13 @@ function escapeForPrompt(text: string | undefined | null): string {
   return text.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${')
 }
 
-function escapeForMarkdown(text: string | undefined | null): string {
-  if (!text) return ''
-  return text.replace(/[*_`#\[\]]/g, '\\$&')
-}
-
 // ---------- Short link helpers ----------
 
 const BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
 
 function toBase62(num: number, length: number): string {
-  var result = ''
-  var n = Math.abs(num)
+  let result = ''
+  let n = Math.abs(num)
   while (result.length < length) {
     result = BASE62[n % 62] + result
     n = Math.floor(n / 62)
@@ -895,23 +890,23 @@ function toBase62(num: number, length: number): string {
 }
 
 function generateShortCode(url: string): string {
-  var hash = crypto.createHash('md5').update(url).digest()
-  var num = hash.readUInt32BE(0)
+  const hash = crypto.createHash('md5').update(url).digest()
+  const num = hash.readUInt32BE(0)
   return toBase62(num, 6)
 }
 
 async function shortenLink(url: string): Promise<string> {
-  var code = generateShortCode(url)
-  var maxAttempts = 5
-  for (var attempt = 0; attempt < maxAttempts; attempt++) {
-    var inserted = await prisma.$executeRawUnsafe(
+  let code = generateShortCode(url)
+  const maxAttempts = 5
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const inserted = await prisma.$executeRawUnsafe(
       "INSERT OR IGNORE INTO ShortLink (code, url, clicks, createdAt) VALUES (?, ?, 0, datetime('now'))",
       code,
       url
     )
     if (inserted === 1) break
 
-    var existing = await prisma.$queryRawUnsafe<{ code: string; url: string }[]>(
+    const existing = await prisma.$queryRawUnsafe<{ code: string; url: string }[]>(
       'SELECT code, url FROM ShortLink WHERE code = ?',
       code
     )
@@ -919,26 +914,26 @@ async function shortenLink(url: string): Promise<string> {
       break
     }
     if (attempt < maxAttempts - 1) {
-      var hash2 = crypto
+      const hash2 = crypto
         .createHash('md5')
         .update(url + ':' + Date.now() + ':' + Math.random())
         .digest()
       code = toBase62(hash2.readUInt32BE(0), 6)
     }
   }
-  var baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '')
+  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '')
   return baseUrl + '/go/' + code
 }
 
 async function shortenItemLinks(items: FeedItem[], config: KeywordRadarConfig): Promise<FeedItem[]> {
   if (!config.useShortLinks) return items
-  var result: FeedItem[] = []
-  for (var i = 0; i < items.length; i++) {
-    var item = items[i]
+  const result: FeedItem[] = []
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i]
     try {
-      var shortUrl = await shortenLink(item.link)
+      const shortUrl = await shortenLink(item.link)
       result.push(Object.assign({}, item, { link: shortUrl }))
-    } catch (e) {
+    } catch (_e) {
       // On error keep original link
       result.push(item)
     }
@@ -2710,7 +2705,9 @@ async function attachPostId(dateKey: string, postId: string) {
 }
 
 declare global {
+  // eslint-disable-next-line no-var
   var __keywordRadarRunning: Promise<KeywordRadarRunResult> | null | undefined
+  // eslint-disable-next-line no-var
   var __keywordRadarPreviewRunning: Promise<KeywordRadarPreviewResult> | null | undefined
 }
 

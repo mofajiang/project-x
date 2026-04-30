@@ -9,7 +9,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const data = await request.json()
-    let { provider, baseUrl, apiKey, model, timeout } = data
+    const { provider, baseUrl, model, timeout } = data
+    let { apiKey } = data
 
     // 如果 API Key 被掩盖（保存后前端展示的是 ***），从数据库取真实 key
     // 使用 raw SQL 避免 Prisma 客户端不认识动态迁移字段

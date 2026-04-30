@@ -60,6 +60,7 @@ function toCountryName(codeOrName: string) {
 
 function lookupOfflineGeo(ip: string): NormalizedGeo {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const geoip = require('geoip-lite') as {
       lookup: (value: string) => { country?: string; region?: string; city?: string; ll?: [number, number] } | null
     }

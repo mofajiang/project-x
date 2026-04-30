@@ -2,8 +2,11 @@ import { runKeywordRadar, getKeywordRadarConfig } from '@/lib/keyword-radar'
 import { pruneKeywordRadarLogs } from '@/lib/keyword-radar-log'
 
 declare global {
+  // eslint-disable-next-line no-var
   var __keywordRadarSchedulerStarted: boolean | undefined
+  // eslint-disable-next-line no-var
   var __keywordRadarSchedulerTimer: NodeJS.Timeout | undefined
+  // eslint-disable-next-line no-var
   var __keywordRadarSchedulerStartedAt: number | undefined
 }
 

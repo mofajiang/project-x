@@ -7,7 +7,7 @@ import { getErrorMessage } from './converters'
 
 let migrated = false
 let migratePromise: Promise<void> | null = null
-let migrateFailed = false
+const migrateFailed = false
 
 const ALLOWED_TABLES = new Set([
   'SiteConfig',
@@ -48,7 +48,7 @@ async function addColumn(table: string, column: string, definition: string, labe
     )
     if (rows.length > 0) return
     await prisma.$executeRawUnsafe(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`)
-    console.log(`[migrate] ${label} 添加成功`)
+    console.warn(`[migrate] ${label} 添加成功`)
   } catch (e: unknown) {
     console.warn(`[migrate] ${label}:`, getErrorMessage(e))
   }
@@ -57,7 +57,7 @@ async function addColumn(table: string, column: string, definition: string, labe
 async function createTable(sql: string, label: string) {
   try {
     await prisma.$executeRawUnsafe(sql)
-    console.log(`[migrate] ${label} 创建成功`)
+    console.warn(`[migrate] ${label} 创建成功`)
   } catch (e: unknown) {
     if (!getErrorMessage(e).includes('already exists')) {
       console.warn(`[migrate] ${label}:`, getErrorMessage(e))
@@ -79,7 +79,7 @@ async function createIndex(table: string, index: string, columns: string, label:
       validateIdentifier(trimmed, 'index column')
     }
     await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS ${index} ON ${table}(${columns})`)
-    console.log(`[migrate] ${label} 创建成功`)
+    console.warn(`[migrate] ${label} 创建成功`)
   } catch (e: unknown) {
     console.warn(`[migrate] ${label}:`, getErrorMessage(e))
   }
@@ -88,7 +88,7 @@ async function createIndex(table: string, index: string, columns: string, label:
 async function executeStatement(sql: string, label: string) {
   try {
     await prisma.$executeRawUnsafe(sql)
-    console.log(`[migrate] ${label} 创建成功`)
+    console.warn(`[migrate] ${label} 创建成功`)
   } catch (e: unknown) {
     if (!getErrorMessage(e).includes('already exists')) {
       console.warn(`[migrate] ${label}:`, getErrorMessage(e))
@@ -100,7 +100,6 @@ export async function runMigrations() {
   if (migrated) return
   if (migrateFailed) return
   if (!migratePromise) {
-    let resolved = false
     migratePromise = (async () => {
       // OG 预览缓存表
       await createTable(
@@ -447,7 +446,7 @@ export async function runMigrations() {
       )
       try {
         await prisma.$executeRawUnsafe(`UPDATE Post SET publicId = rowid WHERE publicId IS NULL`)
-        console.log('[migrate] publicId 回填成功')
+        console.warn('[migrate] publicId 回填成功')
       } catch (e: unknown) {
         console.warn('[migrate] publicId 回填:', getErrorMessage(e))
       }

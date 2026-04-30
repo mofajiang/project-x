@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await req.json().catch(() => ({} as { licenseKey?: string }))
+  const body = await req.json().catch(() => ({}) as { licenseKey?: string })
   const licenseKey = String(body.licenseKey || process.env.MAXMIND_LICENSE_KEY || '').trim()
   if (!licenseKey) {
     return NextResponse.json({ error: 'Missing MaxMind license key' }, { status: 400 })
@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
       stdio: 'pipe',
     })
 
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const geoip = require('geoip-lite') as {
       reloadDataSync: () => void
       startWatchingDataUpdate?: () => void

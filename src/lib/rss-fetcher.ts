@@ -102,7 +102,7 @@ async function discoverRssUrl(siteUrl: string): Promise<string | null> {
   for (const url of candidates) {
     try {
       const r = await fetch(url, {
-        signal: AbortSignal.timeout(4000),
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
         headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FriendCircleBot/1.0)' },
       })
       if (r.ok) {
@@ -137,8 +137,9 @@ async function fetchOneFeed(source: FriendFeedSource): Promise<FeedItem[]> {
 
   try {
     const res = await fetch(rssUrl, {
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FriendCircleBot/1.0)' },
-      next: { revalidate: 3600 }, // Next.js 1 小时缓存
+      next: { revalidate: 3600 },
     })
     if (!res.ok) return []
     const xml = await res.text()
