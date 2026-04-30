@@ -12,18 +12,11 @@ export async function POST(req: NextRequest) {
   if (!file) return NextResponse.json({ error: 'No file' }, { status: 400 })
 
   // 文件类型白名单校验
-  const ALLOWED_TYPES = [
-    'image/jpeg',
-    'image/png',
-    'image/gif',
-    'image/webp',
-    'image/x-icon',
-    'image/vnd.microsoft.icon',
-  ]
-  const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'ico']
+  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/x-icon', 'image/vnd.microsoft.icon']
+  const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'ico']
   const ext = (file.name.split('.').pop() || '').toLowerCase()
   if (!ALLOWED_TYPES.includes(file.type) || !ALLOWED_EXTS.includes(ext)) {
-    return NextResponse.json({ error: '仅支持图片文件（JPG/PNG/GIF/WebP/ICO）' }, { status: 400 })
+    return NextResponse.json({ error: '仅支持图片文件（JPG/PNG/GIF/WebP/SVG/ICO）' }, { status: 400 })
   }
   // 文件大小限制 10MB
   if (file.size > 10 * 1024 * 1024) {
@@ -33,13 +26,9 @@ export async function POST(req: NextRequest) {
   const bytes = await file.arrayBuffer()
   const buffer = Buffer.from(bytes)
 
-  const fixedName =
-    typeof fixedNameRaw === 'string'
-      ? fixedNameRaw
-          .trim()
-          .toLowerCase()
-          .replace(/[^a-z0-9-_]/g, '')
-      : ''
+  const fixedName = typeof fixedNameRaw === 'string'
+    ? fixedNameRaw.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '')
+    : ''
 
   const storage = await getStorageProvider()
   try {
