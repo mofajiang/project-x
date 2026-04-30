@@ -65,7 +65,7 @@
 - **样式**：Tailwind CSS 3
 - **数据库**：SQLite via [Prisma 5](https://www.prisma.io/)
 - **认证**：JWT + httpOnly Cookie
-- **测试**：Vitest（72 个单元测试）
+- **测试**：Vitest（83 个测试）
 - **代码质量**：ESLint + Prettier + husky
 
 ---
@@ -77,13 +77,15 @@
 ```bash
 git clone https://github.com/mofajiang/project-x.git
 cd project-x
-npm install
+npm install --include=optional
 cp .env.example .env
 # 编辑 .env，至少配置 JWT_SECRET
 npm run db:push
 npx tsx scripts/init-admin.ts
 npm run dev
 ```
+
+> 💡 Linux 环境请使用 `npm install --include=optional` 以确保 Sharp（图片处理）和 Rolldown（测试工具链）等原生模块正确安装。
 
 访问 http://localhost:3000，使用初始化时设置的账号登录。
 
@@ -170,9 +172,15 @@ npx tsx scripts/init-admin.ts
 **5. 使用 PM2 启动**
 
 ```bash
-pm2 start npm --name x-blog -- start
+# 方式一：使用 PM2 配置文件（推荐）
+pm2 start ecosystem.config.js
 pm2 save
 pm2 startup  # 设置开机自启
+
+# 方式二：直接启动
+pm2 start npm --name x-blog -- start
+pm2 save
+pm2 startup
 ```
 
 **6. 配置 Nginx 反向代理**
@@ -384,11 +392,13 @@ npm run db:studio
 
 ```
 project-x/
+├── ecosystem.config.js        # PM2 生产配置
 ├── prisma/
-│   └── schema.prisma          # 数据库 Schema
+│   ├── schema.prisma          # 数据库 Schema
+│   └── data/                  # SQLite 数据库文件
 ├── public/                    # 静态资源
 ├── scripts/
-│   ├── init-admin.ts          # 初始化管理员账号
+│   ├── init-admin.ts|mjs      # 初始化管理员账号
 │   ├── install.sh             # 统一管理脚本（安装/升级/卸载/运维）
 │   └── uninstall.sh           # 独立卸载脚本
 └── src/
