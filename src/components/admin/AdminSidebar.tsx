@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLogout } from '@/hooks/useLogout'
 import { AdminUpdateChecker } from './AdminUpdateChecker'
 // AdminUpdateChecker has been moved to the settings page

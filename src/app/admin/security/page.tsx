@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { ADMIN_PAGE_TITLE_CLASS, ADMIN_CARD_LG_CLASS } from '@/components/admin/adminUi'
+import { ADMIN_CARD_LG_CLASS } from '@/components/admin/adminUi'
 
 export default function SecurityPage() {
   const [config, setConfig] = useState({

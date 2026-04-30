@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
-import Link from 'next/link'
 import { IMEInput } from '@/components/ui/IMEInput'
 import { MarkdownRenderer } from '@/components/blog/MarkdownRenderer'
 import { formatTime, formatTimeShort } from '@/lib/utils'

@@ -2,8 +2,8 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { relativeTime } from '@/lib/utils'
 import toast from 'react-hot-toast'
-import { ADMIN_PAGE_TITLE_CLASS, ADMIN_CARD_CLASS } from '@/components/admin/adminUi'
-import { getRiskLevel, getRiskLevelColor } from '@/lib/openrouter-spam-filter'
+import { ADMIN_CARD_CLASS } from '@/components/admin/adminUi'
+import { getRiskLevelColor } from '@/lib/openrouter-spam-filter'
 import { getPostPath } from '@/lib/post-link'
 
 interface Comment {

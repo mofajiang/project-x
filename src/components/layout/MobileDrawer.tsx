@@ -527,11 +527,11 @@ export function MobileDrawer({
                             style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--border)' }}
                           >
                             <div
-                              className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full"
+                              className="relative flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full"
                               style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
                             >
                               {link.avatar ? (
-                                <img src={link.avatar} alt={link.label} className="h-full w-full object-cover" />
+                                <Image src={link.avatar} alt={link.label} fill className="object-cover" unoptimized />
                               ) : (
                                 <span className="text-xs font-bold">{link.label[0]?.toUpperCase()}</span>
                               )}
@@ -632,11 +632,11 @@ export function MobileDrawer({
                         style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--border)' }}
                       >
                         <div
-                          className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full"
+                          className="relative flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full"
                           style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
                         >
                           {link.favicon ? (
-                            <img src={link.favicon} alt={link.name} className="h-full w-full object-cover" />
+                            <Image src={link.favicon} alt={link.name} fill className="object-cover" unoptimized />
                           ) : (
                             <span className="text-xs font-bold">{link.name[0]?.toUpperCase()}</span>
                           )}
@@ -678,11 +678,11 @@ export function MobileDrawer({
               style={{ color: 'var(--text-primary)' }}
             >
               <div
-                className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-[12px] font-bold"
+                className="relative flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-[12px] font-bold"
                 style={{ background: 'var(--accent)', color: '#fff' }}
               >
                 {avatar ? (
-                  <img src={avatar} alt={session.username} className="h-full w-full object-cover" />
+                  <Image src={avatar} alt={session.username} fill className="object-cover" unoptimized />
                 ) : (
                   session.username[0]?.toUpperCase()
                 )}

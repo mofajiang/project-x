@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { execSync } from 'child_process'
 
@@ -51,8 +51,8 @@ export async function GET() {
       isUpToDate: currentCommit === remoteCommit && !hasLocalCommits,
       hasLocalCommits,
       hasRemoteUpdates,
-      localCommitsCount: hasLocalCommits ? localCommits.split('\n').filter(line => line.trim()).length : 0,
-      remoteUpdatesCount: hasRemoteUpdates ? remoteUpdates.split('\n').filter(line => line.trim()).length : 0,
+      localCommitsCount: hasLocalCommits ? localCommits.split('\n').filter((line) => line.trim()).length : 0,
+      remoteUpdatesCount: hasRemoteUpdates ? remoteUpdates.split('\n').filter((line) => line.trim()).length : 0,
     })
   } catch (error) {
     console.error('Version check error:', error)
@@ -65,7 +65,7 @@ export async function GET() {
       hasRemoteUpdates: false,
       localCommitsCount: 0,
       remoteUpdatesCount: 0,
-      error: 'Git command failed'
+      error: 'Git command failed',
     })
   }
 }

@@ -2,8 +2,7 @@ module.exports = {
   apps: [
     {
       name: 'x-blog',
-      script: 'node_modules/.bin/next',
-      args: 'start -p 3000',
+      script: '.next/standalone/server.js',
       cwd: __dirname,
       instances: 1,
       exec_mode: 'fork',

@@ -4,7 +4,6 @@ import toast from 'react-hot-toast'
 import { IMEInput, IMETextarea } from '@/components/ui/IMEInput'
 import ImageCropModal from '@/components/ui/ImageCropModal'
 import { StorageImagePicker } from '@/components/admin/StorageImagePicker'
-import { ADMIN_PAGE_TITLE_CLASS, ADMIN_CARD_LG_CLASS, ADMIN_SUBCARD_CLASS } from '@/components/admin/adminUi'
 import {
   DEFAULT_NAV,
   DEFAULT_WIDGETS,

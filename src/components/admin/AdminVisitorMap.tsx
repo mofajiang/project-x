@@ -16,8 +16,6 @@ const worldProjection = geoEquirectangular()
   .scale(MAP_WIDTH / (2 * Math.PI))
   .translate([MAP_WIDTH / 2, MAP_HEIGHT / 2])
 const worldPath = geoPath(worldProjection)
-const worldGraticule = worldPath(geoGraticule10()) || ''
-const worldCountries = feature(worldCountriesTopo, worldCountriesTopo.objects.countries) as any
 
 type VisitorRow = {
   id: string
@@ -349,13 +347,6 @@ function getDateKey(offsetDays: number) {
   const date = new Date()
   date.setDate(date.getDate() - offsetDays)
   return date.toISOString().slice(0, 10)
-}
-
-function toPoint(lat: number, lon: number) {
-  return {
-    left: `${((lon + 180) / 360) * 100}%`,
-    top: `${((90 - lat) / 180) * 100}%`,
-  }
 }
 
 export async function AdminVisitorMap() {

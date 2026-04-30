@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import JSZip from 'jszip'
 import toast from 'react-hot-toast'
-import { ADMIN_PAGE_TITLE_CLASS } from '@/components/admin/adminUi'
 import { getErrorMessage } from '@/lib/converters'
 
 type UploadFile = {

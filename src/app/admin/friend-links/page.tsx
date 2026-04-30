@@ -2,7 +2,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
-import { ADMIN_PAGE_TITLE_CLASS } from '@/components/admin/adminUi'
 import { StorageImagePicker } from '@/components/admin/StorageImagePicker'
 
 interface FriendLink {

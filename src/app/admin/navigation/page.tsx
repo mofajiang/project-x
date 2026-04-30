@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { IMEInput, IMETextarea } from '@/components/ui/IMEInput'
-import { ADMIN_PAGE_TITLE_CLASS } from '@/components/admin/adminUi'
 import {
   DEFAULT_NAV,
   DEFAULT_WIDGETS,

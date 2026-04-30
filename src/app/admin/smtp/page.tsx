@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { IMEInput } from '@/components/ui/IMEInput'
-import { ADMIN_PAGE_TITLE_CLASS, ADMIN_CARD_LG_CLASS } from '@/components/admin/adminUi'
+import { ADMIN_CARD_LG_CLASS } from '@/components/admin/adminUi'
 
 export default function SmtpPage() {
   const [smtp, setSmtp] = useState({ SMTP_HOST: '', SMTP_PORT: '465', SMTP_USER: '', SMTP_PASS: '', SMTP_FROM: '' })
@@ -12,18 +12,30 @@ export default function SmtpPage() {
   const [testing, setTesting] = useState(false)
 
   useEffect(() => {
-    fetch('/api/admin/smtp', { cache: 'no-store' }).then(r => r.json()).then(data => {
-      if (data) {
-        setSmtp({ SMTP_HOST: data.SMTP_HOST || '', SMTP_PORT: data.SMTP_PORT || '465', SMTP_USER: data.SMTP_USER || '', SMTP_PASS: data.SMTP_PASS || '', SMTP_FROM: data.SMTP_FROM || '' })
-        setConfigured(data.configured || false)
-        setTestEmail(data.SMTP_USER || '')
-      }
-    })
+    fetch('/api/admin/smtp', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data) {
+          setSmtp({
+            SMTP_HOST: data.SMTP_HOST || '',
+            SMTP_PORT: data.SMTP_PORT || '465',
+            SMTP_USER: data.SMTP_USER || '',
+            SMTP_PASS: data.SMTP_PASS || '',
+            SMTP_FROM: data.SMTP_FROM || '',
+          })
+          setConfigured(data.configured || false)
+          setTestEmail(data.SMTP_USER || '')
+        }
+      })
   }, [])
 
   const save = async () => {
     setSaving(true)
-    const res = await fetch('/api/admin/smtp', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(smtp) })
+    const res = await fetch('/api/admin/smtp', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(smtp),
+    })
     setSaving(false)
     if (res.ok) {
       const data = await res.json()
@@ -44,54 +56,123 @@ export default function SmtpPage() {
   }
 
   const sendTest = async () => {
-    if (!testEmail.trim()) { toast.error('请填写收件人邮箱'); return }
+    if (!testEmail.trim()) {
+      toast.error('请填写收件人邮箱')
+      return
+    }
     setTesting(true)
-    const res = await fetch('/api/admin/smtp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to: testEmail }) })
+    const res = await fetch('/api/admin/smtp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to: testEmail }),
+    })
     setTesting(false)
     if (res.ok) toast.success('测试邮件已发送，请检查收件箱')
-    else { const d = await res.json(); toast.error(d.error || '发送失败') }
+    else {
+      const d = await res.json()
+      toast.error(d.error || '发送失败')
+    }
   }
 
-  const Field = ({ label, value, onChange, placeholder, type = 'text' }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) => (
+  const Field = ({
+    label,
+    value,
+    onChange,
+    placeholder,
+    type = 'text',
+  }: {
+    label: string
+    value: string
+    onChange: (v: string) => void
+    placeholder?: string
+    type?: string
+  }) => (
     <div>
-      <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>{label}</label>
-      <IMEInput type={type} value={value} onValueChange={onChange} placeholder={placeholder}
-        className="w-full px-3 py-2 rounded-xl text-sm outline-none"
-        style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
+      <label className="mb-1 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+        {label}
+      </label>
+      <IMEInput
+        type={type}
+        value={value}
+        onValueChange={onChange}
+        placeholder={placeholder}
+        className="w-full rounded-xl px-3 py-2 text-sm outline-none"
+        style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}
+      />
     </div>
   )
 
   return (
     <div className="max-w-2xl">
       <div className={`${ADMIN_CARD_LG_CLASS} mb-4 sm:mb-6`} style={{ background: 'var(--bg-secondary)' }}>
-        <h2 className="font-bold text-lg mb-4" style={{ color: 'var(--text-primary)' }}>SMTP 配置</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="SMTP 服务器" value={smtp.SMTP_HOST} onChange={v => setSmtp(s => ({ ...s, SMTP_HOST: v }))} placeholder="smtp.example.com" />
-          <Field label="端口" value={smtp.SMTP_PORT} onChange={v => setSmtp(s => ({ ...s, SMTP_PORT: v }))} placeholder="465" />
-          <Field label="用户名" value={smtp.SMTP_USER} onChange={v => setSmtp(s => ({ ...s, SMTP_USER: v }))} placeholder="your-email@example.com" />
-          <Field label="密码" value={smtp.SMTP_PASS} onChange={v => setSmtp(s => ({ ...s, SMTP_PASS: v }))} placeholder="your-password" type="password" />
+        <h2 className="mb-4 text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+          SMTP 配置
+        </h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field
+            label="SMTP 服务器"
+            value={smtp.SMTP_HOST}
+            onChange={(v) => setSmtp((s) => ({ ...s, SMTP_HOST: v }))}
+            placeholder="smtp.example.com"
+          />
+          <Field
+            label="端口"
+            value={smtp.SMTP_PORT}
+            onChange={(v) => setSmtp((s) => ({ ...s, SMTP_PORT: v }))}
+            placeholder="465"
+          />
+          <Field
+            label="用户名"
+            value={smtp.SMTP_USER}
+            onChange={(v) => setSmtp((s) => ({ ...s, SMTP_USER: v }))}
+            placeholder="your-email@example.com"
+          />
+          <Field
+            label="密码"
+            value={smtp.SMTP_PASS}
+            onChange={(v) => setSmtp((s) => ({ ...s, SMTP_PASS: v }))}
+            placeholder="your-password"
+            type="password"
+          />
           <div className="sm:col-span-2">
-            <Field label="发件人邮箱" value={smtp.SMTP_FROM} onChange={v => setSmtp(s => ({ ...s, SMTP_FROM: v }))} placeholder="noreply@example.com" />
+            <Field
+              label="发件人邮箱"
+              value={smtp.SMTP_FROM}
+              onChange={(v) => setSmtp((s) => ({ ...s, SMTP_FROM: v }))}
+              placeholder="noreply@example.com"
+            />
           </div>
         </div>
 
-        <button onClick={save} disabled={saving}
-          className="mt-6 px-6 py-3 rounded-full text-sm font-bold text-white disabled:opacity-50 w-full sm:w-auto"
-          style={{ background: 'var(--accent)' }}>
+        <button
+          onClick={save}
+          disabled={saving}
+          className="mt-6 w-full rounded-full px-6 py-3 text-sm font-bold text-white disabled:opacity-50 sm:w-auto"
+          style={{ background: 'var(--accent)' }}
+        >
           {saving ? '保存中...' : '保存配置'}
         </button>
       </div>
 
       {configured && (
         <div className={ADMIN_CARD_LG_CLASS} style={{ background: 'var(--bg-secondary)' }}>
-          <h2 className="font-bold text-lg mb-4" style={{ color: 'var(--text-primary)' }}>测试邮件</h2>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <IMEInput value={testEmail} onValueChange={setTestEmail} placeholder="收件人邮箱"
-              className="flex-1 px-3 py-2.5 rounded-xl text-sm outline-none"
-              style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }} />
-            <button onClick={sendTest} disabled={testing}
-              className="px-4 py-3 rounded-full text-sm font-medium disabled:opacity-50 w-full sm:w-auto"
-              style={{ background: 'var(--accent)', color: '#fff' }}>
+          <h2 className="mb-4 text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+            测试邮件
+          </h2>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <IMEInput
+              value={testEmail}
+              onValueChange={setTestEmail}
+              placeholder="收件人邮箱"
+              className="flex-1 rounded-xl px-3 py-2.5 text-sm outline-none"
+              style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}
+            />
+            <button
+              onClick={sendTest}
+              disabled={testing}
+              className="w-full rounded-full px-4 py-3 text-sm font-medium disabled:opacity-50 sm:w-auto"
+              style={{ background: 'var(--accent)', color: '#fff' }}
+            >
               {testing ? '发送中...' : '发送测试'}
             </button>
           </div>

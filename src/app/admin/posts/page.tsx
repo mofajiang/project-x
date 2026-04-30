@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { useEffect, useState, useCallback } from 'react'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
-import { ADMIN_PAGE_TITLE_CLASS, ADMIN_CARD_CLASS } from '@/components/admin/adminUi'
+import { ADMIN_CARD_CLASS } from '@/components/admin/adminUi'
 
 interface Post {
   id: string

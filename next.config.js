@@ -21,9 +21,13 @@ const securityHeaders = [
 ]
 
 const nextConfig = {
+  output: 'standalone',
   transpilePackages: ['@uiw/react-md-editor', '@uiw/react-markdown-preview'],
   compress: true,
   poweredByHeader: false,
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
+  },
   async headers() {
     return [
       {
