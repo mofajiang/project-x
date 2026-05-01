@@ -3,7 +3,6 @@ import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
 import { sendCommentApprovedNotification, sendReplyNotification } from '@/lib/mailer'
-import { runMigrations } from '@/lib/db-migrate'
 import { getSiteConfig } from '@/lib/config'
 import { revalidateTag } from 'next/cache'
 import { syslog } from '@/lib/syslog'
@@ -14,7 +13,6 @@ const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 export async function GET(req: NextRequest) {
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  await runMigrations()
 
   const { searchParams } = req.nextUrl
   const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
@@ -57,7 +55,6 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  await runMigrations()
   const { id, approved } = await req.json()
 
   // 查出完整评论信息用于发邮件（guestEmail 为动态迁移列，用 raw 查询）
@@ -157,7 +154,6 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  await runMigrations()
   const { id } = await req.json()
   await prisma.comment.delete({ where: { id } })
   revalidateTag('comments')

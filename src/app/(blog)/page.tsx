@@ -5,7 +5,6 @@ import { FriendCircleList } from '@/components/blog/FriendCircleList'
 import { QuickPost } from '@/components/blog/QuickPost'
 import { getSession } from '@/lib/auth'
 import { stripMarkdown, extractQuotes, extractImages } from '@/lib/post-utils'
-import { runMigrations } from '@/lib/db-migrate'
 
 export default async function HomePage({ searchParams }: { searchParams: { tab?: string } }) {
   const tab = searchParams.tab || 'latest'
@@ -15,7 +14,6 @@ export default async function HomePage({ searchParams }: { searchParams: { tab?:
   // 检查博友圈开关
   let enableFriendCircle = false
   try {
-    await runMigrations()
     const cfgRows = await prisma.$queryRawUnsafe<any[]>(
       `SELECT COALESCE(enableFriendCircle, 0) as enableFriendCircle FROM SiteConfig WHERE id = 'singleton'`
     )

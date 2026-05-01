@@ -1,13 +1,15 @@
 import fs from 'fs'
 import path from 'path'
-import { getRecentFailedAudits, getRecentHighRiskAudits, type DashboardRecentFailedTask, type DashboardRecentHighRiskAction } from '@/lib/admin-audit'
+import {
+  getRecentFailedAudits,
+  getRecentHighRiskAudits,
+  type DashboardRecentFailedTask,
+  type DashboardRecentHighRiskAction,
+} from '@/lib/admin-audit'
 import { getSiteConfig, type SiteConfig } from '@/lib/config'
-import { runMigrations } from '@/lib/db-migrate'
 import { checkLicense } from '@/lib/license'
 import { prisma } from '@/lib/prisma'
-import { getErrorMessage } from './converters';
-
-
+import { getErrorMessage } from './converters'
 
 export type DashboardSummary = {
   postCount: number
@@ -60,7 +62,6 @@ export type AdminDashboardData = {
   healthItems: DashboardHealthItem[]
 }
 
-
 const EMPTY_DASHBOARD_DATA: AdminDashboardData = {
   summary: {
     postCount: 0,
@@ -112,7 +113,9 @@ function normalizeDashboardHost(currentHost: string) {
 }
 
 function isLocalHost(host: string) {
-  return host.startsWith('localhost') || host.startsWith('127.') || host.startsWith('192.168.') || host.endsWith('.local')
+  return (
+    host.startsWith('localhost') || host.startsWith('127.') || host.startsWith('192.168.') || host.endsWith('.local')
+  )
 }
 
 function getLoginModeLabel(loginMode?: string) {
@@ -133,8 +136,10 @@ async function getDashboardLicenseStatus(currentHost: string): Promise<Dashboard
 
   try {
     return await Promise.race([
-      checkLicense(currentHost).then(authorized => authorized ? 'authorized' as const : 'unauthorized' as const),
-      new Promise<DashboardLicenseStatus>(resolve => setTimeout(() => resolve('unknown'), 2500)),
+      checkLicense(currentHost).then((authorized) =>
+        authorized ? ('authorized' as const) : ('unauthorized' as const)
+      ),
+      new Promise<DashboardLicenseStatus>((resolve) => setTimeout(() => resolve('unknown'), 2500)),
     ])
   } catch (e: unknown) {
     console.warn('[admin-dashboard] licenseStatus:', getErrorMessage(e))
@@ -159,54 +164,56 @@ function buildDashboardHealthItems({
     ? `当前域名：${currentHost}${siteConfig?.customDomain ? ` · 配置域名：${siteConfig.customDomain}` : ''}`
     : '当前未获取到访问域名，建议在生产环境再检查授权状态。'
 
-  const licenseItem: DashboardHealthItem = licenseStatus === 'authorized'
-    ? {
-        id: 'license',
-        label: '授权状态',
-        tone: 'healthy',
-        value: '已授权',
-        description: licenseDescription,
-        href: '/admin/settings',
-        hrefLabel: '去站点设置',
-      }
-    : licenseStatus === 'unauthorized'
+  const licenseItem: DashboardHealthItem =
+    licenseStatus === 'authorized'
       ? {
           id: 'license',
           label: '授权状态',
-          tone: 'danger',
-          value: '未授权',
-          description: `${licenseDescription}，请尽快核对授权。`,
+          tone: 'healthy',
+          value: '已授权',
+          description: licenseDescription,
           href: '/admin/settings',
           hrefLabel: '去站点设置',
         }
-      : licenseStatus === 'local'
+      : licenseStatus === 'unauthorized'
         ? {
             id: 'license',
             label: '授权状态',
-            tone: 'info',
-            value: '本地环境',
-            description: '本地开发环境默认不校验授权，可在上线前再次检查。',
+            tone: 'danger',
+            value: '未授权',
+            description: `${licenseDescription}，请尽快核对授权。`,
             href: '/admin/settings',
-            hrefLabel: '查看授权检查',
+            hrefLabel: '去站点设置',
           }
-        : {
-            id: 'license',
-            label: '授权状态',
-            tone: 'warning',
-            value: '待检查',
-            description: licenseDescription,
-            href: '/admin/settings',
-            hrefLabel: '查看授权检查',
-          }
+        : licenseStatus === 'local'
+          ? {
+              id: 'license',
+              label: '授权状态',
+              tone: 'info',
+              value: '本地环境',
+              description: '本地开发环境默认不校验授权，可在上线前再次检查。',
+              href: '/admin/settings',
+              hrefLabel: '查看授权检查',
+            }
+          : {
+              id: 'license',
+              label: '授权状态',
+              tone: 'warning',
+              value: '待检查',
+              description: licenseDescription,
+              href: '/admin/settings',
+              hrefLabel: '查看授权检查',
+            }
 
   const commentApprovalEnabled = siteConfig?.commentApproval ?? true
   const loginModeLabel = getLoginModeLabel(siteConfig?.loginMode)
   const loginPath = siteConfig?.loginPath || '/admin-login'
-  const securityDescription = siteConfig?.loginMode === 'secret-click'
-    ? `首页点击 Logo ${siteConfig.secretClicks || 5} 次可触发登录。`
-    : siteConfig?.loginMode === 'both'
-      ? `路径 ${loginPath} 与隐藏彩蛋同时可用。`
-      : `当前登录路径：${loginPath}`
+  const securityDescription =
+    siteConfig?.loginMode === 'secret-click'
+      ? `首页点击 Logo ${siteConfig.secretClicks || 5} 次可触发登录。`
+      : siteConfig?.loginMode === 'both'
+        ? `路径 ${loginPath} 与隐藏彩蛋同时可用。`
+        : `当前登录路径：${loginPath}`
 
   return [
     licenseItem,
@@ -225,9 +232,15 @@ function buildDashboardHealthItems({
       id: 'comments',
       label: '评论审核',
       tone: commentApprovalEnabled ? (pendingCommentCount > 0 ? 'warning' : 'healthy') : 'info',
-      value: commentApprovalEnabled ? (pendingCommentCount > 0 ? `${pendingCommentCount} 条待审` : '审核已开启') : '免审发布',
+      value: commentApprovalEnabled
+        ? pendingCommentCount > 0
+          ? `${pendingCommentCount} 条待审`
+          : '审核已开启'
+        : '免审发布',
       description: commentApprovalEnabled
-        ? (pendingCommentCount > 0 ? '建议尽快处理积压评论，避免遗漏用户互动。' : '新评论需要审核后展示，当前没有积压。')
+        ? pendingCommentCount > 0
+          ? '建议尽快处理积压评论，避免遗漏用户互动。'
+          : '新评论需要审核后展示，当前没有积压。'
         : '评论会直接公开显示，注意垃圾评论与风险内容。',
       href: '/admin/comments',
       hrefLabel: '去评论管理',
@@ -245,7 +258,6 @@ function buildDashboardHealthItems({
 }
 
 async function safeQuery<T>(label: string, query: Promise<T>, fallback: T): Promise<T> {
-
   try {
     return await query
   } catch (e: unknown) {
@@ -255,43 +267,62 @@ async function safeQuery<T>(label: string, query: Promise<T>, fallback: T): Prom
 }
 
 export async function getAdminDashboardData(currentHost = ''): Promise<AdminDashboardData> {
-  try {
-    await runMigrations()
-  } catch (e: unknown) {
-    console.warn('[admin-dashboard] runMigrations:', getErrorMessage(e))
-  }
-
   const normalizedHost = normalizeDashboardHost(currentHost)
 
-  const [postCount, publishedPostCount, commentCount, pendingCommentCount, totalViewsResult, recentPosts, pendingComments, topPosts, recentHighRiskActions, recentFailedTasks, siteConfig, licenseStatus] = await Promise.all([
+  const [
+    postCount,
+    publishedPostCount,
+    commentCount,
+    pendingCommentCount,
+    totalViewsResult,
+    recentPosts,
+    pendingComments,
+    topPosts,
+    recentHighRiskActions,
+    recentFailedTasks,
+    siteConfig,
+    licenseStatus,
+  ] = await Promise.all([
     safeQuery('postCount', prisma.post.count(), 0),
     safeQuery('publishedPostCount', prisma.post.count({ where: { published: true } }), 0),
     safeQuery('commentCount', prisma.comment.count(), 0),
     safeQuery('pendingCommentCount', prisma.comment.count({ where: { approved: false } }), 0),
     safeQuery('totalViews', prisma.post.aggregate({ _sum: { views: true } }), { _sum: { views: null } }),
-    safeQuery('recentPosts', prisma.post.findMany({
-      take: 5,
-      orderBy: { createdAt: 'desc' },
-      select: { id: true, title: true, published: true, views: true, createdAt: true },
-    }), [] as DashboardRecentPost[]),
-    safeQuery('pendingComments', prisma.comment.findMany({
-      where: { approved: false },
-      take: 5,
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        content: true,
-        guestName: true,
-        createdAt: true,
-        post: { select: { title: true, id: true } },
-      },
-    }), [] as DashboardPendingComment[]),
-    safeQuery('topPosts', prisma.post.findMany({
-      where: { published: true },
-      take: 5,
-      orderBy: { views: 'desc' },
-      select: { id: true, title: true, views: true },
-    }), [] as DashboardTopPost[]),
+    safeQuery(
+      'recentPosts',
+      prisma.post.findMany({
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, title: true, published: true, views: true, createdAt: true },
+      }),
+      [] as DashboardRecentPost[]
+    ),
+    safeQuery(
+      'pendingComments',
+      prisma.comment.findMany({
+        where: { approved: false },
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          content: true,
+          guestName: true,
+          createdAt: true,
+          post: { select: { title: true, id: true } },
+        },
+      }),
+      [] as DashboardPendingComment[]
+    ),
+    safeQuery(
+      'topPosts',
+      prisma.post.findMany({
+        where: { published: true },
+        take: 5,
+        orderBy: { views: 'desc' },
+        select: { id: true, title: true, views: true },
+      }),
+      [] as DashboardTopPost[]
+    ),
     safeQuery('recentHighRiskActions', getRecentHighRiskAudits(5), [] as DashboardRecentHighRiskAction[]),
     safeQuery('recentFailedTasks', getRecentFailedAudits(5), [] as DashboardRecentFailedTask[]),
     safeQuery('siteConfig', getSiteConfig(), null as SiteConfig | null),
@@ -322,6 +353,3 @@ export async function getAdminDashboardData(currentHost = ''): Promise<AdminDash
     }),
   }
 }
-
-
-

@@ -70,7 +70,9 @@ export async function GET(req: NextRequest) {
   // 1. 内存缓存（最快）
   const mem = memCache.get(url)
   if (mem && Date.now() - mem.ts < MEM_TTL) {
-    return NextResponse.json(mem.data, { headers: { 'X-Cache': 'MEM' } })
+    return NextResponse.json(mem.data, {
+      headers: { 'X-Cache': 'MEM', 'Cache-Control': 'public, max-age=600, stale-while-revalidate=3600' },
+    })
   }
 
   // 2. 数据库缓存
@@ -81,7 +83,9 @@ export async function GET(req: NextRequest) {
       if (age < DB_TTL) {
         const data = JSON.parse(rows[0].data) as OGData
         memCache.set(url, { data, ts: Date.now() })
-        return NextResponse.json(data, { headers: { 'X-Cache': 'DB' } })
+        return NextResponse.json(data, {
+          headers: { 'X-Cache': 'DB', 'Cache-Control': 'public, max-age=600, stale-while-revalidate=3600' },
+        })
       }
     }
   } catch {
@@ -111,7 +115,9 @@ export async function GET(req: NextRequest) {
       )
       .catch(() => {})
 
-    return NextResponse.json(data, { headers: { 'X-Cache': 'FETCH' } })
+    return NextResponse.json(data, {
+      headers: { 'X-Cache': 'FETCH', 'Cache-Control': 'public, max-age=600, stale-while-revalidate=3600' },
+    })
   } catch {
     const fallback: OGData = { title: hostname || url, description: '', image: '', hostname, url }
     memCache.set(url, { data: fallback, ts: Date.now() })

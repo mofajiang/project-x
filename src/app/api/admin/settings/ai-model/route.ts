@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { runMigrations } from '@/lib/db-migrate'
 import { getSessionFromRequest } from '@/lib/auth'
 import { revalidateSiteConfig } from '@/lib/config'
 
@@ -70,7 +69,6 @@ export async function GET(request: NextRequest) {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     // 确保列存在（服务器可能未运行 db:push）
-    await runMigrations()
     await ensureSiteConfigExists()
 
     // 使用 raw SQL 读取，避免 Prisma 客户端版本不匹配时静默忽略字段
@@ -107,7 +105,6 @@ export async function POST(request: NextRequest) {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     // 确保列存在（服务器可能未运行 db:push）
-    await runMigrations()
     await ensureSiteConfigExists()
 
     const data = await request.json()

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
 import { prisma } from '@/lib/prisma'
-import { runMigrations } from '@/lib/db-migrate'
 import { getClientIp, isPublicIp } from '@/lib/request-ip'
 import { getErrorMessage } from '@/lib/converters'
 
@@ -291,8 +290,6 @@ async function fetchRemoteGeo(endpoint: string, key: string, clientIp: string) {
 }
 
 export async function POST(req: NextRequest) {
-  await runMigrations()
-
   let payload: IncomingPayload = {}
   try {
     payload = await req.json()

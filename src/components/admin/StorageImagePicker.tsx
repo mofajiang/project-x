@@ -1,8 +1,9 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import Image from 'next/image'
 import toast from 'react-hot-toast'
-import { getErrorMessage } from '@/lib/converters';
+import { getErrorMessage } from '@/lib/converters'
 
 type UploadFile = {
   name: string
@@ -24,7 +25,14 @@ type Props = {
 
 const IMAGE_EXTS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'ico'])
 
-export function StorageImagePicker({ onSelect, buttonText = '从云存储选择', className = '', onLocalClick, localLoading, localButtonText }: Props) {
+export function StorageImagePicker({
+  onSelect,
+  buttonText = '从云存储选择',
+  className = '',
+  onLocalClick,
+  localLoading,
+  localButtonText,
+}: Props) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [keyword, setKeyword] = useState('')
@@ -33,9 +41,9 @@ export function StorageImagePicker({ onSelect, buttonText = '从云存储选择'
 
   const filtered = useMemo(() => {
     const k = keyword.trim().toLowerCase()
-    const imageFiles = files.filter(f => IMAGE_EXTS.has((f.ext || '').toLowerCase()))
+    const imageFiles = files.filter((f) => IMAGE_EXTS.has((f.ext || '').toLowerCase()))
     if (!k) return imageFiles
-    return imageFiles.filter(f => f.name.toLowerCase().includes(k) || f.url.toLowerCase().includes(k))
+    return imageFiles.filter((f) => f.name.toLowerCase().includes(k) || f.url.toLowerCase().includes(k))
   }, [files, keyword])
 
   const openPicker = async () => {
@@ -59,15 +67,18 @@ export function StorageImagePicker({ onSelect, buttonText = '从云存储选择'
   return (
     <>
       {onLocalClick ? (
-        <div className="flex rounded-full overflow-hidden text-sm font-medium" style={{ border: '1px solid var(--border)', width: 'fit-content' }}>
+        <div
+          className="flex overflow-hidden rounded-full text-sm font-medium"
+          style={{ border: '1px solid var(--border)', width: 'fit-content' }}
+        >
           <button
             type="button"
             onClick={onLocalClick}
             disabled={localLoading}
-            className="px-3 py-1.5 disabled:opacity-50 transition-colors"
+            className="px-3 py-1.5 transition-colors disabled:opacity-50"
             style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
           >
-            {localLoading ? '上传中…' : (localButtonText || '本地上传')}
+            {localLoading ? '上传中…' : localButtonText || '本地上传'}
           </button>
           <div style={{ width: 1, flexShrink: 0, background: 'var(--border)' }} />
           <button
@@ -83,7 +94,7 @@ export function StorageImagePicker({ onSelect, buttonText = '从云存储选择'
         <button
           type="button"
           onClick={openPicker}
-          className={className || 'px-3 py-2 rounded-full text-sm font-medium'}
+          className={className || 'rounded-full px-3 py-2 text-sm font-medium'}
           style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
         >
           {buttonText}
@@ -99,14 +110,16 @@ export function StorageImagePicker({ onSelect, buttonText = '从云存储选择'
           <div
             className="w-full max-w-3xl rounded-2xl border p-4"
             style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}
-            onClick={e => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between gap-2 mb-3">
-              <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>选择云存储图片</h3>
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
+                选择云存储图片
+              </h3>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="px-3 py-1.5 rounded-lg text-sm"
+                className="rounded-lg px-3 py-1.5 text-sm"
                 style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
               >
                 关闭
@@ -115,21 +128,27 @@ export function StorageImagePicker({ onSelect, buttonText = '从云存储选择'
 
             <input
               value={keyword}
-              onChange={e => setKeyword(e.target.value)}
+              onChange={(e) => setKeyword(e.target.value)}
               placeholder="搜索文件名或 URL"
-              className="w-full px-3 py-2 rounded-xl border outline-none text-sm mb-3"
+              className="mb-3 w-full rounded-xl border px-3 py-2 text-sm outline-none"
               style={{ borderColor: 'var(--border)', color: 'var(--text-primary)', background: 'transparent' }}
             />
 
             {loading ? (
-              <div className="py-8 text-sm text-center" style={{ color: 'var(--text-secondary)' }}>加载中...</div>
+              <div className="py-8 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
+                加载中...
+              </div>
             ) : error ? (
-              <div className="py-6 text-sm text-center" style={{ color: '#ef4444' }}>{error}</div>
+              <div className="py-6 text-center text-sm" style={{ color: '#ef4444' }}>
+                {error}
+              </div>
             ) : filtered.length === 0 ? (
-              <div className="py-8 text-sm text-center" style={{ color: 'var(--text-secondary)' }}>没有可选图片</div>
+              <div className="py-8 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
+                没有可选图片
+              </div>
             ) : (
-              <div className="max-h-[60vh] overflow-auto grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {filtered.map(file => (
+              <div className="grid max-h-[60vh] grid-cols-1 gap-2 overflow-auto sm:grid-cols-2">
+                {filtered.map((file) => (
                   <button
                     key={file.url}
                     type="button"
@@ -137,15 +156,25 @@ export function StorageImagePicker({ onSelect, buttonText = '从云存储选择'
                       onSelect(file.url)
                       setOpen(false)
                     }}
-                    className="text-left rounded-xl border p-2 transition-colors"
+                    className="rounded-xl border p-2 text-left transition-colors"
                     style={{ borderColor: 'var(--border)', background: 'var(--bg)' }}
                   >
                     <div className="flex items-center gap-2">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={file.url} alt={file.name} className="w-10 h-10 rounded object-cover" loading="lazy" />
+                      <Image
+                        src={file.url}
+                        alt={file.name}
+                        width={40}
+                        height={40}
+                        className="rounded object-cover"
+                        unoptimized
+                      />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm truncate" style={{ color: 'var(--text-primary)' }}>{file.name}</p>
-                        <p className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>{file.url}</p>
+                        <p className="truncate text-sm" style={{ color: 'var(--text-primary)' }}>
+                          {file.name}
+                        </p>
+                        <p className="truncate text-xs" style={{ color: 'var(--text-secondary)' }}>
+                          {file.url}
+                        </p>
                       </div>
                     </div>
                   </button>

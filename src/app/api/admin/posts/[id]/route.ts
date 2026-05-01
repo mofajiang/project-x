@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
 import { getRequestIp, logAdminAudit } from '@/lib/admin-audit'
-import { runMigrations } from '@/lib/db-migrate'
 import { slugify } from '@/lib/utils'
 import { revalidateTag } from 'next/cache'
 import { syslog } from '@/lib/syslog'
@@ -10,7 +9,6 @@ import { syslog } from '@/lib/syslog'
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  await runMigrations()
   const post = await prisma.post.findUnique({
     where: { id: params.id },
     include: { tags: { include: { tag: true } } },
@@ -21,7 +19,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  await runMigrations()
 
   const { title, content, excerpt, coverImage, published, tags, publishedAt, pinned, threadId, threadOrder } =
     await req.json()
@@ -90,7 +87,6 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  await runMigrations()
 
   const { pinned } = await req.json()
 
@@ -106,7 +102,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  await runMigrations()
 
   const requestIp = getRequestIp(req)
   const post = await prisma.post.findUnique({ where: { id: params.id }, select: { id: true, title: true } })

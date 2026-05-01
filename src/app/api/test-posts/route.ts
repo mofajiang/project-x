@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { runMigrations } from '@/lib/db-migrate'
 
 export async function GET() {
   try {
-    await runMigrations()
     const post = await prisma.post.findFirst()
     if (!post) {
       // Create a test post

@@ -130,6 +130,10 @@ export default async function BlogLayout({ children }: { children: React.ReactNo
             social={{ x: config.socialX, github: config.socialGithub, email: config.socialEmail }}
             widgets={widgets}
             copyright={config.copyright || ''}
+            topTags={topTags}
+            hotPosts={hotPosts}
+            sidebarFriendLinks={approvedFriendLinks}
+            friendLinksDefaultOpen={!config.sidebarFriendLinksCollapsed}
           />
         </div>
       </div>

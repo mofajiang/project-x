@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
 import { getSiteConfig, revalidateSiteConfig } from '@/lib/config'
-import { runMigrations } from '@/lib/db-migrate'
 import { getRequestIp, logAdminAudit } from '@/lib/admin-audit'
 import { toJsonSafe, getErrorMessage } from '@/lib/converters'
 
@@ -75,7 +74,6 @@ function getConfigAuditPayload(changedKeys: string[]) {
 export async function GET(req: NextRequest) {
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  await runMigrations()
   const config = await getSiteConfig()
   return NextResponse.json(toJsonSafe(config), {
     headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' },
@@ -85,11 +83,6 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  try {
-    await runMigrations()
-  } catch (e: unknown) {
-    console.warn('[config PUT] runMigrations:', getErrorMessage(e))
-  }
   const requestIp = getRequestIp(req)
   const data = await req.json()
   if (process.env.NODE_ENV === 'development')

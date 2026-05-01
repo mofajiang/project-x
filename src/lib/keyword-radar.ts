@@ -1,6 +1,5 @@
 import crypto from 'crypto'
 import { prisma } from '@/lib/prisma'
-import { runMigrations } from '@/lib/db-migrate'
 import { AI_CONFIG_SELECT, callAi, rowToAiFullConfig } from '@/lib/ai-call'
 import {
   appendKeywordRadarLog,
@@ -1921,7 +1920,6 @@ async function setLastRun(fields: {
 }
 
 export async function getKeywordRadarConfig(): Promise<KeywordRadarConfig> {
-  await runMigrations()
   await ensureSiteConfigRow()
   const rows = await prisma.$queryRawUnsafe<KeywordRadarRow[]>(
     `SELECT
@@ -1953,7 +1951,6 @@ export async function getKeywordRadarConfig(): Promise<KeywordRadarConfig> {
 }
 
 export async function saveKeywordRadarConfig(input: Partial<KeywordRadarConfig>) {
-  await runMigrations()
   await ensureSiteConfigRow()
   const current = await getKeywordRadarConfig()
   const next: KeywordRadarConfig = {
@@ -2048,7 +2045,6 @@ async function getRecentItems(limit = 20): Promise<KeywordRadarSeenItem[]> {
 }
 
 export async function getKeywordRadarStatus(): Promise<KeywordRadarStatus> {
-  await runMigrations()
   await ensureSiteConfigRow()
   const [config, recentItems, totalRows] = await Promise.all([
     getKeywordRadarConfig(),
@@ -2443,7 +2439,6 @@ export async function getSourceHealthSummary(): Promise<
     degraded: boolean
   }>
 > {
-  await runMigrations()
   const sources = [...RADAR_SOURCES]
   const results = []
   for (const src of sources) {
@@ -2485,7 +2480,6 @@ export async function getRadarStats(): Promise<{
   totalItems: number
   totalDays: number
 }> {
-  await runMigrations()
   // Daily trend (last 30 days)
   const dailyRows = await prisma.$queryRawUnsafe<{ date: string; cnt: number }[]>(
     `SELECT digestDate as date, COUNT(*) as cnt
@@ -2719,7 +2713,6 @@ export async function runKeywordRadar(options: { reason: 'manual' | 'scheduler' 
     const log = (level: 'info' | 'success' | 'error', message: string) => {
       appendKeywordRadarLog(runId, level, message, options.reason)
     }
-    await runMigrations()
     await ensureSiteConfigRow()
     const config = await getKeywordRadarConfig()
     const nowIso = new Date().toISOString()
@@ -2874,7 +2867,6 @@ export async function previewKeywordRadarDigest(): Promise<KeywordRadarPreviewRe
   if (globalThis.__keywordRadarPreviewRunning) return globalThis.__keywordRadarPreviewRunning
 
   const promise = (async (): Promise<KeywordRadarPreviewResult> => {
-    await runMigrations()
     await ensureSiteConfigRow()
     const config = await getKeywordRadarConfig()
     const dateKey = getTodayKey()

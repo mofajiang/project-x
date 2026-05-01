@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { runMigrations } from '@/lib/db-migrate'
 import { buildSlugCandidates } from '@/lib/slug'
 
 export async function GET(req: NextRequest) {
-  await runMigrations()
   const slug = req.nextUrl.searchParams.get('slug')
   if (!slug) return NextResponse.json({ error: 'slug required' }, { status: 400 })
   const slugCandidates = buildSlugCandidates(slug)

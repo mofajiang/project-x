@@ -1,9 +1,8 @@
 import { randomUUID } from 'crypto'
 import type { NextRequest } from 'next/server'
 import type { JWTPayload } from './auth'
-import { runMigrations } from './db-migrate'
 import { prisma } from './prisma'
-import { getErrorMessage } from './converters';
+import { getErrorMessage } from './converters'
 
 export type AdminAuditRiskLevel = 'medium' | 'high' | 'critical'
 export type AdminAuditStatus = 'success' | 'failed'
@@ -64,8 +63,13 @@ const ACTION_LABELS: Record<string, string> = {
 }
 
 const NAVIGATION_CONFIG_KEYS = new Set(['navItems', 'rightPanelWidgets'])
-const VISITOR_CONFIG_KEYS = new Set(['visitorGeoMode', 'visitorGeoKey', 'visitorGeoEndpoint', 'visitorMapSource', 'visitorStatsDisplay'])
-
+const VISITOR_CONFIG_KEYS = new Set([
+  'visitorGeoMode',
+  'visitorGeoKey',
+  'visitorGeoEndpoint',
+  'visitorMapSource',
+  'visitorStatsDisplay',
+])
 
 export function getAdminAuditActionLabel(action: string) {
   return ACTION_LABELS[action] || action
@@ -98,7 +102,6 @@ export async function logAdminAudit({
   metadata?: Record<string, unknown> | null
 }) {
   try {
-    await runMigrations()
     await prisma.$executeRawUnsafe(
       `INSERT INTO AdminAuditLog (id, action, summary, targetType, targetId, riskLevel, status, actorId, actorUsername, ip, metadata, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       randomUUID(),
@@ -128,7 +131,7 @@ function parseAdminAuditMetadata(raw?: string | null): AdminAuditMetadata {
 
   try {
     const parsed = JSON.parse(raw)
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as Record<string, unknown> : null
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : null
   } catch {
     return null
   }
@@ -142,7 +145,9 @@ function getMetadataString(metadata: AdminAuditMetadata, key: string) {
 function getMetadataStringArray(metadata: AdminAuditMetadata, key: string) {
   const value = metadata?.[key]
   return Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0).map(item => item.trim())
+    ? value
+        .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+        .map((item) => item.trim())
     : []
 }
 
@@ -192,11 +197,11 @@ function getAdminAuditHref(action: string, metadata: AdminAuditMetadata) {
   const changedKeys = getMetadataStringArray(metadata, 'changedKeys')
 
   if (action === 'config.updated') {
-    if (changedKeys.some(key => NAVIGATION_CONFIG_KEYS.has(key))) {
+    if (changedKeys.some((key) => NAVIGATION_CONFIG_KEYS.has(key))) {
       return { href: '/admin/navigation', hrefLabel: '去导航设置' }
     }
 
-    if (changedKeys.some(key => VISITOR_CONFIG_KEYS.has(key))) {
+    if (changedKeys.some((key) => VISITOR_CONFIG_KEYS.has(key))) {
       return { href: '/admin', hrefLabel: '去仪表盘' }
     }
 
@@ -253,12 +258,10 @@ function mapFailedAdminAuditRow(row: AdminAuditRow): DashboardRecentFailedTask {
   }
 }
 
-
 export async function getRecentHighRiskAudits(limit = 5): Promise<DashboardRecentHighRiskAction[]> {
   const safeLimit = normalizeAuditLimit(limit)
 
   try {
-    await runMigrations()
     const rows = await prisma.$queryRawUnsafe<AdminAuditRow[]>(
       `SELECT id, action, summary, targetType, targetId, riskLevel, status, actorUsername, createdAt
        FROM AdminAuditLog
@@ -279,7 +282,6 @@ export async function getRecentFailedAudits(limit = 5): Promise<DashboardRecentF
   const safeLimit = normalizeAuditLimit(limit)
 
   try {
-    await runMigrations()
     const rows = await prisma.$queryRawUnsafe<AdminAuditRow[]>(
       `SELECT id, action, summary, targetType, targetId, riskLevel, status, actorUsername, createdAt, metadata
        FROM AdminAuditLog
@@ -290,10 +292,8 @@ export async function getRecentFailedAudits(limit = 5): Promise<DashboardRecentF
     )
 
     return rows.map(mapFailedAdminAuditRow)
-
   } catch (e: unknown) {
     console.warn('[admin-audit] recent failed query failed:', getErrorMessage(e))
     return []
   }
 }
-

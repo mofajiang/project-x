@@ -1,5 +1,4 @@
 import { prisma } from '@/lib/prisma'
-import { runMigrations } from '@/lib/db-migrate'
 import { getSiteConfig } from '@/lib/config'
 import { AdminVisitorMapSettings } from './AdminVisitorMapSettings'
 import { ClientVisitorMap } from './ClientVisitorMap'
@@ -350,11 +349,6 @@ function getDateKey(offsetDays: number) {
 }
 
 export async function AdminVisitorMap() {
-  try {
-    await runMigrations()
-  } catch (e: unknown) {
-    console.warn('[AdminVisitorMap] runMigrations:', getErrorMessage(e))
-  }
   let visitors: VisitorRow[] = []
   let total = 0
   let exactCount = 0

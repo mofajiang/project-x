@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import Image from 'next/image'
 import { prisma } from '@/lib/prisma'
 
 export const metadata: Metadata = {
@@ -120,12 +121,11 @@ export default async function LinksPage() {
                 >
                   {/* 头像 */}
                   <div
-                    className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold"
+                    className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold"
                     style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
                   >
                     {link.favicon ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={link.favicon} alt={link.name} loading="lazy" className="h-full w-full object-cover" />
+                      <Image src={link.favicon} alt={link.name} fill className="object-cover" unoptimized />
                     ) : (
                       <span>{link.name[0]?.toUpperCase()}</span>
                     )}

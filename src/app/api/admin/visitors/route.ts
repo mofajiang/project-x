@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
-import { runMigrations } from '@/lib/db-migrate'
 import { getRequestIp, logAdminAudit } from '@/lib/admin-audit'
-import { getErrorMessage } from '@/lib/converters';
-
+import { getErrorMessage } from '@/lib/converters'
 
 export async function DELETE(req: NextRequest) {
   const session = await getSessionFromRequest(req)
@@ -13,7 +11,6 @@ export async function DELETE(req: NextRequest) {
   const requestIp = getRequestIp(req)
 
   try {
-    await runMigrations()
     const deletedRaw = await prisma.$executeRaw`DELETE FROM Visitor`
     const deleted = Number(deletedRaw) || 0
     await logAdminAudit({

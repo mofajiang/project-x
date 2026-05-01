@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, useRef, useCallback } from 'react'
+import Image from 'next/image'
 import toast from 'react-hot-toast'
 import { IMEInput, IMETextarea } from '@/components/ui/IMEInput'
 import ImageCropModal from '@/components/ui/ImageCropModal'
@@ -507,9 +508,8 @@ export default function SettingsPage() {
                 style={{ background: 'var(--bg-hover)' }}
                 onClick={() => avatarInputRef.current?.click()}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 {profile.avatar ? (
-                  <img src={profile.avatar} alt="头像" className="h-full w-full object-cover" />
+                  <Image src={profile.avatar} alt="头像" fill className="object-cover" unoptimized />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-2xl">👤</div>
                 )}
@@ -892,8 +892,14 @@ export default function SettingsPage() {
                   style={{ background: 'var(--bg)' }}
                 >
                   {siteLogo.type === 'image' && isImageSource(siteLogo.value) ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={siteLogo.value} alt="站点 Logo" className="h-[20px] w-[20px] flex-none object-contain" />
+                    <Image
+                      src={siteLogo.value}
+                      alt="站点 Logo"
+                      width={20}
+                      height={20}
+                      className="flex-none object-contain"
+                      unoptimized
+                    />
                   ) : (
                     <span
                       className={

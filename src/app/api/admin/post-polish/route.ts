@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSessionFromRequest } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { callAi, rowToAiFullConfig, AI_CONFIG_SELECT } from '@/lib/ai-call'
-import { runMigrations } from '@/lib/db-migrate'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,7 +30,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '文章过长（超过 20000 字），请分段润色' }, { status: 400 })
   }
 
-  await runMigrations()
   const rows = await prisma.$queryRawUnsafe<Record<string, string>[]>(
     `SELECT ${AI_CONFIG_SELECT} FROM SiteConfig WHERE id = 'singleton'`
   )

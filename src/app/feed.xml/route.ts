@@ -1,7 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { getSiteConfig } from '@/lib/config'
 import { NextResponse } from 'next/server'
-import { runMigrations } from '@/lib/db-migrate'
 import { getPostUrl } from '@/lib/post-link'
 
 export const revalidate = 3600
@@ -16,7 +15,6 @@ function escapeXml(str: string) {
 }
 
 export async function GET(req: Request) {
-  await runMigrations()
   const config = await getSiteConfig()
   const siteUrl =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || `https://${req.headers.get('host') || 'localhost'}`

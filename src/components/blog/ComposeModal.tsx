@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import dynamic from 'next/dynamic'
@@ -221,11 +222,11 @@ export function ComposeModal({ avatar, username }: Props) {
         <div className="flex flex-1 gap-3 overflow-y-auto px-4 pb-2">
           {/* 头像 */}
           <div
-            className="mt-1 flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-base font-bold"
+            className="relative mt-1 flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-base font-bold"
             style={{ background: 'var(--accent)', color: '#fff' }}
           >
             {avatar ? (
-              <img src={avatar} alt={username} className="h-full w-full object-cover" />
+              <Image src={avatar} alt={username} fill className="object-cover" unoptimized />
             ) : (
               <span>{username[0]?.toUpperCase()}</span>
             )}

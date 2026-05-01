@@ -1,67 +1,43 @@
 import DOMPurify from 'isomorphic-dompurify'
-import { unstable_cache } from 'next/cache'
-import { prisma } from '@/lib/prisma'
-import { runMigrations } from '@/lib/db-migrate'
+import Image from 'next/image'
 import { SearchBox } from './SearchBox'
 import { CarouselWidget } from './CarouselWidget'
 import type { RightPanelWidget, FriendLink } from '@/lib/config'
-import { getSiteConfig } from '@/lib/config'
 import { getPostPath } from '@/lib/post-link'
 
-const getTopTags = unstable_cache(
-  () =>
-    prisma.tag.findMany({
-      include: { _count: { select: { posts: true } } },
-      orderBy: { posts: { _count: 'desc' } },
-      take: 8,
-    }),
-  ['top-tags'],
-  { revalidate: 300 }
-)
+interface TagItem {
+  id: string
+  name: string
+  slug: string
+  _count: { posts: number }
+}
 
-const getHotPosts = unstable_cache(
-  () =>
-    prisma.post.findMany({
-      where: { published: true },
-      orderBy: [{ pinned: 'desc' }, { views: 'desc' }],
-      take: 5,
-      select: {
-        id: true,
-        publicId: true,
-        title: true,
-        slug: true,
-        views: true,
-        author: { select: { username: true } },
-      },
-    }),
-  ['hot-posts'],
-  { revalidate: 120 }
-)
+interface PostItem {
+  id: string
+  publicId: number | null
+  title: string
+  slug: string
+  views: number
+  author: { username: string }
+}
 
-const getSidebarFriendLinks = unstable_cache(
-  () =>
-    prisma.$queryRawUnsafe<
-      Array<{ id: string; name: string; url: string; description: string | null; favicon: string | null }>
-    >(
-      `SELECT id, name, url, description, favicon
-     FROM FriendLink
-     WHERE status = 'approved' AND COALESCE(showInSidebar, 1) = 1
-     ORDER BY COALESCE(sortOrder, 0) DESC,
-              CASE
-                WHEN approvedAt IS NULL THEN 0
-                WHEN typeof(approvedAt) = 'integer' THEN approvedAt
-                ELSE CAST(strftime('%s', approvedAt) AS INTEGER) * 1000
-              END DESC`
-    ),
-  ['approved-friend-links'],
-  { revalidate: 300, tags: ['approved-friend-links'] }
-)
+interface FriendLinkItem {
+  id: string
+  name: string
+  url: string
+  description: string | null
+  favicon: string | null
+}
 
 interface Props {
   siteDesc: string
   social: { x: string; github: string; email: string }
   widgets?: RightPanelWidget[]
   copyright?: string
+  topTags: TagItem[]
+  hotPosts: PostItem[]
+  sidebarFriendLinks: FriendLinkItem[]
+  friendLinksDefaultOpen: boolean
 }
 
 const DEFAULT_TITLES: Record<string, string> = {
@@ -71,18 +47,17 @@ const DEFAULT_TITLES: Record<string, string> = {
   links: '自定义链接',
 }
 
-export async function RightPanel({ siteDesc, social, widgets = [], copyright = '' }: Props) {
-  await runMigrations()
+export function RightPanel({
+  siteDesc,
+  social,
+  widgets = [],
+  copyright = '',
+  topTags,
+  hotPosts,
+  sidebarFriendLinks,
+  friendLinksDefaultOpen,
+}: Props) {
   const enabledWidgets = widgets.filter((w) => w.enabled)
-  const needTags = enabledWidgets.some((w) => w.type === 'tags')
-  const needHotPosts = enabledWidgets.some((w) => w.type === 'hotPosts')
-  const [topTags, hotPosts, sidebarFriendLinks, config] = await Promise.all([
-    needTags ? getTopTags() : Promise.resolve([]),
-    needHotPosts ? getHotPosts() : Promise.resolve([]),
-    getSidebarFriendLinks(),
-    getSiteConfig(),
-  ])
-  const friendLinksDefaultOpen = !config.sidebarFriendLinksCollapsed
 
   return (
     <aside
@@ -262,11 +237,11 @@ export async function RightPanel({ siteDesc, social, widgets = [], copyright = '
                     >
                       {/* 头像/首字母 */}
                       <div
-                        className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold"
+                        className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold"
                         style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
                       >
                         {link.avatar ? (
-                          <img src={link.avatar} alt={link.label} className="h-full w-full object-cover" />
+                          <Image src={link.avatar} alt={link.label} fill className="object-cover" unoptimized />
                         ) : (
                           <span>{link.label[0]?.toUpperCase()}</span>
                         )}
@@ -323,11 +298,11 @@ export async function RightPanel({ siteDesc, social, widgets = [], copyright = '
                   className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-white/5"
                 >
                   <div
-                    className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold"
+                    className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold"
                     style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
                   >
                     {link.favicon ? (
-                      <img src={link.favicon} alt={link.name} className="h-full w-full object-cover" />
+                      <Image src={link.favicon} alt={link.name} fill className="object-cover" unoptimized />
                     ) : (
                       <span>{link.name[0]?.toUpperCase()}</span>
                     )}

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
 import { getSiteConfig, type SiteConfig } from '@/lib/config'
-import { runMigrations } from '@/lib/db-migrate'
 import { sendNewCommentNotification } from '@/lib/mailer'
 import { getClientIp } from '@/lib/request-ip'
 import { analyzeCommentWithAI, quickSpamCheck } from '@/lib/openrouter-spam-filter'
@@ -15,8 +14,6 @@ import { getPostUrl } from '@/lib/post-link'
 const DEBUG = process.env.NODE_ENV === 'development'
 
 export async function POST(req: NextRequest) {
-  await runMigrations()
-
   // 评论频率限制：同一 IP 每分钟最多 5 条
   const clientIp = getClientIp(req)
   if (!rateLimit(`comment:${clientIp}`, { max: 5, windowMs: 60_000 })) {

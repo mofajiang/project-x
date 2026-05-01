@@ -157,8 +157,7 @@ function ImageLightbox({ images, index, onClose }: { images: string[]; index: nu
                 style={{ borderColor: current === i ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.18)' }}
                 aria-label={`查看第 ${i + 1} 张图片`}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={src} alt={`缩略图 ${i + 1}`} className="h-full w-full object-cover" />
+                <Image src={src} alt={`缩略图 ${i + 1}`} fill className="object-cover" unoptimized />
               </button>
             ))}
           </div>

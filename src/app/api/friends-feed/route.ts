@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { runMigrations } from '@/lib/db-migrate'
 import { fetchFriendFeeds, type FriendFeedSource } from '@/lib/rss-fetcher'
 
 // 1 小时重新验证
@@ -9,8 +8,6 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(_request: NextRequest) {
   try {
-    await runMigrations()
-
     // 检查博友圈是否启用
     const cfgRows = await prisma.$queryRawUnsafe<any[]>(
       `SELECT COALESCE(enableFriendCircle, 0) as enableFriendCircle FROM SiteConfig WHERE id = 'singleton'`

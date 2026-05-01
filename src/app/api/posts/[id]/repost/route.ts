@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionFromRequest } from '@/lib/auth'
-import { runMigrations } from '@/lib/db-migrate'
 import { slugify } from '@/lib/utils'
 import { revalidateTag } from 'next/cache'
 
@@ -12,8 +11,6 @@ import { revalidateTag } from 'next/cache'
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  await runMigrations()
 
   const originalPost = await prisma.post.findUnique({
     where: { id: params.id },

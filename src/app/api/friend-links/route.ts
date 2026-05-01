@@ -116,7 +116,9 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: '链接不存在' }, { status: 404 })
       }
 
-      return NextResponse.json(link)
+      return NextResponse.json(link, {
+        headers: { 'Cache-Control': 'public, max-age=30, stale-while-revalidate=120' },
+      })
     }
 
     // 返回已通过的公开友链（供展示使用）
@@ -132,7 +134,9 @@ export async function GET(req: NextRequest) {
                 END DESC`
     )
 
-    return NextResponse.json(approvedLinks)
+    return NextResponse.json(approvedLinks, {
+      headers: { 'Cache-Control': 'public, max-age=60, stale-while-revalidate=300' },
+    })
   } catch (error) {
     console.error('[FriendLink Get Error]', error)
     return NextResponse.json({ error: '查询失败' }, { status: 500 })

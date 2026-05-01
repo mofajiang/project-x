@@ -2,12 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSiteConfig } from '@/lib/config'
 import { signJWT } from '@/lib/auth'
-import { runMigrations } from '@/lib/db-migrate'
 import { syslog } from '@/lib/syslog'
 import bcrypt from 'bcryptjs'
 
 export async function POST(req: NextRequest) {
-  await runMigrations()
   const rawIp = (req.headers.get('x-forwarded-for') || 'unknown').split(',')[0].trim()
   const ip = /^[a-fA-F0-9.:]+$/.test(rawIp) ? rawIp : 'unknown'
   const now = Date.now()

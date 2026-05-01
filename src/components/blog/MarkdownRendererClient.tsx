@@ -53,6 +53,29 @@ lowlight.register('dockerfile', dockerfile)
 lowlight.register('docker', dockerfile)
 lowlight.register('nginx', nginx)
 
+// 将 HTML 内容按 data-quote-url / data-quote-post 节点拆分
+function parseHtmlQuotes(html: string): Array<{ type: 'html' | 'quote-url' | 'quote-post'; content: string }> {
+  const segments: Array<{ type: 'html' | 'quote-url' | 'quote-post'; content: string }> = []
+  const re = /<div\s+(data-quote-url|data-quote-post)="([^"]*)"[^>]*>[\s\S]*?<\/div>/g
+  let lastIndex = 0
+  let m: RegExpExecArray | null
+  while ((m = re.exec(html)) !== null) {
+    if (m.index > lastIndex) {
+      const chunk = html.slice(lastIndex, m.index)
+      if (chunk.trim()) segments.push({ type: 'html', content: chunk })
+    }
+    if (m[2]) {
+      segments.push({ type: m[1] === 'data-quote-url' ? 'quote-url' : 'quote-post', content: m[2] })
+    }
+    lastIndex = m.index + m[0].length
+  }
+  if (lastIndex < html.length) {
+    const chunk = html.slice(lastIndex)
+    if (chunk.trim()) segments.push({ type: 'html', content: chunk })
+  }
+  return segments
+}
+
 // 解析引用语法，将特殊行转为占位符，渲染时替换为组件
 function parseQuotes(content: string): {
   segments: Array<{
@@ -101,29 +124,6 @@ function parseQuotes(content: string): {
   }
   if (mdBuffer.length) segments.push({ type: 'md', content: mdBuffer.join('\n') })
   return { segments }
-}
-
-// 将 HTML 内容按 data-quote-url / data-quote-post 节点拆分
-function parseHtmlQuotes(html: string): Array<{ type: 'html' | 'quote-url' | 'quote-post'; content: string }> {
-  const segments: Array<{ type: 'html' | 'quote-url' | 'quote-post'; content: string }> = []
-  const re = /<div\s+(data-quote-url|data-quote-post)="([^"]*)"[^>]*>[\s\S]*?<\/div>/g
-  let lastIndex = 0
-  let m: RegExpExecArray | null
-  while ((m = re.exec(html)) !== null) {
-    if (m.index > lastIndex) {
-      const chunk = html.slice(lastIndex, m.index)
-      if (chunk.trim()) segments.push({ type: 'html', content: chunk })
-    }
-    if (m[2]) {
-      segments.push({ type: m[1] === 'data-quote-url' ? 'quote-url' : 'quote-post', content: m[2] })
-    }
-    lastIndex = m.index + m[0].length
-  }
-  if (lastIndex < html.length) {
-    const chunk = html.slice(lastIndex)
-    if (chunk.trim()) segments.push({ type: 'html', content: chunk })
-  }
-  return segments
 }
 
 export default function MarkdownRendererClient({ content }: { content: string }) {

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSessionFromRequest } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { callAi, rowToAiFullConfig, AI_CONFIG_SELECT } from '@/lib/ai-call'
-import { runMigrations } from '@/lib/db-migrate'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,7 +26,6 @@ export async function POST(request: NextRequest) {
 
   if (!text) return NextResponse.json({ error: '内容不能为空' }, { status: 400 })
 
-  await runMigrations()
   const rows = await prisma.$queryRawUnsafe<Record<string, string>[]>(
     `SELECT ${AI_CONFIG_SELECT} FROM SiteConfig WHERE id = 'singleton'`
   )

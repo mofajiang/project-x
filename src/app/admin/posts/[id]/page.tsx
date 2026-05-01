@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
+import Image from 'next/image'
 import { useRouter, useParams } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { TipTapEditor } from '@/components/admin/TipTapEditor'
@@ -410,9 +411,8 @@ export default function EditPostPage() {
               />
               <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={uploadCover} />
               {form.coverImage && (
-                <div className="rounded-lg p-2" style={{ background: 'var(--bg)' }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={form.coverImage} alt="封面预览" className="h-36 w-full rounded object-cover" />
+                <div className="relative h-36 rounded-lg p-2" style={{ background: 'var(--bg)' }}>
+                  <Image src={form.coverImage} alt="封面预览" fill className="rounded object-cover" unoptimized />
                 </div>
               )}
             </div>
