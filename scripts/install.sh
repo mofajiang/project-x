@@ -221,13 +221,28 @@ install_code() {
   step "下载项目代码"
 
   if [[ -d "$INSTALL_DIR/.git" ]]; then
+    # 检查 Git 仓库写权限
+    if [[ ! -w "$INSTALL_DIR/.git" ]]; then
+      local owner
+      owner="$(stat -c '%U' "$INSTALL_DIR/.git" 2>/dev/null || stat -f '%Su' "$INSTALL_DIR/.git" 2>/dev/null || echo 'unknown')"
+      local current_user
+      current_user="$(whoami)"
+      error "Git 仓库不可写（所有者：${owner}，当前用户：${current_user}）
+  请执行：sudo chown -R ${current_user}:${current_user} ${INSTALL_DIR}"
+    fi
     warn "目录已存在 Git 仓库，执行 git pull 更新..."
     cd "$INSTALL_DIR"
-    git pull origin main
+    git pull origin main || error "git pull 失败，请检查网络或仓库状态"
   else
     [[ "$ACTION" == "update" ]] && error "更新模式要求目录已存在 Git 仓库：${INSTALL_DIR}"
-    mkdir -p "$(dirname "$INSTALL_DIR")"
-    git clone "$REPO_URL" "$INSTALL_DIR"
+    local parent_dir
+    parent_dir="$(dirname "$INSTALL_DIR")"
+    if [[ ! -w "$parent_dir" && ! -d "$INSTALL_DIR" ]]; then
+      error "安装目录父级不可写：${parent_dir}
+  请执行：sudo chown -R $(whoami):$(whoami) ${parent_dir}"
+    fi
+    mkdir -p "$parent_dir"
+    git clone "$REPO_URL" "$INSTALL_DIR" || error "git clone 失败，请检查网络或仓库 URL"
     cd "$INSTALL_DIR"
   fi
 }
@@ -279,11 +294,19 @@ EOF
 build_app() {
   cd "$INSTALL_DIR"
 
+  # 检查项目目录写权限
+  if [[ ! -w "$INSTALL_DIR" ]]; then
+    local owner
+    owner="$(stat -c '%U' "$INSTALL_DIR" 2>/dev/null || stat -f '%Su' "$INSTALL_DIR" 2>/dev/null || echo 'unknown')"
+    error "项目目录不可写（所有者：${owner}，当前用户：$(whoami)）
+  请执行：sudo chown -R $(whoami):$(whoami) ${INSTALL_DIR}"
+  fi
+
   step "安装 npm 依赖"
-  npm install --production=false
+  npm install --production=false || error "npm install 失败"
 
   step "构建生产版本"
-  npm run build
+  npm run build || error "构建失败，请检查日志"
 }
 
 # ── 备份数据库 ────────────────────────────────────────────
