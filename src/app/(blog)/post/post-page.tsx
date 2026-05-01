@@ -128,7 +128,7 @@ export async function renderPostPage(post: LoadedPost, session: { userId: string
 
   prisma.post.update({ where: { id: post.id }, data: { views: { increment: 1 } } }).catch(() => {})
 
-  const [, commentsRaw, repostRow] = await Promise.all([
+  const [, commentsRaw] = await Promise.all([
     Promise.resolve(session),
     prisma.comment.findMany({
       where: { postId: post.id, approved: true, parentId: null },
@@ -142,12 +142,9 @@ export async function renderPostPage(post: LoadedPost, session: { userId: string
       },
       orderBy: { createdAt: 'desc' },
     }),
-    prisma
-      .$queryRawUnsafe<{ reposts: number }[]>(`SELECT COALESCE(reposts, 0) as reposts FROM Post WHERE id = ?`, post.id)
-      .catch(() => [{ reposts: 0 }]),
   ])
   const comments = commentsRaw as any[]
-  const postReposts = Number((repostRow as { reposts: bigint | number }[])[0]?.reposts ?? 0)
+  const postReposts = Number(post.reposts) || 0
   const conversationCount = comments.reduce((sum, comment) => sum + 1 + (comment.replies?.length || 0), 0)
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'

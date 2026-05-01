@@ -2,19 +2,19 @@
 import { createHmac, timingSafeEqual } from 'crypto'
 
 // Encoded configuration (runtime-assembled, not plain text)
-const _a = (s: number[]) => s.map(c => String.fromCharCode(c)).join('')
+const _a = (s: number[]) => s.map((c) => String.fromCharCode(c)).join('')
 const _b = (s: string) => Buffer.from(s, 'base64').toString()
 
 // LICENSE_SERVER_URL segments (assembled at runtime)
-const _s1 = _a([104,116,116,112,115,58,47,47])
+const _s1 = _a([104, 116, 116, 112, 115, 58, 47, 47])
 const _s2 = _b('cHJvamVjdC14')
-const _s3 = _a([46,104,97,116,104,115,46,110,101,116])
+const _s3 = _a([46, 104, 97, 116, 104, 115, 46, 110, 101, 116])
 const _DEFAULT_SERVER = _s1 + _s2 + _s3
 
 // LICENSE_SECRET (XOR encoded, decoded at runtime)
 // encoded[i] = original[i] ^ xorKey[i]
-const _k  = [122, 53, 78, 63,118, 95, 44,101,111,118, 90, 83,114, 87]
-const _xk = [ 42, 71, 33, 85, 19, 60, 88, 72, 55, 91, 24, 63, 29, 48]
+const _k = [122, 53, 78, 63, 118, 95, 44, 101, 111, 118, 90, 83, 114, 87]
+const _xk = [42, 71, 33, 85, 19, 60, 88, 72, 55, 91, 24, 63, 29, 48]
 const _DEFAULT_SECRET = _a(_k.map((c, i) => c ^ _xk[i]))
 
 const LICENSE_SERVER = process.env.LICENSE_SERVER_URL || _DEFAULT_SERVER
@@ -29,6 +29,15 @@ interface LicenseCache {
 
 // 内存缓存（Node.js 进程级别）
 const cache = new Map<string, LicenseCache>()
+const CACHE_MAX = 50
+
+function trimCache() {
+  if (cache.size <= CACHE_MAX) return
+  const sorted = Array.from(cache.entries()).sort((a, b) => a[1].exp - b[1].exp)
+  for (let i = 0; i < sorted.length - CACHE_MAX + 10; i++) {
+    cache.delete(sorted[i][0])
+  }
+}
 
 function hmacSign(data: string, secret: string): string {
   return createHmac('sha256', secret).update(data).digest('hex')
@@ -73,6 +82,7 @@ export async function checkLicense(host: string): Promise<boolean> {
     const valid: boolean = data.valid === true
     if (valid) {
       // 仅缓存授权通过的结果，1 小时内无需重复请求
+      trimCache()
       cache.set(host, { valid: true, token: data.token || '', exp: Date.now() + CACHE_TTL })
     }
     // 授权失败不缓存，下次请求立即重新验证

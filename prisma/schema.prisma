@@ -88,6 +88,7 @@ model Comment {
   @@index([postId, approved])
   @@index([postId, approved, createdAt(sort: Desc)])
   @@index([authorId])
+  @@index([parentId])
   @@index([riskScore])
 }
 

@@ -4,7 +4,17 @@ import { prisma } from '@/lib/prisma'
 // 内存一级缓存（进程内极速响应）
 const memCache = new Map<string, { data: OGData; ts: number }>()
 const MEM_TTL = 1000 * 60 * 10 // 10分钟内存缓存
+const MEM_MAX = 200 // 最大缓存条目数
 const DB_TTL = 1000 * 60 * 60 * 24 * 7 // 7天数据库缓存
+
+function trimMemCache() {
+  if (memCache.size <= MEM_MAX) return
+  // 删除最旧的条目直到低于上限
+  const sorted = Array.from(memCache.entries()).sort((a, b) => a[1].ts - b[1].ts)
+  for (let i = 0; i < sorted.length - MEM_MAX + 50; i++) {
+    memCache.delete(sorted[i][0])
+  }
+}
 
 interface OGData {
   title: string
@@ -82,6 +92,7 @@ export async function GET(req: NextRequest) {
       const age = Date.now() - new Date(rows[0].updatedAt).getTime()
       if (age < DB_TTL) {
         const data = JSON.parse(rows[0].data) as OGData
+        trimMemCache()
         memCache.set(url, { data, ts: Date.now() })
         return NextResponse.json(data, {
           headers: { 'X-Cache': 'DB', 'Cache-Control': 'public, max-age=600, stale-while-revalidate=3600' },
@@ -102,6 +113,7 @@ export async function GET(req: NextRequest) {
     const data = extractMeta(html, url)
 
     // 写入内存缓存
+    trimMemCache()
     memCache.set(url, { data, ts: Date.now() })
 
     // 写入数据库缓存（非阻塞）
