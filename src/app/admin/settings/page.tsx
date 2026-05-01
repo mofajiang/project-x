@@ -19,16 +19,7 @@ import {
 } from '@/lib/config'
 
 type WidgetType = 'search' | 'about' | 'tags' | 'hotPosts' | 'custom' | 'links' | 'carousel'
-type FriendLink = { label: string; url: string; desc?: string; avatar?: string }
 type CarouselSlideType = 'image' | 'text' | 'markdown'
-type CarouselSlide = {
-  slideType?: CarouselSlideType
-  image?: string
-  title?: string
-  desc?: string
-  link?: string
-  markdown?: string
-}
 const SLIDE_TYPE_LABELS: Record<CarouselSlideType, string> = {
   image: '🖼 图片',
   text: '📝 文字/链接',
@@ -147,7 +138,6 @@ export default function SettingsPage() {
   const [uploadingIcon, setUploadingIcon] = useState(false)
   const [uploadingSiteLogo, setUploadingSiteLogo] = useState(false)
   const [cropSrc, setCropSrc] = useState<string | null>(null)
-  const [savingDomain, setSavingDomain] = useState(false)
   const [licenseChecking, setLicenseChecking] = useState(true)
   const [licenseResult, setLicenseResult] = useState<{
     authorized: boolean
@@ -760,14 +750,14 @@ export default function SettingsPage() {
                   className="flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl"
                   style={{ background: 'var(--bg-hover)' }}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   {siteIcon ? (
-                    <img
+                    <Image
                       src={siteIcon}
                       alt="网站图标"
                       width={64}
                       height={64}
                       className="h-full w-full object-contain"
+                      unoptimized
                     />
                   ) : (
                     <span className="text-3xl">🌐</span>

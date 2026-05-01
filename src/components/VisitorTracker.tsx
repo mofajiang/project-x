@@ -17,7 +17,7 @@ export function VisitorTracker({ visitorGeoMode = 'offline', visitorGeoEndpoint 
   useEffect(() => {
     if (pathname.startsWith('/admin')) return
 
-    let cancelled = false
+    let _cancelled = false
 
     const send = async () => {
       const query = window.location.search.replace(/^\?/, '')
@@ -51,7 +51,7 @@ export function VisitorTracker({ visitorGeoMode = 'offline', visitorGeoEndpoint 
     send().catch(() => {})
 
     return () => {
-      cancelled = true
+      _cancelled = true
     }
   }, [pathname, visitorGeoEndpoint, visitorGeoKey, visitorGeoMode])
 

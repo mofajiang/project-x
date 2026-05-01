@@ -2,19 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { getSiteConfig } from '@/lib/config'
 import { AdminVisitorMapSettings } from './AdminVisitorMapSettings'
 import { ClientVisitorMap } from './ClientVisitorMap'
-import { geoEquirectangular, geoGraticule10, geoPath } from 'd3-geo'
-import { feature } from 'topojson-client'
 import { getErrorMessage } from '@/lib/converters'
-
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const worldCountriesTopo = require('world-atlas/countries-110m.json')
-
-const MAP_WIDTH = 1200
-const MAP_HEIGHT = 600
-const worldProjection = geoEquirectangular()
-  .scale(MAP_WIDTH / (2 * Math.PI))
-  .translate([MAP_WIDTH / 2, MAP_HEIGHT / 2])
-const worldPath = geoPath(worldProjection)
 
 type VisitorRow = {
   id: string
@@ -437,8 +425,6 @@ export async function AdminVisitorMap() {
   const todayCount = dailyStats[dailyStats.length - 1]?.count || 0
   const weekCount = dailyStats.slice(-7).reduce((sum, item) => sum + item.count, 0)
   const monthCount = dailyStats.reduce((sum, item) => sum + item.count, 0)
-  const maxDailyCount = Math.max(1, ...dailyStats.map((item) => item.count))
-
   const exactMarkers: MapMarker[] = visitors
     .filter((v) => typeof v.lat === 'number' && typeof v.lon === 'number')
     .map((v) => ({

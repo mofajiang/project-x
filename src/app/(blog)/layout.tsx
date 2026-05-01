@@ -139,7 +139,7 @@ export default async function BlogLayout({ children }: { children: React.ReactNo
       </div>
 
       {/* 移动端底部 tab bar */}
-      <MobileTabBar navItems={navItems} session={session} />
+      <MobileTabBar session={session} />
 
       {/* 回到顶部/首页 浮动按钮 */}
       <ScrollToTop />

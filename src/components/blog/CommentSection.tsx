@@ -70,6 +70,7 @@ function CommentInput({
   parentId,
   placeholder,
   onDone,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onCancel,
   defaultExpanded,
 }: {

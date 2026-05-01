@@ -12,16 +12,7 @@ import {
 } from '@/lib/config'
 
 type WidgetType = 'search' | 'about' | 'tags' | 'hotPosts' | 'custom' | 'links' | 'carousel'
-type FriendLink = { label: string; url: string; desc?: string; avatar?: string }
 type CarouselSlideType = 'image' | 'text' | 'markdown'
-type CarouselSlide = {
-  slideType?: CarouselSlideType
-  image?: string
-  title?: string
-  desc?: string
-  link?: string
-  markdown?: string
-}
 
 const SLIDE_TYPE_LABELS: Record<CarouselSlideType, string> = {
   image: '🖼 图片',

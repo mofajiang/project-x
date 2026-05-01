@@ -207,7 +207,7 @@ export async function validateUrl(url: string): Promise<{ valid: boolean; error?
     }
 
     return { valid: true }
-  } catch (error) {
+  } catch (_error) {
     // HEAD 可能不被支持，再试 GET
     try {
       const response = await fetchWithTimeout(

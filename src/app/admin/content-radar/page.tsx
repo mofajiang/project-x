@@ -163,7 +163,7 @@ export default function AdminContentRadarPage() {
   >([])
   const [historyEntries, setHistoryEntries] = useState<RadarStatus['logs']['entries']>([])
   const [historyRunId, setHistoryRunId] = useState<string | null>(null)
-  const [historyLoading, setHistoryLoading] = useState(false)
+  const [, setHistoryLoading] = useState(false)
   const [previewing, setPreviewing] = useState(false)
   const [previewResult, setPreviewResult] = useState<{
     content: string

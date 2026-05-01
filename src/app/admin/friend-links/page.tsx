@@ -232,7 +232,7 @@ export default function AdminFriendLinksPage() {
         const error = await res.json()
         toast.error(error.error || 'AI 审核失败')
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error('发起审核失败')
     } finally {
       setReviewingId(null)

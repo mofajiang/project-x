@@ -3,7 +3,6 @@ import { useRouter } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
 import type { JWTPayload } from '@/lib/auth'
 import type { RightPanelWidget, SiteLogo } from '@/lib/config'
-import { isImageSource } from '@/lib/config'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { MobileDrawer } from './MobileDrawer'
 import type { NavItemDef } from './Sidebar'
@@ -45,7 +44,7 @@ interface Props {
 }
 
 export function MobileHeader({
-  siteName,
+  siteName: _siteName,
   session,
   avatar,
   displayName,
@@ -83,9 +82,6 @@ export function MobileHeader({
       router.push('/')
     }
   }
-
-  const logoValue = (siteLogo?.value || siteName || 'X').trim() || 'X'
-  const isLogoImage = siteLogo?.type === 'image' && isImageSource(logoValue)
 
   return (
     <>

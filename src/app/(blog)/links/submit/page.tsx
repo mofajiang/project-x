@@ -88,7 +88,7 @@ export default function SubmitFriendLinkPage() {
       setTimeout(() => {
         router.push(`/links/status/${data.id}`)
       }, 1500)
-    } catch (error) {
+    } catch (_error) {
       toast.error('网络错误，请稍后重试')
     } finally {
       setSubmitting(false)

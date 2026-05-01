@@ -570,10 +570,13 @@ export function MobileDrawer({
                         style={{ borderTop: '1px solid var(--border)' }}
                       >
                         {first.image && (
-                          <img
+                          <Image
                             src={first.image}
                             alt={first.title || title}
-                            className="h-14 w-14 shrink-0 rounded-xl object-cover"
+                            width={56}
+                            height={56}
+                            className="shrink-0 rounded-xl object-cover"
+                            unoptimized
                           />
                         )}
                         <div className="min-w-0 flex-1">
