@@ -289,8 +289,6 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
     }
   } catch {}
   if (!config.rightPanelWidgets) config.rightPanelWidgets = JSON.stringify(DEFAULT_WIDGETS)
-  if (!config.siteLogo) config.siteLogo = JSON.stringify(DEFAULT_SITE_LOGO)
-  if (!config.siteIcon) config.siteIcon = ''
   if (!config.loginPath) config.loginPath = '/admin-login'
   if (!config.loginMode) config.loginMode = 'path'
   if (!config.secretClicks) config.secretClicks = 5

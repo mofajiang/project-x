@@ -321,28 +321,33 @@ backup_db() {
 
 # ── 同步数据库 Schema ─────────────────────────────────────
 sync_db_schema() {
-	cd "$INSTALL_DIR"
-	step "同步数据库结构"
-	if npm run db:push; then
-		info "数据库结构已同步"
-	else
-		warn "db:push 失败，可能存在数据冲突"
-		echo -e -n " ${CYAN}${BOLD}是否允许数据丢失重新同步？(y/N): ${NC}"
-		read -r confirm_loss || true
-		if [[ "${confirm_loss}" =~ ^[Yy]$ ]]; then
-			npm run db:push -- --accept-data-loss
-			info "数据库结构已同步（允许数据丢失）"
-		else
-			error "数据库结构同步已取消"
-		fi
-	fi
+  local auto_accept="${1:-false}"
+  cd "$INSTALL_DIR"
+  step "同步数据库结构"
+  if npm run db:push; then
+    info "数据库结构已同步"
+  elif [[ "$auto_accept" == "true" ]]; then
+    warn "db:push 失败，自动使用 --accept-data-loss 同步（数据库已备份）"
+    npm run db:push -- --accept-data-loss
+    info "数据库结构已同步"
+  else
+    warn "db:push 失败，可能存在数据冲突"
+    echo -e -n " ${CYAN}${BOLD}是否允许数据丢失重新同步？(y/N): ${NC}"
+    read -r confirm_loss || true
+    if [[ "${confirm_loss}" =~ ^[Yy]$ ]]; then
+      npm run db:push -- --accept-data-loss
+      info "数据库结构已同步（允许数据丢失）"
+    else
+      error "数据库结构同步已取消"
+    fi
+  fi
 }
 
 # ── 更新流程（不含交互式配置） ────────────────────────────
 update_app() {
   build_app
   backup_db
-  sync_db_schema
+  sync_db_schema true
 
   step "重启 PM2 进程"
   if command -v pm2 &>/dev/null; then

@@ -116,8 +116,6 @@ export async function runMigrations() {
         `TEXT NOT NULL DEFAULT '[{"label":"首页","href":"/","icon":"home"},{"label":"归档","href":"/archive","icon":"archive"},{"label":"标签","href":"/tags","icon":"tag"},{"label":"关于","href":"/about","icon":"user"}]'`,
         'navItems'
       )
-      await addColumn('SiteConfig', 'siteLogo', `TEXT NOT NULL DEFAULT '{"type":"text","value":"✕"}'`, 'siteLogo')
-      await addColumn('SiteConfig', 'siteIcon', `TEXT NOT NULL DEFAULT ''`, 'siteIcon')
       await addColumn('SiteConfig', 'loginPath', `TEXT NOT NULL DEFAULT '/admin-login'`, 'loginPath')
       await addColumn('SiteConfig', 'loginMode', `TEXT NOT NULL DEFAULT 'path'`, 'loginMode')
       await addColumn('SiteConfig', 'secretClicks', `INTEGER NOT NULL DEFAULT 5`, 'secretClicks')
