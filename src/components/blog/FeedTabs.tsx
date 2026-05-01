@@ -1,3 +1,4 @@
+'use client'
 import Link from 'next/link'
 
 const BASE_TABS = [
@@ -18,8 +19,10 @@ export function FeedTabs({ active, showFriendCircle = false }: { active: string;
             key={tab.key}
             href={`/?tab=${tab.key}`}
             prefetch={true}
-            className="relative flex-1 py-3 text-center text-[15px] font-semibold transition-colors hover:bg-[var(--bg-hover)]"
+            className="relative flex-1 py-3 text-center text-[15px] font-semibold transition-colors"
             style={{ color: active === tab.key ? 'var(--text-primary)' : 'var(--text-secondary)' }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
           >
             {tab.label}
             {active === tab.key && (
