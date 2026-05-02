@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { revalidateTag } from 'next/cache'
 import { sleep } from '@/lib/fetch-utils'
 import { toSafeNumber, getErrorMessage } from '@/lib/converters'
-import { AI_DEFAULTS } from '@/lib/constants'
+import { AI_DEFAULTS, AI_REVIEW_THRESHOLDS, type AiReviewStrength } from '@/lib/constants'
 import { syslog } from '@/lib/syslog'
 import { callAi, rowToAiFullConfig, AI_CONFIG_SELECT } from '@/lib/ai-call'
 
@@ -73,10 +73,23 @@ export async function reviewFriendLinkById(linkId: string): Promise<FriendLinkRe
     throw new Error('Link not found')
   }
 
+  const safeName = (link.name || '')
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
+    .slice(0, 200)
+    .trim()
+  const safeUrl = (link.url || '')
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
+    .slice(0, 500)
+    .trim()
+  const safeDesc = (link.description || '')
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
+    .slice(0, 500)
+    .trim()
+
   const reviewPrompt = `<site>
-名称�?{link.name}
-URL�?{link.url}
-${link.description ? `描述�?{link.description}` : ''}
+名称：${safeName}
+URL：${safeUrl}
+${safeDesc ? `描述：${safeDesc}` : ''}
 </site>`
 
   let aiResponse = ''
@@ -140,17 +153,11 @@ ${link.description ? `描述�?{link.description}` : ''}
     }
   }
 
-  const strength = config.aiReviewStrength || 'balanced'
-  const thresholds = {
-    lenient: { auto_reject: 85, auto_approve: 20 },
-    balanced: { auto_reject: 70, auto_approve: 40 },
-    strict: { auto_reject: 60, auto_approve: 40 },
-  }
-
-  const threshold = thresholds[strength as keyof typeof thresholds] || thresholds.balanced
-  if (reviewResult.score >= threshold.auto_reject) {
+  const strength = (config.aiReviewStrength || 'balanced') as AiReviewStrength
+  const threshold = AI_REVIEW_THRESHOLDS[strength] || AI_REVIEW_THRESHOLDS.balanced
+  if (reviewResult.score >= threshold.autoReject) {
     reviewResult.recommendation = 'reject'
-  } else if (reviewResult.score <= threshold.auto_approve) {
+  } else if (reviewResult.score < threshold.autoApprove) {
     reviewResult.recommendation = 'approve'
   } else {
     reviewResult.recommendation = 'manual'

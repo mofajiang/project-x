@@ -5,11 +5,13 @@ import { getSiteConfig, type SiteConfig } from '@/lib/config'
 import { sendNewCommentNotification } from '@/lib/mailer'
 import { getClientIp } from '@/lib/request-ip'
 import { analyzeCommentWithAI, quickSpamCheck } from '@/lib/openrouter-spam-filter'
+import type { AiFullConfig } from '@/lib/ai-call'
 import { revalidateTag } from 'next/cache'
 import { rateLimit } from '@/lib/rate-limit'
 import { getErrorMessage } from '@/lib/converters'
 import { syslog } from '@/lib/syslog'
 import { getPostUrl } from '@/lib/post-link'
+import { AI_REVIEW_THRESHOLDS, type AiReviewStrength } from '@/lib/constants'
 
 const DEBUG = process.env.NODE_ENV === 'development'
 
@@ -112,8 +114,8 @@ export async function POST(req: NextRequest) {
   // 立即返回响应（用户感受极快）⚡
   const responseData = { ok: true, comment }
 
-  // 后台异步执行：AI 检测 + 邮件通知
-  if (quickCheck.shouldAnalyze || config.enableAiDetection) {
+  // 后台异步执行：AI 检测（仅访客评论需要 AI 审核，登录用户直接跳过）
+  if (!session && (quickCheck.shouldAnalyze || config.enableAiDetection)) {
     // 使用 Promise 不等待，后台异步处理
     analyzeAndUpdateComment(comment.id, content.trim(), config, commentData, session).catch((err: any) =>
       console.error('[ai-detection-async] 后台处理失败:', getErrorMessage(err))
@@ -165,24 +167,31 @@ async function analyzeAndUpdateComment(
   try {
     if (DEBUG) console.log('[ai-analysis-async] 开始后台 AI 分析:', { commentId, contentLength: content.length })
 
+    const aiCfg: AiFullConfig = {
+      groqApiKey: config.groqApiKey || '',
+      openrouterApiKey: config.openrouterApiKey || '',
+      aiModelBaseUrl: config.aiModelBaseUrl || '',
+      aiModelApiKey: config.aiModelApiKey || '',
+      aiModelProvider: config.aiModelProvider || 'openrouter',
+      aiModelName: config.aiModelName || config.openrouterModel || '',
+      aiModelMaxTokens: config.aiModelMaxTokens || 2000,
+      aiModelTimeout: config.aiModelTimeout || 30,
+      commentAiProvider: config.commentAiProvider || '',
+      commentAiModel: config.commentAiModel || '',
+      friendLinkAiProvider: config.friendLinkAiProvider || '',
+      friendLinkAiModel: config.friendLinkAiModel || '',
+      voicePolishAiProvider: config.voicePolishAiProvider || '',
+      voicePolishAiModel: config.voicePolishAiModel || '',
+      postPolishAiProvider: config.postPolishAiProvider || '',
+      postPolishAiModel: config.postPolishAiModel || '',
+    }
+
     const aiResult = await analyzeCommentWithAI(
       content,
-      // 按评论功能解析 API Key：优先用对应 provider 的专属 key
-      (() => {
-        const provider = config.commentAiProvider || config.aiModelProvider || 'openrouter'
-        if (provider === 'groq') return config.groqApiKey || config.aiModelApiKey
-        if (provider === 'openrouter') return config.openrouterApiKey || config.aiModelApiKey
-        return config.aiModelApiKey
-      })(),
-      // 优先使用评论专用模型，回退到全局模型
-      config.commentAiModel || config.aiModelName || config.openrouterModel,
+      aiCfg,
       commentData.guestName,
       commentData.guestEmail,
-      commentData.guestWebsite,
-      config.aiModelMaxTokens,
-      // 评论功能专用 provider 优先，回退到全局
-      config.commentAiProvider || config.aiModelProvider || 'openrouter',
-      config.aiModelBaseUrl || undefined
+      commentData.guestWebsite
     )
 
     if (DEBUG) console.log('[ai-analysis-async] AI 分析完成:', { commentId, riskScore: aiResult.riskScore })
@@ -227,35 +236,26 @@ async function analyzeAndUpdateComment(
       return
     }
 
-    const reviewStrength = (config.aiReviewStrength || 'balanced') as 'lenient' | 'balanced' | 'strict'
-    const thresholdMap: Record<'lenient' | 'balanced' | 'strict', number> = {
-      lenient: 30, // 宽松：风险分 < 30 自动通过
-      balanced: 20, // 平衡：风险分 < 20 自动通过
-      strict: 10, // 严格：风险分 < 10 自动通过
-    }
-    const autoApproveThreshold = thresholdMap[reviewStrength] || 20
+    const reviewStrength = (config.aiReviewStrength || 'balanced') as AiReviewStrength
+    const thresholds = AI_REVIEW_THRESHOLDS[reviewStrength] || AI_REVIEW_THRESHOLDS.balanced
 
     if (!session) {
       // 访客评论：三段式决策
-      if (aiResult.riskScore >= 70) {
-        // ① 高风险 → 自动拒绝
+      if (aiResult.riskScore >= thresholds.autoReject) {
         approved = false
         if (DEBUG) console.log('[ai-analysis-async] ⚠️ 高风险评论自动隐藏')
-      } else if (config.aiAutoApprove && aiResult.riskScore < autoApproveThreshold) {
-        // ② 低风险 + 启用自动通过 → 通过
+      } else if (config.aiAutoApprove && aiResult.riskScore < thresholds.autoApprove) {
         approved = true
         if (DEBUG)
           console.log(
-            '[ai-analysis-async] ✅ 安全评论自动通过 (评审强度:',
+            '[ai-analysis-async] ✅ 安全评论自动通过 (强度:',
             reviewStrength,
             ', 阈值:',
-            autoApproveThreshold,
+            thresholds.autoApprove,
             ')'
           )
       } else {
-        // ③ 中等风险（threshold~70），或未启用 aiAutoApprove → 回落到人工审核开关
-        // 若 commentApproval=false（不需人工审核），低风险也放行；否则保持 false 待审
-        approved = !config.commentApproval && aiResult.riskScore < autoApproveThreshold
+        approved = !config.commentApproval && aiResult.riskScore < thresholds.autoApprove
         if (DEBUG)
           console.log(
             '[ai-analysis-async] ℹ️ 中等风险/未开启自动通过，依据 commentApproval 决定:',
@@ -263,7 +263,7 @@ async function analyzeAndUpdateComment(
             '(riskScore:',
             aiResult.riskScore,
             'threshold:',
-            autoApproveThreshold,
+            thresholds.autoApprove,
             ')'
           )
       }

@@ -2,8 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { checkFriendLinkOnTargetSite, validateUrl, getFavicon } from '@/lib/friend-link-checker'
 import { reviewFriendLinkById } from '@/lib/friend-link-review'
+import { getClientIp } from '@/lib/request-ip'
+import { rateLimit } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
+  // 友链提交频率限制：同一 IP 每分钟最多 2 条
+  const clientIp = getClientIp(req)
+  if (!rateLimit(`friendlink:${clientIp}`, { max: 2, windowMs: 60_000 })) {
+    return NextResponse.json({ error: '提交太频繁，请稍后再试' }, { status: 429 })
+  }
   try {
     const { name, url, description, email, favicon: userFavicon, rssUrl } = await req.json()
 

@@ -1,85 +1,16 @@
 import { getErrorMessage } from './converters'
-/**
- * OpenRouter AI 垃圾评论检测
- * 使用 Claude 模型进行内容分析
- */
+import { callAi, type AiFullConfig } from './ai-call'
 
 interface SpamAnalysisResult {
-  isSpam: boolean // 是否判定为垃圾
-  riskScore: number // 风险得分 0-100
-  riskReasons: string[] // 风险原因列表
-  confidence: number // 置信度 0-1
+  isSpam: boolean
+  riskScore: number
+  riskReasons: string[]
+  confidence: number
 }
 
-const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions'
 const DEBUG = process.env.NODE_ENV === 'development'
 
-/**
- * 调用 OpenRouter / 自定义 AI API 分析评论内容
- * 返回垃圾评论判定和风险评分
- */
-export async function analyzeCommentWithAI(
-  content: string,
-  apiKey: string,
-  model: string,
-  authorName?: string,
-  authorEmail?: string,
-  authorWebsite?: string,
-  maxTokens?: number,
-  provider?: string,
-  baseUrl?: string
-): Promise<SpamAnalysisResult> {
-  if (DEBUG)
-    console.log('[analyzeCommentWithAI] 开始调用，参数检查:', {
-      hasApiKey: !!apiKey,
-      model,
-      contentLength: content.length,
-    })
-
-  if (!apiKey) {
-    console.error('[spam-filter] ❌ OpenRouter API 密钥未配置（为空），跳过 AI 检测')
-    return {
-      isSpam: false,
-      riskScore: 0,
-      riskReasons: ['API 密钥未配置'],
-      confidence: 0,
-    }
-  }
-
-  if (!model) {
-    console.error('[spam-filter] ❌ AI 模型 ID 未配置（为空）')
-    return {
-      isSpam: false,
-      riskScore: 0,
-      riskReasons: ['模型未配置'],
-      confidence: 0,
-    }
-  }
-
-  try {
-    // 根据 provider 决定 API URL 和 Headers
-    const isCustom = provider === 'custom' && baseUrl
-    const isGroq = provider === 'groq'
-    let apiUrl: string
-    if (isCustom) {
-      apiUrl = `${baseUrl!.replace(/\/+$/, '')}/v1/chat/completions`
-    } else if (isGroq) {
-      apiUrl = 'https://api.groq.com/openai/v1/chat/completions'
-    } else {
-      apiUrl = OPENROUTER_API_URL
-    }
-    const headers: Record<string, string> = {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    }
-    if (!isCustom && !isGroq) {
-      headers['HTTP-Referer'] = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-      headers['X-Title'] = 'Blog Comment Spam Filter'
-    }
-
-    if (DEBUG) console.log('[openrouter] 准备发送请求到:', apiUrl, '模型:', model)
-
-    const systemPrompt = `你是一个个人博客的评论审核助手，这是一个风格随性自然的个人站点。
+const COMMENT_SYSTEM_PROMPT = `你是一个个人博客的评论审核助手，这是一个风格随性自然的个人站点。
 你的任务是识别真正的垃圾评论和恶意内容，而不是过度审查正常的人类交流。
 
 判断原则：
@@ -93,141 +24,89 @@ export async function analyzeCommentWithAI(
 riskReasons 简短说明原因，若正常则填写正常的依据（如"内容自然真实"）。
 只返回 JSON，格式：{"isSpam":boolean,"riskScore":number,"riskReasons":["..."],"confidence":number}`
 
-    const userContent = `<comment>
-${content}
-</comment>
-${authorName ? `账户名: ${authorName}` : ''}
-${authorEmail ? `邮箱: ${authorEmail}` : ''}
-${authorWebsite ? `网站: ${authorWebsite}` : ''}`
+function sanitizePromptInput(input: string, maxLen = 2000): string {
+  return input
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
+    .slice(0, maxLen)
+    .trim()
+}
 
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        model: model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userContent },
-        ],
-        temperature: 0.3,
-        max_tokens: maxTokens || 500,
-      }),
+function parseAiJsonResponse(responseText: string): any | null {
+  let jsonStr = responseText.trim()
+  if (jsonStr.startsWith('```')) {
+    jsonStr = jsonStr.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '')
+  }
+  try {
+    return JSON.parse(jsonStr.trim())
+  } catch {
+    const start = jsonStr.indexOf('{')
+    const end = jsonStr.lastIndexOf('}')
+    if (start !== -1 && end !== -1 && end > start) {
+      return JSON.parse(jsonStr.substring(start, end + 1))
+    }
+    return null
+  }
+}
+
+export async function analyzeCommentWithAI(
+  content: string,
+  cfg: AiFullConfig,
+  authorName?: string,
+  authorEmail?: string,
+  authorWebsite?: string
+): Promise<SpamAnalysisResult> {
+  if (DEBUG)
+    console.log('[analyzeCommentWithAI] 开始调用', {
+      contentLength: content.length,
     })
 
-    if (DEBUG) console.log('[openrouter] API 响应状态:', response.status, response.statusText)
+  const safeContent = sanitizePromptInput(content)
+  const safeName = authorName ? sanitizePromptInput(authorName, 100) : ''
+  const safeEmail = authorEmail ? sanitizePromptInput(authorEmail, 200) : ''
+  const safeWebsite = authorWebsite ? sanitizePromptInput(authorWebsite, 500) : ''
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      const errMsg = `API 错误: ${response.status} ${response.statusText}`
-      console.error('[openrouter] ❌ API 错误状态 ' + response.status + ':', JSON.stringify(errorData))
+  const userContent = `<comment>
+${safeContent}
+</comment>
+${safeName ? `账户名: ${safeName}` : ''}
+${safeEmail ? `邮箱: ${safeEmail}` : ''}
+${safeWebsite ? `网站: ${safeWebsite}` : ''}`
 
-      // 429 限速：返回特殊标记，让调用方保持评论为待审状态而不是放行
-      if (response.status === 429) {
-        return {
-          isSpam: false,
-          riskScore: -1, // -1 表示限速/未完成，调用方应保持原有待审状态
-          riskReasons: ['AI 限速，稍后重试'],
-          confidence: 0,
-        }
-      }
+  try {
+    const responseText = await callAi(
+      'comment',
+      cfg,
+      [
+        { role: 'system', content: COMMENT_SYSTEM_PROMPT },
+        { role: 'user', content: userContent },
+      ],
+      { temperature: 0.3 }
+    )
 
-      return {
-        isSpam: false,
-        riskScore: -1,
-        riskReasons: [errMsg],
-        confidence: 0,
-      }
+    if (DEBUG) console.log('[spam-filter] ✅ 收到响应长度:', responseText.length)
+
+    const result = parseAiJsonResponse(responseText)
+    if (!result) {
+      console.error('[spam-filter] ❌ 无法解析 AI 响应 JSON:', responseText.substring(0, 200))
+      return { isSpam: false, riskScore: -1, riskReasons: ['AI 响应格式异常'], confidence: 0 }
     }
 
-    const data = await response.json()
-    if (DEBUG) console.log('[openrouter] 原始响应体 (前300字):', JSON.stringify(data).substring(0, 300))
+    if (DEBUG) console.log('[spam-filter] ✅ JSON 解析成功:', { riskScore: result.riskScore })
 
-    // 记录 token 使用量，便于成本监控
-    if (DEBUG && data.usage) {
-      console.log('[openrouter] token 用量:', {
-        prompt: data.usage.prompt_tokens,
-        completion: data.usage.completion_tokens,
-        total: data.usage.total_tokens,
-      })
-    }
-
-    let responseContent = data.choices?.[0]?.message?.content?.trim()
-
-    // 如果 content 为空，尝试从 reasoning 字段提取（某些模型如 reasoning 会用这个格式）
-    if (!responseContent && data.choices?.[0]?.message?.reasoning) {
-      if (DEBUG) console.log('[openrouter] ⚠️  content 为空，尝试从 reasoning 字段提取...')
-      responseContent = data.choices[0].message.reasoning?.trim()
-    }
-
-    if (!responseContent) {
-      console.error('[openrouter] ❌ 响应内容为空，完整响应:', JSON.stringify(data))
-      return {
-        isSpam: false,
-        riskScore: -1,
-        riskReasons: ['API 响应为空'],
-        confidence: 0,
-      }
-    }
-
-    if (DEBUG) console.log('[openrouter] ✅ 收到响应内容长度:', responseContent.length, '字')
-    if (DEBUG) console.log('[openrouter] 完整响应内容:', responseContent)
-
-    // 解析 JSON（可能被包裹在 markdown ``` 中）
-    let jsonStr = responseContent.trim()
-
-    // 首先尝试移除 markdown 代码块标记
-    if (jsonStr.startsWith('```')) {
-      // 移除开头的 ```json 或 ```
-      jsonStr = jsonStr.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '')
-    }
-
-    // 如果仍然失败，尝试提取第一个 { 到最后一个 }
-    let result: any = null
-    try {
-      if (DEBUG) console.log('[openrouter] 尝试直接解析 JSON...')
-      result = JSON.parse(jsonStr.trim())
-    } catch (parseErr: unknown) {
-      if (DEBUG) console.log('[openrouter] 直接解析失败，尝试提取 JSON 对象...')
-      const start = jsonStr.indexOf('{')
-      const end = jsonStr.lastIndexOf('}')
-      if (start !== -1 && end !== -1 && end > start) {
-        try {
-          jsonStr = jsonStr.substring(start, end + 1)
-          if (DEBUG) console.log('[openrouter] 提取的 JSON:', jsonStr.substring(0, 100), '...')
-          result = JSON.parse(jsonStr)
-        } catch (extractErr: unknown) {
-          console.error('[openrouter] ❌ JSON 提取和解析都失败:', {
-            originalError: getErrorMessage(parseErr),
-            extractError: getErrorMessage(extractErr),
-            failedContent: jsonStr.substring(0, 200),
-          })
-          throw new Error(`JSON 解析失败: ${getErrorMessage(extractErr)}`)
-        }
-      } else {
-        console.error('[openrouter] ❌ 未找到有效的 JSON 对象')
-        throw parseErr
-      }
-    }
-
-    if (DEBUG) console.log('[openrouter] ✅ JSON 解析成功:', { riskScore: result.riskScore, isSpam: result.isSpam })
-
-    // 验证和归一化结果
-    const normalized = {
-      isSpam: Boolean(result.isSpam),
+    return {
+      isSpam: result.isSpam === true || result.isSpam === 'true',
       riskScore: Math.min(100, Math.max(0, Number(result.riskScore) || 0)),
       riskReasons: Array.isArray(result.riskReasons) ? result.riskReasons : [],
       confidence: Math.min(1, Math.max(0, Number(result.confidence) || 0)),
     }
-    if (DEBUG) console.log('[openrouter] ✅ 最终返回结果:', normalized)
-    return normalized
   } catch (error: unknown) {
-    console.error('[spam-filter] ❌ AI 分析异常:', getErrorMessage(error) || error)
-    return {
-      isSpam: false,
-      riskScore: -1,
-      riskReasons: [getErrorMessage(error) || 'AI 分析异常'],
-      confidence: 0,
+    const msg = getErrorMessage(error) || 'AI 分析异常'
+    console.error('[spam-filter] ❌ AI 分析异常:', msg)
+
+    if (msg.includes('429')) {
+      return { isSpam: false, riskScore: -1, riskReasons: ['AI 限速，稍后重试'], confidence: 0 }
     }
+    return { isSpam: false, riskScore: -1, riskReasons: [msg], confidence: 0 }
   }
 }
 
