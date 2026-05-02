@@ -171,13 +171,13 @@ export function Sidebar({
 
   return (
     <aside className="sticky top-0 flex h-screen w-[72px] flex-col px-2 py-4 xl:w-[240px] xl:px-3">
-      {/* Logo */}
+      {/* Logo — X 风格圆形按钮 */}
       <button
         onClick={handleLogoClick}
         className={
           isLogoImage
-            ? 'mb-2 flex h-10 w-10 select-none items-center justify-center self-start overflow-hidden rounded-full px-1.5 transition-colors'
-            : 'mb-2 flex h-12 min-w-[3rem] select-none items-center justify-start self-start overflow-hidden rounded-full px-3 transition-colors'
+            ? 'mb-1 flex h-[50px] w-[50px] select-none items-center justify-center self-start rounded-full transition-colors'
+            : 'mb-1 flex h-[50px] min-w-[50px] select-none items-center justify-center self-start rounded-full px-4 transition-colors'
         }
         style={{ color: 'var(--text-primary)' }}
         title={siteName}
@@ -185,13 +185,9 @@ export function Sidebar({
         onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
       >
         {isLogoImage ? (
-          <Image src={logoValue} alt={siteName} width={20} height={20} className="flex-none object-contain" />
+          <Image src={logoValue} alt={siteName} width={28} height={28} className="flex-none object-contain" />
         ) : (
-          <span
-            className={siteLogo?.type === 'text' ? 'text-[18px] font-black leading-none' : 'text-[22px] leading-none'}
-          >
-            {logoValue}
-          </span>
+          <span className="text-[20px] font-bold leading-none">{logoValue}</span>
         )}
       </button>
 

@@ -876,8 +876,8 @@ export default function SettingsPage() {
                 <div
                   className={
                     siteLogo.type === 'image' && isImageSource(siteLogo.value)
-                      ? 'flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full px-1.5'
-                      : 'flex h-12 min-w-[3rem] shrink-0 items-center justify-center overflow-hidden rounded-full px-3'
+                      ? 'flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-full'
+                      : 'flex h-[50px] min-w-[50px] shrink-0 items-center justify-center rounded-full px-4'
                   }
                   style={{ background: 'var(--bg)' }}
                 >
@@ -885,18 +885,13 @@ export default function SettingsPage() {
                     <Image
                       src={siteLogo.value}
                       alt="站点 Logo"
-                      width={20}
-                      height={20}
+                      width={28}
+                      height={28}
                       className="flex-none object-contain"
                       unoptimized
                     />
                   ) : (
-                    <span
-                      className={
-                        siteLogo.type === 'text' ? 'text-[18px] font-black leading-none' : 'text-[22px] leading-none'
-                      }
-                      style={{ color: 'var(--text-primary)' }}
-                    >
+                    <span className="text-[20px] font-bold leading-none" style={{ color: 'var(--text-primary)' }}>
                       {siteLogo.value || DEFAULT_SITE_LOGO.value}
                     </span>
                   )}

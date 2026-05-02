@@ -218,23 +218,17 @@ export function MobileDrawer({
             onClick={onLogoClick || onClose}
             className={
               isLogoImage
-                ? 'flex h-9 w-9 select-none items-center justify-center overflow-hidden rounded-full px-1.5 text-[22px] font-black transition-colors'
-                : 'flex h-10 min-w-[2.5rem] select-none items-center justify-center overflow-hidden rounded-full px-3 text-[22px] font-black transition-colors'
+                ? 'flex h-11 w-11 select-none items-center justify-center rounded-full transition-colors'
+                : 'flex h-11 min-w-[44px] select-none items-center justify-center rounded-full px-4 transition-colors'
             }
             style={{ color: 'var(--text-primary)' }}
             title="首页"
             aria-label="返回首页"
           >
             {isLogoImage ? (
-              <Image src={logoValue} alt="首页" width={18} height={18} className="flex-none object-contain" />
+              <Image src={logoValue} alt="首页" width={24} height={24} className="flex-none object-contain" />
             ) : (
-              <span
-                className={
-                  siteLogo?.type === 'text' ? 'text-[18px] font-black leading-none' : 'text-[22px] leading-none'
-                }
-              >
-                {logoValue}
-              </span>
+              <span className="text-[18px] font-bold leading-none">{logoValue}</span>
             )}
           </button>
         </div>
