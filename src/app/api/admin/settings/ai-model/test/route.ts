@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
       let headers: Record<string, string>
       let body: any
 
+      const testMessage = '你好，请用一句话介绍你自己'
       if (provider === 'openrouter') {
         url = 'https://openrouter.ai/api/v1/chat/completions'
         headers = {
@@ -38,38 +39,17 @@ export async function POST(request: NextRequest) {
           Authorization: `Bearer ${apiKey}`,
           'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
         }
-        body = {
-          model,
-          messages: [{ role: 'user', content: '测试连接' }],
-          max_tokens: 10,
-        }
+        body = { model, messages: [{ role: 'user', content: testMessage }], max_tokens: 200 }
       } else if (provider === 'groq') {
         url = 'https://api.groq.com/openai/v1/chat/completions'
-        headers = {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        }
-        body = {
-          model,
-          messages: [{ role: 'user', content: '测试连接' }],
-          max_tokens: 10,
-        }
+        headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` }
+        body = { model, messages: [{ role: 'user', content: testMessage }], max_tokens: 200 }
       } else if (provider === 'custom') {
-        // 使用 OpenAI 兼容格式（与 analyzeCommentWithAI 实际调用保持一致）
         const cleanBase = (baseUrl || '').replace(/\/+$/, '')
         url = `${cleanBase}/v1/chat/completions`
-        headers = {
-          'Content-Type': 'application/json',
-        }
-        if (apiKey) {
-          headers['Authorization'] = `Bearer ${apiKey}`
-        }
-        body = {
-          model,
-          messages: [{ role: 'user', content: '测试连接' }],
-          max_tokens: 10,
-          stream: false,
-        }
+        headers = { 'Content-Type': 'application/json' }
+        if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`
+        body = { model, messages: [{ role: 'user', content: testMessage }], max_tokens: 200, stream: false }
       } else {
         return NextResponse.json({ error: '未知的提供商' }, { status: 400 })
       }
@@ -84,7 +64,9 @@ export async function POST(request: NextRequest) {
       clearTimeout(timeoutId)
 
       if (response.ok) {
-        return NextResponse.json({ success: true, message: '连接成功' })
+        const json = await response.json()
+        const reply = json?.choices?.[0]?.message?.content || ''
+        return NextResponse.json({ success: true, message: '连接成功', reply, question: testMessage })
       } else {
         const error = await response.text()
         return NextResponse.json(

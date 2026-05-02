@@ -55,6 +55,7 @@ export default function AdminAiModelPage() {
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
   const [testingConnection, setTestingConnection] = useState(false)
+  const [testResult, setTestResult] = useState<{ question: string; reply: string } | null>(null)
 
   useEffect(() => {
     fetchConfig()
@@ -128,8 +129,13 @@ export default function AdminAiModelPage() {
         }),
       })
       const data = await res.json()
-      if (res.ok) toast.success('连接成功！')
-      else toast.error(data.error || '连接失败')
+      if (res.ok) {
+        setTestResult({ question: data.question || '你好', reply: data.reply || '' })
+        toast.success('连接成功！')
+      } else {
+        setTestResult(null)
+        toast.error(data.error || '连接失败')
+      }
     } catch {
       toast.error('测试出错')
     } finally {
@@ -509,6 +515,46 @@ export default function AdminAiModelPage() {
             {saving ? '保存中...' : '保存配置'}
           </button>
         </div>
+
+        {/* 测试结果 — 对话气泡 */}
+        {testResult && (
+          <div
+            className="mt-4 rounded-2xl p-4"
+            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
+          >
+            <div className="mb-3 flex items-center gap-2">
+              <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+                对话测试
+              </span>
+              <span
+                className="rounded-full px-2 py-0.5 text-[10px]"
+                style={{ background: 'var(--green)', color: '#fff' }}
+              >
+                连接成功
+              </span>
+            </div>
+
+            {/* 用户消息 */}
+            <div className="mb-3 flex justify-end">
+              <div
+                className="max-w-[80%] rounded-2xl rounded-br-md px-4 py-3 text-sm"
+                style={{ background: 'var(--accent)', color: '#fff' }}
+              >
+                {testResult.question}
+              </div>
+            </div>
+
+            {/* AI 回复 */}
+            <div className="flex justify-start">
+              <div
+                className="max-w-[80%] rounded-2xl rounded-bl-md px-4 py-3 text-sm leading-relaxed"
+                style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+              >
+                {testResult.reply || <span style={{ color: 'var(--text-secondary)' }}>（未收到回复内容）</span>}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
