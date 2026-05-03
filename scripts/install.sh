@@ -232,6 +232,7 @@ install_code() {
     fi
     warn "目录已存在 Git 仓库，执行 git pull 更新..."
     cd "$INSTALL_DIR"
+    git config --global --add safe.directory "$INSTALL_DIR" 2>/dev/null || true
     git pull origin main || error "git pull 失败，请检查网络或仓库状态"
   else
     [[ "$ACTION" == "update" ]] && error "更新模式要求目录已存在 Git 仓库：${INSTALL_DIR}"
@@ -647,6 +648,7 @@ main() {
 
       step "拉取最新代码"
       cd "$INSTALL_DIR"
+      git config --global --add safe.directory "$INSTALL_DIR" 2>/dev/null || true
       git pull origin main
 
       update_app
