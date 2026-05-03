@@ -43,7 +43,7 @@ export async function verifyJWT(token: string): Promise<JWTPayload | null> {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET)
     const result = payload as unknown as JWTPayload
-    if (!result.jti || revokedTokens.has(result.jti)) return null
+    if (result.jti && revokedTokens.has(result.jti)) return null
     return result
   } catch {
     return null
