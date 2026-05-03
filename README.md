@@ -46,7 +46,7 @@
 | 🎨 **界面** | X 风格 UI、深色/浅色主题切换、三栏布局、卡片式 Feed、响应式移动端适配                                                                                             |
 | 📝 **内容** | Markdown 编辑、草稿/发布管理、标签系统、封面图、首页快速发帖框                                                                                                    |
 | 💬 **互动** | 嵌套评论、审核模式、点赞、邮件回复通知                                                                                                                            |
-| 🤖 **AI**   | OpenRouter/自定义 LLM 接入、评论垃圾检测、友链安全审核、可调审核强度                                                                                              |
+| 🤖 **AI**   | OpenRouter/Groq/自定义 LLM 接入、评论垃圾检测、友链安全审核、可调审核强度、模型连接测试对话                                                                       |
 | 🔗 **友链** | 自助申请、互链验证、AI 安全检测、自动审批、右侧栏卡片展示                                                                                                         |
 | 📡 **雷达** | 多源聚合（Google/百度/搜狗/知乎/V2EX/Lobsters/Medium/DEV.to/HN/Reddit/CSDN/掘金/GitHub/公众号/oschina/36kr）、AI 筛选、去重、时效过滤、Webhook 通知、定时日报发布 |
 | 🔒 **安全** | 动态登录路径、失败锁定、JWT 黑名单机制、CSP 策略、DOMPurify XSS 防护、IP 格式校验、SSRF 防护                                                                      |
@@ -222,7 +222,7 @@ git pull origin main
 npm install
 npm run build
 cp data/db.sqlite data/db.sqlite.bak  # 备份数据库
-npm run db:push -- --accept-data-loss
+npm run db:push
 pm2 restart x-blog
 ```
 
@@ -299,17 +299,18 @@ STORAGE_SMMS_TOKEN=""
 **接入方式：**
 
 - **OpenRouter（推荐）**：支持 Claude、GPT-4 等多种模型，获取 API Key：https://openrouter.ai/settings/keys
+- **Groq**：免费额度、超低延迟，支持 Llama、Mixtral 等开源模型
 - **自定义接口**：支持 Ollama、LocalAI 等本地部署的 LLM 服务
 
-**审核强度：**
+**审核强度（评论与友链统一阈值）：**
 
-| 强度            | 拒绝阈值 | 通过阈值 | 适用场景         |
+| 强度            | 自动通过 | 自动拒绝 | 适用场景         |
 | --------------- | -------- | -------- | ---------------- |
-| 🟢 宽松         | ≥ 85 分  | ≤ 20 分  | 个人博客、低流量 |
-| 🟡 均衡（推荐） | ≥ 70 分  | ≤ 30 分  | 通用             |
-| 🔴 严格         | ≥ 60 分  | ≤ 40 分  | 高流量、防垃圾   |
+| 🟢 宽松         | < 30 分  | ≥ 80 分  | 个人博客、低流量 |
+| 🟡 均衡（推荐） | < 20 分  | ≥ 70 分  | 通用             |
+| 🔴 严格         | < 10 分  | ≥ 60 分  | 高流量、防垃圾   |
 
-风险分数 0-100，分数越低越安全。中间分数进入人工审核队列。
+风险分数 0-100，分数越低越安全。中间分数进入人工审核队列。登录用户评论直接放行不触发 AI 检测。
 
 ### 文件存储
 
@@ -379,8 +380,8 @@ pm2 stop x-blog              # 停止服务
 ### 数据库相关
 
 ```bash
-# 同步数据库结构（新字段迁移）
-npm run db:push -- --accept-data-loss
+# 同步数据库结构（所有列已在 Schema 中声明，不再有数据丢失风险）
+npm run db:push
 
 # 可视化查看数据库（开发用）
 npm run db:studio
