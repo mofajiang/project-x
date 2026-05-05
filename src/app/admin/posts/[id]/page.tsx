@@ -13,8 +13,6 @@ import {
   ADMIN_CARD_CLASS,
   ADMIN_SUBCARD_CLASS,
   ADMIN_BTN_PRIMARY,
-  ADMIN_BTN_SECONDARY,
-  ADMIN_INPUT_CLASS,
 } from '@/components/admin/adminUi'
 
 export default function EditPostPage() {

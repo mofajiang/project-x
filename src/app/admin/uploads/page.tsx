@@ -4,12 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import JSZip from 'jszip'
 import toast from 'react-hot-toast'
 import { getErrorMessage } from '@/lib/converters'
-import {
-  ADMIN_PAGE_TITLE_CLASS,
-  ADMIN_BTN_PRIMARY,
-  ADMIN_INPUT_CLASS,
-  ADMIN_EMPTY_CLASS,
-} from '@/components/admin/adminUi'
+import { ADMIN_PAGE_TITLE_CLASS, ADMIN_BTN_PRIMARY } from '@/components/admin/adminUi'
 
 type UploadFile = {
   name: string

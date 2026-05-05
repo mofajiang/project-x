@@ -9,7 +9,6 @@ import {
   ADMIN_PAGE_TITLE_CLASS,
   ADMIN_SECTION_TITLE,
   ADMIN_BTN_PRIMARY,
-  ADMIN_INPUT_CLASS,
 } from '@/components/admin/adminUi'
 import {
   DEFAULT_NAV,
