@@ -3,6 +3,12 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { StorageImagePicker } from '@/components/admin/StorageImagePicker'
+import {
+  ADMIN_PAGE_TITLE_CLASS,
+  ADMIN_BTN_PRIMARY,
+  ADMIN_INPUT_CLASS,
+  ADMIN_CARD_CLASS,
+} from '@/components/admin/adminUi'
 
 interface FriendLink {
   id: string
@@ -394,7 +400,10 @@ export default function AdminFriendLinksPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-7xl">
+    <div className="mx-auto w-full max-w-6xl">
+      <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)' }}>
+        友情链接
+      </h1>
       <div
         className="sticky top-0 z-20 -mx-1 mb-4 flex items-center justify-end gap-2 rounded-2xl px-3 py-2"
         style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', backdropFilter: 'blur(8px)' }}
@@ -434,7 +443,7 @@ export default function AdminFriendLinksPage() {
                     setStatus(s)
                     setPage(1)
                   }}
-                  className="rounded-lg px-2.5 py-1.5 text-xs font-medium"
+                  className="rounded-full px-3 py-1.5 text-xs font-medium"
                   style={{
                     background: status === s ? 'var(--accent)' : 'var(--bg-secondary)',
                     color: status === s ? '#fff' : 'var(--text-primary)',
@@ -576,7 +585,7 @@ export default function AdminFriendLinksPage() {
                           type="number"
                           value={orderDrafts[link.id] ?? String(link.sortOrder)}
                           onChange={(e) => setOrderDrafts((prev) => ({ ...prev, [link.id]: e.target.value }))}
-                          className="w-20 rounded-lg border bg-transparent px-2 py-1.5 text-xs outline-none"
+                          className="w-20 rounded-xl border bg-transparent px-2 py-1.5 text-xs outline-none"
                           style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                           title="手动设置排序权重"
                         />
@@ -592,7 +601,7 @@ export default function AdminFriendLinksPage() {
                       <div className="col-span-2 grid grid-cols-2 gap-1.5">
                         <button
                           onClick={() => handleChangeOrder(link.id, 1)}
-                          className="rounded-lg px-2 py-1.5 text-xs transition-all"
+                          className="rounded-full px-3 py-1.5 text-xs font-bold transition-all"
                           style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
                           title="上移"
                         >
@@ -600,7 +609,7 @@ export default function AdminFriendLinksPage() {
                         </button>
                         <button
                           onClick={() => handleChangeOrder(link.id, -1)}
-                          className="rounded-lg px-2 py-1.5 text-xs transition-all"
+                          className="rounded-full px-3 py-1.5 text-xs font-bold transition-all"
                           style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
                           title="下移"
                         >
@@ -611,14 +620,14 @@ export default function AdminFriendLinksPage() {
                         <>
                           <button
                             onClick={() => handleApprove(link.id)}
-                            className="rounded-lg px-2 py-1.5 text-xs font-medium text-white transition-all hover:opacity-80"
+                            className="rounded-full px-3 py-1.5 text-xs font-bold text-white transition-all hover:opacity-80"
                             style={{ background: '#22c55e' }}
                           >
                             批准
                           </button>
                           <button
                             onClick={() => setRejectingId(link.id)}
-                            className="rounded-lg px-2 py-1.5 text-xs font-medium text-white transition-all hover:opacity-80"
+                            className="rounded-full px-3 py-1.5 text-xs font-bold text-white transition-all hover:opacity-80"
                             style={{ background: '#ef4444' }}
                           >
                             拒绝

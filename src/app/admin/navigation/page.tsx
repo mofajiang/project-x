@@ -3,6 +3,15 @@ import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { IMEInput, IMETextarea } from '@/components/ui/IMEInput'
 import {
+  ADMIN_CARD_CLASS,
+  ADMIN_SUBCARD_CLASS,
+  ADMIN_PAGE_WRAPPER,
+  ADMIN_PAGE_TITLE_CLASS,
+  ADMIN_SECTION_TITLE,
+  ADMIN_BTN_PRIMARY,
+  ADMIN_INPUT_CLASS,
+} from '@/components/admin/adminUi'
+import {
   DEFAULT_NAV,
   DEFAULT_WIDGETS,
   parseNavItems,
@@ -96,20 +105,20 @@ export default function AdminNavigationPage() {
   const updateWidget = (i: number, next: Partial<Widget>) =>
     setWidgets((v) => v.map((item, idx) => (idx === i ? { ...item, ...next } : item)))
 
-  const sectionTitleClass = 'text-base sm:text-lg font-bold leading-tight tracking-tight'
   const sectionHintClass = 'text-[10px] sm:text-xs leading-relaxed text-balance'
-  const mobileCardClass = 'rounded-2xl p-2.5 sm:p-6'
-  const mobileSubCardClass = 'rounded-xl p-2 sm:p-4'
 
   return (
-    <div>
+    <div className={ADMIN_PAGE_WRAPPER}>
+      <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)' }}>
+        导航与组件
+      </h1>
       <div className="grid max-w-4xl grid-cols-1 items-start gap-3 sm:gap-5">
         <div
-          className={`${mobileCardClass} flex flex-col gap-3 sm:gap-4`}
+          className={`${ADMIN_CARD_CLASS} flex flex-col gap-3 sm:gap-4`}
           style={{ background: 'var(--bg-secondary)' }}
         >
           <div className="flex flex-col gap-1.5">
-            <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>
+            <h2 className={ADMIN_SECTION_TITLE} style={{ color: 'var(--text-primary)' }}>
               前台导航和右侧栏
             </h2>
             <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>
@@ -135,7 +144,7 @@ export default function AdminNavigationPage() {
                 {navItems.map((item, i) => (
                   <div
                     key={i}
-                    className={`${mobileSubCardClass} flex flex-col gap-2 sm:gap-3`}
+                    className={`${ADMIN_SUBCARD_CLASS} flex flex-col gap-2 sm:gap-3`}
                     style={{ background: 'var(--bg-hover)' }}
                   >
                     <div className="flex items-center gap-1 self-start sm:flex-col sm:gap-0.5">
@@ -160,7 +169,7 @@ export default function AdminNavigationPage() {
                       <select
                         value={item.icon}
                         onChange={(e) => updateNavItem(i, 'icon', e.target.value)}
-                        className="w-full rounded-lg px-2 py-2 text-sm outline-none"
+                        className="w-full rounded-xl px-2 py-2 text-sm outline-none"
                         style={{
                           background: 'var(--bg-secondary)',
                           color: 'var(--text-primary)',
@@ -178,7 +187,7 @@ export default function AdminNavigationPage() {
                         value={item.label}
                         onValueChange={(v) => updateNavItem(i, 'label', v)}
                         placeholder="标签"
-                        className="w-full flex-1 rounded-lg px-2 py-2 text-sm outline-none"
+                        className="w-full flex-1 rounded-xl px-2 py-2 text-sm outline-none"
                         style={{
                           background: 'var(--bg-secondary)',
                           color: 'var(--text-primary)',
@@ -189,7 +198,7 @@ export default function AdminNavigationPage() {
                         value={item.href}
                         onValueChange={(v) => updateNavItem(i, 'href', v)}
                         placeholder="/about"
-                        className="w-full flex-1 rounded-lg px-2 py-2 text-sm outline-none"
+                        className="w-full flex-1 rounded-xl px-2 py-2 text-sm outline-none"
                         style={{
                           background: 'var(--bg-secondary)',
                           color: 'var(--text-primary)',
@@ -236,7 +245,7 @@ export default function AdminNavigationPage() {
                 {widgets.map((w, i) => (
                   <div
                     key={i}
-                    className={`${mobileSubCardClass} relative flex flex-col gap-2 sm:gap-3`}
+                    className={`${ADMIN_SUBCARD_CLASS} relative flex flex-col gap-2 sm:gap-3`}
                     style={{ background: 'var(--bg-hover)' }}
                   >
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:pr-10">
@@ -304,7 +313,7 @@ export default function AdminNavigationPage() {
                             mobileVisible: e.target.value === 'search' ? false : true,
                           })
                         }
-                        className="w-full flex-1 rounded-lg px-2 py-2 text-sm outline-none"
+                        className="w-full flex-1 rounded-xl px-2 py-2 text-sm outline-none"
                         style={{
                           background: 'var(--bg-hover)',
                           color: 'var(--text-primary)',
@@ -331,7 +340,7 @@ export default function AdminNavigationPage() {
                       value={w.title || ''}
                       onValueChange={(v) => setWidgets((arr) => arr.map((x, j) => (j === i ? { ...x, title: v } : x)))}
                       placeholder={'标题（留空用默认）'}
-                      className="w-full rounded-lg px-2 py-2 text-sm outline-none"
+                      className="w-full rounded-xl px-2 py-2 text-sm outline-none"
                       style={{
                         background: 'var(--bg-hover)',
                         color: 'var(--text-primary)',
@@ -351,7 +360,7 @@ export default function AdminNavigationPage() {
                         }
                         placeholder="自定义内容"
                         rows={3}
-                        className="w-full resize-none rounded-lg px-2 py-2 text-sm outline-none"
+                        className="w-full resize-none rounded-xl px-2 py-2 text-sm outline-none"
                         style={{
                           background: 'var(--bg-hover)',
                           color: 'var(--text-primary)',
@@ -377,7 +386,7 @@ export default function AdminNavigationPage() {
                                   arr.map((x, j) => (j === i ? { ...x, interval: Number(e.target.value) } : x))
                                 )
                               }
-                              className="w-full rounded-lg px-2.5 py-2 text-sm outline-none"
+                              className="w-full rounded-xl px-2.5 py-2 text-sm outline-none"
                               style={{
                                 background: 'var(--bg-hover)',
                                 color: 'var(--text-primary)',
@@ -441,7 +450,7 @@ export default function AdminNavigationPage() {
                                     })
                                   )
                                 }
-                                className="w-full rounded-lg px-2.5 py-2 text-sm outline-none"
+                                className="w-full rounded-xl px-2.5 py-2 text-sm outline-none"
                                 style={{
                                   background: 'var(--bg-hover)',
                                   color: 'var(--text-primary)',
@@ -469,7 +478,7 @@ export default function AdminNavigationPage() {
                                     )
                                   }
                                   placeholder="图片 URL（必填）"
-                                  className="w-full rounded-lg px-2.5 py-2 text-sm outline-none"
+                                  className="w-full rounded-xl px-2.5 py-2 text-sm outline-none"
                                   style={{
                                     background: 'var(--bg-hover)',
                                     color: 'var(--text-primary)',
@@ -491,7 +500,7 @@ export default function AdminNavigationPage() {
                                     )
                                   }
                                   placeholder="标题（可选）"
-                                  className="w-full rounded-lg px-2.5 py-2 text-sm outline-none"
+                                  className="w-full rounded-xl px-2.5 py-2 text-sm outline-none"
                                   style={{
                                     background: 'var(--bg-hover)',
                                     color: 'var(--text-primary)',
@@ -514,7 +523,7 @@ export default function AdminNavigationPage() {
                                   }
                                   placeholder="正文内容"
                                   rows={3}
-                                  className="w-full resize-none rounded-lg px-2.5 py-2 text-sm outline-none"
+                                  className="w-full resize-none rounded-xl px-2.5 py-2 text-sm outline-none"
                                   style={{
                                     background: 'var(--bg-hover)',
                                     color: 'var(--text-primary)',
@@ -537,7 +546,7 @@ export default function AdminNavigationPage() {
                                   }
                                   placeholder="# 标题&#10;正文内容，支持 Markdown 格式"
                                   rows={5}
-                                  className="w-full resize-none rounded-lg px-2.5 py-2 font-mono text-sm outline-none"
+                                  className="w-full resize-none rounded-xl px-2.5 py-2 font-mono text-sm outline-none"
                                   style={{
                                     background: 'var(--bg-hover)',
                                     color: 'var(--text-primary)',
@@ -559,7 +568,7 @@ export default function AdminNavigationPage() {
                                     )
                                   }
                                   placeholder="跳转链接（可选）"
-                                  className="w-full rounded-lg px-2.5 py-2 text-sm outline-none"
+                                  className="w-full rounded-xl px-2.5 py-2 text-sm outline-none"
                                   style={{
                                     background: 'var(--bg-hover)',
                                     color: 'var(--text-primary)',
@@ -633,7 +642,7 @@ export default function AdminNavigationPage() {
                                 )
                               }
                               placeholder="名称"
-                              className="w-full rounded-lg px-2.5 py-2 text-sm outline-none"
+                              className="w-full rounded-xl px-2.5 py-2 text-sm outline-none"
                               style={{
                                 background: 'var(--bg-hover)',
                                 color: 'var(--text-primary)',
@@ -653,7 +662,7 @@ export default function AdminNavigationPage() {
                                 )
                               }
                               placeholder="https://"
-                              className="w-full rounded-lg px-2.5 py-2 text-sm outline-none"
+                              className="w-full rounded-xl px-2.5 py-2 text-sm outline-none"
                               style={{
                                 background: 'var(--bg-hover)',
                                 color: 'var(--text-primary)',
@@ -674,7 +683,7 @@ export default function AdminNavigationPage() {
                                   )
                                 }
                                 placeholder="简介（可选）"
-                                className="w-full rounded-lg px-2.5 py-2 text-sm outline-none"
+                                className="w-full rounded-xl px-2.5 py-2 text-sm outline-none"
                                 style={{
                                   background: 'var(--bg-hover)',
                                   color: 'var(--text-primary)',
@@ -694,7 +703,7 @@ export default function AdminNavigationPage() {
                                   )
                                 }
                                 placeholder="头像URL（可选）"
-                                className="w-full rounded-lg px-2.5 py-2 text-sm outline-none"
+                                className="w-full rounded-xl px-2.5 py-2 text-sm outline-none"
                                 style={{
                                   background: 'var(--bg-hover)',
                                   color: 'var(--text-primary)',
@@ -729,7 +738,7 @@ export default function AdminNavigationPage() {
             <button
               onClick={save}
               disabled={saving}
-              className="min-h-11 w-full rounded-full px-6 py-3 text-sm font-bold text-white shadow-lg disabled:opacity-50 sm:w-auto"
+              className={ADMIN_BTN_PRIMARY}
               style={{ background: 'var(--accent)' }}
             >
               {saving ? '保存中...' : '保存设置'}

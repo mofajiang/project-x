@@ -2,6 +2,12 @@
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { IMEInput } from '@/components/ui/IMEInput'
+import {
+  ADMIN_PAGE_TITLE_CLASS,
+  ADMIN_CARD_CLASS,
+  ADMIN_BTN_PRIMARY,
+  ADMIN_INPUT_CLASS,
+} from '@/components/admin/adminUi'
 
 interface AiConfig {
   enableCustomAiModel: boolean
@@ -147,20 +153,19 @@ export default function AdminAiModelPage() {
   if (!config) return <div style={{ color: 'var(--text-secondary)' }}>无法加载配置</div>
 
   const cardStyle = { background: 'var(--bg-secondary)', borderColor: 'var(--border)' }
-  const inputClass = 'w-full rounded-lg border bg-transparent px-4 py-2 outline-none'
   const inputStyle = { borderColor: 'var(--border)', color: 'var(--text-primary)' }
   const labelClass = 'mb-1 block text-sm font-medium'
   const labelStyle = { color: 'var(--text-secondary)' }
 
   return (
     <div className="mx-auto w-full max-w-4xl">
-      <h1 className="mb-8 text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
+      <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)' }}>
         AI 模型管理
       </h1>
 
       <div className="space-y-8">
         {/* API 密钥 */}
-        <div className="rounded-2xl border p-6" style={cardStyle}>
+        <div className={`${ADMIN_CARD_CLASS} border`} style={cardStyle}>
           <h2 className="mb-1 text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
             API 密钥
           </h2>
@@ -178,7 +183,7 @@ export default function AdminAiModelPage() {
                 placeholder="gsk_..."
                 value={config.groqApiKey}
                 onValueChange={(v) => set('groqApiKey', v)}
-                className={inputClass}
+                className={ADMIN_INPUT_CLASS}
                 style={inputStyle}
               />
               <p className="mt-1 text-xs" style={{ color: 'var(--text-tertiary, var(--text-secondary))' }}>
@@ -198,7 +203,7 @@ export default function AdminAiModelPage() {
                 placeholder="sk-or-..."
                 value={config.openrouterApiKey || config.aiModelApiKey}
                 onValueChange={(v) => set('openrouterApiKey', v)}
-                className={inputClass}
+                className={ADMIN_INPUT_CLASS}
                 style={inputStyle}
               />
               <p className="mt-1 text-xs" style={{ color: 'var(--text-tertiary, var(--text-secondary))' }}>
@@ -223,7 +228,7 @@ export default function AdminAiModelPage() {
                   placeholder="http://localhost:11434"
                   value={config.aiModelBaseUrl}
                   onValueChange={(v) => set('aiModelBaseUrl', v)}
-                  className={inputClass}
+                  className={ADMIN_INPUT_CLASS}
                   style={inputStyle}
                 />
               </div>
@@ -236,7 +241,7 @@ export default function AdminAiModelPage() {
                   placeholder="留空则不鉴权"
                   value={config.aiModelApiKey}
                   onValueChange={(v) => set('aiModelApiKey', v)}
-                  className={inputClass}
+                  className={ADMIN_INPUT_CLASS}
                   style={inputStyle}
                 />
               </div>
@@ -245,7 +250,7 @@ export default function AdminAiModelPage() {
         </div>
 
         {/* 默认模型 */}
-        <div className="rounded-2xl border p-6" style={cardStyle}>
+        <div className={`${ADMIN_CARD_CLASS} border`} style={cardStyle}>
           <h2 className="mb-1 text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
             全局默认模型
           </h2>
@@ -260,7 +265,7 @@ export default function AdminAiModelPage() {
               <select
                 value={config.aiModelProvider}
                 onChange={(e) => set('aiModelProvider', e.target.value)}
-                className={inputClass}
+                className={ADMIN_INPUT_CLASS}
                 style={inputStyle}
               >
                 <option value="groq">Groq</option>
@@ -277,7 +282,7 @@ export default function AdminAiModelPage() {
                   <select
                     value={config.aiModelName}
                     onChange={(e) => set('aiModelName', e.target.value)}
-                    className={inputClass}
+                    className={ADMIN_INPUT_CLASS}
                     style={inputStyle}
                   >
                     {GROQ_PRESET_MODELS.map((m) => (
@@ -294,7 +299,7 @@ export default function AdminAiModelPage() {
                     placeholder="或手动输入模型 ID"
                     value={config.aiModelName}
                     onValueChange={(v) => set('aiModelName', v)}
-                    className={`mt-2 ${inputClass}`}
+                    className={`mt-2 ${ADMIN_INPUT_CLASS}`}
                     style={inputStyle}
                   />
                 </>
@@ -304,7 +309,7 @@ export default function AdminAiModelPage() {
                   placeholder={config.aiModelProvider === 'openrouter' ? 'anthropic/claude-3.5-sonnet' : 'llama2'}
                   value={config.aiModelName}
                   onValueChange={(v) => set('aiModelName', v)}
-                  className={inputClass}
+                  className={ADMIN_INPUT_CLASS}
                   style={inputStyle}
                 />
               )}
@@ -313,7 +318,7 @@ export default function AdminAiModelPage() {
         </div>
 
         {/* 各功能独立配置 */}
-        <div className="rounded-2xl border p-6" style={cardStyle}>
+        <div className={`${ADMIN_CARD_CLASS} border`} style={cardStyle}>
           <h2 className="mb-1 text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
             各功能模型配置
           </h2>
@@ -337,7 +342,7 @@ export default function AdminAiModelPage() {
                       <select
                         value={provider}
                         onChange={(e) => set(providerKey, e.target.value)}
-                        className={inputClass}
+                        className={ADMIN_INPUT_CLASS}
                         style={inputStyle}
                       >
                         {PROVIDERS_FOR_FN.map((p) => (
@@ -356,7 +361,7 @@ export default function AdminAiModelPage() {
                           <select
                             value={model}
                             onChange={(e) => set(modelKey, e.target.value)}
-                            className={inputClass}
+                            className={ADMIN_INPUT_CLASS}
                             style={inputStyle}
                           >
                             <option value="">（跟随全局默认）</option>
@@ -374,7 +379,7 @@ export default function AdminAiModelPage() {
                             placeholder="或手动输入 Groq 模型 ID"
                             value={model}
                             onValueChange={(v) => set(modelKey, v)}
-                            className={`mt-2 ${inputClass}`}
+                            className={`mt-2 ${ADMIN_INPUT_CLASS}`}
                             style={inputStyle}
                           />
                         </>
@@ -384,7 +389,7 @@ export default function AdminAiModelPage() {
                           placeholder="留空则使用全局默认模型"
                           value={model}
                           onValueChange={(v) => set(modelKey, v)}
-                          className={inputClass}
+                          className={ADMIN_INPUT_CLASS}
                           style={inputStyle}
                         />
                       )}
@@ -397,7 +402,7 @@ export default function AdminAiModelPage() {
         </div>
 
         {/* 高级配置 */}
-        <div className="rounded-2xl border p-6" style={cardStyle}>
+        <div className={`${ADMIN_CARD_CLASS} border`} style={cardStyle}>
           <h2 className="mb-4 text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
             高级配置
           </h2>
@@ -415,7 +420,7 @@ export default function AdminAiModelPage() {
                   const v = parseInt(e.target.value)
                   set('aiModelMaxTokens', isNaN(v) ? 2000 : v)
                 }}
-                className={inputClass}
+                className={ADMIN_INPUT_CLASS}
                 style={inputStyle}
               />
               <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
@@ -435,7 +440,7 @@ export default function AdminAiModelPage() {
                   const v = parseInt(e.target.value)
                   set('aiModelTimeout', isNaN(v) ? 30 : v)
                 }}
-                className={inputClass}
+                className={ADMIN_INPUT_CLASS}
                 style={inputStyle}
               />
             </div>
@@ -443,7 +448,7 @@ export default function AdminAiModelPage() {
         </div>
 
         {/* AI 审核设置 */}
-        <div className="rounded-2xl border p-6" style={cardStyle}>
+        <div className={`${ADMIN_CARD_CLASS} border`} style={cardStyle}>
           <h2 className="mb-4 text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
             AI 审核设置
           </h2>
@@ -468,7 +473,7 @@ export default function AdminAiModelPage() {
                   <select
                     value={config.aiReviewStrength}
                     onChange={(e) => set('aiReviewStrength', e.target.value)}
-                    className={inputClass}
+                    className={ADMIN_INPUT_CLASS}
                     style={inputStyle}
                   >
                     <option value="lenient">宽松 - 较少拦截，可能漏过一些违规</option>
@@ -496,7 +501,7 @@ export default function AdminAiModelPage() {
           <button
             onClick={handleTestConnection}
             disabled={testingConnection || saving}
-            className="rounded-lg px-6 py-3 font-bold transition-all"
+            className={`${ADMIN_BTN_PRIMARY} transition-all`}
             style={{
               background: 'var(--bg-hover)',
               color: 'var(--text-primary)',
@@ -509,7 +514,7 @@ export default function AdminAiModelPage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="rounded-lg px-8 py-3 font-bold text-white transition-all"
+            className={`${ADMIN_BTN_PRIMARY} transition-all`}
             style={{ background: 'var(--accent)', opacity: saving ? 0.5 : 1 }}
           >
             {saving ? '保存中...' : '保存配置'}

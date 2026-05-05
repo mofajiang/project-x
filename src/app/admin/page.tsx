@@ -3,7 +3,12 @@ import { headers } from 'next/headers'
 import { AdminSysInfo } from '@/components/admin/AdminSysInfo'
 import { AdminVisitorMap } from '@/components/admin/AdminVisitorMap'
 import { AdminRightPanel } from '@/components/admin/AdminRightPanel'
-import { ADMIN_TABLE_CLASS } from '@/components/admin/adminUi'
+import {
+  ADMIN_TABLE_CLASS,
+  ADMIN_CARD_CLASS,
+  ADMIN_SUBCARD_CLASS,
+  ADMIN_SECTION_TITLE,
+} from '@/components/admin/adminUi'
 import { getAdminDashboardData, type DashboardHealthItem } from '@/lib/admin-dashboard'
 import { getKeywordRadarStatus } from '@/lib/keyword-radar'
 import { ensureKeywordRadarScheduler } from '@/lib/keyword-radar-scheduler'
@@ -69,11 +74,11 @@ export default async function AdminDashboard() {
           ))}
         </div>
 
-        <div className="mb-6 rounded-2xl p-4 sm:mb-8 sm:p-5" style={{ background: 'var(--bg-secondary)' }}>
+        <div className={`${ADMIN_CARD_CLASS} mb-6 sm:mb-8`} style={{ background: 'var(--bg-secondary)' }}>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                <h2 className={ADMIN_SECTION_TITLE} style={{ color: 'var(--text-primary)' }}>
                   内容雷达
                 </h2>
                 <span
@@ -100,7 +105,7 @@ export default async function AdminDashboard() {
           </div>
 
           <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
-            <div className="rounded-2xl p-3" style={{ background: 'var(--bg-hover)' }}>
+            <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg-hover)' }}>
               <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                 最近执行
               </p>
@@ -108,7 +113,7 @@ export default async function AdminDashboard() {
                 {keywordRadar.config.lastRunAt || '暂无'}
               </p>
             </div>
-            <div className="rounded-2xl p-3" style={{ background: 'var(--bg-hover)' }}>
+            <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg-hover)' }}>
               <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                 最近结果
               </p>
@@ -116,7 +121,7 @@ export default async function AdminDashboard() {
                 {keywordRadar.config.lastMessage || '尚未执行'}
               </p>
             </div>
-            <div className="rounded-2xl p-3" style={{ background: 'var(--bg-hover)' }}>
+            <div className={ADMIN_SUBCARD_CLASS} style={{ background: 'var(--bg-hover)' }}>
               <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                 已缓存去重记录
               </p>
@@ -128,10 +133,10 @@ export default async function AdminDashboard() {
         </div>
 
         {/* 管理健康 */}
-        <div className="mb-6 rounded-2xl p-4 sm:mb-8 sm:p-5" style={{ background: 'var(--bg-secondary)' }}>
+        <div className={`${ADMIN_CARD_CLASS} mb-6 sm:mb-8`} style={{ background: 'var(--bg-secondary)' }}>
           <div className="mb-4 flex items-center justify-between gap-2">
             <div>
-              <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+              <h2 className={ADMIN_SECTION_TITLE} style={{ color: 'var(--text-primary)' }}>
                 管理健康
               </h2>
               <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
@@ -153,7 +158,7 @@ export default async function AdminDashboard() {
               return (
                 <div
                   key={item.id}
-                  className="rounded-2xl p-3 sm:p-4"
+                  className={ADMIN_SUBCARD_CLASS}
                   style={{ background: 'var(--bg-hover)', boxShadow: `inset 0 0 0 1px ${tone.border}` }}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -192,9 +197,12 @@ export default async function AdminDashboard() {
 
         {/* 最近文章 */}
 
-        <div className="mb-6 overflow-hidden rounded-2xl sm:mb-8" style={{ background: 'var(--bg-secondary)' }}>
-          <div className="flex items-center justify-between gap-2 px-4 pt-4">
-            <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+        <div
+          className={`${ADMIN_CARD_CLASS} mb-6 overflow-hidden sm:mb-8`}
+          style={{ background: 'var(--bg-secondary)' }}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <h2 className={ADMIN_SECTION_TITLE} style={{ color: 'var(--text-primary)' }}>
               最近文章
             </h2>
             <Link href="/admin/posts" className="text-sm" style={{ color: 'var(--accent)' }}>
@@ -205,25 +213,25 @@ export default async function AdminDashboard() {
           <div className="hidden sm:block">
             <table className={ADMIN_TABLE_CLASS}>
               <thead>
-                <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
-                  <th className="px-4 py-3 text-left">标题</th>
-                  <th className="px-4 py-3 text-left">状态</th>
-                  <th className="px-4 py-3 text-left">浏览</th>
+                <tr>
+                  <th>标题</th>
+                  <th>状态</th>
+                  <th>浏览</th>
                 </tr>
               </thead>
               <tbody>
                 {recentPosts.map((post) => (
-                  <tr
-                    key={post.id}
-                    className="transition-colors hover:bg-white/5"
-                    style={{ borderBottom: '1px solid var(--border)' }}
-                  >
-                    <td className="px-4 py-3" style={{ color: 'var(--text-primary)' }}>
-                      <Link href={`/admin/posts/${post.id}`} className="font-medium hover:underline">
+                  <tr key={post.id}>
+                    <td>
+                      <Link
+                        href={`/admin/posts/${post.id}`}
+                        className="font-medium hover:underline"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
                         {post.title}
                       </Link>
                     </td>
-                    <td className="px-4 py-3">
+                    <td>
                       <span
                         className="rounded-full px-2 py-0.5 text-xs"
                         style={{
@@ -234,9 +242,7 @@ export default async function AdminDashboard() {
                         {post.published ? '已发布' : '草稿'}
                       </span>
                     </td>
-                    <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>
-                      {post.views}
-                    </td>
+                    <td style={{ color: 'var(--text-secondary)' }}>{post.views}</td>
                   </tr>
                 ))}
               </tbody>
@@ -248,7 +254,7 @@ export default async function AdminDashboard() {
               <Link
                 key={post.id}
                 href={`/admin/posts/${post.id}`}
-                className="rounded-2xl p-3 transition-colors"
+                className={`${ADMIN_SUBCARD_CLASS} transition-colors`}
                 style={{ background: 'var(--bg-hover)' }}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -276,7 +282,7 @@ export default async function AdminDashboard() {
         </div>
 
         {/* 运行状态 */}
-        <h2 className="mb-4 mt-2 text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+        <h2 className={`${ADMIN_SECTION_TITLE} mb-4 mt-2`} style={{ color: 'var(--text-primary)' }}>
           运行状态
         </h2>
         <AdminSysInfo />

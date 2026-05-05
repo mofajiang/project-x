@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { useEffect, useState, useCallback } from 'react'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
-import { ADMIN_CARD_CLASS } from '@/components/admin/adminUi'
+import { ADMIN_CARD_CLASS, ADMIN_INPUT_CLASS, ADMIN_BTN_PRIMARY, ADMIN_EMPTY_CLASS } from '@/components/admin/adminUi'
 
 interface Post {
   id: string
@@ -171,11 +171,7 @@ export default function AdminPostsPage() {
         className="sticky top-0 z-20 -mx-1 mb-3 flex items-center justify-end gap-3 rounded-2xl px-3 py-2"
         style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', backdropFilter: 'blur(8px)' }}
       >
-        <Link
-          href="/admin/posts/new"
-          className="rounded-full px-4 py-2 text-sm font-bold text-white"
-          style={{ background: 'var(--accent)' }}
-        >
+        <Link href="/admin/posts/new" className={ADMIN_BTN_PRIMARY} style={{ background: 'var(--accent)' }}>
           + 新建文章
         </Link>
       </div>
@@ -191,14 +187,10 @@ export default function AdminPostsPage() {
             placeholder="搜索文章标题..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="min-w-0 flex-1 rounded-full px-4 py-2 text-sm outline-none"
+            className={ADMIN_INPUT_CLASS}
             style={{ background: 'var(--bg-hover)', border: '1px solid transparent', color: 'var(--text-primary)' }}
           />
-          <button
-            type="submit"
-            className="w-full rounded-full px-4 py-2 text-sm font-bold text-white sm:w-auto"
-            style={{ background: 'var(--accent)' }}
-          >
+          <button type="submit" className={ADMIN_BTN_PRIMARY} style={{ background: 'var(--accent)' }}>
             搜索
           </button>
           {search && (
@@ -209,7 +201,7 @@ export default function AdminPostsPage() {
                 setSearch('')
                 setPage(1)
               }}
-              className="w-full rounded-full px-4 py-2 text-sm sm:w-auto"
+              className={ADMIN_BTN_PRIMARY}
               style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}
             >
               清除
@@ -266,11 +258,11 @@ export default function AdminPostsPage() {
       </div>
 
       {loading ? (
-        <div className="py-20 text-center" style={{ color: 'var(--text-secondary)' }}>
+        <div className={ADMIN_EMPTY_CLASS} style={{ color: 'var(--text-secondary)' }}>
           加载中...
         </div>
       ) : data.posts.length === 0 ? (
-        <div className="py-20 text-center" style={{ color: 'var(--text-secondary)' }}>
+        <div className={ADMIN_EMPTY_CLASS} style={{ color: 'var(--text-secondary)' }}>
           {search ? `未找到包含「${search}」的文章` : '暂无文章'}
         </div>
       ) : (
@@ -281,28 +273,23 @@ export default function AdminPostsPage() {
             className="hidden overflow-hidden rounded-2xl sm:block"
             style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
           >
-            <table className="w-full text-sm">
+            <table className="x-admin-table w-full text-sm">
               <thead>
-                <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
-                  <th className="px-4 py-3 text-left">标题</th>
-                  <th className="px-4 py-3 text-left">状态</th>
-                  <th className="px-4 py-3 text-left">浏览</th>
-                  <th className="px-4 py-3 text-left">评论</th>
-                  <th className="px-4 py-3 text-left">点赞</th>
-                  <th className="px-4 py-3 text-left">时间</th>
-                  <th className="px-4 py-3">操作</th>
+                <tr>
+                  <th>标题</th>
+                  <th>状态</th>
+                  <th>浏览</th>
+                  <th>评论</th>
+                  <th>点赞</th>
+                  <th>时间</th>
+                  <th style={{ textAlign: 'center' }}>操作</th>
                 </tr>
               </thead>
               <tbody>
                 {data.posts.map((post) => (
-                  <tr
-                    key={post.id}
-                    style={{ borderBottom: '1px solid var(--border)' }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                  >
-                    <td className="px-4 py-3" style={{ color: 'var(--text-primary)' }}>
-                      <div className="flex items-center gap-1 font-medium">
+                  <tr key={post.id}>
+                    <td>
+                      <div className="flex items-center gap-1 font-medium" style={{ color: 'var(--text-primary)' }}>
                         {post.pinned && <span title="已置顶">📌</span>}
                         {post.title}
                       </div>
@@ -310,7 +297,7 @@ export default function AdminPostsPage() {
                         {post.tags.map((t) => `#${t.tag.name}`).join(' ')}
                       </div>
                     </td>
-                    <td className="px-4 py-3">
+                    <td>
                       <span
                         className="rounded-full px-2 py-0.5 text-xs"
                         style={{
@@ -321,16 +308,10 @@ export default function AdminPostsPage() {
                         {post.published ? '已发布' : '草稿'}
                       </span>
                     </td>
-                    <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>
-                      {post.views}
-                    </td>
-                    <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>
-                      {post._count.comments}
-                    </td>
-                    <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>
-                      {post.likes}
-                    </td>
-                    <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>
+                    <td style={{ color: 'var(--text-secondary)' }}>{post.views}</td>
+                    <td style={{ color: 'var(--text-secondary)' }}>{post._count.comments}</td>
+                    <td style={{ color: 'var(--text-secondary)' }}>{post.likes}</td>
+                    <td style={{ color: 'var(--text-secondary)' }}>
                       <div title={`创建：${formatDate(post.createdAt)}\n更新：${formatDate(post.updatedAt)}`}>
                         {post.published && post.publishedAt ? formatDate(post.publishedAt) : formatDate(post.createdAt)}
                       </div>
@@ -340,7 +321,7 @@ export default function AdminPostsPage() {
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td>
                       <div className="flex justify-center gap-2">
                         <Link
                           href={`/admin/posts/${post.id}`}

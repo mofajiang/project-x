@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { relativeTime } from '@/lib/utils'
 import toast from 'react-hot-toast'
-import { ADMIN_CARD_CLASS } from '@/components/admin/adminUi'
+import { ADMIN_CARD_CLASS, ADMIN_INPUT_CLASS, ADMIN_EMPTY_CLASS } from '@/components/admin/adminUi'
 import { getRiskLevelColor } from '@/lib/openrouter-spam-filter'
 import { getPostPath } from '@/lib/post-link'
 
@@ -173,7 +173,7 @@ export default function AdminCommentsPage() {
           value={search}
           onChange={(e) => handleSearch(e.target.value)}
           placeholder="搜索评论内容、用户名或 IP"
-          className="x-admin-input w-full rounded-xl px-3 py-2 text-sm outline-none"
+          className={ADMIN_INPUT_CLASS}
           style={{ background: 'var(--bg-hover)', border: '1px solid transparent', color: 'var(--text-primary)' }}
         />
       </div>
@@ -355,7 +355,7 @@ export default function AdminCommentsPage() {
               </div>
             ))}
         {!loading && comments.length === 0 && (
-          <p className="py-12 text-center" style={{ color: 'var(--text-secondary)' }}>
+          <p className={ADMIN_EMPTY_CLASS} style={{ color: 'var(--text-secondary)' }}>
             暂无评论
           </p>
         )}
@@ -388,11 +388,11 @@ export default function AdminCommentsPage() {
                 <button
                   key={p}
                   onClick={() => goPage(p as number)}
-                  className="min-w-[40px] rounded-xl px-3 py-2 text-sm"
+                  className="h-9 w-9 rounded-full text-sm font-medium"
                   style={{
                     background: page === p ? 'var(--accent)' : 'var(--bg-secondary)',
                     color: page === p ? '#fff' : 'var(--text-primary)',
-                    fontWeight: page === p ? 700 : 400,
+                    border: page === p ? 'none' : '1px solid var(--border)',
                   }}
                 >
                   {p}

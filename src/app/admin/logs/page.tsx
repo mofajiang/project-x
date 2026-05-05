@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import toast from 'react-hot-toast'
+import { ADMIN_PAGE_TITLE_CLASS, ADMIN_INPUT_CLASS, ADMIN_EMPTY_CLASS } from '@/components/admin/adminUi'
 
 type LogLevel = 'info' | 'warn' | 'error'
 type LogCategory = 'ai' | 'comment' | 'post' | 'auth' | 'system' | 'friendlink'
@@ -129,7 +130,7 @@ export default function AdminLogsPage() {
   return (
     <div className="mx-auto w-full max-w-6xl">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
+        <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)' }}>
           系统日志
         </h1>
         <div className="flex flex-wrap gap-2">
@@ -179,7 +180,7 @@ export default function AdminLogsPage() {
           <select
             value={filterLevel}
             onChange={(e) => setFilterLevel(e.target.value as LogLevel | '')}
-            className="x-admin-input rounded-xl px-3 py-1.5 text-sm outline-none"
+            className={ADMIN_INPUT_CLASS}
             style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
           >
             <option value="">全部级别</option>
@@ -191,7 +192,7 @@ export default function AdminLogsPage() {
           <select
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value as LogCategory | '')}
-            className="x-admin-input rounded-xl px-3 py-1.5 text-sm outline-none"
+            className={ADMIN_INPUT_CLASS}
             style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
           >
             <option value="">全部类别</option>
@@ -242,12 +243,12 @@ export default function AdminLogsPage() {
         style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}
       >
         {loading && logs.length === 0 && pm2Lines.length === 0 ? (
-          <div className="py-16 text-center" style={{ color: 'var(--text-secondary)' }}>
+          <div className={ADMIN_EMPTY_CLASS} style={{ color: 'var(--text-secondary)' }}>
             加载中...
           </div>
         ) : tab === 'app' ? (
           logs.length === 0 ? (
-            <div className="py-16 text-center" style={{ color: 'var(--text-secondary)' }}>
+            <div className={ADMIN_EMPTY_CLASS} style={{ color: 'var(--text-secondary)' }}>
               暂无日志。应用运行时会自动记录 AI 审核、文章发布等关键事件。
             </div>
           ) : (
@@ -316,7 +317,7 @@ export default function AdminLogsPage() {
           )
         ) : // PM2 raw logs
         pm2Lines.length === 0 ? (
-          <div className="py-16 text-center" style={{ color: 'var(--text-secondary)' }}>
+          <div className={ADMIN_EMPTY_CLASS} style={{ color: 'var(--text-secondary)' }}>
             {pm2Path === null
               ? '未找到 PM2 日志文件。请输入 PM2 应用名，或设置 PM2_LOG_DIR 环境变量。'
               : '日志文件为空'}

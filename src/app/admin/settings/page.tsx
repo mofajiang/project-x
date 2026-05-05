@@ -6,6 +6,14 @@ import { IMEInput, IMETextarea } from '@/components/ui/IMEInput'
 import ImageCropModal from '@/components/ui/ImageCropModal'
 import { StorageImagePicker } from '@/components/admin/StorageImagePicker'
 import {
+  ADMIN_CARD_CLASS,
+  ADMIN_SUBCARD_CLASS,
+  ADMIN_PAGE_TITLE_CLASS,
+  ADMIN_SECTION_TITLE,
+  ADMIN_BTN_PRIMARY,
+  ADMIN_INPUT_CLASS,
+} from '@/components/admin/adminUi'
+import {
   DEFAULT_NAV,
   DEFAULT_WIDGETS,
   DEFAULT_SITE_LOGO,
@@ -406,13 +414,13 @@ export default function SettingsPage() {
     setCropSrc(null)
   }, [])
 
-  const sectionTitleClass = 'text-base sm:text-lg font-bold leading-tight tracking-tight'
   const sectionHintClass = 'text-[10px] sm:text-xs leading-relaxed text-balance'
-  const mobileCardClass = 'rounded-2xl p-2.5 sm:p-4'
-  const mobileSubCardClass = 'rounded-xl p-2 sm:p-4'
 
   return (
-    <div>
+    <div className="mx-auto w-full max-w-3xl">
+      <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)' }}>
+        站点设置
+      </h1>
       {cropSrc && (
         <ImageCropModal
           src={cropSrc}
@@ -426,12 +434,7 @@ export default function SettingsPage() {
         className="sticky top-0 z-20 -mx-1 mb-4 flex items-center justify-end gap-3 rounded-2xl px-3 py-2"
         style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', backdropFilter: 'blur(8px)' }}
       >
-        <button
-          onClick={save}
-          disabled={saving}
-          className="min-h-9 shrink-0 rounded-full px-5 py-2 text-sm font-bold text-white disabled:opacity-50"
-          style={{ background: 'var(--accent)' }}
-        >
+        <button onClick={save} disabled={saving} className={ADMIN_BTN_PRIMARY} style={{ background: 'var(--accent)' }}>
           {saving ? '保存中...' : '保存设置'}
         </button>
       </div>
@@ -440,7 +443,7 @@ export default function SettingsPage() {
         <div className="flex flex-col gap-3 sm:gap-4">
           {/* 授权状态 */}
           <div
-            className={`${mobileCardClass} flex flex-row items-center gap-2 sm:gap-4`}
+            className={`${ADMIN_CARD_CLASS} flex flex-row items-center gap-2 sm:gap-4`}
             style={{
               background: licenseChecking
                 ? 'var(--bg-secondary)'
@@ -486,10 +489,10 @@ export default function SettingsPage() {
 
           {/* 个人资料 */}
           <div
-            className={`${mobileCardClass} flex flex-col gap-2.5 sm:gap-4`}
+            className={`${ADMIN_CARD_CLASS} flex flex-col gap-2.5 sm:gap-4`}
             style={{ background: 'var(--bg-secondary)' }}
           >
-            <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>
+            <h2 className={ADMIN_SECTION_TITLE} style={{ color: 'var(--text-primary)' }}>
               👤 个人资料
             </h2>
             <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
@@ -565,10 +568,10 @@ export default function SettingsPage() {
 
           {/* 站点选项 */}
           <div
-            className={`${mobileCardClass} flex flex-col gap-2.5 sm:gap-4`}
+            className={`${ADMIN_CARD_CLASS} flex flex-col gap-2.5 sm:gap-4`}
             style={{ background: 'var(--bg-secondary)' }}
           >
-            <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>
+            <h2 className={ADMIN_SECTION_TITLE} style={{ color: 'var(--text-primary)' }}>
               🌐 站点选项
             </h2>
             <Field
@@ -602,10 +605,10 @@ export default function SettingsPage() {
 
           {/* 社交账号 */}
           <div
-            className={`${mobileCardClass} flex flex-col gap-2.5 sm:gap-4`}
+            className={`${ADMIN_CARD_CLASS} flex flex-col gap-2.5 sm:gap-4`}
             style={{ background: 'var(--bg-secondary)' }}
           >
-            <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>
+            <h2 className={ADMIN_SECTION_TITLE} style={{ color: 'var(--text-primary)' }}>
               🔗 社交账号
             </h2>
             <Field
@@ -625,8 +628,8 @@ export default function SettingsPage() {
           </div>
 
           {/* 评论设置 */}
-          <div className={mobileCardClass} style={{ background: 'var(--bg-secondary)' }}>
-            <h2 className={`${sectionTitleClass} mb-3`} style={{ color: 'var(--text-primary)' }}>
+          <div className={ADMIN_CARD_CLASS} style={{ background: 'var(--bg-secondary)' }}>
+            <h2 className={`${ADMIN_SECTION_TITLE} mb-3`} style={{ color: 'var(--text-primary)' }}>
               💬 评论设置
             </h2>
             <label className="flex cursor-pointer items-start gap-3 sm:items-center">
@@ -675,10 +678,10 @@ export default function SettingsPage() {
 
           {/* 版权信息 */}
           <div
-            className={`${mobileCardClass} flex flex-col gap-2.5 sm:gap-4`}
+            className={`${ADMIN_CARD_CLASS} flex flex-col gap-2.5 sm:gap-4`}
             style={{ background: 'var(--bg-secondary)' }}
           >
-            <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>
+            <h2 className={ADMIN_SECTION_TITLE} style={{ color: 'var(--text-primary)' }}>
               © 版权信息
             </h2>
             <p className={`${sectionHintClass} hidden sm:block`} style={{ color: 'var(--text-secondary)' }}>
@@ -738,10 +741,10 @@ export default function SettingsPage() {
         <div className="flex flex-col gap-3 sm:gap-4">
           {/* 网站图标 */}
           <div
-            className={`${mobileCardClass} flex flex-col gap-2.5 sm:gap-4`}
+            className={`${ADMIN_CARD_CLASS} flex flex-col gap-2.5 sm:gap-4`}
             style={{ background: 'var(--bg-secondary)' }}
           >
-            <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>
+            <h2 className={ADMIN_SECTION_TITLE} style={{ color: 'var(--text-primary)' }}>
               🖼 网站图标
             </h2>
             <div className="flex flex-col gap-3">
@@ -807,10 +810,10 @@ export default function SettingsPage() {
 
           {/* 站点 Logo */}
           <div
-            className={`${mobileCardClass} flex flex-col gap-2.5 sm:gap-4`}
+            className={`${ADMIN_CARD_CLASS} flex flex-col gap-2.5 sm:gap-4`}
             style={{ background: 'var(--bg-secondary)' }}
           >
-            <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>
+            <h2 className={ADMIN_SECTION_TITLE} style={{ color: 'var(--text-primary)' }}>
               🪪 站点 Logo
             </h2>
             <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>
@@ -910,10 +913,10 @@ export default function SettingsPage() {
 
           {/* 默认主题 */}
           <div
-            className={`${mobileCardClass} flex flex-col gap-2.5 sm:gap-4`}
+            className={`${ADMIN_CARD_CLASS} flex flex-col gap-2.5 sm:gap-4`}
             style={{ background: 'var(--bg-secondary)' }}
           >
-            <h2 className={`${sectionTitleClass} mb-1`} style={{ color: 'var(--text-primary)' }}>
+            <h2 className={`${ADMIN_SECTION_TITLE} mb-1`} style={{ color: 'var(--text-primary)' }}>
               🌙 默认主题
             </h2>
             <p className={`${sectionHintClass} hidden sm:block`} style={{ color: 'var(--text-secondary)' }}>
@@ -951,11 +954,11 @@ export default function SettingsPage() {
 
           {/* 邮件通知 */}
           <div
-            className={`${mobileCardClass} flex flex-col gap-3 sm:gap-4`}
+            className={`${ADMIN_CARD_CLASS} flex flex-col gap-3 sm:gap-4`}
             style={{ background: 'var(--bg-secondary)' }}
           >
             <div className="flex flex-col gap-1.5">
-              <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>
+              <h2 className={ADMIN_SECTION_TITLE} style={{ color: 'var(--text-primary)' }}>
                 📧 邮件通知
               </h2>
               <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>
@@ -1193,11 +1196,11 @@ export default function SettingsPage() {
 
           {/* 导航与组件（已移至独立页面） */}
           <div
-            className={`${mobileCardClass} hidden flex-col gap-3 sm:gap-4`}
+            className={`${ADMIN_CARD_CLASS} hidden flex-col gap-3 sm:gap-4`}
             style={{ background: 'var(--bg-secondary)' }}
           >
             <div className="flex flex-col gap-1.5">
-              <h2 className={sectionTitleClass} style={{ color: 'var(--text-primary)' }}>
+              <h2 className={ADMIN_SECTION_TITLE} style={{ color: 'var(--text-primary)' }}>
                 🧭 导航与组件
               </h2>
               <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>
@@ -1223,7 +1226,7 @@ export default function SettingsPage() {
                   {navItems.map((item, i) => (
                     <div
                       key={i}
-                      className={`${mobileSubCardClass} flex flex-col gap-2 sm:gap-3`}
+                      className={`${ADMIN_SUBCARD_CLASS} flex flex-col gap-2 sm:gap-3`}
                       style={{ background: 'var(--bg-hover)' }}
                     >
                       <div className="flex items-center gap-1 self-start sm:flex-col sm:gap-0.5">
@@ -1319,7 +1322,7 @@ export default function SettingsPage() {
                   {widgets.map((w, i) => (
                     <div
                       key={i}
-                      className={`${mobileSubCardClass} relative flex flex-col gap-2 sm:gap-3`}
+                      className={`${ADMIN_SUBCARD_CLASS} relative flex flex-col gap-2 sm:gap-3`}
                       style={{ background: 'var(--bg-hover)' }}
                     >
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:pr-10">

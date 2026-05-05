@@ -2,7 +2,13 @@
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { IMEInput } from '@/components/ui/IMEInput'
-import { ADMIN_CARD_LG_CLASS } from '@/components/admin/adminUi'
+import {
+  ADMIN_CARD_CLASS,
+  ADMIN_PAGE_TITLE_CLASS,
+  ADMIN_SECTION_TITLE,
+  ADMIN_BTN_PRIMARY,
+  ADMIN_INPUT_CLASS,
+} from '@/components/admin/adminUi'
 
 export default function SmtpPage() {
   const [smtp, setSmtp] = useState({ SMTP_HOST: '', SMTP_PORT: '465', SMTP_USER: '', SMTP_PASS: '', SMTP_FROM: '' })
@@ -96,16 +102,19 @@ export default function SmtpPage() {
         value={value}
         onValueChange={onChange}
         placeholder={placeholder}
-        className="w-full rounded-xl px-3 py-2 text-sm outline-none"
+        className={ADMIN_INPUT_CLASS}
         style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}
       />
     </div>
   )
 
   return (
-    <div className="max-w-2xl">
-      <div className={`${ADMIN_CARD_LG_CLASS} mb-4 sm:mb-6`} style={{ background: 'var(--bg-secondary)' }}>
-        <h2 className="mb-4 text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+    <div className="mx-auto w-full max-w-3xl">
+      <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)' }}>
+        SMTP 邮件
+      </h1>
+      <div className={`${ADMIN_CARD_CLASS} mb-4 sm:mb-6`} style={{ background: 'var(--bg-secondary)' }}>
+        <h2 className={`${ADMIN_SECTION_TITLE} mb-4`} style={{ color: 'var(--text-primary)' }}>
           SMTP 配置
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -147,7 +156,7 @@ export default function SmtpPage() {
         <button
           onClick={save}
           disabled={saving}
-          className="mt-6 w-full rounded-full px-6 py-3 text-sm font-bold text-white disabled:opacity-50 sm:w-auto"
+          className={`${ADMIN_BTN_PRIMARY} mt-6`}
           style={{ background: 'var(--accent)' }}
         >
           {saving ? '保存中...' : '保存配置'}
@@ -155,8 +164,8 @@ export default function SmtpPage() {
       </div>
 
       {configured && (
-        <div className={ADMIN_CARD_LG_CLASS} style={{ background: 'var(--bg-secondary)' }}>
-          <h2 className="mb-4 text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+        <div className={ADMIN_CARD_CLASS} style={{ background: 'var(--bg-secondary)' }}>
+          <h2 className={`${ADMIN_SECTION_TITLE} mb-4`} style={{ color: 'var(--text-primary)' }}>
             测试邮件
           </h2>
           <div className="flex flex-col gap-3 sm:flex-row">
@@ -164,14 +173,14 @@ export default function SmtpPage() {
               value={testEmail}
               onValueChange={setTestEmail}
               placeholder="收件人邮箱"
-              className="flex-1 rounded-xl px-3 py-2.5 text-sm outline-none"
+              className={ADMIN_INPUT_CLASS}
               style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}
             />
             <button
               onClick={sendTest}
               disabled={testing}
-              className="w-full rounded-full px-4 py-3 text-sm font-medium disabled:opacity-50 sm:w-auto"
-              style={{ background: 'var(--accent)', color: '#fff' }}
+              className={ADMIN_BTN_PRIMARY}
+              style={{ background: 'var(--accent)' }}
             >
               {testing ? '发送中...' : '发送测试'}
             </button>

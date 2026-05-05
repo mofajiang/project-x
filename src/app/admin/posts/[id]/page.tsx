@@ -8,7 +8,14 @@ import { StorageImagePicker } from '@/components/admin/StorageImagePicker'
 import { VoiceInput } from '@/components/admin/VoiceInput'
 import { PostPolish } from '@/components/admin/PostPolish'
 import { IMEInput } from '@/components/ui/IMEInput'
-import { ADMIN_PAGE_TITLE_CLASS } from '@/components/admin/adminUi'
+import {
+  ADMIN_PAGE_TITLE_CLASS,
+  ADMIN_CARD_CLASS,
+  ADMIN_SUBCARD_CLASS,
+  ADMIN_BTN_PRIMARY,
+  ADMIN_BTN_SECONDARY,
+  ADMIN_INPUT_CLASS,
+} from '@/components/admin/adminUi'
 
 export default function EditPostPage() {
   const params = useParams()
@@ -229,7 +236,7 @@ export default function EditPostPage() {
       <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="space-y-5 sm:space-y-6">
           <section
-            className="rounded-2xl p-4 sm:p-5"
+            className={ADMIN_CARD_CLASS}
             style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
           >
             <label className="mb-2 block text-xs font-medium sm:text-sm" style={{ color: 'var(--text-secondary)' }}>
@@ -246,7 +253,7 @@ export default function EditPostPage() {
           </section>
 
           <section
-            className="rounded-2xl p-4 sm:p-5"
+            className={ADMIN_CARD_CLASS}
             style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
           >
             <label className="mb-2 block text-xs font-medium sm:text-sm" style={{ color: 'var(--text-secondary)' }}>
@@ -263,7 +270,7 @@ export default function EditPostPage() {
           </section>
 
           <section
-            className="rounded-2xl p-4 sm:p-5"
+            className={ADMIN_CARD_CLASS}
             style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
           >
             <div className="mb-3 flex items-center justify-between">
@@ -281,7 +288,7 @@ export default function EditPostPage() {
                   updateForm((f) => ({ ...f, content: f.content + `<img src="${url}" alt="图片" />` }))
                   toast.success('已插入云存储图片')
                 }}
-                className="rounded-lg px-4 py-2 text-xs font-medium sm:rounded-full sm:text-sm"
+                className="rounded-full px-4 py-2 text-xs font-medium sm:text-sm"
               />
               <VoiceInput
                 onInsertContent={(text) => {
@@ -301,7 +308,7 @@ export default function EditPostPage() {
           </section>
 
           <section
-            className="rounded-lg p-3 sm:p-4"
+            className={ADMIN_SUBCARD_CLASS}
             style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
           >
             <p className="mb-2 text-[10px] font-medium sm:text-xs" style={{ color: 'var(--text-secondary)' }}>
@@ -312,7 +319,7 @@ export default function EditPostPage() {
 
         <aside className="h-fit space-y-4 lg:sticky lg:top-3">
           <section
-            className="rounded-2xl p-4"
+            className={ADMIN_CARD_CLASS}
             style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
           >
             <h2 className="mb-3 text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
@@ -322,7 +329,7 @@ export default function EditPostPage() {
               <button
                 onClick={() => save(false)}
                 disabled={saving}
-                className="rounded-full px-4 py-2 text-sm font-bold disabled:opacity-50"
+                className={ADMIN_BTN_PRIMARY}
                 style={{ background: 'var(--bg)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
               >
                 保存草稿
@@ -330,7 +337,7 @@ export default function EditPostPage() {
               <button
                 onClick={() => save(true)}
                 disabled={saving}
-                className="rounded-full px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+                className={ADMIN_BTN_PRIMARY}
                 style={{ background: 'var(--accent)' }}
               >
                 {saving ? '保存中...' : '立即发布'}
@@ -339,7 +346,7 @@ export default function EditPostPage() {
           </section>
 
           <section
-            className="rounded-2xl p-4"
+            className={ADMIN_CARD_CLASS}
             style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
           >
             <h2 className="mb-3 text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
@@ -393,7 +400,7 @@ export default function EditPostPage() {
           </section>
 
           <section
-            className="rounded-2xl p-4"
+            className={ADMIN_CARD_CLASS}
             style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
           >
             <h2 className="mb-3 text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
@@ -420,7 +427,7 @@ export default function EditPostPage() {
 
           {/* Thread 设置 */}
           <section
-            className="rounded-2xl p-4"
+            className={ADMIN_CARD_CLASS}
             style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
           >
             <h2 className="mb-3 text-sm font-bold" style={{ color: 'var(--text-primary)' }}>

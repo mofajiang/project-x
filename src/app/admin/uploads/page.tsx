@@ -4,6 +4,12 @@ import { useEffect, useMemo, useState } from 'react'
 import JSZip from 'jszip'
 import toast from 'react-hot-toast'
 import { getErrorMessage } from '@/lib/converters'
+import {
+  ADMIN_PAGE_TITLE_CLASS,
+  ADMIN_BTN_PRIMARY,
+  ADMIN_INPUT_CLASS,
+  ADMIN_EMPTY_CLASS,
+} from '@/components/admin/adminUi'
 
 type UploadFile = {
   name: string
@@ -340,7 +346,10 @@ export default function AdminUploadsPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-7xl">
+    <div className="mx-auto w-full max-w-6xl">
+      <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)' }}>
+        文件管理
+      </h1>
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
         <section
           className="rounded-2xl p-4"
@@ -358,10 +367,7 @@ export default function AdminUploadsPage() {
                 className="rounded-xl border bg-transparent px-3 py-2 text-sm outline-none"
                 style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
               />
-              <label
-                className="cursor-pointer rounded-xl px-4 py-2 text-center text-sm font-medium text-white"
-                style={{ background: 'var(--accent)' }}
-              >
+              <label className={`${ADMIN_BTN_PRIMARY} cursor-pointer`} style={{ background: 'var(--accent)' }}>
                 {uploading ? '上传中...' : '上传文件'}
                 <input type="file" className="hidden" onChange={uploadFile} disabled={uploading} />
               </label>
@@ -405,7 +411,7 @@ export default function AdminUploadsPage() {
             </span>
             <button
               onClick={() => setViewMode((v) => (v === 'list' ? 'grid' : 'list'))}
-              className="rounded-lg px-3 py-1.5 text-xs"
+              className="rounded-full px-3 py-1.5 text-xs"
               style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
             >
               {viewMode === 'list' ? '切换网格' : '切换列表'}
@@ -414,7 +420,7 @@ export default function AdminUploadsPage() {
               <button
                 onClick={handleBatchDownload}
                 disabled={batchDownloading || selectedFiles.length === 0}
-                className="rounded-lg px-3 py-1.5 text-xs text-white disabled:opacity-50"
+                className="rounded-full px-3 py-1.5 text-xs font-bold text-white transition-opacity hover:opacity-80 disabled:opacity-50"
                 style={{ background: '#0ea5e9' }}
               >
                 {batchDownloading ? '打包中...' : '批量下载'}
@@ -424,7 +430,7 @@ export default function AdminUploadsPage() {
               <button
                 onClick={handleBatchDelete}
                 disabled={batchDeleting || selectedFiles.length === 0}
-                className="rounded-lg px-3 py-1.5 text-xs text-white disabled:opacity-50"
+                className="rounded-full px-3 py-1.5 text-xs font-bold text-white transition-opacity hover:opacity-80 disabled:opacity-50"
                 style={{ background: '#64748b' }}
               >
                 {batchDeleting ? '删除中...' : '批量删除'}
@@ -705,7 +711,7 @@ export default function AdminUploadsPage() {
                 )}
                 <div className="mt-2 flex flex-wrap gap-1">
                   <span
-                    className="rounded-lg px-2 py-1"
+                    className="rounded-full px-3 py-1.5"
                     style={{
                       background: storageStatus.capabilities.upload ? 'rgba(34,197,94,0.14)' : 'rgba(148,163,184,0.2)',
                       color: storageStatus.capabilities.upload ? '#15803d' : '#475569',
@@ -714,7 +720,7 @@ export default function AdminUploadsPage() {
                     上传
                   </span>
                   <span
-                    className="rounded-lg px-2 py-1"
+                    className="rounded-full px-3 py-1.5"
                     style={{
                       background: storageStatus.capabilities.list ? 'rgba(34,197,94,0.14)' : 'rgba(148,163,184,0.2)',
                       color: storageStatus.capabilities.list ? '#15803d' : '#475569',
@@ -723,7 +729,7 @@ export default function AdminUploadsPage() {
                     列表
                   </span>
                   <span
-                    className="rounded-lg px-2 py-1"
+                    className="rounded-full px-3 py-1.5"
                     style={{
                       background: storageStatus.capabilities.download
                         ? 'rgba(34,197,94,0.14)'
@@ -734,7 +740,7 @@ export default function AdminUploadsPage() {
                     下载
                   </span>
                   <span
-                    className="rounded-lg px-2 py-1"
+                    className="rounded-full px-3 py-1.5"
                     style={{
                       background: storageStatus.capabilities.rename ? 'rgba(34,197,94,0.14)' : 'rgba(148,163,184,0.2)',
                       color: storageStatus.capabilities.rename ? '#15803d' : '#475569',
@@ -743,7 +749,7 @@ export default function AdminUploadsPage() {
                     重命名
                   </span>
                   <span
-                    className="rounded-lg px-2 py-1"
+                    className="rounded-full px-3 py-1.5"
                     style={{
                       background: storageStatus.capabilities.delete ? 'rgba(34,197,94,0.14)' : 'rgba(148,163,184,0.2)',
                       color: storageStatus.capabilities.delete ? '#15803d' : '#475569',

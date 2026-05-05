@@ -425,8 +425,22 @@ img {
 
 /* ── 后台管理 X 风格辅助类 ────────────────────────────────── */
 
-/* 表格行 hover */
+/* 表格统一样式 */
+.x-admin-table th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+}
+.x-admin-table td {
+  padding: 0.75rem 1rem;
+}
 .x-admin-table tbody tr {
+  border-bottom: 1px solid var(--border);
   transition: background 0.12s;
 }
 .x-admin-table tbody tr:hover {

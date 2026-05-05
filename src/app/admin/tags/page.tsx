@@ -1,7 +1,15 @@
 'use client'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { ADMIN_CARD_CLASS, ADMIN_TABLE_CLASS } from '@/components/admin/adminUi'
+import {
+  ADMIN_CARD_CLASS,
+  ADMIN_TABLE_CLASS,
+  ADMIN_PAGE_WRAPPER,
+  ADMIN_PAGE_TITLE_CLASS,
+  ADMIN_INPUT_CLASS,
+  ADMIN_BTN_PRIMARY,
+  ADMIN_EMPTY_CLASS,
+} from '@/components/admin/adminUi'
 import { getErrorMessage } from '@/lib/converters'
 
 interface Tag {
@@ -92,7 +100,10 @@ export default function AdminTagsPage() {
   )
 
   return (
-    <div>
+    <div className={ADMIN_PAGE_WRAPPER}>
+      <h1 className={ADMIN_PAGE_TITLE_CLASS} style={{ color: 'var(--text-primary)' }}>
+        标签管理
+      </h1>
       <div
         className="sticky top-0 z-20 -mx-1 mb-4 flex items-center justify-end gap-3 rounded-2xl px-3 py-2"
         style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', backdropFilter: 'blur(8px)' }}
@@ -108,14 +119,14 @@ export default function AdminTagsPage() {
               }
             }}
             placeholder="输入新标签名"
-            className="w-36 rounded-full px-3 py-1.5 text-sm outline-none sm:w-48"
+            className={ADMIN_INPUT_CLASS + ' w-36 sm:w-48'}
             style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
           />
           <button
             type="button"
             onClick={createTag}
             disabled={saving}
-            className="shrink-0 rounded-full px-4 py-1.5 text-sm font-bold text-white disabled:opacity-50"
+            className={ADMIN_BTN_PRIMARY}
             style={{ background: 'var(--accent)' }}
           >
             {saving ? '创建中...' : '新增'}
@@ -127,26 +138,22 @@ export default function AdminTagsPage() {
       <div className="hidden overflow-hidden rounded-2xl sm:block" style={{ background: 'var(--bg-secondary)' }}>
         <table className={ADMIN_TABLE_CLASS}>
           <thead>
-            <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
-              <th className="px-4 py-3 text-left">标签名</th>
-              <th className="px-4 py-3 text-left">Slug</th>
-              <th className="px-4 py-3 text-left">文章数</th>
-              <th className="px-4 py-3">操作</th>
+            <tr>
+              <th>标签名</th>
+              <th>Slug</th>
+              <th>文章数</th>
+              <th style={{ textAlign: 'center' }}>操作</th>
             </tr>
           </thead>
           <tbody>
             {tags.map((tag) => (
-              <tr key={tag.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                <td className="px-4 py-3 font-medium" style={{ color: 'var(--accent)' }}>
+              <tr key={tag.id}>
+                <td className="font-medium" style={{ color: 'var(--accent)' }}>
                   #{tag.name}
                 </td>
-                <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>
-                  {tag.slug}
-                </td>
-                <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>
-                  {tag._count.posts}
-                </td>
-                <td className="px-4 py-3 text-center">
+                <td style={{ color: 'var(--text-secondary)' }}>{tag.slug}</td>
+                <td style={{ color: 'var(--text-secondary)' }}>{tag._count.posts}</td>
+                <td className="text-center">
                   <button
                     onClick={() => deleteTag(tag.id, tag.name)}
                     className="rounded-full px-3 py-1 text-xs font-bold transition-colors hover:opacity-80"
@@ -160,7 +167,7 @@ export default function AdminTagsPage() {
           </tbody>
         </table>
         {tags.length === 0 && (
-          <div className="py-12 text-center" style={{ color: 'var(--text-secondary)' }}>
+          <div className={ADMIN_EMPTY_CLASS} style={{ color: 'var(--text-secondary)' }}>
             <p>暂无标签</p>
           </div>
         )}
