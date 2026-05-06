@@ -18,8 +18,9 @@ model User {
   bio         String?  @default("")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  posts     Post[]
-  comments  Comment[]
+  posts             Post[]
+  comments          Comment[]
+  guestbookMessages  GuestbookMessage[]
 }
 
 model Post {
@@ -261,6 +262,25 @@ model FriendLink {
   @@index([status, createdAt(sort: Desc)])
   @@index([hasReciprocal, status])
   @@index([status, showInSidebar, sortOrder])
+}
+
+model GuestbookMessage {
+  id           String   @id @default(cuid())
+  content      String
+  guestName    String
+  guestEmail   String?
+  guestWebsite String?
+  ip           String   @default("")
+  approved     Boolean  @default(false)
+  riskScore    Int      @default(0)
+  riskReasons  String   @default("[]")
+  authorId     String?
+  author       User?    @relation(fields: [authorId], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@index([approved, createdAt(sort: Desc)])
+  @@index([authorId])
+  @@index([riskScore])
 }
 
 model ShortLink {

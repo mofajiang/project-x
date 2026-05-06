@@ -19,6 +19,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { label: '评论管理', href: '/admin/comments', icon: '💬', badge: true, group: 'content' },
   { label: '标签管理', href: '/admin/tags', icon: '🏷', group: 'content' },
   { label: '友链管理', href: '/admin/friend-links', icon: '🔗', group: 'content' },
+  { label: '留言管理', href: '/admin/guestbook', icon: '✉️', group: 'content' },
   { label: '上传管理', href: '/admin/uploads', icon: '🗂️', group: 'appearance' },
   { label: '导航与组件', href: '/admin/navigation', icon: '🧭', group: 'appearance' },
   { label: 'AI 模型管理', href: '/admin/ai-model', icon: '🤖', group: 'system' },

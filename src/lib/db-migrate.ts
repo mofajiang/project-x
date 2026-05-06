@@ -26,6 +26,7 @@ const ALLOWED_TABLES = new Set([
   'KeywordRadarLog',
   'KeywordRadarSourceHealth',
   'ShortLink',
+  'GuestbookMessage',
 ])
 
 const IDENTIFIER_RE = /^[A-Za-z_][A-Za-z0-9_]*$/
@@ -489,6 +490,30 @@ export async function runMigrations() {
         'ShortLink'
       )
       await createIndex('ShortLink', 'idx_shortlink_url', 'url', 'ShortLink url index')
+      // 留言板
+      await createTable(
+        `CREATE TABLE IF NOT EXISTS GuestbookMessage (
+          id TEXT PRIMARY KEY,
+          content TEXT NOT NULL,
+          guestName TEXT NOT NULL,
+          guestEmail TEXT,
+          guestWebsite TEXT,
+          ip TEXT NOT NULL DEFAULT '',
+          approved INTEGER NOT NULL DEFAULT 0,
+          riskScore INTEGER NOT NULL DEFAULT 0,
+          riskReasons TEXT NOT NULL DEFAULT '[]',
+          authorId TEXT,
+          createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )`,
+        'GuestbookMessage'
+      )
+      await createIndex(
+        'GuestbookMessage',
+        'idx_guestbook_approved_createdAt',
+        'approved, createdAt',
+        'GuestbookMessage approved/createdAt index'
+      )
+      await createIndex('GuestbookMessage', 'idx_guestbook_authorId', 'authorId', 'GuestbookMessage authorId index')
       await addColumn(
         'SiteConfig',
         'keywordRadarUseShortLinks',

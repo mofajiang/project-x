@@ -164,6 +164,7 @@ export const DEFAULT_NAV: NavItem[] = [
   { label: '归档', href: '/archive', icon: 'archive' },
   { label: '标签', href: '/tags', icon: 'tag' },
   { label: '友链', href: '/links', icon: 'link' },
+  { label: '留言', href: '/guestbook', icon: 'message' },
   { label: '关于', href: '/about', icon: 'user' },
 ]
 
@@ -285,6 +286,17 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
       const linksItem: NavItem = { label: '友链', href: '/links', icon: 'link' }
       if (aboutIdx >= 0) navArr.splice(aboutIdx, 0, linksItem)
       else navArr.push(linksItem)
+      config.navItems = JSON.stringify(navArr)
+    }
+  } catch {}
+  // 若已有导航里缺少留言项，自动插入（在关于之前）
+  try {
+    const navArr: NavItem[] = JSON.parse(config.navItems)
+    if (Array.isArray(navArr) && !navArr.some((item) => item.href === '/guestbook')) {
+      const aboutIdx = navArr.findIndex((item) => item.href === '/about')
+      const guestbookItem: NavItem = { label: '留言', href: '/guestbook', icon: 'message' }
+      if (aboutIdx >= 0) navArr.splice(aboutIdx, 0, guestbookItem)
+      else navArr.push(guestbookItem)
       config.navItems = JSON.stringify(navArr)
     }
   } catch {}

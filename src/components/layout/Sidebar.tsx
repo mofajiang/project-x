@@ -80,6 +80,18 @@ const IconLink = ({ filled }: { filled?: boolean }) => (
     <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
   </svg>
 )
+const IconMessage = ({ filled }: { filled?: boolean }) => (
+  <svg
+    width="26"
+    height="26"
+    viewBox="0 0 24 24"
+    fill={filled ? 'currentColor' : 'none'}
+    stroke="currentColor"
+    strokeWidth="1.75"
+  >
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+  </svg>
+)
 
 const ICON_MAP: Record<string, React.ComponentType<{ filled?: boolean }>> = {
   home: IconHome,
@@ -87,6 +99,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ filled?: boolean }>> = {
   tag: IconTag,
   user: IconUser,
   link: IconLink,
+  message: IconMessage,
 }
 
 export type NavItemDef = { label: string; href: string; icon: string }
@@ -109,6 +122,7 @@ const DEFAULT_NAV: NavItemDef[] = [
   { label: '归档', href: '/archive', icon: 'archive' },
   { label: '标签', href: '/tags', icon: 'tag' },
   { label: '友链', href: '/links', icon: 'link' },
+  { label: '留言', href: '/guestbook', icon: 'message' },
   { label: '关于', href: '/about', icon: 'user' },
 ]
 

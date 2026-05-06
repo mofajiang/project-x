@@ -5,7 +5,7 @@
 import { prisma } from './prisma'
 
 export type LogLevel = 'info' | 'warn' | 'error'
-export type LogCategory = 'ai' | 'comment' | 'post' | 'auth' | 'system' | 'friendlink'
+export type LogCategory = 'ai' | 'comment' | 'post' | 'auth' | 'system' | 'friendlink' | 'guestbook'
 
 export interface LogEntry {
   id: string
