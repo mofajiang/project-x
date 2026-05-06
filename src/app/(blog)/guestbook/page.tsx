@@ -18,6 +18,7 @@ interface GuestbookMsg {
 export default function GuestbookPage() {
   const [messages, setMessages] = useState<GuestbookMsg[]>([])
   const [loading, setLoading] = useState(true)
+  const [disabled, setDisabled] = useState(false)
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
@@ -36,9 +37,16 @@ export default function GuestbookPage() {
       const res = await fetch(`/api/guestbook?page=${p}&pageSize=${pageSize}`)
       const data = await res.json()
       if (res.ok) {
-        setMessages(data.messages || [])
-        setTotal(data.total || 0)
-        setTotalPages(data.totalPages || 1)
+        if (data.disabled) {
+          setDisabled(true)
+          setMessages([])
+          setTotal(0)
+          setTotalPages(0)
+        } else {
+          setMessages(data.messages || [])
+          setTotal(data.total || 0)
+          setTotalPages(data.totalPages || 1)
+        }
       }
     } catch {
       /* ignore */
@@ -125,6 +133,21 @@ export default function GuestbookPage() {
       </div>
 
       <div className="mx-auto max-w-2xl px-3 py-6 sm:px-4 sm:py-8">
+        {/* 停用提示 */}
+        {disabled && (
+          <div
+            className="mb-8 rounded-2xl border px-5 py-12 text-center"
+            style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}
+          >
+            <p className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+              留言板已关闭
+            </p>
+            <p className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+              站长已暂时关闭留言功能
+            </p>
+          </div>
+        )}
+
         {/* 移动端返回按钮 */}
         <div className="mb-6 sm:hidden">
           <Link
@@ -138,20 +161,45 @@ export default function GuestbookPage() {
         </div>
 
         {/* 提交表单 */}
-        <div
-          className="mb-8 overflow-hidden rounded-2xl border"
-          style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}
-        >
-          <div className="px-5 py-5">
-            <h2 className="mb-4 text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
-              写留言
-            </h2>
-            <div className="flex flex-col gap-3">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {!disabled && (
+          <div
+            className="mb-8 overflow-hidden rounded-2xl border"
+            style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}
+          >
+            <div className="px-5 py-5">
+              <h2 className="mb-4 text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                写留言
+              </h2>
+              <div className="flex flex-col gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="昵称 *"
+                    className="w-full rounded-xl px-3.5 py-2 text-sm outline-none"
+                    style={{
+                      background: 'var(--bg-hover)',
+                      color: 'var(--text-primary)',
+                      border: '1px solid transparent',
+                    }}
+                  />
+                  <input
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="邮箱（选填）"
+                    type="email"
+                    className="w-full rounded-xl px-3.5 py-2 text-sm outline-none"
+                    style={{
+                      background: 'var(--bg-hover)',
+                      color: 'var(--text-primary)',
+                      border: '1px solid transparent',
+                    }}
+                  />
+                </div>
                 <input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="昵称 *"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                  placeholder="网站（选填）"
                   className="w-full rounded-xl px-3.5 py-2 text-sm outline-none"
                   style={{
                     background: 'var(--bg-hover)',
@@ -159,140 +207,126 @@ export default function GuestbookPage() {
                     border: '1px solid transparent',
                   }}
                 />
-                <input
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="邮箱（选填）"
-                  type="email"
-                  className="w-full rounded-xl px-3.5 py-2 text-sm outline-none"
+                <textarea
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="留言内容 *"
+                  rows={4}
+                  maxLength={1000}
+                  className="w-full resize-none rounded-xl px-3.5 py-2 text-sm outline-none"
                   style={{
                     background: 'var(--bg-hover)',
                     color: 'var(--text-primary)',
                     border: '1px solid transparent',
                   }}
                 />
+                <button
+                  onClick={submit}
+                  disabled={submitting}
+                  className="self-end rounded-full px-5 py-2 text-sm font-bold text-white transition-opacity hover:opacity-85 disabled:opacity-50"
+                  style={{ background: 'var(--accent)' }}
+                >
+                  {submitting ? '提交中...' : '发布留言'}
+                </button>
               </div>
-              <input
-                value={website}
-                onChange={(e) => setWebsite(e.target.value)}
-                placeholder="网站（选填）"
-                className="w-full rounded-xl px-3.5 py-2 text-sm outline-none"
-                style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}
-              />
-              <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="留言内容 *"
-                rows={4}
-                maxLength={1000}
-                className="w-full resize-none rounded-xl px-3.5 py-2 text-sm outline-none"
-                style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid transparent' }}
-              />
-              <button
-                onClick={submit}
-                disabled={submitting}
-                className="self-end rounded-full px-5 py-2 text-sm font-bold text-white transition-opacity hover:opacity-85 disabled:opacity-50"
-                style={{ background: 'var(--accent)' }}
-              >
-                {submitting ? '提交中...' : '发布留言'}
-              </button>
             </div>
           </div>
-        </div>
+        )}
 
         {/* 留言列表 */}
-        {loading ? (
-          <div className="py-20 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
-            <p>加载中...</p>
-          </div>
-        ) : messages.length === 0 ? (
-          <div className="py-20 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
-            <p>暂无留言，来坐沙发吧</p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className="rounded-2xl border p-4"
-                style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}
-              >
-                <div className="flex items-start gap-3">
-                  {/* 头像 */}
-                  <div
-                    className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold"
-                    style={{ background: 'var(--accent)', color: '#fff' }}
-                  >
-                    {msg.author?.avatar ? (
-                      <Image
-                        src={msg.author.avatar}
-                        alt=""
-                        width={40}
-                        height={40}
-                        className="rounded-full object-cover"
-                        unoptimized
-                      />
-                    ) : (
-                      (msg.author?.displayName || msg.guestName)[0]?.toUpperCase()
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
-                        {msg.author?.displayName || msg.guestName}
-                      </span>
-                      {msg.guestWebsite ? (
-                        <a
-                          href={msg.guestWebsite}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs underline hover:no-underline"
-                          style={{ color: 'var(--accent)' }}
-                        >
-                          网站
-                        </a>
-                      ) : null}
-                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                        {formatTime(msg.createdAt)}
-                      </span>
-                    </div>
-                    <p
-                      className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed"
-                      style={{ color: 'var(--text-primary)' }}
+        {!disabled &&
+          (loading ? (
+            <div className="py-20 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <p>加载中...</p>
+            </div>
+          ) : messages.length === 0 ? (
+            <div className="py-20 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <p>暂无留言，来坐沙发吧</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className="rounded-2xl border p-4"
+                  style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border)' }}
+                >
+                  <div className="flex items-start gap-3">
+                    {/* 头像 */}
+                    <div
+                      className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold"
+                      style={{ background: 'var(--accent)', color: '#fff' }}
                     >
-                      {msg.content}
-                    </p>
+                      {msg.author?.avatar ? (
+                        <Image
+                          src={msg.author.avatar}
+                          alt=""
+                          width={40}
+                          height={40}
+                          className="rounded-full object-cover"
+                          unoptimized
+                        />
+                      ) : (
+                        (msg.author?.displayName || msg.guestName)[0]?.toUpperCase()
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+                          {msg.author?.displayName || msg.guestName}
+                        </span>
+                        {msg.guestWebsite ? (
+                          <a
+                            href={msg.guestWebsite}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs underline hover:no-underline"
+                            style={{ color: 'var(--accent)' }}
+                          >
+                            网站
+                          </a>
+                        ) : null}
+                        <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                          {formatTime(msg.createdAt)}
+                        </span>
+                      </div>
+                      <p
+                        className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
+                        {msg.content}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
 
-            {/* 分页 */}
-            {totalPages > 1 && (
-              <div className="mt-4 flex items-center justify-center gap-2">
-                <button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page <= 1}
-                  className="rounded-full px-4 py-2 text-sm font-medium transition-opacity disabled:opacity-30"
-                  style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-                >
-                  上一页
-                </button>
-                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  {page} / {totalPages}
-                </span>
-                <button
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page >= totalPages}
-                  className="rounded-full px-4 py-2 text-sm font-medium transition-opacity disabled:opacity-30"
-                  style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-                >
-                  下一页
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+              {/* 分页 */}
+              {totalPages > 1 && (
+                <div className="mt-4 flex items-center justify-center gap-2">
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page <= 1}
+                    className="rounded-full px-4 py-2 text-sm font-medium transition-opacity disabled:opacity-30"
+                    style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                  >
+                    上一页
+                  </button>
+                  <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    {page} / {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page >= totalPages}
+                    className="rounded-full px-4 py-2 text-sm font-medium transition-opacity disabled:opacity-30"
+                    style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                  >
+                    下一页
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
 
         {/* 总留言数 */}
         {total > 0 && (

@@ -150,6 +150,7 @@ model SiteConfig {
   storageSmmsToken String @default("")
   sidebarFriendLinksCollapsed Boolean @default(false)
   enableFriendCircle Boolean @default(false)
+  guestbookEnabled Boolean @default(true)
   groqApiKey String @default("")
   commentAiProvider String @default("")
   commentAiModel String @default("")

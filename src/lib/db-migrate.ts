@@ -520,6 +520,7 @@ export async function runMigrations() {
         `INTEGER NOT NULL DEFAULT 0`,
         'keywordRadarUseShortLinks (短链接跳转)'
       )
+      await addColumn('SiteConfig', 'guestbookEnabled', `INTEGER NOT NULL DEFAULT 1`, 'guestbookEnabled (留言板开关)')
       migrated = true
     })()
   }

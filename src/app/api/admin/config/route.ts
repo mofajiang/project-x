@@ -36,6 +36,7 @@ const RAW_CONFIG_COLUMNS = new Set([
   'storageS3ForcePathStyle',
   'storagePublicBaseUrl',
   'storageSmmsToken',
+  'guestbookEnabled',
 ])
 const BOOLEAN_COLUMNS = new Set([
   'commentApproval',
@@ -43,6 +44,7 @@ const BOOLEAN_COLUMNS = new Set([
   'enableAiDetection',
   'aiAutoApprove',
   'storageS3ForcePathStyle',
+  'guestbookEnabled',
 ])
 
 function normalizeConfigValue(col: string, val: unknown) {
@@ -122,6 +124,7 @@ export async function PUT(req: NextRequest) {
   const sidebarFriendLinksCollapsed =
     data.sidebarFriendLinksCollapsed !== undefined ? data.sidebarFriendLinksCollapsed : null
   const enableFriendCircle = data.enableFriendCircle !== undefined ? data.enableFriendCircle : null
+  const guestbookEnabled = data.guestbookEnabled !== undefined ? data.guestbookEnabled : null
   delete data.siteIcon
   delete data.siteLogo
   delete data.rightPanelWidgets
@@ -135,6 +138,7 @@ export async function PUT(req: NextRequest) {
   delete data.customDomain
   delete data.sidebarFriendLinksCollapsed
   delete data.enableFriendCircle
+  delete data.guestbookEnabled
 
   // SQLite 存的是 0/1 整数，Prisma schema 要求 Boolean，需显式转换
   if (data.showCommentIp !== undefined) data.showCommentIp = Boolean(data.showCommentIp)
@@ -180,6 +184,7 @@ export async function PUT(req: NextRequest) {
   if (sidebarFriendLinksCollapsed !== null)
     rawUpdates.push({ col: 'sidebarFriendLinksCollapsed', val: sidebarFriendLinksCollapsed ? 1 : 0 })
   if (enableFriendCircle !== null) rawUpdates.push({ col: 'enableFriendCircle', val: enableFriendCircle ? 1 : 0 })
+  if (guestbookEnabled !== null) rawUpdates.push({ col: 'guestbookEnabled', val: guestbookEnabled ? 1 : 0 })
 
   try {
     await prisma.$transaction(async (tx) => {

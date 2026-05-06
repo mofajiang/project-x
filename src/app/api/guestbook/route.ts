@@ -31,6 +31,11 @@ function buildAiConfig(config: Record<string, any>): AiFullConfig {
 }
 
 export async function GET(req: NextRequest) {
+  const config = await getSiteConfig()
+  if (!config.guestbookEnabled) {
+    return NextResponse.json({ messages: [], total: 0, page: 1, pageSize: 20, totalPages: 0, disabled: true })
+  }
+
   const { searchParams } = req.nextUrl
   const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
   const pageSize = Math.min(30, Math.max(1, parseInt(searchParams.get('pageSize') || '20')))
@@ -99,6 +104,10 @@ export async function POST(req: NextRequest) {
   }
 
   const config = await getSiteConfig()
+  if (!config.guestbookEnabled) {
+    return NextResponse.json({ error: '留言板功能已关闭' }, { status: 403 })
+  }
+
   const ip = getClientIp(req)
 
   // 本地快速垃圾检测

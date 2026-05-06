@@ -63,6 +63,7 @@ export function AdminSidebar({ username }: { username: string }) {
   const pathname = usePathname()
   const [pendingCount, setPendingCount] = useState(0)
   const [expanded, setExpanded] = useState(false)
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     const fetchPending = () =>
@@ -118,11 +119,12 @@ export function AdminSidebar({ username }: { username: string }) {
           <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto overflow-x-hidden">
             {ADMIN_NAV_GROUPS.map((group, gi) => {
               const items = ADMIN_NAV_ITEMS.filter((item) => item.group === group.key)
+              const collapsed = collapsedGroups.has(group.key)
               return (
                 <div key={group.key}>
                   {gi > 0 && <div className="mx-2 my-1.5" style={{ borderTop: '1px solid var(--border)' }} />}
-                  <p
-                    className="whitespace-nowrap px-3 text-[10px] font-bold uppercase tracking-wider"
+                  <button
+                    className="flex w-full cursor-pointer items-center gap-1 whitespace-nowrap px-3 text-[10px] font-bold uppercase tracking-wider"
                     style={{
                       color: 'var(--text-secondary)',
                       opacity: expanded ? 0.55 : 0,
@@ -131,62 +133,90 @@ export function AdminSidebar({ username }: { username: string }) {
                       paddingBottom: expanded ? '2px' : '0',
                       overflow: 'hidden',
                       transition: 'opacity 0.15s, max-height 0.15s, padding 0.1s',
+                      background: 'none',
+                      border: 'none',
+                    }}
+                    onClick={() => {
+                      setCollapsedGroups((prev) => {
+                        const next = new Set(prev)
+                        if (next.has(group.key)) next.delete(group.key)
+                        else next.add(group.key)
+                        return next
+                      })
+                    }}
+                    title={collapsed ? `展开 ${group.label}` : `折叠 ${group.label}`}
+                  >
+                    <span
+                      className="shrink-0 text-[9px] leading-none transition-transform"
+                      style={{ transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}
+                    >
+                      ▼
+                    </span>
+                    {group.label}
+                  </button>
+                  <div
+                    style={{
+                      maxHeight: collapsed ? '0' : `${items.length * 40}px`,
+                      opacity: collapsed ? 0 : 1,
+                      overflow: 'hidden',
+                      transition: collapsed
+                        ? 'max-height 0.2s ease, opacity 0.15s ease'
+                        : 'max-height 0.25s ease, opacity 0.18s ease 0.05s',
                     }}
                   >
-                    {group.label}
-                  </p>
-                  {items.map((item) => {
-                    const active =
-                      item.href === '/admin'
-                        ? pathname === '/admin'
-                        : pathname === item.href || pathname.startsWith(item.href + '/')
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        prefetch={false}
-                        title={item.label}
-                        className="relative flex items-center gap-3 overflow-hidden whitespace-nowrap rounded-xl px-3 py-2 text-sm transition-colors"
-                        style={{
-                          background: active ? 'var(--bg-hover)' : 'transparent',
-                          color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
-                          fontWeight: active ? '600' : '400',
-                        }}
-                      >
-                        <span className="shrink-0 leading-none" style={{ width: 22, textAlign: 'center' }}>
-                          {item.icon}
-                        </span>
-                        <span
-                          className="flex-1"
+                    {items.map((item) => {
+                      const active =
+                        item.href === '/admin'
+                          ? pathname === '/admin'
+                          : pathname === item.href || pathname.startsWith(item.href + '/')
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          prefetch={false}
+                          title={item.label}
+                          className="relative flex items-center gap-3 overflow-hidden whitespace-nowrap rounded-xl px-3 py-2 text-sm transition-colors"
                           style={{
-                            opacity: expanded ? 1 : 0,
-                            transition: expanded ? 'opacity 0.13s ease 0.12s' : 'opacity 0.08s ease',
+                            background: active ? 'var(--bg-hover)' : 'transparent',
+                            color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+                            fontWeight: active ? '600' : '400',
                           }}
                         >
-                          {item.label}
-                        </span>
-                        {item.badge && pendingCount > 0 && expanded && (
+                          <span className="shrink-0 leading-none" style={{ width: 22, textAlign: 'center' }}>
+                            {item.icon}
+                          </span>
                           <span
-                            className="shrink-0 rounded-full px-1.5 py-0.5 text-[11px] font-bold leading-none"
+                            className="flex-1"
                             style={{
-                              background: 'var(--red,#F4212E)',
-                              color: '#fff',
                               opacity: expanded ? 1 : 0,
                               transition: expanded ? 'opacity 0.13s ease 0.12s' : 'opacity 0.08s ease',
                             }}
                           >
-                            {pendingCount > 99 ? '99+' : pendingCount}
+                            {item.label}
                           </span>
-                        )}
-                        {item.badge && pendingCount > 0 && !expanded && (
-                          <span
-                            className="absolute right-1 top-1 h-2 w-2 rounded-full"
-                            style={{ background: 'var(--red,#F4212E)' }}
-                          />
-                        )}
-                      </Link>
-                    )
-                  })}
+                          {item.badge && pendingCount > 0 && expanded && (
+                            <span
+                              className="shrink-0 rounded-full px-1.5 py-0.5 text-[11px] font-bold leading-none"
+                              style={{
+                                background: 'var(--red,#F4212E)',
+                                color: '#fff',
+                                opacity: expanded ? 1 : 0,
+                                transition: expanded ? 'opacity 0.13s ease 0.12s' : 'opacity 0.08s ease',
+                              }}
+                            >
+                              {pendingCount > 99 ? '99+' : pendingCount}
+                            </span>
+                          )}
+                          {item.badge && pendingCount > 0 && !expanded && (
+                            <span
+                              className="absolute right-1 top-1 h-2 w-2 rounded-full"
+                              style={{ background: 'var(--red,#F4212E)' }}
+                            />
+                          )}
+                        </Link>
+                      )
+                    })}
+                  </div>
                 </div>
               )
             })}

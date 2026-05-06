@@ -132,6 +132,7 @@ export default function SettingsPage() {
     storageS3ForcePathStyle: false,
     storagePublicBaseUrl: '',
     storageSmmsToken: '',
+    guestbookEnabled: true,
   })
   const [defaultTheme, setDefaultTheme] = useState<'dark' | 'light'>('dark')
   const [navItems, setNavItems] = useState<NavItem[]>(DEFAULT_NAV)
@@ -186,6 +187,7 @@ export default function SettingsPage() {
       storageS3ForcePathStyle: !!data.storageS3ForcePathStyle,
       storagePublicBaseUrl: data.storagePublicBaseUrl || '',
       storageSmmsToken: data.storageSmmsToken || '',
+      guestbookEnabled: data.guestbookEnabled ?? true,
     })
     setNavItems(parseNavItems(data.navItems || '[]'))
     setWidgets(parseWidgets(data.rightPanelWidgets || '[]'))
@@ -663,6 +665,25 @@ export default function SettingsPage() {
                 </p>
                 <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>
                   默认只在后台可见，开启后前台也会显示
+                </p>
+              </div>
+            </label>
+            <label
+              className="mt-3 flex cursor-pointer items-start gap-3 pt-3 sm:items-center"
+              style={{ borderTop: '1px solid var(--border)' }}
+            >
+              <input
+                type="checkbox"
+                checked={config.guestbookEnabled}
+                onChange={(e) => setConfig((c) => ({ ...c, guestbookEnabled: e.target.checked }))}
+                className="h-4 w-4"
+              />
+              <div className="min-w-0">
+                <p className="text-sm font-medium leading-tight" style={{ color: 'var(--text-primary)' }}>
+                  启用留言板
+                </p>
+                <p className={sectionHintClass} style={{ color: 'var(--text-secondary)' }}>
+                  关闭后前台留言板入口和功能将隐藏
                 </p>
               </div>
             </label>

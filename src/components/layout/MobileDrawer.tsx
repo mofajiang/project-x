@@ -161,7 +161,7 @@ export function MobileDrawer({
   approvedFriendLinks = [],
 }: Props) {
   const items = navItems && navItems.length > 0 ? navItems : DEFAULT_NAV
-  const primaryItems = items.slice(0, 4)
+  const primaryItems = items.slice(0, 5)
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
   const drawerRef = useRef<HTMLDivElement>(null)
