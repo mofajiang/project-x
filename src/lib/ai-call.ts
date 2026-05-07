@@ -148,7 +148,7 @@ export function rowToAiFullConfig(row: Record<string, any>): AiFullConfig {
     aiModelBaseUrl: row.aiModelBaseUrl || '',
     aiModelApiKey: row.aiModelApiKey || '',
     aiModelProvider: row.aiModelProvider || 'openrouter',
-    aiModelName: row.aiModelName || '',
+    aiModelName: row.aiModelName || row.openrouterModel || '',
     aiModelMaxTokens: Number(row.aiModelMaxTokens) || 2000,
     aiModelTimeout: Number(row.aiModelTimeout) || 30,
     commentAiProvider: row.commentAiProvider || '',

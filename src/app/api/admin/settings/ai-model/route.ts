@@ -202,7 +202,9 @@ export async function POST(request: NextRequest) {
     // 保存后让 getSiteConfig 缓存失效，确保评论 AI 分析读到新配置
     try {
       await revalidateSiteConfig()
-    } catch {}
+    } catch (e: unknown) {
+      console.error('[ai-model] revalidateSiteConfig failed:', e)
+    }
 
     return NextResponse.json(rows.length ? rowToConfig(rows[0]) : DEFAULT_CONFIG, {
       headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' },

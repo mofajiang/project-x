@@ -7,28 +7,7 @@ import { rateLimit } from '@/lib/rate-limit'
 import { quickSpamCheck, analyzeCommentWithAI } from '@/lib/openrouter-spam-filter'
 import { getErrorMessage } from '@/lib/converters'
 import { AI_REVIEW_THRESHOLDS, type AiReviewStrength } from '@/lib/constants'
-import type { AiFullConfig } from '@/lib/ai-call'
-
-function buildAiConfig(config: Record<string, any>): AiFullConfig {
-  return {
-    groqApiKey: config.groqApiKey || '',
-    openrouterApiKey: config.openrouterApiKey || '',
-    aiModelBaseUrl: config.aiModelBaseUrl || '',
-    aiModelApiKey: config.aiModelApiKey || '',
-    aiModelProvider: config.aiModelProvider || 'openrouter',
-    aiModelName: config.aiModelName || config.openrouterModel || '',
-    aiModelMaxTokens: config.aiModelMaxTokens || 2000,
-    aiModelTimeout: config.aiModelTimeout || 30,
-    commentAiProvider: config.commentAiProvider || '',
-    commentAiModel: config.commentAiModel || '',
-    friendLinkAiProvider: config.friendLinkAiProvider || '',
-    friendLinkAiModel: config.friendLinkAiModel || '',
-    voicePolishAiProvider: config.voicePolishAiProvider || '',
-    voicePolishAiModel: config.voicePolishAiModel || '',
-    postPolishAiProvider: config.postPolishAiProvider || '',
-    postPolishAiModel: config.postPolishAiModel || '',
-  }
-}
+import { rowToAiFullConfig } from '@/lib/ai-call'
 
 export async function GET(req: NextRequest) {
   const config = await getSiteConfig()
@@ -164,7 +143,7 @@ export async function POST(req: NextRequest) {
 
   // 后台异步 AI 检测（仅访客留言）
   if (!session && (quickCheck.shouldAnalyze || config.enableAiDetection)) {
-    const aiCfg = buildAiConfig(config)
+    const aiCfg = rowToAiFullConfig(config)
     const gName = (messageData.guestName as string) || ''
     const gEmail = (messageData.guestEmail as string) || ''
     const gWebsite = (messageData.guestWebsite as string) || ''

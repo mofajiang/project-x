@@ -5,7 +5,7 @@ import { getSiteConfig, type SiteConfig } from '@/lib/config'
 import { sendNewCommentNotification } from '@/lib/mailer'
 import { getClientIp } from '@/lib/request-ip'
 import { analyzeCommentWithAI, quickSpamCheck } from '@/lib/openrouter-spam-filter'
-import type { AiFullConfig } from '@/lib/ai-call'
+import { rowToAiFullConfig } from '@/lib/ai-call'
 import { revalidateTag } from 'next/cache'
 import { rateLimit } from '@/lib/rate-limit'
 import { getErrorMessage } from '@/lib/converters'
@@ -167,24 +167,7 @@ async function analyzeAndUpdateComment(
   try {
     if (DEBUG) console.log('[ai-analysis-async] 开始后台 AI 分析:', { commentId, contentLength: content.length })
 
-    const aiCfg: AiFullConfig = {
-      groqApiKey: config.groqApiKey || '',
-      openrouterApiKey: config.openrouterApiKey || '',
-      aiModelBaseUrl: config.aiModelBaseUrl || '',
-      aiModelApiKey: config.aiModelApiKey || '',
-      aiModelProvider: config.aiModelProvider || 'openrouter',
-      aiModelName: config.aiModelName || config.openrouterModel || '',
-      aiModelMaxTokens: config.aiModelMaxTokens || 2000,
-      aiModelTimeout: config.aiModelTimeout || 30,
-      commentAiProvider: config.commentAiProvider || '',
-      commentAiModel: config.commentAiModel || '',
-      friendLinkAiProvider: config.friendLinkAiProvider || '',
-      friendLinkAiModel: config.friendLinkAiModel || '',
-      voicePolishAiProvider: config.voicePolishAiProvider || '',
-      voicePolishAiModel: config.voicePolishAiModel || '',
-      postPolishAiProvider: config.postPolishAiProvider || '',
-      postPolishAiModel: config.postPolishAiModel || '',
-    }
+    const aiCfg = rowToAiFullConfig(config)
 
     const aiResult = await analyzeCommentWithAI(
       content,

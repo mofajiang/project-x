@@ -126,9 +126,9 @@ export default function AdminAiModelPage() {
           baseUrl: config.aiModelBaseUrl,
           apiKey:
             config.aiModelProvider === 'groq'
-              ? config.groqApiKey || config.aiModelApiKey
+              ? config.aiModelApiKey || config.groqApiKey
               : config.aiModelProvider === 'openrouter'
-                ? config.openrouterApiKey || config.aiModelApiKey
+                ? config.aiModelApiKey || config.openrouterApiKey
                 : config.aiModelApiKey,
           model: config.aiModelName,
           timeout: config.aiModelTimeout,
