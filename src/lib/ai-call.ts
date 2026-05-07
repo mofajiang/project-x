@@ -62,14 +62,14 @@ export function resolveAiParams(fn: AiFunction, cfg: AiFullConfig): AiCallParams
   }
 
   const provider = (cfg[providerMap[fn]] as string) || cfg.aiModelProvider || 'openrouter'
-  const model = (cfg[modelMap[fn]] as string) || cfg.aiModelName || ''
+  const model = (cfg[modelMap[fn]] as string) || cfg.aiModelName || 'claude-3.5-sonnet'
 
-  // 解析 API Key：优先使用 provider 专属 key，回退到全局 aiModelApiKey
+  // 解析 API Key：aiModelApiKey（新统一字段）优先，回退到旧 provider 专属 key
   let apiKey: string
   if (provider === 'groq') {
-    apiKey = cfg.groqApiKey || (cfg.aiModelProvider === 'groq' ? cfg.aiModelApiKey : '') || ''
+    apiKey = cfg.aiModelApiKey || cfg.groqApiKey || ''
   } else if (provider === 'openrouter') {
-    apiKey = cfg.openrouterApiKey || (cfg.aiModelProvider === 'openrouter' ? cfg.aiModelApiKey : '') || ''
+    apiKey = cfg.aiModelApiKey || cfg.openrouterApiKey || ''
   } else {
     apiKey = cfg.aiModelApiKey || ''
   }

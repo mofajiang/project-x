@@ -137,6 +137,11 @@ export async function POST(request: NextRequest) {
       Math.min(300, Number.isFinite(Number(data.aiModelTimeout)) ? Number(data.aiModelTimeout) : 30)
     )
 
+    // 清除旧 AI 配置字段，避免残留值干扰新配置（aiModelApiKey 优先于 openrouterApiKey）
+    await prisma.$executeRawUnsafe(
+      `UPDATE SiteConfig SET openrouterApiKey = '', openrouterModel = '' WHERE id = 'singleton'`
+    )
+
     // 使用 raw SQL 更新，避免 Prisma 客户端版本不匹配时静默忽略字段
     await prisma.$executeRawUnsafe(
       `UPDATE SiteConfig SET

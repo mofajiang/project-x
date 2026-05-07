@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth'
+import { getSiteConfig, parseSiteLogo, type SiteLogo } from '@/lib/config'
 import { LoginForm } from '@/components/auth/LoginForm'
 
 export const dynamic = 'force-dynamic'
@@ -9,5 +10,9 @@ export default async function AdminLoginPage() {
   const session = await getSession()
   if (session) redirect('/admin')
 
-  return <LoginForm loginPath="/admin/login" />
+  const config = await getSiteConfig()
+  const siteLogo = parseSiteLogo(config.siteLogo)
+  const siteIcon = config.siteIcon || ''
+
+  return <LoginForm loginPath="/admin/login" siteLogo={siteLogo} siteIcon={siteIcon} />
 }

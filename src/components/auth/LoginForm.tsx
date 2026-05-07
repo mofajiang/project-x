@@ -1,8 +1,18 @@
 'use client'
 import { useState } from 'react'
+import Image from 'next/image'
 import toast from 'react-hot-toast'
+import type { SiteLogo } from '@/lib/config'
 
-export function LoginForm({ loginPath }: { loginPath?: string }) {
+export function LoginForm({
+  loginPath,
+  siteLogo,
+  siteIcon,
+}: {
+  loginPath?: string
+  siteLogo?: SiteLogo
+  siteIcon?: string
+}) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [showPwd, setShowPwd] = useState(false)
@@ -36,16 +46,26 @@ export function LoginForm({ loginPath }: { loginPath?: string }) {
           style={{
             background: 'var(--bg-secondary)',
             border: '1px solid var(--border)',
-            boxShadow: '0 0 40px rgba(0,0,0,0.6)',
           }}
         >
           {/* Logo */}
           <div className="mb-8 text-center">
             <div
-              className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full"
-              style={{ background: 'var(--accent)' }}
+              className="mx-auto mb-4 flex h-14 w-14 items-center justify-center overflow-hidden rounded-full"
+              style={{ background: siteIcon ? 'transparent' : 'var(--accent)' }}
             >
-              <span className="text-2xl font-black text-white">✕</span>
+              {siteIcon ? (
+                <Image
+                  src={siteIcon}
+                  alt="Site Icon"
+                  width={56}
+                  height={56}
+                  className="h-full w-full object-cover"
+                  unoptimized
+                />
+              ) : (
+                <span className="text-2xl font-black text-white">{siteLogo?.value || '✕'}</span>
+              )}
             </div>
             <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
               欢迎回来
