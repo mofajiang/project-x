@@ -45,53 +45,20 @@
 
 ## Features
 
-### 🎨 Interface
-
-X-style UI · Dark/Light theme toggle · Three-column layout · Card-based feed · Fully responsive
-
-### 📝 Content
-
-Markdown editor with live preview · Draft/Publish workflow · Tag system · Cover images · Quick-post composer on homepage · Thread support (grouped posts)
-
-### 💬 Engagement
-
-Nested comments · Approval queue · Likes & reposts · Email reply notifications · Guestbook with moderation · Visitor tracking with interactive map
-
-### 🤖 AI-Powered
-
-Multi-provider LLM support (OpenRouter / Groq / Custom API) · Comment spam detection · Friend link safety audit · Configurable moderation intensity · Model connection test with live chat preview
-
-### 🔗 Friend Links
-
-Self-service application · Reciprocal link verification · AI safety scanning · Auto-approval for low-risk submissions · Sidebar widget · Friend circle feed
-
-### 📡 Content Radar
-
-Multi-source aggregation (Google / Baidu / Sogou / Zhihu / V2EX / Lobsters / Medium / DEV.to / HN / Reddit / CSDN / Juejin / GitHub / WeChat / oschina / 36kr) · AI filtering & deduplication · Time-decay ranking · Webhook notifications · Scheduled daily digest posts
-
-### 🔒 Security
-
-Dynamic login path · Brute-force lockout · JWT token blacklist · CSP headers · DOMPurify XSS protection · IP validation · SSRF protection · Admin audit log
-
-### ⚙️ Administration
-
-Dashboard with analytics · Post / Comment / Tag management · Site settings · SMTP configuration · AI model management · Navigation editor · Right-panel widget configurator
-
-### 🔍 SEO
-
-JSON-LD structured data · Canonical URLs · Dynamic OG images · RSS feed · Sitemap & Robots.txt
-
-### 📦 Storage
-
-Local filesystem · S3-compatible object storage (Cloudflare R2, MinIO, etc.) · SM.MS image hosting
-
-### 👤 Identity
-
-Display name separate from login · Verified badge · @handle · Custom avatars & bios
-
-### 🔗 Short Links
-
-Custom short codes · Click tracking · Redirect service
+| Module              | Highlights                                                                              |
+| ------------------- | --------------------------------------------------------------------------------------- |
+| 🎨 **UI**           | X-style design, dark/light themes, three-column layout, responsive                      |
+| 📝 **Content**      | Markdown editor, draft/publish, tags, covers, Thread grouping                           |
+| 💬 **Engagement**   | Nested comments, moderation, likes/reposts, email notifications, guestbook, visitor map |
+| 🤖 **AI**           | OpenRouter / Groq / Custom LLM, spam detection, friend link audit, adjustable intensity |
+| 🔗 **Friend Links** | Self-service, reciprocal check, AI safety scan, auto-approval, friend circle feed       |
+| 📡 **Radar**        | 16-source aggregation, AI filtering/dedup, time-decay ranking, webhook, daily digest    |
+| 🔒 **Security**     | Dynamic login path, brute-force lockout, JWT blacklist, CSP, XSS/SSRF protection        |
+| ⚙️ **Admin**        | Dashboard, post/comment/tag management, site settings, SMTP, AI model config            |
+| 🔍 **SEO**          | JSON-LD, canonical URLs, dynamic OG images, RSS, sitemap                                |
+| 📦 **Storage**      | Local / S3-compatible (R2, MinIO, OSS) / SM.MS                                          |
+| 👤 **Identity**     | Display name separation, verified badge, @handle, avatars & bios                        |
+| 🔗 **Short Links**  | Custom codes, click tracking, redirect service                                          |
 
 ---
 
