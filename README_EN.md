@@ -13,7 +13,7 @@
 
 [Live Demo](https://thisblog.me/) · [Quick Start](#quick-start) · [One-Click Deploy](#one-click-install) · [Issues](https://github.com/mofajiang/project-x/issues)
 
-[English Version](./README_EN.md)
+[中文文档](./README.md)
 
 </div>
 
