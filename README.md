@@ -1,4 +1,4 @@
-# ✕ Blog — X-Style Personal Blog
+# ✕ Blog — X 风格个人博客
 
 <div align="center">
 
@@ -9,9 +9,9 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/mofajiang/project-x?style=social)](https://github.com/mofajiang/project-x)
 
-**A full-featured personal blog built with Next.js 14, Tailwind CSS, and SQLite — inspired by X (Twitter)'s design language.**
+**基于 Next.js 14 + Tailwind CSS + SQLite 构建的 X 风格全功能个人博客**
 
-[Live Demo](https://thisblog.me/) · [Quick Start](#quick-start) · [One-Click Deploy](#one-click-install) · [Issues](https://github.com/mofajiang/project-x/issues)
+[示例网站](https://thisblog.me/) · [快速开始](#快速开始) · [一键部署](#一键安装) · [问题反馈](https://github.com/mofajiang/project-x/issues)
 
 [English Version](./README_EN.md)
 
@@ -19,154 +19,154 @@
 
 ---
 
-## Table of Contents
+## 目录
 
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Quick Start](#quick-start)
-- [Deployment](#deployment)
-  - [One-Click Install](#one-click-install)
-  - [Manual Deployment](#manual-deployment)
-  - [Upgrade](#upgrade)
-  - [Uninstall](#uninstall)
-- [Environment Variables](#environment-variables)
-- [Feature Configuration](#feature-configuration)
-  - [Email Notifications](#email-notifications)
-  - [AI Moderation](#ai-moderation)
-  - [File Storage](#file-storage)
-  - [Friend Links](#friend-links)
-  - [Article Quote Syntax](#article-quote-syntax)
-- [Troubleshooting](#troubleshooting)
-- [Project Structure](#project-structure)
-- [Contributing](#contributing)
-- [License](#license)
+- [功能特性](#功能特性)
+- [技术栈](#技术栈)
+- [快速开始](#快速开始)
+- [服务器部署](#服务器部署)
+  - [一键安装](#一键安装)
+  - [手动部署](#手动部署)
+  - [更新版本](#更新版本)
+  - [卸载](#卸载)
+- [环境变量](#环境变量)
+- [功能配置](#功能配置)
+  - [邮件通知](#邮件通知)
+  - [AI 审核](#ai-审核)
+  - [文件存储](#文件存储)
+  - [友情链接](#友情链接)
+  - [文章引用语法](#文章引用语法)
+- [故障排查](#故障排查)
+- [项目结构](#项目结构)
+- [参与贡献](#参与贡献)
+- [开源协议](#开源协议)
 
 ---
 
-## Features
+## 功能特性
 
-### 🎨 Interface
+### 🎨 界面
 
-X-style UI · Dark/Light theme toggle · Three-column layout · Card-based feed · Fully responsive
+X 风格 UI · 深色/浅色主题切换 · 三栏布局 · 卡片式 Feed · 移动端响应式适配
 
-### 📝 Content
+### 📝 内容
 
-Markdown editor with live preview · Draft/Publish workflow · Tag system · Cover images · Quick-post composer on homepage · Thread support (grouped posts)
+Markdown 编辑器实时预览 · 草稿/发布管理 · 标签系统 · 封面图 · 首页快速发帖框 · Thread 帖子分组
 
-### 💬 Engagement
+### 💬 互动
 
-Nested comments · Approval queue · Likes & reposts · Email reply notifications · Guestbook with moderation · Visitor tracking with interactive map
+嵌套评论 · 审核模式 · 点赞与转发 · 邮件回复通知 · 留言板（含审核） · 访客追踪与交互地图
 
-### 🤖 AI-Powered
+### 🤖 AI 智能
 
-Multi-provider LLM support (OpenRouter / Groq / Custom API) · Comment spam detection · Friend link safety audit · Configurable moderation intensity · Model connection test with live chat preview
+多供应商 LLM 接入（OpenRouter / Groq / 自定义 API）· 评论垃圾检测 · 友链安全审核 · 可调审核强度 · 模型连接测试对话
 
-### 🔗 Friend Links
+### 🔗 友链
 
-Self-service application · Reciprocal link verification · AI safety scanning · Auto-approval for low-risk submissions · Sidebar widget · Friend circle feed
+自助申请 · 互链验证 · AI 安全检测 · 低风险自动审批 · 侧边栏卡片展示 · 友圈动态 Feed
 
-### 📡 Content Radar
+### 📡 内容雷达
 
-Multi-source aggregation (Google / Baidu / Sogou / Zhihu / V2EX / Lobsters / Medium / DEV.to / HN / Reddit / CSDN / Juejin / GitHub / WeChat / oschina / 36kr) · AI filtering & deduplication · Time-decay ranking · Webhook notifications · Scheduled daily digest posts
+多源聚合（Google / 百度 / 搜狗 / 知乎 / V2EX / Lobsters / Medium / DEV.to / HN / Reddit / CSDN / 掘金 / GitHub / 公众号 / oschina / 36kr）· AI 筛选与去重 · 时效衰减排序 · Webhook 通知 · 定时日报发布
 
-### 🔒 Security
+### 🔒 安全
 
-Dynamic login path · Brute-force lockout · JWT token blacklist · CSP headers · DOMPurify XSS protection · IP validation · SSRF protection · Admin audit log
+动态登录路径 · 失败锁定 · JWT 黑名单机制 · CSP 策略 · DOMPurify XSS 防护 · IP 格式校验 · SSRF 防护 · 管理员操作审计日志
 
-### ⚙️ Administration
+### ⚙️ 管理
 
-Dashboard with analytics · Post / Comment / Tag management · Site settings · SMTP configuration · AI model management · Navigation editor · Right-panel widget configurator
+仪表盘数据分析 · 文章/评论/标签管理 · 站点设置 · SMTP 邮件配置 · AI 模型管理 · 导航栏编辑器 · 侧边栏组件配置
 
 ### 🔍 SEO
 
-JSON-LD structured data · Canonical URLs · Dynamic OG images · RSS feed · Sitemap & Robots.txt
+文章 JSON-LD 结构化数据 · 站点 JSON-LD · Canonical URL · 动态 OG 图 · RSS 订阅 · Sitemap / Robots.txt
 
-### 📦 Storage
+### 📦 存储
 
-Local filesystem · S3-compatible object storage (Cloudflare R2, MinIO, etc.) · SM.MS image hosting
+本地文件系统 · S3 兼容对象存储（Cloudflare R2、MinIO 等）· SM.MS 图床
 
-### 👤 Identity
+### 👤 身份
 
-Display name separate from login · Verified badge · @handle · Custom avatars & bios
+显示名称与登录账号分离 · 认证徽章 · @handle · 自定义头像与个人简介
 
-### 🔗 Short Links
+### 🔗 短链
 
-Custom short codes · Click tracking · Redirect service
-
----
-
-## Tech Stack
-
-| Layer               | Technology                                                             |
-| ------------------- | ---------------------------------------------------------------------- |
-| **Framework**       | [Next.js 14](https://nextjs.org/) (App Router, ISR, standalone output) |
-| **Language**        | TypeScript 5                                                           |
-| **Styling**         | Tailwind CSS 3                                                         |
-| **Database**        | SQLite via [Prisma 5](https://www.prisma.io/)                          |
-| **Authentication**  | JWT + httpOnly Cookie                                                  |
-| **Testing**         | Vitest (83 tests)                                                      |
-| **Code Quality**    | ESLint + Prettier + Husky + lint-staged                                |
-| **Process Manager** | PM2                                                                    |
+自定义短码 · 点击统计 · 跳转服务
 
 ---
 
-## Quick Start
+## 技术栈
 
-> **Prerequisites:** Node.js 18+
+| 层级         | 技术                                                                  |
+| ------------ | --------------------------------------------------------------------- |
+| **框架**     | [Next.js 14](https://nextjs.org/)（App Router、ISR、standalone 输出） |
+| **语言**     | TypeScript 5                                                          |
+| **样式**     | Tailwind CSS 3                                                        |
+| **数据库**   | SQLite via [Prisma 5](https://www.prisma.io/)                         |
+| **认证**     | JWT + httpOnly Cookie                                                 |
+| **测试**     | Vitest（83 个测试）                                                   |
+| **代码质量** | ESLint + Prettier + Husky + lint-staged                               |
+| **进程管理** | PM2                                                                   |
+
+---
+
+## 快速开始
+
+> **环境要求：** Node.js 18+
 
 ```bash
-# 1. Clone the repository
+# 1. 克隆仓库
 git clone https://github.com/mofajiang/project-x.git
 cd project-x
 
-# 2. Install dependencies (use --include=optional on Linux for Sharp image processing)
+# 2. 安装依赖（Linux 环境需加 --include=optional 以确保 Sharp 图片处理正常）
 npm install --include=optional
 
-# 3. Configure environment
+# 3. 配置环境变量
 cp .env.example .env
-# Edit .env — at minimum, set JWT_SECRET
+# 编辑 .env，至少配置 JWT_SECRET
 
-# 4. Initialize database
+# 4. 初始化数据库
 npm run db:push
 
-# 5. Create admin account
+# 5. 创建管理员账号
 npx tsx scripts/init-admin.ts
 
-# 6. Start development server
+# 6. 启动开发服务器
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+浏览器打开 [http://localhost:3000](http://localhost:3000)。
 
-> 💡 On Linux, `--include=optional` ensures the `sharp` (image optimization) and `geoip-lite` (visitor geolocation) packages are installed correctly.
+> 💡 Linux 环境下 `--include=optional` 确保 `sharp`（图片优化）和 `geoip-lite`（访客地理定位）正确安装。
 
 ---
 
-## Deployment
+## 服务器部署
 
-### One-Click Install
+### 一键安装
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mofajiang/project-x/main/scripts/install.sh | bash
 ```
 
-The install script handles everything: dependency installation, database setup, admin account creation, PM2 configuration, and Nginx reverse proxy setup.
+安装脚本自动处理：依赖安装、数据库初始化、管理员创建、PM2 配置、Nginx 反向代理。
 
-### Manual Deployment
+### 手动部署
 
 ```bash
-# Build for production
+# 生产构建
 npm run build
 
-# Start with PM2
+# 使用 PM2 启动
 pm2 start ecosystem.config.js
 pm2 save
 pm2 startup
 ```
 
-The build outputs a standalone Node.js server in `.next/standalone/` — no `node_modules` required at runtime.
+构建产物为 `.next/standalone/` 下的独立 Node.js 服务端，无需 `node_modules` 即可运行。
 
-### Upgrade
+### 更新版本
 
 ```bash
 cd project-x
@@ -177,7 +177,7 @@ npm run build
 pm2 restart x-blog
 ```
 
-### Uninstall
+### 卸载
 
 ```bash
 bash scripts/uninstall.sh
@@ -185,105 +185,105 @@ bash scripts/uninstall.sh
 
 ---
 
-## Environment Variables
+## 环境变量
 
-Copy `.env.example` to `.env` and fill in the values:
+复制 `.env.example` 为 `.env` 并填写：
 
-| Variable                  | Required | Description                                              |
-| ------------------------- | :------: | -------------------------------------------------------- |
-| `DATABASE_URL`            |    ✅    | SQLite file path (default: `file:./data/blog.db`)        |
-| `JWT_SECRET`              |    ✅    | Random string for JWT signing                            |
-| `SESSION_SECRET`          |    ✅    | 32+ character random string for session encryption       |
-| `NEXT_PUBLIC_SITE_URL`    |    ✅    | Your site's public URL (e.g., `https://your-domain.com`) |
-| `PORT`                    |    —     | Server port (default: `3000`)                            |
-| `SMTP_HOST`               |    —     | SMTP server hostname                                     |
-| `SMTP_PORT`               |    —     | SMTP port                                                |
-| `SMTP_USER`               |    —     | SMTP username                                            |
-| `SMTP_PASS`               |    —     | SMTP password                                            |
-| `SMTP_FROM`               |    —     | Sender address (defaults to `SMTP_USER`)                 |
-| `STORAGE_DRIVER`          |    —     | Storage driver: `local` (default), `s3`, or `smms`       |
-| `STORAGE_S3_*`            |    —     | S3-compatible storage credentials                        |
-| `STORAGE_PUBLIC_BASE_URL` |    —     | CDN base URL prefix for uploaded files                   |
-| `STORAGE_SMMS_TOKEN`      |    —     | SM.MS API token                                          |
-| `LICENSE_SERVER_URL`      |    —     | License server URL (optional)                            |
-| `LICENSE_SECRET`          |    —     | License HMAC secret (optional)                           |
-| `MAXMIND_LICENSE_KEY`     |    —     | MaxMind GeoLite2 license key for offline IP geolocation  |
+| 变量                      | 必填 | 说明                                           |
+| ------------------------- | :--: | ---------------------------------------------- |
+| `DATABASE_URL`            |  ✅  | SQLite 文件路径（默认：`file:./data/blog.db`） |
+| `JWT_SECRET`              |  ✅  | JWT 签名密钥（随机长字符串）                   |
+| `SESSION_SECRET`          |  ✅  | Session 密钥（32 位以上）                      |
+| `NEXT_PUBLIC_SITE_URL`    |  ✅  | 网站公开域名（如 `https://your-domain.com`）   |
+| `PORT`                    |  —   | 服务端口（默认 `3000`）                        |
+| `SMTP_HOST`               |  —   | SMTP 服务器地址                                |
+| `SMTP_PORT`               |  —   | SMTP 端口                                      |
+| `SMTP_USER`               |  —   | SMTP 用户名                                    |
+| `SMTP_PASS`               |  —   | SMTP 密码                                      |
+| `SMTP_FROM`               |  —   | 发件人地址（默认同 `SMTP_USER`）               |
+| `STORAGE_DRIVER`          |  —   | 存储驱动：`local`（默认）、`s3` 或 `smms`      |
+| `STORAGE_S3_*`            |  —   | S3 兼容存储凭证                                |
+| `STORAGE_PUBLIC_BASE_URL` |  —   | CDN 公网访问前缀                               |
+| `STORAGE_SMMS_TOKEN`      |  —   | SM.MS API Token                                |
+| `LICENSE_SERVER_URL`      |  —   | License 服务器地址（可选）                     |
+| `LICENSE_SECRET`          |  —   | License HMAC 密钥（可选）                      |
+| `MAXMIND_LICENSE_KEY`     |  —   | MaxMind GeoLite2 离线库 License Key            |
 
 ---
 
-## Feature Configuration
+## 功能配置
 
-### Email Notifications
+### 邮件通知
 
-Configure SMTP under **Admin → Site Settings → Email** or directly in `.env`. Test your configuration with the built-in test-email button.
+在后台「站点设置 → 邮件」或直接编辑 `.env` 配置 SMTP。配置完成后可在后台发送测试邮件验证。
 
-| Provider | Host               | Port |
+| 服务商   | HOST               | PORT |
 | -------- | ------------------ | ---- |
-| QQ Mail  | smtp.qq.com        | 465  |
-| 163 Mail | smtp.163.com       | 465  |
+| QQ 邮箱  | smtp.qq.com        | 465  |
+| 163 邮箱 | smtp.163.com       | 465  |
 | Gmail    | smtp.gmail.com     | 587  |
 | Outlook  | smtp.office365.com | 587  |
 
-### AI Moderation
+### AI 审核
 
-Configure providers under **Admin → AI Model Management**:
+在后台「⚙ AI 模型管理」中配置：
 
-**Supported backends:**
+**接入方式：**
 
-- **OpenRouter** (recommended) — Access Claude, GPT-4, and more. Get an API key at [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys)
-- **Groq** — Free tier, ultra-low latency. Supports Llama, Mixtral, and other open-source models
-- **Custom API** — Connect Ollama, LocalAI, or any OpenAI-compatible endpoint
+- **OpenRouter（推荐）**：支持 Claude、GPT-4 等多种模型，获取 API Key：https://openrouter.ai/settings/keys
+- **Groq**：免费额度、超低延迟，支持 Llama、Mixtral 等开源模型
+- **自定义接口**：支持 Ollama、LocalAI 等任何 OpenAI 兼容端点
 
-**Moderation levels (applies to both comments and friend links):**
+**审核强度（评论与友链统一阈值）：**
 
-| Level                 | Auto-approve | Auto-reject | Best for                      |
-| --------------------- | :----------: | :---------: | ----------------------------- |
-| 🟢 Lenient            |     < 30     |    ≥ 80     | Personal blogs, low traffic   |
-| 🟡 Balanced (default) |     < 20     |    ≥ 70     | General use                   |
-| 🔴 Strict             |     < 10     |    ≥ 60     | High traffic, spam prevention |
+| 强度            | 自动通过 | 自动拒绝 | 适用场景         |
+| --------------- | :------: | :------: | ---------------- |
+| 🟢 宽松         |   < 30   |   ≥ 80   | 个人博客、低流量 |
+| 🟡 均衡（推荐） |   < 20   |   ≥ 70   | 通用             |
+| 🔴 严格         |   < 10   |   ≥ 60   | 高流量、防垃圾   |
 
-Risk scores range from 0–100 (lower is safer). Scores in the middle range go to manual review. Logged-in user comments bypass AI detection.
+风险分数 0–100，分数越低越安全。中间分数进入人工审核队列。已登录用户评论直接放行，不触发 AI 检测。
 
-### File Storage
+### 文件存储
 
-Configure under **Admin → Site Settings → Storage** or via environment variables:
+在后台「站点设置 → 存储」或通过环境变量配置：
 
-- **`local`** (default) — Uploads saved to `public/uploads/`
-- **`s3`** — S3-compatible object storage (Cloudflare R2, MinIO, Alibaba Cloud OSS, etc.)
-- **`smms`** — SM.MS image hosting service
+- **`local`**（默认）：上传文件保存至 `public/uploads/`
+- **`s3`**：兼容 S3 协议的对象存储，支持 Cloudflare R2、MinIO、阿里云 OSS 等
+- **`smms`**：SM.MS 图床，填写 token 即可使用
 
-### Friend Links
+### 友情链接
 
-**User flow:** Visit `/links` → Click "Apply" → Fill in your site details → System verifies reciprocal link → Pending review
+**用户申请流程：** 访问 `/links` → 点击「申请友链」→ 填写表单 → 系统验证互链 → 等待审核
 
-**Admin flow (Admin → Friend Links):**
+**管理员操作（后台 → 友情链接）：**
 
-- Manual approve / reject
-- AI safety scan (brand safety, spam risk, malware, content risk — four dimensions)
-- Reciprocal link checker (verifies the applicant has added a backlink)
-- Auto-approval toggle (low-risk submissions approved automatically)
+- 手动批准 / 拒绝
+- AI 安全检测（品牌安全、垃圾风险、恶意软件、内容风险四维度评分）
+- 互链检查（验证对方是否已添加回链）
+- 开启自动审批（AI 低风险自动通过）
 
-### Article Quote Syntax
+### 文章引用语法
 
-Use special Markdown syntax to embed rich reference cards in your posts:
+在文章 Markdown 中使用特殊语法插入引用卡片：
 
 ```markdown
-# Internal article (by slug)
+# 引用站内文章（填写文章 slug）
 
 ::quote[my-article-slug]
 
-# External link (auto-fetches OG metadata)
+# 引用外部链接（自动抓取 OG 信息生成卡片）
 
 ::quote-url[https://example.com/some-article]
 ```
 
 ---
 
-## Troubleshooting
+## 故障排查
 
-### Build fails: "Module not found"
+### 构建失败：Module not found
 
-Usually caused by cache corruption or incomplete file checkout:
+通常是缓存污染或文件签出不完整导致：
 
 ```bash
 git checkout HEAD -- src/
@@ -293,92 +293,92 @@ npm ci
 npm run build
 ```
 
-### Nginx HTTPS redirect loop
+### Nginx HTTPS 重定向循环
 
-Ensure your Nginx config includes:
+检查 Nginx 配置中是否包含以下 header：
 
 ```nginx
 proxy_set_header X-Forwarded-Proto $scheme;
 ```
 
-### PM2 cheat sheet
+### PM2 常用命令
 
 ```bash
-pm2 list                     # Show all process statuses
-pm2 logs x-blog              # Live logs
-pm2 logs x-blog --lines 100  # Last 100 log lines
-pm2 restart x-blog           # Restart
-pm2 stop x-blog              # Stop
+pm2 list                     # 查看所有进程状态
+pm2 logs x-blog              # 实时查看日志
+pm2 logs x-blog --lines 100  # 查看最近 100 行日志
+pm2 restart x-blog           # 重启服务
+pm2 stop x-blog              # 停止服务
 ```
 
-### Database
+### 数据库相关
 
 ```bash
-npm run db:push    # Sync schema (all columns declared in Schema — no data loss risk)
-npm run db:studio  # Visual database browser (development)
+npm run db:push    # 同步数据库结构（所有列已在 Schema 中声明，无数据丢失风险）
+npm run db:studio  # 可视化查看数据库（开发用）
 ```
 
 ---
 
-## Project Structure
+## 项目结构
 
 ```
 project-x/
-├── ecosystem.config.js          # PM2 production config
-├── next.config.js               # Next.js configuration (CSP, standalone output, etc.)
+├── ecosystem.config.js          # PM2 生产配置
+├── next.config.js               # Next.js 配置（CSP、standalone 输出等）
 ├── prisma/
-│   ├── schema.prisma            # Database schema (11 models, 70+ SiteConfig fields)
-│   └── data/                    # SQLite database files
-├── public/                      # Static assets & uploads
+│   ├── schema.prisma            # 数据库 Schema（11 个模型、70+ SiteConfig 字段）
+│   └── data/                    # SQLite 数据库文件
+├── public/                      # 静态资源与上传文件
 ├── scripts/
-│   ├── init-admin.ts|mjs|cjs    # Admin account initialization
-│   ├── install.sh               # One-click deployment script
-│   └── uninstall.sh             # Uninstall script
+│   ├── init-admin.ts|mjs|cjs    # 管理员账号初始化
+│   ├── install.sh               # 一键部署脚本
+│   └── uninstall.sh             # 卸载脚本
 └── src/
-    ├── middleware.ts             # Edge middleware (JWT, CSP, rate limiting)
+    ├── middleware.ts             # Edge 中间件（JWT、CSP、频率限制）
     ├── app/
-    │   ├── (blog)/               # Public-facing pages (14 routes)
-    │   ├── admin/                # Admin dashboard (13 pages)
-    │   ├── api/                  # API routes (16 modules)
-    │   ├── [loginPath]/          # Dynamic login path
-    │   └── go/[code]/            # Short-link redirect
+    │   ├── (blog)/               # 前台博客页面（14 个路由）
+    │   ├── admin/                # 后台管理页面（13 个页面）
+    │   ├── api/                  # API 路由（16 个模块）
+    │   ├── [loginPath]/          # 动态登录路径
+    │   └── go/[code]/            # 短链接跳转
     ├── components/
-    │   ├── admin/                # Admin-specific components (16)
-    │   ├── blog/                 # Blog components — PostCard, Comments, etc. (14)
-    │   ├── layout/               # Layout — Navbar, Sidebar, Drawer
-    │   └── ui/                   # Reusable UI primitives
-    ├── hooks/                    # Custom React hooks
-    └── lib/                      # Core library (18 modules + 5 test files)
-        ├── auth.ts               # JWT auth + token blacklist
-        ├── ai-call.ts            # AI provider abstraction
-        ├── keyword-radar.ts      # Content radar engine
-        ├── storage.ts            # Storage abstraction (local/S3/SM.MS)
-        ├── mailer.ts             # Email delivery
+    │   ├── admin/                # 后台专用组件（16 个）
+    │   ├── blog/                 # 博客组件 — PostCard、评论等（14 个）
+    │   ├── layout/               # 布局组件 — 导航栏、侧边栏、抽屉
+    │   └── ui/                   # 可复用基础 UI 组件
+    ├── hooks/                    # 自定义 React Hooks
+    └── lib/                      # 核心工具库（18 个模块 + 5 个测试文件）
+        ├── auth.ts               # JWT 认证 + Token 黑名单
+        ├── ai-call.ts            # AI 供应商抽象层
+        ├── keyword-radar.ts      # 内容雷达引擎
+        ├── storage.ts            # 存储抽象层（local/S3/SM.MS）
+        ├── mailer.ts             # 邮件发送
         └── ...
 ```
 
 ---
 
-## Contributing
+## 参与贡献
 
-Contributions are welcome. Please open an issue to discuss proposed changes before submitting a pull request.
+欢迎提交贡献。请在提交 Pull Request 前先开 Issue 讨论改动方案：
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+1. Fork 本仓库
+2. 创建特性分支（`git checkout -b feature/amazing-feature`）
+3. 提交改动（`git commit -m 'feat: 添加某某功能'`）
+4. 推送到分支（`git push origin feature/amazing-feature`）
+5. 创建 Pull Request
 
 ---
 
-## License
+## 开源协议
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+本项目基于 MIT License 开源 — 详见 [LICENSE](LICENSE) 文件。
 
 ---
 
 <div align="center">
 
-**✕ Blog** — Built with ❤️ by [mofajiang](https://github.com/mofajiang)
+**✕ Blog** — 由 [mofajiang](https://github.com/mofajiang) 用 ❤️ 构建
 
 </div>
